@@ -1,0 +1,93 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: library/postgres:13-alpine
+
+    container_name: greedybear_postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data/
+    env_file:
+      - ./env_file_postgres
+
+  uwsgi:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: honeynet/greedybear:test
+    container_name: greedybear_uwsgi
+    volumes:
+      - ../configuration/uwsgi/greedybear.ini:/etc/uwsgi/sites/greedybear.ini
+      - generic_logs:/var/log/greedybear
+      - static_content:/opt/deploy/greedybear/static
+    entrypoint:
+      - ./docker/entrypoint_uwsgi.sh
+    expose:
+      - "8001"
+    env_file:
+      - env_file
+    depends_on:
+      - postgres
+
+  nginx:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile_nginx
+    container_name: greedybear_nginx
+    restart: unless-stopped
+    volumes:
+      - ../configuration/nginx/http.conf:/etc/nginx/conf.d/default.conf
+      - nginx_logs:/var/log/nginx
+      - static_content:/var/www/static
+    ports:
+      - "80:80"
+      - "443:443"
+    depends_on:
+      - uwsgi
+
+  rabbitmq:
+    image: library/rabbitmq:3.9-alpine
+    container_name: greedybear_rabbitmq
+    logging:
+      driver: none
+
+  celery_beat:
+    image: honeynet/greedybear:test
+    container_name: greedybear_celery_beat
+    restart: unless-stopped
+    command: /usr/local/bin/celery -A greedybear.celery beat --uid www-data --gid www-data --pidfile= --schedule=/tmp/celerybeat-schedule
+    volumes:
+      - generic_logs:/var/log/intel_owl
+    env_file:
+      - env_file
+    depends_on:
+      - rabbitmq
+      - postgres
+      - uwsgi
+
+  celery_worker_default:
+    image: honeynet/greedybear:test
+    container_name: greedybear_celery_worker_default
+    restart: unless-stopped
+    stop_grace_period: 3m
+    command: /usr/local/bin/celery -A greedybear.celery worker -n worker_default --uid www-data --gid www-data --time-limit=10000 --pidfile= -Ofair -Q default -E
+    volumes:
+      - generic_logs:/var/log/intel_owl
+    logging:
+      driver: "json-file"
+      options:
+        max-file: "5"
+        max-size: "10m"
+    env_file:
+      - env_file
+    depends_on:
+      - rabbitmq
+      - postgres
+      - uwsgi
+
+
+volumes:
+  postgres_data:
+  nginx_logs:
+  generic_logs:
+  static_content:
