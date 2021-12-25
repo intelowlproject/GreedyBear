@@ -62,13 +62,13 @@ def feeds(request, age, attack_type, format_):
         # everything in the last 3 days
         three_days_ago = datetime.utcnow() - timedelta(days=3)
         query_dict["last_seen__gte"] = three_days_ago
-        iocs = IOC.object.filter(query_dict).order_by("-last_seen")[:1000]
+        iocs = IOC.objects.filter(query_dict).order_by("-last_seen")[:1000]
     elif age == "persistent":
         # scanners detected in the last 14 days
         fourteen_days_ago = datetime.utcnow() - timedelta(days=14)
         query_dict["last_seen__gte"] = fourteen_days_ago
         # order by the number of times seen
-        iocs = IOC.object.filter(query_dict).order_by("-times_seen")[:1000]
+        iocs = IOC.objects.filter(query_dict).order_by("-times_seen")[:1000]
     else:
         logger.error("this is impossible. check the code")
         return HttpResponseServerError()
