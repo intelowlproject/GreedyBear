@@ -116,23 +116,41 @@ class ExtractAttacks(ExtractDataFromElastic):
         hidden_hostname_instance = IOC.objects.filter(name=hidden_hostname).first()
 
         if scanner_ip_instance:
-            if hostname_instance:
+            if (
+                hostname_instance
+                and hostname_instance not in scanner_ip_instance.related_ioc
+            ):
                 scanner_ip_instance.related_ioc.add(hostname_instance)
-            if hidden_hostname_instance:
+            if (
+                hidden_hostname_instance
+                and hidden_hostname_instance not in scanner_ip_instance.related_ioc
+            ):
                 scanner_ip_instance.related_ioc.add(hidden_hostname_instance)
             scanner_ip_instance.save()
 
         if hostname_instance:
-            if scanner_ip_instance:
+            if (
+                scanner_ip_instance
+                and scanner_ip_instance not in hostname_instance.related_ioc
+            ):
                 hostname_instance.related_ioc.add(scanner_ip_instance)
-            if hidden_hostname_instance:
+            if (
+                hidden_hostname_instance
+                and hidden_hostname_instance not in hostname_instance.related_ioc
+            ):
                 hostname_instance.related_ioc.add(hidden_hostname_instance)
             hostname_instance.save()
 
         if hidden_hostname_instance:
-            if hostname_instance:
+            if (
+                hostname_instance
+                and hostname_instance not in hidden_hostname_instance.related_ioc
+            ):
                 hidden_hostname_instance.related_ioc.add(hostname_instance)
-            if scanner_ip_instance:
+            if (
+                scanner_ip_instance
+                and scanner_ip_instance not in hidden_hostname_instance.related_ioc
+            ):
                 hidden_hostname_instance.related_ioc.add(scanner_ip_instance)
             hidden_hostname_instance.save()
 
@@ -157,10 +175,14 @@ class ExtractAttacks(ExtractDataFromElastic):
             else:
                 ioc_instance.last_seen = datetime.datetime.utcnow()
                 ioc_instance.times_seen += 1
-                ioc_instance.honeypots.append(self.honeypot.name)
-                ioc_instance.attack_types.append(attack_type)
+                if self.honeypot.name not in ioc_instance.honeypots:
+                    ioc_instance.honeypots.append(self.honeypot.name)
+                if attack_type not in ioc_instance.attack_types:
+                    ioc_instance.attack_types.append(attack_type)
                 if related_urls:
-                    ioc_instance.related_urls.extend(related_urls)
+                    for related_url in related_urls:
+                        if related_url not in ioc_instance.related_urls:
+                            ioc_instance.related_urls.append(related_url)
 
             if ioc_instance:
                 ioc_instance.save()
