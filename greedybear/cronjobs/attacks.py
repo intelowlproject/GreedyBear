@@ -6,6 +6,7 @@ from urllib.parse import urlparse
 
 from greedybear.consts import PAYLOAD_REQUEST, SCANNER
 from greedybear.cronjobs.base import ExtractDataFromElastic, Honeypot
+from greedybear.cronjobs.sensors import ExtractSensors
 from greedybear.models import IOC, Sensors
 from greedybear.regex import REGEX_CVE_BASE64COMMAND, REGEX_CVE_LOG4J, REGEX_URL
 
@@ -236,6 +237,8 @@ class ExtractAttacks(ExtractDataFromElastic):
             # first time we execute this project.
             # So we increment the time range to get the data from the last 3 days
             self.first_time_run = True
+            # plus, we extract the sensors addresses so we can whitelist them
+            ExtractSensors().execute()
 
     def run(self):
         self._healthcheck()
