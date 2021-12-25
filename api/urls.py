@@ -1,7 +1,7 @@
-from django.urls import re_path
+from django.urls import path
 
 from api.views import feeds
 
 urlpatterns = [
-    re_path("^feeds/<str:age>/<str:attack_type>/<str:format>", feeds),
+    path("feeds/<str:age>/<str:attack_type>/<str:format>", feeds),
 ]
