@@ -10,4 +10,13 @@ class SensorsModelAdmin(admin.ModelAdmin):
 
 @admin.register(IOC)
 class IOCModelAdmin(admin.ModelAdmin):
-    list_display = [field.name for field in IOC._meta.get_fields()]
+    list_display = [
+        "name",
+        "type",
+        "first_seen",
+        "last_seen",
+        "times_seen",
+        "honeypots",
+        "attack_types",
+        "related_urls",
+    ]
