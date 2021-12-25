@@ -49,6 +49,8 @@ services:
     container_name: greedybear_rabbitmq
     logging:
       driver: none
+    depends_on:
+      - postgres
 
   celery_beat:
     image: honeynet/greedybear:test

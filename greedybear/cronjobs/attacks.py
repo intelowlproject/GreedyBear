@@ -47,6 +47,8 @@ class ExtractAttacks(ExtractDataFromElastic):
                 # we are losing the protocol but that's ok for now
                 url = match.group()
                 url_adjusted = "tcp:" + url
+                # removing double slash
+                url = url[2:]
                 self.log.info(f"found URL {url} in payload for CVE-2021-44228")
                 # protocol required or extraction won't work
                 hostname = urlparse(url_adjusted).hostname
