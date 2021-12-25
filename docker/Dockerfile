@@ -24,6 +24,7 @@ WORKDIR $PYTHONPATH
 RUN pip3 install --no-cache-dir --compile -r requirements.txt
 
 COPY . $PYTHONPATH
+COPY docker/wait-for-it.sh /wait-for-it.sh
 
 RUN touch ${LOG_PATH}/django/api.log ${LOG_PATH}/django/api_errors.log \
     && touch ${LOG_PATH}/django/gui.log ${LOG_PATH}/django/gui_errors.log \
