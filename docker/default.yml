@@ -3,7 +3,6 @@ version: '3.8'
 services:
   postgres:
     image: library/postgres:13-alpine
-
     container_name: greedybear_postgres
     volumes:
       - postgres_data:/var/lib/postgresql/data/
