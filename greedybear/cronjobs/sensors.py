@@ -18,6 +18,8 @@ class ExtractSensors(ExtractDataFromElastic):
         honeypot = Honeypot("Suricata")
         search = self._base_search(honeypot)
 
+        added_sensors = 0
+
         # get no more than X IPs a day
         search.aggs.bucket(
             "sensors_ips",
@@ -36,6 +38,9 @@ class ExtractSensors(ExtractDataFromElastic):
             except Sensors.DoesNotExist:
                 sensor = Sensors(address=tag.key)
                 sensor.save()
+                added_sensors += 1
+
+        self.log.info(f"added {added_sensors} new sensors in the database")
 
     def run(self):
         self._healthcheck()

@@ -39,6 +39,9 @@ class ExtractAttacks(ExtractDataFromElastic):
         hostname = None
         hidden_url = None
         hidden_hostname = None
+        added_scanners = 0
+        added_payloads = 0
+        added_hidden_payloads = 0
 
         for hit in hits:
             scanner_ip = self._get_scanner_ip(hit.correlation_id)
@@ -92,11 +95,13 @@ class ExtractAttacks(ExtractDataFromElastic):
             # add scanner
             if scanner_ip:
                 self._add_ioc(scanner_ip, SCANNER)
+                added_scanners += 1
 
             # add first URL
             if hostname:
                 related_urls = [url] if url else None
                 self._add_ioc(hostname, PAYLOAD_REQUEST, related_urls=related_urls)
+                added_payloads += 1
 
             # add hidden URL
             if hidden_hostname:
@@ -104,9 +109,15 @@ class ExtractAttacks(ExtractDataFromElastic):
                 self._add_ioc(
                     hidden_hostname, PAYLOAD_REQUEST, related_urls=related_urls
                 )
+                added_hidden_payloads += 1
 
             # once all have added, we can add the foreign keys
             self._add_fks(scanner_ip, hostname, hidden_hostname)
+
+        self.log.info(
+            f"added {added_scanners} scanners, {added_payloads} payloads"
+            f" and {added_hidden_payloads} hidden payloads"
+        )
 
     def _add_fks(self, scanner_ip, hostname, hidden_hostname):
         self.log.info(
