@@ -109,9 +109,9 @@ class ExtractAttacks(ExtractDataFromElastic):
         self.log.info(
             f"adding foreign keys for the following iocs: {scanner_ip}, {hostname}, {hidden_hostname}"
         )
-        scanner_ip_instance = IOC.objects.filter(name=scanner_ip)
-        hostname_instance = IOC.objects.filter(name=hostname)
-        hidden_hostname_instance = IOC.objects.filter(name=hidden_hostname)
+        scanner_ip_instance = IOC.objects.filter(name=scanner_ip).first()
+        hostname_instance = IOC.objects.filter(name=hostname).first()
+        hidden_hostname_instance = IOC.objects.filter(name=hidden_hostname).first()
 
         if scanner_ip_instance:
             if hostname_instance:
