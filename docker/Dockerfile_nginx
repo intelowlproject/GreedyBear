@@ -1,4 +1,5 @@
 FROM library/nginx:1.21.1-alpine
+RUN mkdir /var/cache/nginx && chown www-data:www-data /var/cache/nginx
 RUN apk update && apk upgrade && apk add bash
 ENV NGINX_LOG_DIR /var/log/nginx
 # this is to avoid having these logs redirected to stdout/stderr

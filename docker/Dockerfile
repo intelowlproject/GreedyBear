@@ -12,7 +12,7 @@ RUN mkdir -p ${LOG_PATH} \
 # python3-psycopg2 is required to use PostgresSQL with Django
 RUN apt-get update \
     && apt-get install -y --no-install-recommends apt-utils libsasl2-dev libssl-dev \
-    vim libldap2-dev python-dev libfuzzy-dev net-tools python3-psycopg2 \
+    vim python-dev libfuzzy-dev net-tools \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 RUN pip3 install --upgrade pip
