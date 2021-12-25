@@ -15,7 +15,7 @@ class ExtractSensors(ExtractDataFromElastic):
         return 1440  # a day
 
     def _extract_sensors(self):
-        honeypot = Honeypot("log4pot")
+        honeypot = Honeypot("Log4pot")
         search = self._base_search(honeypot)
 
         # get no more than X IPs a day

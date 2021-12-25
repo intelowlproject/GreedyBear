@@ -16,7 +16,7 @@ class ExtractAttacks(ExtractDataFromElastic):
 
     def __init__(self):
         super().__init__()
-        self.honeypot = Honeypot("log4pot")
+        self.honeypot = Honeypot("Log4pot")
         self.first_time_run = False
 
     @property
