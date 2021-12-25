@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from django.contrib.postgres import fields as pg_fields
 from django.db import models
 
@@ -9,8 +11,8 @@ class Sensors(models.Model):
 class IOC(models.Model):
     name = models.CharField(max_length=256, blank=False)
     type = models.CharField(max_length=32, blank=False)
-    first_seen = models.DateTimeField(auto_now_add=True)
-    last_seen = models.DateTimeField(auto_now_add=True)
+    first_seen = models.DateTimeField(blank=False, default=datetime.utcnow())
+    last_seen = models.DateTimeField(blank=False, default=datetime.utcnow())
     times_seen = models.IntegerField(default=1)
     honeypots = pg_fields.ArrayField(
         models.CharField(max_length=900),

@@ -118,12 +118,13 @@ class ExtractAttacks(ExtractDataFromElastic):
         if scanner_ip_instance:
             if (
                 hostname_instance
-                and hostname_instance not in scanner_ip_instance.related_ioc
+                and hostname_instance not in scanner_ip_instance.related_ioc.all()
             ):
                 scanner_ip_instance.related_ioc.add(hostname_instance)
             if (
                 hidden_hostname_instance
-                and hidden_hostname_instance not in scanner_ip_instance.related_ioc
+                and hidden_hostname_instance
+                not in scanner_ip_instance.related_ioc.all()
             ):
                 scanner_ip_instance.related_ioc.add(hidden_hostname_instance)
             scanner_ip_instance.save()
@@ -131,12 +132,12 @@ class ExtractAttacks(ExtractDataFromElastic):
         if hostname_instance:
             if (
                 scanner_ip_instance
-                and scanner_ip_instance not in hostname_instance.related_ioc
+                and scanner_ip_instance not in hostname_instance.related_ioc.all()
             ):
                 hostname_instance.related_ioc.add(scanner_ip_instance)
             if (
                 hidden_hostname_instance
-                and hidden_hostname_instance not in hostname_instance.related_ioc
+                and hidden_hostname_instance not in hostname_instance.related_ioc.all()
             ):
                 hostname_instance.related_ioc.add(hidden_hostname_instance)
             hostname_instance.save()
@@ -144,12 +145,13 @@ class ExtractAttacks(ExtractDataFromElastic):
         if hidden_hostname_instance:
             if (
                 hostname_instance
-                and hostname_instance not in hidden_hostname_instance.related_ioc
+                and hostname_instance not in hidden_hostname_instance.related_ioc.all()
             ):
                 hidden_hostname_instance.related_ioc.add(hostname_instance)
             if (
                 scanner_ip_instance
-                and scanner_ip_instance not in hidden_hostname_instance.related_ioc
+                and scanner_ip_instance
+                not in hidden_hostname_instance.related_ioc.all()
             ):
                 hidden_hostname_instance.related_ioc.add(scanner_ip_instance)
             hidden_hostname_instance.save()
@@ -213,7 +215,7 @@ class ExtractAttacks(ExtractDataFromElastic):
         search = search.filter("term", correlation_id=correlation_id)
         search = search.filter("term", reason="request")
         search = search.source(["src_ip"])
-        hits = search[:1].execute()
+        hits = search[:10].execute()
         for hit in hits:
             scanner_ip = hit.src_ip
 
