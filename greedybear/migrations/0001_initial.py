@@ -51,13 +51,12 @@ class Migration(migrations.Migration):
                         default=list,
                         null=True,
                         size=None,
-                        unique=True,
                     ),
                 ),
                 (
                     "attack_types",
                     django.contrib.postgres.fields.ArrayField(
-                        base_field=models.CharField(max_length=32, unique=True),
+                        base_field=models.CharField(max_length=32),
                         size=None,
                     ),
                 ),
@@ -69,7 +68,6 @@ class Migration(migrations.Migration):
                         default=list,
                         null=True,
                         size=None,
-                        unique=True,
                     ),
                 ),
                 (

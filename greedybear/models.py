@@ -17,16 +17,12 @@ class IOC(models.Model):
         blank=True,
         default=list,
         null=True,
-        unique=True,
     )
-    attack_types = pg_fields.ArrayField(
-        models.CharField(max_length=32, blank=False, unique=True)
-    )
+    attack_types = pg_fields.ArrayField(models.CharField(max_length=32, blank=False))
     related_ioc = models.ManyToManyField("self", blank=True, symmetrical=True)
     related_urls = pg_fields.ArrayField(
         models.CharField(max_length=900),
         blank=True,
         default=list,
         null=True,
-        unique=True,
     )
