@@ -1,4 +1,5 @@
 # flake8: noqa
+import logging
 import os
 
 from django.core.management.utils import get_random_secret_key
@@ -138,6 +139,14 @@ LOGGING = {
         },
     },
     "handlers": {
+        "elasticsearch": {
+            "level": INFO_OR_DEBUG_LEVEL,
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": f"{DJANGO_LOG_DIRECTORY}/elasticsearch.log",
+            "formatter": "stdfmt",
+            "maxBytes": 20 * 1024 * 1024,
+            "backupCount": 6,
+        },
         "api": {
             "level": INFO_OR_DEBUG_LEVEL,
             "class": "logging.handlers.RotatingFileHandler",
@@ -212,6 +221,11 @@ LOGGING = {
         },
     },
     "loggers": {
+        "elasticsearch": {
+            "handlers": ["elasticsearch"],
+            "level": INFO_OR_DEBUG_LEVEL,
+            "propagate": True,
+        },
         "api": {
             "handlers": ["api", "api_error"],
             "level": INFO_OR_DEBUG_LEVEL,
@@ -239,3 +253,10 @@ LOGGING = {
         },
     },
 }
+
+# disable some really noisy logs
+es_logger = logging.getLogger("elasticsearch")
+if DEBUG:
+    es_logger.setLevel(logging.INFO)
+else:
+    es_logger.setLevel(logging.WARNING)

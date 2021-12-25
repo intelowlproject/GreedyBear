@@ -26,6 +26,8 @@ RUN pip3 install --no-cache-dir --compile -r requirements.txt
 COPY . $PYTHONPATH
 
 RUN touch ${LOG_PATH}/django/api.log ${LOG_PATH}/django/api_errors.log \
+    && touch ${LOG_PATH}/django/gui.log ${LOG_PATH}/django/gui_errors.log \
+    && touch ${LOG_PATH}/django/greedybear.log ${LOG_PATH}/django/greedybear_errors.log \
     && touch ${LOG_PATH}/django/celery.log ${LOG_PATH}/django/celery_errors.log \
-    && touch ${LOG_PATH}/django/django_errors.log \
+    && touch ${LOG_PATH}/django/django_errors.log touch ${LOG_PATH}/django/elastcisearch.log\
     && chown -R www-data:www-data ${LOG_PATH} /opt/deploy/
