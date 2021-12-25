@@ -154,6 +154,38 @@ LOGGING = {
             "maxBytes": 20 * 1024 * 1024,
             "backupCount": 6,
         },
+        "gui": {
+            "level": INFO_OR_DEBUG_LEVEL,
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": f"{DJANGO_LOG_DIRECTORY}/gui.log",
+            "formatter": "stdfmt",
+            "maxBytes": 20 * 1024 * 1024,
+            "backupCount": 6,
+        },
+        "gui_error": {
+            "level": "ERROR",
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": f"{DJANGO_LOG_DIRECTORY}/gui_errors.log",
+            "formatter": "stdfmt",
+            "maxBytes": 20 * 1024 * 1024,
+            "backupCount": 6,
+        },
+        "greedybear": {
+            "level": INFO_OR_DEBUG_LEVEL,
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": f"{DJANGO_LOG_DIRECTORY}/greedybear.log",
+            "formatter": "stdfmt",
+            "maxBytes": 20 * 1024 * 1024,
+            "backupCount": 6,
+        },
+        "greedybear_error": {
+            "level": "ERROR",
+            "class": "logging.handlers.RotatingFileHandler",
+            "filename": f"{DJANGO_LOG_DIRECTORY}/greedybear_errors.log",
+            "formatter": "stdfmt",
+            "maxBytes": 20 * 1024 * 1024,
+            "backupCount": 6,
+        },
         "celery": {
             "level": INFO_OR_DEBUG_LEVEL,
             "class": "logging.handlers.RotatingFileHandler",
@@ -182,6 +214,16 @@ LOGGING = {
     "loggers": {
         "api": {
             "handlers": ["api", "api_error"],
+            "level": INFO_OR_DEBUG_LEVEL,
+            "propagate": True,
+        },
+        "gui": {
+            "handlers": ["gui", "gui_error"],
+            "level": INFO_OR_DEBUG_LEVEL,
+            "propagate": True,
+        },
+        "greedybear": {
+            "handlers": ["greedybear", "greedybear_error"],
             "level": INFO_OR_DEBUG_LEVEL,
             "propagate": True,
         },
