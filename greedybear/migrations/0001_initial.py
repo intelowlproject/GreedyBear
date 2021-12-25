@@ -44,11 +44,11 @@ class Migration(migrations.Migration):
                 ("type", models.CharField(max_length=32)),
                 (
                     "first_seen",
-                    models.DateTimeField(blank=False, default=datetime.utcnow()),
+                    models.DateTimeField(blank=False, default=datetime.utcnow),
                 ),
                 (
                     "last_seen",
-                    models.DateTimeField(blank=False, default=datetime.utcnow()),
+                    models.DateTimeField(blank=False, default=datetime.utcnow),
                 ),
                 ("times_seen", models.IntegerField(default=1)),
                 (
