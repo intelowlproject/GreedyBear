@@ -2,4 +2,4 @@ celery~=5.1.2
 elasticsearch-dsl~=7.2.0
 Django==3.2.10
 uWSGI~=2.0.20
-psycopg-binary~=3.0.7
+psycopg[binary]~=3.0.7
