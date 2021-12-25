@@ -29,9 +29,9 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django.contrib.postgres",
-    "greedybear.apps.GreedyBearConfig",
     "gui.apps.GuiConfig",
     "api.apps.ApiConfig",
+    "greedybear.apps.GreedyBearConfig",
 ]
 
 MIDDLEWARE = [
