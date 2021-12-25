@@ -46,9 +46,10 @@ class ExtractAttacks(ExtractDataFromElastic):
             if match:
                 # we are losing the protocol but that's ok for now
                 url = match.group()
+                url_adjusted = "tcp:" + url
                 self.log.info(f"found URL {url} in payload for CVE-2021-44228")
                 # protocol required or extraction won't work
-                hostname = urlparse("tcp://" + url).hostname
+                hostname = urlparse(url_adjusted).hostname
                 self.log.info(f"extracted hostname {hostname} from {url}")
 
             # it is possible to extract another payload from base64 encoded string.
@@ -80,7 +81,7 @@ class ExtractAttacks(ExtractDataFromElastic):
                             f" in payload for CVE-2021-44228"
                         )
 
-                        hidden_hostname = urlparse("tcp://" + hidden_url).hostname
+                        hidden_hostname = urlparse(hidden_url).hostname
                         self.log.info(
                             f"extracted hostname {hidden_hostname} from {hidden_url}"
                         )
@@ -147,7 +148,7 @@ class ExtractAttacks(ExtractDataFromElastic):
                     name=ioc,
                     type=ioc_type,
                     honeypots=[self.honeypot.name],
-                    attack_type=[attack_type],
+                    attack_types=[attack_type],
                 )
                 if related_urls:
                     ioc_instance.related_urls = related_urls
