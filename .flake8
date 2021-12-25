@@ -1,5 +1,5 @@
 [flake8]
-max-line-length = 88
+max-line-length = 105
 ignore =
     W503, # line break before binary operator
     E231, # missing whitespace after ',' (caused by black style)
@@ -8,3 +8,4 @@ exclude =
     docker,
     venv,
     docs,
+    greedybear/regex.py

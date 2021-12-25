@@ -7,7 +7,7 @@ ENV LOG_PATH /var/log/greedybear
 
 RUN mkdir -p ${LOG_PATH} \
     ${LOG_PATH}/django \
-    ${LOG_PATH}/uwsgi \
+    ${LOG_PATH}/uwsgi
 
 # python3-psycopg2 is required to use PostgresSQL with Django
 RUN apt-get update \

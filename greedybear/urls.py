@@ -1,9 +1,6 @@
-from django.contrib import admin
-from django.urls import include, path, re_path
+from django.urls import include, re_path
 
 urlpatterns = [
-    # admin
-    path("admin/", admin.site.urls, name="admin"),
     re_path("^gui/", include("gui.urls")),
     re_path("^api/", include("api.urls")),
 ]

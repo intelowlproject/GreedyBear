@@ -4,7 +4,14 @@ from celery import shared_task
 
 
 @shared_task()
-def extract_data_from_elastic():
-    from greedybear.crons import extract_data_from_elastic
+def extract_attacks():
+    from greedybear.cronjobs.attacks import ExtractAttacks
 
-    extract_data_from_elastic()
+    ExtractAttacks().execute()
+
+
+@shared_task()
+def extract_sensors():
+    from greedybear.cronjobs.sensors import ExtractSensors
+
+    ExtractSensors().execute()

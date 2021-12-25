@@ -39,10 +39,16 @@ app.conf.update(
 )
 
 app.conf.beat_schedule = {
-    # once an hour
-    "extract_data_from_elastic": {
-        "task": "greedybear.tasks.extract_data_from_elastic",
-        "schedule": crontab(minute=0),
+    # every 10 minutes
+    "extract_attacks": {
+        "task": "greedybear.tasks.extract_attacks",
+        "schedule": crontab(minute="*/10"),
+        "options": {"queue": "default"},
+    },
+    # once a day
+    "extract_sensors": {
+        "task": "greedybear.tasks.extract_sensors",
+        "schedule": crontab(hour=0),
         "options": {"queue": "default"},
     },
 }
