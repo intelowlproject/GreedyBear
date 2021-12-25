@@ -14,7 +14,7 @@ DEBUG = os.environ.get("DEBUG", False) == "True"
 
 DJANGO_LOG_DIRECTORY = "/var/log/greedybear/django"
 MOCK_CONNECTIONS = os.environ.get("MOCK_CONNECTIONS", False) == "True"
-ELASTIC_ENDPOINT = os.environ.get("ELASTIC_ENDPOINT", "").split(",")
+ELASTIC_ENDPOINT = os.getenv("ELASTIC_ENDPOINT", "").split(",")
 
 ALLOWED_HOSTS = ["*"]
 
@@ -80,7 +80,7 @@ DATABASES = {
     },
 }
 
-ELASTIC_CLIENT_TI_DB = Elasticsearch(
+ELASTIC_CLIENT = Elasticsearch(
     ELASTIC_ENDPOINT,
     maxsize=20,
     retry_on_timeout=True,

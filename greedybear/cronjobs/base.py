@@ -18,7 +18,7 @@ class ExtractDataFromElastic(metaclass=ABCMeta):
 
     def __init__(self):
         self.log = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
-        self.elastic_client = settings.ELASTIC_CLIENT_TI_DB
+        self.elastic_client = settings.ELASTIC_CLIENT
         self.success = False
 
     def _healthcheck(self):
