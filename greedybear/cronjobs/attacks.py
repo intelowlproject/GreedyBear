@@ -224,12 +224,16 @@ class ExtractAttacks(ExtractDataFromElastic):
         self.log.info(f"extracting scanner IP from correlation_id {correlation_id}")
         scanner_ip = None
         search = self._base_search(self.honeypot)
-        search = search.filter("term", correlation_id=correlation_id)
+        search = search.filter(
+            "term", **{"correlation_id.keyword": str(correlation_id)}
+        )
         search = search.filter("term", reason="request")
         search = search.source(["src_ip"])
+        # only one should be available
         hits = search[:10].execute()
         for hit in hits:
             scanner_ip = hit.src_ip
+            break
 
         if scanner_ip:
             self.log.info(
