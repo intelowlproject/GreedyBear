@@ -36,6 +36,7 @@ services:
     restart: unless-stopped
     volumes:
       - ../configuration/nginx/http.conf:/etc/nginx/conf.d/default.conf
+      - /usr/local/share/ca-certificates:/usr/local/share/ca-certificates
       - nginx_logs:/var/log/nginx
       - static_content:/var/www/static
     ports:
