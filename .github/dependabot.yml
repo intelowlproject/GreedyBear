@@ -1,0 +1,35 @@
+version: 2
+updates:
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "tuesday"
+    target-branch: "dev"
+    open-pull-requests-limit: 1
+    ignore:
+      # ignore all patch updates since we are using ~=
+      # this does not work for security updates
+      - dependency-name: "*"
+        update-types: [ "version-update:semver-patch" ]
+
+  - package-ecosystem: "docker"
+    directory: "/docker"
+    schedule:
+      interval: "weekly"
+      day: "tuesday"
+    target-branch: "dev"
+    open-pull-requests-limit: 1
+    ignore:
+      # ignore all patch updates since we are using ~=
+      # this does not work for security updates
+      - dependency-name: "*"
+        update-types: [ "version-update:semver-patch" ]
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "tuesday"
+    target-branch: "dev"
+    open-pull-requests-limit: 1
