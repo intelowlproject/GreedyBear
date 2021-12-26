@@ -1,9 +1,14 @@
 from __future__ import absolute_import, unicode_literals
 
+import os
+
 from celery import Celery
 from celery.schedules import crontab
+from celery.signals import setup_logging
 from django.conf import settings
 from kombu import Exchange, Queue
+
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "greedybear.settings")
 
 app = Celery("greedybear")
 
@@ -37,6 +42,15 @@ app.conf.update(
     # value is in kilobytes
     worker_max_memory_per_child=4000,
 )
+
+
+@setup_logging.connect
+def setup_loggers(*args, **kwargs):
+    from logging.config import dictConfig
+
+    from django.conf import settings
+
+    dictConfig(settings.LOGGING)
 
 
 app.conf.beat_schedule = {
