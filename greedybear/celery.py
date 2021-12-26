@@ -7,7 +7,7 @@ from celery.schedules import crontab
 from django.conf import settings
 from kombu import Exchange, Queue
 
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "intel_owl.settings")
+os.environ.setdefault("DJANGO_SETTINGS_MODULE", "greedybear.settings")
 
 app = Celery("greedybear")
 

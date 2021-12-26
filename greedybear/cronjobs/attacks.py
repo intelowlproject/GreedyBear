@@ -191,6 +191,11 @@ class ExtractAttacks(ExtractDataFromElastic):
             else:
                 ioc_instance.last_seen = datetime.utcnow()
                 ioc_instance.times_seen += 1
+                self.log.info(
+                    f"today: {today}, type: {str(today)},"
+                    f" days_seen type: {type(ioc_instance.days_seen)},"
+                    f" first days_seen type: {type(ioc_instance.days_seen[0])}"
+                )
                 if today not in ioc_instance.days_seen:
                     ioc_instance.days_seen.append(today)
                     ioc_instance.number_of_days_seen += 1
