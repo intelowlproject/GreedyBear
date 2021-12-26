@@ -218,7 +218,7 @@ class ExtractAttacks(ExtractDataFromElastic):
     def _get_attack_type(attack_type):
         try:
             at_instance = AttackTypes.objects.get(name=attack_type)
-        except Sensors.DoesNotExist:
+        except AttackTypes.DoesNotExist:
             at_instance = AttackTypes(attack_type)
             at_instance.save()
 
@@ -227,7 +227,7 @@ class ExtractAttacks(ExtractDataFromElastic):
     def _get_honeypot(self):
         try:
             h_instance = Honeypots.objects.get(name=self.honeypot)
-        except Sensors.DoesNotExist:
+        except Honeypots.DoesNotExist:
             h_instance = Honeypots(self.honeypot)
             h_instance.save()
 
