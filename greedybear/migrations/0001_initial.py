@@ -61,7 +61,7 @@ class Migration(migrations.Migration):
                 (
                     "honeypots",
                     django.contrib.postgres.fields.ArrayField(
-                        base_field=models.CharField(max_length=900),
+                        base_field=models.CharField(max_length=900, blank=True),
                         blank=True,
                         default=list,
                         null=True,
@@ -71,7 +71,7 @@ class Migration(migrations.Migration):
                 (
                     "attack_types",
                     django.contrib.postgres.fields.ArrayField(
-                        base_field=models.CharField(max_length=32),
+                        base_field=models.CharField(max_length=32, blank=True),
                         size=None,
                         default=list,
                     ),
@@ -79,7 +79,7 @@ class Migration(migrations.Migration):
                 (
                     "related_urls",
                     django.contrib.postgres.fields.ArrayField(
-                        base_field=models.CharField(max_length=900),
+                        base_field=models.CharField(max_length=900, blank=True),
                         blank=True,
                         default=list,
                         null=True,
