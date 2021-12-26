@@ -139,18 +139,6 @@ LOGGING = {
         },
     },
     "handlers": {
-        "celery": {
-            "level": INFO_OR_DEBUG_LEVEL,
-            "class": "logging.handlers.WatchedFileHandler",
-            "filename": f"{DJANGO_LOG_DIRECTORY}/celery.log",
-            "formatter": "stdfmt",
-        },
-        "celery_error": {
-            "level": "ERROR",
-            "class": "logging.handlers.WatchedFileHandler",
-            "filename": f"{DJANGO_LOG_DIRECTORY}/celery_errors.log",
-            "formatter": "stdfmt",
-        },
         "elasticsearch": {
             "level": INFO_OR_DEBUG_LEVEL,
             "class": "logging.handlers.WatchedFileHandler",
@@ -193,6 +181,18 @@ LOGGING = {
             "filename": f"{DJANGO_LOG_DIRECTORY}/greedybear_errors.log",
             "formatter": "stdfmt",
         },
+        "celery": {
+            "level": INFO_OR_DEBUG_LEVEL,
+            "class": "logging.handlers.WatchedFileHandler",
+            "filename": f"{DJANGO_LOG_DIRECTORY}/celery.log",
+            "formatter": "stdfmt",
+        },
+        "celery_error": {
+            "level": "ERROR",
+            "class": "logging.handlers.WatchedFileHandler",
+            "filename": f"{DJANGO_LOG_DIRECTORY}/celery_errors.log",
+            "formatter": "stdfmt",
+        },
         "django_unhandled_errors": {
             "level": "ERROR",
             "class": "logging.handlers.WatchedFileHandler",
@@ -201,11 +201,6 @@ LOGGING = {
         },
     },
     "loggers": {
-        "celery": {
-            "handlers": ["celery", "celery_error"],
-            "level": INFO_OR_DEBUG_LEVEL,
-            "propagate": True,
-        },
         "elasticsearch": {
             "handlers": ["elasticsearch"],
             "level": INFO_OR_DEBUG_LEVEL,
@@ -223,6 +218,11 @@ LOGGING = {
         },
         "greedybear": {
             "handlers": ["greedybear", "greedybear_error"],
+            "level": INFO_OR_DEBUG_LEVEL,
+            "propagate": True,
+        },
+        "celery": {
+            "handlers": ["celery", "celery_error"],
             "level": INFO_OR_DEBUG_LEVEL,
             "propagate": True,
         },

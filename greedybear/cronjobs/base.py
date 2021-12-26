@@ -4,13 +4,14 @@ from abc import ABCMeta, abstractmethod
 from django.conf import settings
 from elasticsearch_dsl import Search
 
+logger = logging.getLogger(__name__)
+
 
 class ExtractDataFromElastic(metaclass=ABCMeta):
     class ElasticServerDownException(Exception):
         pass
 
     def __init__(self):
-        self.log = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
         self.elastic_client = settings.ELASTIC_CLIENT
         self.success = False
 
@@ -27,7 +28,7 @@ class ExtractDataFromElastic(metaclass=ABCMeta):
         :return: Search instance
         """
         search = Search(using=self.elastic_client, index="logstash-*")
-        self.log.debug(f"minutes_back_to_lookup: {self.minutes_back_to_lookup}")
+        logger.debug(f"minutes_back_to_lookup: {self.minutes_back_to_lookup}")
         gte_date = f"now-{self.minutes_back_to_lookup}m/m"
         search = search.filter(
             "range", **{"timestamp": {"gte": gte_date, "lte": "now/m"}}
@@ -46,11 +47,11 @@ class ExtractDataFromElastic(metaclass=ABCMeta):
 
     def execute(self):
         try:
-            self.log.info("Starting execution")
+            logger.info("Starting execution")
             self.run()
         except Exception as e:
-            self.log.exception(e)
+            logger.exception(e)
         else:
             self.success = True
         finally:
-            self.log.info("Finished execution")
+            logger.info("Finished execution")

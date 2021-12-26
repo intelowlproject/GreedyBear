@@ -1,5 +1,10 @@
-from greedybear.cronjobs.base import ExtractDataFromElastic, Honeypot
+import logging
+
+from greedybear.cronjobs.base import ExtractDataFromElastic
+from greedybear.cronjobs.honeypots import Honeypot
 from greedybear.models import Sensors
+
+logger = logging.getLogger(__name__)
 
 
 class ExtractSensors(ExtractDataFromElastic):
@@ -30,9 +35,9 @@ class ExtractSensors(ExtractDataFromElastic):
         agg_response = search[0:0].execute()
         for tag in agg_response.aggregations.sensors_ips.buckets:
             if not tag.key:
-                self.log.warning(f"why tag.key is empty? tag: {tag}")
+                logger.warning(f"why tag.key is empty? tag: {tag}")
                 continue
-            self.log.info(f"found IP {tag.key} by honeypot {honeypot.name}")
+            logger.info(f"found IP {tag.key} by honeypot {honeypot.name}")
             try:
                 Sensors.objects.get(address=tag.key)
             except Sensors.DoesNotExist:
@@ -40,7 +45,7 @@ class ExtractSensors(ExtractDataFromElastic):
                 sensor.save()
                 added_sensors += 1
 
-        self.log.info(f"added {added_sensors} new sensors in the database")
+        logger.info(f"added {added_sensors} new sensors in the database")
 
     def run(self):
         self._healthcheck()
