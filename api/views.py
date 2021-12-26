@@ -3,14 +3,14 @@ import logging
 from datetime import datetime, timedelta
 
 from django.http import (
-    HttpResponse,
     HttpResponseBadRequest,
     HttpResponseServerError,
+    JsonResponse,
     StreamingHttpResponse,
 )
 from django.views.decorators.http import require_http_methods
 
-from greedybear.consts import GET
+from greedybear.consts import GET, PAYLOAD_REQUEST, SCANNER
 from greedybear.models import IOC
 
 logger = logging.getLogger(__name__)
@@ -45,19 +45,19 @@ def feeds(request, feed_type, attack_type, age, format_):
 
     feed_choices = "log4j"
     if feed_type not in feed_choices:
-        return HttpResponseBadRequest()
+        return _formatted_bad_request(format_)
 
     attack_types = ["scanner", "payload_request", "all"]
     if attack_type not in attack_types:
-        return HttpResponseBadRequest()
+        return _formatted_bad_request(format_)
 
     age_choices = ["persistent", "recent"]
     if age not in age_choices:
-        return HttpResponseBadRequest()
+        return _formatted_bad_request(format_)
 
     formats = ["csv", "json"]
     if format_ not in formats:
-        return HttpResponseBadRequest()
+        return _formatted_bad_request(format_)
 
     query_dict = {}
 
@@ -95,17 +95,25 @@ def feeds(request, feed_type, attack_type, age, format_):
         pseudo_buffer = Echo()
         writer = csv.writer(pseudo_buffer, quoting=csv.QUOTE_NONE)
         return StreamingHttpResponse((writer.writerow(row) for row in rows), status=200)
-
     else:
         # json
         json_list = []
         for ioc in iocs:
             json_item = {
                 "value": ioc.name,
-                "attack_types": ioc.attack_types,
+                SCANNER: ioc.scanner,
+                PAYLOAD_REQUEST: ioc.payload_request,
                 "first_seen": ioc.first_seen.strftime("%Y-%m-%d"),
                 "last_seen": ioc.last_seen.strftime("%Y-%m-%d"),
                 "times_seen": ioc.times_seen,
             }
             json_list.append(json_item)
-        return HttpResponse(json_list)
+        return JsonResponse(json_list)
+
+
+def _formatted_bad_request(format_):
+    if format_ == "csv":
+        return HttpResponseBadRequest
+    else:
+        # json
+        return JsonResponse({}, status=400)
