@@ -43,7 +43,7 @@ def feeds(request, feed_type, attack_type, age, format_):
         f" Age: {age}, format: {format_}"
     )
 
-    feed_choices = "log4j"
+    feed_choices = ["log4j", "cowrie"]
     if feed_type not in feed_choices:
         return _formatted_bad_request(format_)
 
@@ -61,7 +61,7 @@ def feeds(request, feed_type, attack_type, age, format_):
 
     query_dict = {}
 
-    if feed_type == "log4j":
+    if feed_type:
         query_dict[feed_type] = True
     else:
         logger.error("this is impossible. check the code")

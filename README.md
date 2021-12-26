@@ -1,6 +1,6 @@
 # GreedyBear
 
-The project goal is to extract data of the attacks detected by a TPOT or a cluster of them and to generate some feeds that can be used to prevent and detect attacks.
+The project goal is to extract data of the attacks detected by a [TPOT](https://github.com/telekom-security/tpotce) or a cluster of them and to generate some feeds that can be used to prevent and detect attacks.
 
 ## Available Feeds
 The feeds are reachable through the following URL: 
