@@ -200,7 +200,7 @@ class ExtractAttacks(ExtractDataFromElastic):
                     ioc_instance.attack_types.append(attack_type)
                 if related_urls:
                     for related_url in related_urls:
-                        if related_url not in ioc_instance.related_urls:
+                        if related_url and related_url not in ioc_instance.related_urls:
                             ioc_instance.related_urls.append(related_url)
 
             if ioc_instance:

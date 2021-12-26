@@ -74,6 +74,7 @@ class Migration(migrations.Migration):
                         base_field=models.CharField(blank=True, max_length=900),
                         blank=True,
                         size=None,
+                        default=list,
                     ),
                 ),
                 (

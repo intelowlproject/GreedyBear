@@ -25,6 +25,5 @@ class IOC(models.Model):
     )
     related_ioc = models.ManyToManyField("self", blank=True, symmetrical=True)
     related_urls = pg_fields.ArrayField(
-        models.CharField(max_length=900, blank=True),
-        blank=True,
+        models.CharField(max_length=900, blank=True), blank=True, default=list
     )
