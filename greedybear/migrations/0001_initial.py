@@ -47,7 +47,7 @@ class Migration(migrations.Migration):
                 (
                     "days_seen",
                     django.contrib.postgres.fields.ArrayField(
-                        base_field=models.DateField(), default=list, size=None
+                        base_field=models.DateField(), blank=True, size=None
                     ),
                 ),
                 ("number_of_days_seen", models.IntegerField(default=1)),
@@ -57,8 +57,6 @@ class Migration(migrations.Migration):
                     django.contrib.postgres.fields.ArrayField(
                         base_field=models.CharField(blank=True, max_length=900),
                         blank=True,
-                        default=list,
-                        null=True,
                         size=None,
                     ),
                 ),
@@ -66,7 +64,7 @@ class Migration(migrations.Migration):
                     "attack_types",
                     django.contrib.postgres.fields.ArrayField(
                         base_field=models.CharField(blank=True, max_length=32),
-                        default=list,
+                        blank=True,
                         size=None,
                     ),
                 ),
@@ -75,8 +73,6 @@ class Migration(migrations.Migration):
                     django.contrib.postgres.fields.ArrayField(
                         base_field=models.CharField(blank=True, max_length=900),
                         blank=True,
-                        default=list,
-                        null=True,
                         size=None,
                     ),
                 ),
