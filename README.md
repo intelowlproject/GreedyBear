@@ -10,7 +10,8 @@ https://<greedybear_site>/api/feeds/<feed_type>/<attack_type>/<age>.<format>
 
 The available `feed_type` are:
 
-* `log4j`: attacks detected from the Log4pot.
+* `log4j`: attacks detected from the [Log4pot](https://github.com/thomaspatzke/Log4Pot).
+* `cowrie`: attacks detected from the [Cowrie Honeypot](https://github.com/cowrie/cowrie)
 
 The available `attack_type` are:
 

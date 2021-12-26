@@ -1,13 +1,13 @@
 from unittest import TestCase
 
-from greedybear.cronjobs import attacks
+from greedybear.cronjobs import cowrie
 from greedybear.models import IOC
 
 
-class AttacksTestCase(TestCase):
+class Log4PotTestCase(TestCase):
     def test_sensors(self, *args, **kwargs):
-        a = attacks.ExtractAttacks()
+        a = cowrie.ExtractCowrie()
         a.execute()
         self.assertTrue(a.success)
-        iocs = IOC.objects.all()
+        iocs = IOC.objects.filter(cowrie=True)
         self.assertTrue(iocs)
