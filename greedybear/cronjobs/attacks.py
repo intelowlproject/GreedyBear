@@ -192,10 +192,6 @@ class ExtractAttacks(ExtractDataFromElastic):
                 if today not in ioc_instance.days_seen:
                     ioc_instance.days_seen.append(today)
                     ioc_instance.number_of_days_seen += 1
-                if self.honeypot.name not in ioc_instance.honeypots:
-                    ioc_instance.honeypots.append(self.honeypot.name)
-                if attack_type not in ioc_instance.attack_types:
-                    ioc_instance.attack_types.append(attack_type)
                 if related_urls:
                     for related_url in related_urls:
                         if related_url and related_url not in ioc_instance.related_urls:

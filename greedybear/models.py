@@ -24,8 +24,8 @@ class IOC(models.Model):
     days_seen = pg_fields.ArrayField(models.DateField(), blank=True)
     number_of_days_seen = models.IntegerField(default=1)
     times_seen = models.IntegerField(default=1)
-    honeypots = models.ManyToManyField("self", blank=True, symmetrical=True)
-    attack_types = models.ManyToManyField("self", blank=True, symmetrical=True)
+    honeypots = models.ManyToManyField(Honeypots, blank=True, symmetrical=True)
+    attack_types = models.ManyToManyField(AttackTypes, blank=True, symmetrical=True)
     related_ioc = models.ManyToManyField("self", blank=True, symmetrical=True)
     related_urls = pg_fields.ArrayField(
         models.CharField(max_length=900, blank=True), blank=True, default=list
