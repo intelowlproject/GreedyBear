@@ -73,13 +73,12 @@ class ExtractCowrie(ExtractAttacks):
         search = search.source(["src_ip", "url"])
         hits = search[:10].execute()
         for hit in hits:
-            logger.info(
-                f"found IP {hit.src_ip} trying to execute download from {hit.url}"
-            )
+            url = getattr(hit, "url", None)
+            logger.info(f"found IP {hit.src_ip} trying to execute download from {url}")
             scanner_ip = str(hit.src_ip)
             self._add_ioc(scanner_ip, SCANNER, cowrie=True)
             self.added_ip_downloads += 1
-            download_url = str(hit.url)
+            download_url = str(url)
             if download_url:
                 hostname = urlparse(download_url).hostname
                 self._add_ioc(
