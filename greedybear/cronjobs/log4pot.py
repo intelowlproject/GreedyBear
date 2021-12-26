@@ -6,7 +6,7 @@ from greedybear.consts import PAYLOAD_REQUEST, SCANNER
 from greedybear.cronjobs.attacks import ExtractAttacks
 from greedybear.cronjobs.honeypots import Honeypot
 from greedybear.models import IOC
-from greedybear.regex import REGEX_CVE_BASE64COMMAND, REGEX_CVE_LOG4J, REGEX_URL
+from greedybear.regex import REGEX_CVE_BASE64COMMAND, REGEX_CVE_URL, REGEX_URL
 
 
 class ExtractLog4Pot(ExtractAttacks):
@@ -32,7 +32,7 @@ class ExtractLog4Pot(ExtractAttacks):
         for hit in hits:
             scanner_ip = self._get_scanner_ip(hit.correlation_id)
 
-            match = re.search(REGEX_CVE_LOG4J, hit.deobfuscated_payload)
+            match = re.search(REGEX_CVE_URL, hit.deobfuscated_payload)
             if match:
                 # we are losing the protocol but that's ok for now
                 url = match.group()

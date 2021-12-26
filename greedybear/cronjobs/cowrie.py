@@ -1,9 +1,11 @@
+import re
 from urllib.parse import urlparse
 
 from greedybear.consts import PAYLOAD_REQUEST, SCANNER
 from greedybear.cronjobs.attacks import ExtractAttacks
 from greedybear.cronjobs.honeypots import Honeypot
 from greedybear.models import IOC
+from greedybear.regex import REGEX_URL_PROTOCOL
 
 
 class ExtractCowrie(ExtractAttacks):
@@ -11,6 +13,7 @@ class ExtractCowrie(ExtractAttacks):
         super().__init__()
         self.cowrie = Honeypot("Cowrie")
         self.added_scanners = 0
+        self.payloads_in_message = 0
         self.added_ip_downloads = 0
         self.added_url_downloads = 0
 
@@ -18,7 +21,9 @@ class ExtractCowrie(ExtractAttacks):
         self._get_scanners()
         self._get_url_downloads()
         self.log.info(
-            f"added {self.added_scanners} scanners, {self.added_ip_downloads} IP that tried to download,"
+            f"added {self.added_scanners} scanners, "
+            f"{self.payloads_in_message} payload found in messages,"
+            f" {self.added_ip_downloads} IP that tried to download,"
             f" {self.added_url_downloads} URL to download"
         )
 
@@ -40,14 +45,46 @@ class ExtractCowrie(ExtractAttacks):
                 self.log.warning(f"why tag.key is empty? tag: {tag}")
                 continue
             self.log.info(f"found IP {tag.key} by honeypot cowrie")
-            self._add_ioc(str(tag.key), SCANNER, cowrie=True)
+            scanner_ip = str(tag.key)
+            self._add_ioc(scanner_ip, SCANNER, cowrie=True)
             self.added_scanners += 1
+            self._extract_possible_payload_in_messages(scanner_ip)
+
+    def _extract_possible_payload_in_messages(self, scanner_ip):
+        # looking for URLs inside attacks payloads
+        search = self._base_search(self.cowrie)
+        search = search.filter(
+            "terms", eventid=["cowrie.login.failed", "cowrie.session.file_upload"]
+        )
+        search = search.filter("term", src_ip=scanner_ip)
+        search = search.source(["message"])
+        hits = search[:100].execute()
+        for hit in hits:
+            match_url = re.search(REGEX_URL_PROTOCOL, hit.message)
+            if match_url:
+                payload_url = match_url.group()
+                self.log.info(
+                    f"found hidden URL {payload_url}"
+                    f" in payload from attacker {scanner_ip}"
+                )
+                payload_hostname = urlparse(payload_url).hostname
+                self.log.info(
+                    f"extracted hostname {payload_hostname} from {payload_url}"
+                )
+                self._add_ioc(
+                    payload_hostname,
+                    PAYLOAD_REQUEST,
+                    related_urls=[payload_url],
+                    cowrie=True,
+                )
+                self._add_fks(scanner_ip, payload_hostname)
 
     def _get_url_downloads(self):
         search = self._base_search(self.cowrie)
         search = search.filter("term", eventid="cowrie.session.file_download")
+        search = search.filter("exists", field="url")
         search = search.source(["src_ip", "url"])
-        hits = search[:10].execute()
+        hits = search[:1000].execute()
         for hit in hits:
             self.log.info(
                 f"found IP {hit.src_ip} trying to execute download from {hit.url}"
@@ -56,28 +93,6 @@ class ExtractCowrie(ExtractAttacks):
             self._add_ioc(scanner_ip, SCANNER, cowrie=True)
             self.added_ip_downloads += 1
             download_url = str(hit.url)
-            if download_url:
-                hostname = urlparse(download_url).hostname
-                self._add_ioc(
-                    hostname, PAYLOAD_REQUEST, related_urls=[download_url], cowrie=True
-                )
-                self.added_url_downloads += 1
-                self._add_fks(scanner_ip, hostname)
-
-    def _get_file_uploads(self):
-        search = self._base_search(self.cowrie)
-        search = search.filter("term", eventid="cowrie.session.file_download")
-        search = search.source(["src_ip", "url"])
-        hits = search[:10].execute()
-        for hit in hits:
-            url = getattr(hit, "url", None)
-            self.log.info(
-                f"found IP {hit.src_ip} trying to execute download from {url}"
-            )
-            scanner_ip = str(hit.src_ip)
-            self._add_ioc(scanner_ip, SCANNER, cowrie=True)
-            self.added_ip_downloads += 1
-            download_url = str(url)
             if download_url:
                 hostname = urlparse(download_url).hostname
                 self._add_ioc(
