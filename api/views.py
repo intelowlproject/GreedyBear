@@ -75,7 +75,7 @@ def feeds(request, feed_type, attack_type, age, format_):
         query_dict["last_seen__gte"] = fourteen_days_ago
         # ... and at least detected 10 different days
         number_of_days_seen = 10
-        query_dict["numer_of_days_seen__gte"] = number_of_days_seen
+        query_dict["number_of_days_seen__gte"] = number_of_days_seen
         # order by the number of times seen
         iocs = IOC.objects.filter(**query_dict).order_by("-times_seen")[:100]
     else:
