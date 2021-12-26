@@ -3,7 +3,8 @@ import re
 from urllib.parse import urlparse
 
 from greedybear.consts import PAYLOAD_REQUEST, SCANNER
-from greedybear.cronjobs.base import ExtractAttacks, Honeypot
+from greedybear.cronjobs.attacks import ExtractAttacks
+from greedybear.cronjobs.honeypots import Honeypot
 from greedybear.models import IOC
 from greedybear.regex import REGEX_CVE_BASE64COMMAND, REGEX_CVE_LOG4J, REGEX_URL
 
