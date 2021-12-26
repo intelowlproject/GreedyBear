@@ -74,11 +74,6 @@ services:
     command: /usr/local/bin/celery -A greedybear.celery worker -n worker_default --uid www-data --gid www-data --time-limit=10000 --pidfile= -Ofair -Q default -E -c 1
     volumes:
       - generic_logs:/var/log/intel_owl
-    logging:
-      driver: "json-file"
-      options:
-        max-file: "5"
-        max-size: "10m"
     env_file:
       - env_file
     depends_on:
