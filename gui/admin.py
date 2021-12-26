@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from greedybear.models import IOC, Honeypots
+from greedybear.models import IOC
 
 # there is no need to view the sensors in the admin page.
 # @admin.register(Sensors)
@@ -22,8 +22,3 @@ class IOCModelAdmin(admin.ModelAdmin):
         "scanner",
         "payload_request",
     ]
-
-
-@admin.register(Honeypots)
-class HoneypotsModelAdmin(admin.ModelAdmin):
-    list_display = ["name"]
