@@ -27,26 +27,32 @@ class Echo:
 
 
 @require_http_methods([GET])
-def feeds(request, age, attack_type, format_):
+def feeds(request, feed_type, attack_type, age, format_):
     """
 
     :param request:
-    :param age:
+    :param feed_type:
     :param attack_type:
+    :param age:
     :param format_:
     :return:
     """
     source = str(request.user)
     logger.info(
-        f"request from {source}. Age: {age}, attack_type: {attack_type}, format: {format_}"
+        f"request from {source}. Feed type: {feed_type}, attack_type: {attack_type},"
+        f" Age: {age}, format: {format_}"
     )
 
-    age_choices = ["persistent", "recent"]
-    if age not in age_choices:
+    feed_choices = "log4j"
+    if feed_type not in feed_choices:
         return HttpResponseBadRequest()
 
     attack_types = ["scanner", "payload_request", "all"]
     if attack_type not in attack_types:
+        return HttpResponseBadRequest()
+
+    age_choices = ["persistent", "recent"]
+    if age not in age_choices:
         return HttpResponseBadRequest()
 
     formats = ["csv", "json"]
@@ -67,8 +73,11 @@ def feeds(request, age, attack_type, format_):
         # scanners detected in the last 14 days
         fourteen_days_ago = datetime.utcnow() - timedelta(days=14)
         query_dict["last_seen__gte"] = fourteen_days_ago
+        # ... and at least detected 10 different days
+        number_of_days_seen = 10
+        query_dict["numer_of_days_seen__gte"] = number_of_days_seen
         # order by the number of times seen
-        iocs = IOC.objects.filter(**query_dict).order_by("-times_seen")[:1000]
+        iocs = IOC.objects.filter(**query_dict).order_by("-times_seen")[:100]
     else:
         logger.error("this is impossible. check the code")
         return HttpResponseServerError()
@@ -88,8 +97,8 @@ def feeds(request, age, attack_type, format_):
             json_item = {
                 "value": ioc.name,
                 "attack_types": ioc.attack_types,
-                "first_seen": ioc.first_seen,
-                "last_seen": ioc.last_seen,
+                "first_seen": ioc.first_seen.strftime("%Y-%m-%d"),
+                "last_seen": ioc.last_seen.strftime("%Y-%m-%d"),
                 "times_seen": ioc.times_seen,
             }
             json_list.append(json_item)

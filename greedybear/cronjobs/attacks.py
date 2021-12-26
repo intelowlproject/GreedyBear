@@ -1,6 +1,6 @@
 import base64
-import datetime
 import re
+from datetime import datetime
 from ipaddress import IPv4Address
 from urllib.parse import urlparse
 
@@ -173,6 +173,7 @@ class ExtractAttacks(ExtractDataFromElastic):
             f"saving ioc {ioc} for attack_type {attack_type} and related_urls {related_urls}"
         )
         try:
+            today = datetime.today()
             ioc_type = self._get_ioc_type(ioc)
             try:
                 ioc_instance = IOC.objects.get(name=ioc)
@@ -183,12 +184,16 @@ class ExtractAttacks(ExtractDataFromElastic):
                     type=ioc_type,
                     honeypots=[self.honeypot.name],
                     attack_types=[attack_type],
+                    days_seen=[today],
                 )
                 if related_urls:
                     ioc_instance.related_urls = related_urls
             else:
-                ioc_instance.last_seen = datetime.datetime.utcnow()
+                ioc_instance.last_seen = datetime.utcnow()
                 ioc_instance.times_seen += 1
+                if today not in ioc_instance.days_seen:
+                    ioc_instance.days_seen.append(today)
+                    ioc_instance.number_of_days_seen += 1
                 if self.honeypot.name not in ioc_instance.honeypots:
                     ioc_instance.honeypots.append(self.honeypot.name)
                 if attack_type not in ioc_instance.attack_types:

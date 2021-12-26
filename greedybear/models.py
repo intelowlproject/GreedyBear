@@ -13,6 +13,8 @@ class IOC(models.Model):
     type = models.CharField(max_length=32, blank=False)
     first_seen = models.DateTimeField(blank=False, default=datetime.utcnow)
     last_seen = models.DateTimeField(blank=False, default=datetime.utcnow)
+    days_seen = pg_fields.ArrayField(models.DateField(), default=list)
+    number_of_days_seen = models.IntegerField(default=1)
     times_seen = models.IntegerField(default=1)
     honeypots = pg_fields.ArrayField(
         models.CharField(max_length=900),
@@ -20,7 +22,7 @@ class IOC(models.Model):
         default=list,
         null=True,
     )
-    attack_types = pg_fields.ArrayField(models.CharField(max_length=32, blank=False))
+    attack_types = pg_fields.ArrayField(models.CharField(max_length=32), default=list)
     related_ioc = models.ManyToManyField("self", blank=True, symmetrical=True)
     related_urls = pg_fields.ArrayField(
         models.CharField(max_length=900),

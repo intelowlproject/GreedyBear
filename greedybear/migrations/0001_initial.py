@@ -50,6 +50,13 @@ class Migration(migrations.Migration):
                     "last_seen",
                     models.DateTimeField(blank=False, default=datetime.utcnow),
                 ),
+                (
+                    "days_seen",
+                    django.contrib.postgres.fields.ArrayField(
+                        base_field=models.DateField(), size=None, default=list
+                    ),
+                ),
+                ("number_of_days_seen", models.IntegerField(default=1)),
                 ("times_seen", models.IntegerField(default=1)),
                 (
                     "honeypots",
@@ -66,6 +73,7 @@ class Migration(migrations.Migration):
                     django.contrib.postgres.fields.ArrayField(
                         base_field=models.CharField(max_length=32),
                         size=None,
+                        default=list,
                     ),
                 ),
                 (
