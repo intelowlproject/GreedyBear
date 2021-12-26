@@ -108,7 +108,7 @@ def feeds(request, feed_type, attack_type, age, format_):
                 "times_seen": ioc.times_seen,
             }
             json_list.append(json_item)
-        return JsonResponse(json_list)
+        return JsonResponse({"iocs": json_list})
 
 
 def _formatted_bad_request(format_):
