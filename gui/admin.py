@@ -1,11 +1,11 @@
 from django.contrib import admin
 
-from greedybear.models import IOC, Sensors
+from greedybear.models import IOC
 
-
-@admin.register(Sensors)
-class SensorsModelAdmin(admin.ModelAdmin):
-    list_display = [field.name for field in Sensors._meta.get_fields()]
+# there is no need to view the sensors in the admin page.
+# @admin.register(Sensors)
+# class SensorsModelAdmin(admin.ModelAdmin):
+#     list_display = [field.name for field in Sensors._meta.get_fields()]
 
 
 @admin.register(IOC)
@@ -15,6 +15,8 @@ class IOCModelAdmin(admin.ModelAdmin):
         "type",
         "first_seen",
         "last_seen",
+        "days_seen",
+        "number_of_days_seen",
         "times_seen",
         "honeypots",
         "attack_types",
