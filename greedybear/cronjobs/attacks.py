@@ -1,4 +1,3 @@
-import logging
 from abc import ABCMeta
 from datetime import datetime
 from ipaddress import IPv4Address
@@ -7,8 +6,6 @@ from greedybear.consts import PAYLOAD_REQUEST, SCANNER
 from greedybear.cronjobs.base import ExtractDataFromElastic
 from greedybear.cronjobs.sensors import ExtractSensors
 from greedybear.models import IOC, Sensors
-
-logger = logging.getLogger(__name__)
 
 
 class ExtractAttacks(ExtractDataFromElastic, metaclass=ABCMeta):
@@ -28,7 +25,7 @@ class ExtractAttacks(ExtractDataFromElastic, metaclass=ABCMeta):
         return minutes
 
     def _add_ioc(self, ioc, attack_type, related_urls=None, log4j=False, cowrie=False):
-        logger.info(
+        self.log.info(
             f"saving ioc {ioc} for attack_type {attack_type} and related_urls {related_urls}"
         )
         try:
@@ -71,7 +68,7 @@ class ExtractAttacks(ExtractDataFromElastic, metaclass=ABCMeta):
                 ioc_instance.save()
 
         except self.IOCWhitelist:
-            logger.info(f"not saved {ioc} because is whitelisted")
+            self.log.info(f"not saved {ioc} because is whitelisted")
 
     def _check_if_allowed(self, ioc):
         try:

@@ -1,12 +1,9 @@
-import logging
 from urllib.parse import urlparse
 
 from greedybear.consts import PAYLOAD_REQUEST, SCANNER
 from greedybear.cronjobs.attacks import ExtractAttacks
 from greedybear.cronjobs.honeypots import Honeypot
 from greedybear.models import IOC
-
-logger = logging.getLogger(__name__)
 
 
 class ExtractCowrie(ExtractAttacks):
@@ -20,7 +17,7 @@ class ExtractCowrie(ExtractAttacks):
     def _cowrie_lookup(self):
         self._get_scanners()
         self._get_url_downloads()
-        logger.info(
+        self.log.info(
             f"added {self.added_scanners} scanners, {self.added_ip_downloads} IP that tried to download,"
             f" {self.added_url_downloads} URL to download"
         )
@@ -40,9 +37,9 @@ class ExtractCowrie(ExtractAttacks):
         agg_response = search[0:0].execute()
         for tag in agg_response.aggregations.attacker_ips.buckets:
             if not tag.key:
-                logger.warning(f"why tag.key is empty? tag: {tag}")
+                self.log.warning(f"why tag.key is empty? tag: {tag}")
                 continue
-            logger.info(f"found IP {tag.key} by honeypot cowrie")
+            self.log.info(f"found IP {tag.key} by honeypot cowrie")
             self._add_ioc(str(tag.key), SCANNER, cowrie=True)
             self.added_scanners += 1
 
@@ -52,7 +49,7 @@ class ExtractCowrie(ExtractAttacks):
         search = search.source(["src_ip", "url"])
         hits = search[:10].execute()
         for hit in hits:
-            logger.info(
+            self.log.info(
                 f"found IP {hit.src_ip} trying to execute download from {hit.url}"
             )
             scanner_ip = str(hit.src_ip)
@@ -74,7 +71,9 @@ class ExtractCowrie(ExtractAttacks):
         hits = search[:10].execute()
         for hit in hits:
             url = getattr(hit, "url", None)
-            logger.info(f"found IP {hit.src_ip} trying to execute download from {url}")
+            self.log.info(
+                f"found IP {hit.src_ip} trying to execute download from {url}"
+            )
             scanner_ip = str(hit.src_ip)
             self._add_ioc(scanner_ip, SCANNER, cowrie=True)
             self.added_ip_downloads += 1
@@ -88,7 +87,7 @@ class ExtractCowrie(ExtractAttacks):
                 self._add_fks(scanner_ip, hostname)
 
     def _add_fks(self, scanner_ip, hostname):
-        logger.info(
+        self.log.info(
             f"adding foreign keys for the following iocs: {scanner_ip}, {hostname}"
         )
         scanner_ip_instance = IOC.objects.filter(name=scanner_ip).first()

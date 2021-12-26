@@ -1,5 +1,4 @@
 import base64
-import logging
 import re
 from urllib.parse import urlparse
 
@@ -8,8 +7,6 @@ from greedybear.cronjobs.attacks import ExtractAttacks
 from greedybear.cronjobs.honeypots import Honeypot
 from greedybear.models import IOC
 from greedybear.regex import REGEX_CVE_BASE64COMMAND, REGEX_CVE_LOG4J, REGEX_URL
-
-logger = logging.getLogger(__name__)
 
 
 class ExtractLog4Pot(ExtractAttacks):
@@ -42,10 +39,10 @@ class ExtractLog4Pot(ExtractAttacks):
                 url_adjusted = "tcp:" + url
                 # removing double slash
                 url = url[2:]
-                logger.info(f"found URL {url} in payload for CVE-2021-44228")
+                self.log.info(f"found URL {url} in payload for CVE-2021-44228")
                 # protocol required or extraction won't work
                 hostname = urlparse(url_adjusted).hostname
-                logger.info(f"extracted hostname {hostname} from {url}")
+                self.log.info(f"extracted hostname {hostname} from {url}")
 
             # it is possible to extract another payload from base64 encoded string.
             # this is a behavior related to the attack that leverages LDAP
@@ -53,31 +50,31 @@ class ExtractLog4Pot(ExtractAttacks):
             if match_command:
                 # we are losing the protocol but that's ok for now
                 base64_encoded = match_command.group(1)
-                logger.info(
+                self.log.info(
                     f"found base64 encoded command {base64_encoded}"
                     f" in payload from base64 code for CVE-2021-44228"
                 )
                 try:
                     decoded_str = base64.b64decode(base64_encoded).decode()
-                    logger.info(
+                    self.log.info(
                         f"decoded base64 command to {decoded_str}"
                         f" from payload from base64 code for CVE-2021-44228"
                     )
                 except Exception as e:
-                    logger.warning(e, stack_info=True)
+                    self.log.warning(e, stack_info=True)
                 else:
                     match_url = re.search(REGEX_URL, decoded_str)
                     if match_url:
                         hidden_url = match_url.group()
                         if "://" not in hidden_url:
                             hidden_url = "tcp://" + hidden_url
-                        logger.info(
+                        self.log.info(
                             f"found hidden URL {hidden_url}"
                             f" in payload for CVE-2021-44228"
                         )
 
                         hidden_hostname = urlparse(hidden_url).hostname
-                        logger.info(
+                        self.log.info(
                             f"extracted hostname {hidden_hostname} from {hidden_url}"
                         )
 
@@ -108,13 +105,13 @@ class ExtractLog4Pot(ExtractAttacks):
             # once all have added, we can add the foreign keys
             self._add_fks(scanner_ip, hostname, hidden_hostname)
 
-        logger.info(
+        self.log.info(
             f"added {added_scanners} scanners, {added_payloads} payloads"
             f" and {added_hidden_payloads} hidden payloads"
         )
 
     def _add_fks(self, scanner_ip, hostname, hidden_hostname):
-        logger.info(
+        self.log.info(
             f"adding foreign keys for the following iocs: {scanner_ip}, {hostname}, {hidden_hostname}"
         )
         scanner_ip_instance = IOC.objects.filter(name=scanner_ip).first()
@@ -163,7 +160,7 @@ class ExtractLog4Pot(ExtractAttacks):
             hidden_hostname_instance.save()
 
     def _get_scanner_ip(self, correlation_id):
-        logger.info(f"extracting scanner IP from correlation_id {correlation_id}")
+        self.log.info(f"extracting scanner IP from correlation_id {correlation_id}")
         scanner_ip = None
         search = self._base_search(self.log4pot)
         search = search.filter(
@@ -178,11 +175,11 @@ class ExtractLog4Pot(ExtractAttacks):
             break
 
         if scanner_ip:
-            logger.info(
+            self.log.info(
                 f"extracted scanner IP {scanner_ip} from correlation_id {correlation_id}"
             )
         else:
-            logger.warning(
+            self.log.warning(
                 f"scanner IP was not extracted from correlation_id {correlation_id}"
             )
 
