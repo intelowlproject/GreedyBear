@@ -61,8 +61,14 @@ def feeds(request, feed_type, attack_type, age, format_):
 
     query_dict = {}
 
+    if feed_type == "log4j":
+        query_dict[feed_type] = True
+    else:
+        logger.error("this is impossible. check the code")
+        return HttpResponseServerError()
+
     if attack_type != "all":
-        query_dict["attack_types__contains"] = attack_type
+        query_dict[attack_type] = True
 
     if age == "recent":
         # everything in the last 3 days

@@ -7,7 +7,7 @@ from urllib.parse import urlparse
 from greedybear.consts import PAYLOAD_REQUEST, SCANNER
 from greedybear.cronjobs.base import ExtractDataFromElastic, Honeypot
 from greedybear.cronjobs.sensors import ExtractSensors
-from greedybear.models import IOC, AttackTypes, Honeypots, Sensors
+from greedybear.models import IOC, Sensors
 from greedybear.regex import REGEX_CVE_BASE64COMMAND, REGEX_CVE_LOG4J, REGEX_URL
 
 
@@ -197,37 +197,18 @@ class ExtractAttacks(ExtractDataFromElastic):
                         if related_url and related_url not in ioc_instance.related_urls:
                             ioc_instance.related_urls.append(related_url)
 
+            if attack_type == SCANNER:
+                ioc_instance.scanner = True
+            if attack_type == PAYLOAD_REQUEST:
+                ioc_instance.payload_request = True
+
+            ioc_instance.log4j = True
+
             if ioc_instance:
                 ioc_instance.save()
 
-            # add many-to-many relationships
-            at_instance = self._get_attack_type(attack_type)
-            if at_instance:
-                ioc_instance.attack_types.add(at_instance)
-            h_instance = self._get_honeypot()
-            if h_instance:
-                ioc_instance.honeypots.add(h_instance)
         except self.IOCWhitelist:
             self.log.info(f"not saved {ioc} because is whitelisted")
-
-    @staticmethod
-    def _get_attack_type(attack_type):
-        try:
-            at_instance = AttackTypes.objects.get(name=attack_type)
-        except AttackTypes.DoesNotExist:
-            at_instance = AttackTypes(name=attack_type)
-            at_instance.save()
-
-        return at_instance
-
-    def _get_honeypot(self):
-        try:
-            h_instance = Honeypots.objects.get(name=self.honeypot.name)
-        except Honeypots.DoesNotExist:
-            h_instance = Honeypots(name=self.honeypot.name)
-            h_instance.save()
-
-        return h_instance
 
     def _check_if_allowed(self, ioc):
         try:
