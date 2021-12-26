@@ -1,4 +1,5 @@
-from greedybear.cronjobs.base import ExtractDataFromElastic, Honeypot
+from greedybear.cronjobs.base import ExtractDataFromElastic
+from greedybear.cronjobs.honeypots import Honeypot
 from greedybear.models import Sensors
 
 

@@ -17,6 +17,7 @@ class IOC(models.Model):
     number_of_days_seen = models.IntegerField(default=1)
     times_seen = models.IntegerField(default=1)
     log4j = models.BooleanField(blank=False, default=False)
+    cowrie = models.BooleanField(blank=False, default=False)
     scanner = models.BooleanField(blank=False, default=False)
     payload_request = models.BooleanField(blank=False, default=False)
     related_ioc = models.ManyToManyField("self", blank=True, symmetrical=True)

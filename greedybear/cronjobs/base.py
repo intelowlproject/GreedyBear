@@ -1,15 +1,8 @@
 import logging
 from abc import ABCMeta, abstractmethod
-from dataclasses import dataclass
 
 from django.conf import settings
 from elasticsearch_dsl import Search
-
-
-@dataclass
-class Honeypot:
-    name: str
-    description: str = ""
 
 
 class ExtractDataFromElastic(metaclass=ABCMeta):
