@@ -222,9 +222,9 @@ class ExtractAttacks(ExtractDataFromElastic):
 
     def _get_honeypot(self):
         try:
-            h_instance = Honeypots.objects.get(name=self.honeypot)
+            h_instance = Honeypots.objects.get(name=self.honeypot.name)
         except Honeypots.DoesNotExist:
-            h_instance = Honeypots(name=self.honeypot)
+            h_instance = Honeypots(name=self.honeypot.name)
             h_instance.save()
 
         return h_instance
