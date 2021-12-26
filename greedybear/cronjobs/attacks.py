@@ -173,7 +173,7 @@ class ExtractAttacks(ExtractDataFromElastic):
             f"saving ioc {ioc} for attack_type {attack_type} and related_urls {related_urls}"
         )
         try:
-            today = datetime.today()
+            today = datetime.today().date()
             ioc_type = self._get_ioc_type(ioc)
             try:
                 ioc_instance = IOC.objects.get(name=ioc)
@@ -191,11 +191,6 @@ class ExtractAttacks(ExtractDataFromElastic):
             else:
                 ioc_instance.last_seen = datetime.utcnow()
                 ioc_instance.times_seen += 1
-                self.log.info(
-                    f"today: {today}, type: {str(today)},"
-                    f" days_seen type: {type(ioc_instance.days_seen)},"
-                    f" first days_seen type: {type(ioc_instance.days_seen[0])}"
-                )
                 if today not in ioc_instance.days_seen:
                     ioc_instance.days_seen.append(today)
                     ioc_instance.number_of_days_seen += 1

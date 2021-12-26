@@ -4,6 +4,7 @@ import os
 
 from celery import Celery
 from celery.schedules import crontab
+from celery.signals import setup_logging
 from django.conf import settings
 from kombu import Exchange, Queue
 
@@ -41,6 +42,17 @@ app.conf.update(
     # value is in kilobytes
     worker_max_memory_per_child=4000,
 )
+
+
+# set logger
+@setup_logging.connect
+def config_loggers(*args, **kwags):
+    from logging.config import dictConfig
+
+    from django.conf import settings
+
+    dictConfig(settings.LOGGING)
+
 
 app.conf.beat_schedule = {
     # every 10 minutes
