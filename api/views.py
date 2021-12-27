@@ -43,7 +43,7 @@ def feeds(request, feed_type, attack_type, age, format_):
         f" Age: {age}, format: {format_}"
     )
 
-    feed_choices = ["log4j", "cowrie"]
+    feed_choices = ["log4j", "cowrie", "all"]
     if feed_type not in feed_choices:
         return _formatted_bad_request(format_)
 
@@ -61,11 +61,8 @@ def feeds(request, feed_type, attack_type, age, format_):
 
     query_dict = {}
 
-    if feed_type:
+    if feed_type != "all":
         query_dict[feed_type] = True
-    else:
-        logger.error("this is impossible. check the code")
-        return HttpResponseServerError()
 
     if attack_type != "all":
         query_dict[attack_type] = True
