@@ -12,11 +12,13 @@ The available `feed_type` are:
 
 * `log4j`: attacks detected from the [Log4pot](https://github.com/thomaspatzke/Log4Pot).
 * `cowrie`: attacks detected from the [Cowrie Honeypot](https://github.com/cowrie/cowrie)
+* `all`: get all types at once
 
 The available `attack_type` are:
 
 * `scanner`: IP addresses captured by the honeypots while performing attacks
 * `payload_request`: IP addresses and domains extracted from payloads that would have been executed after a speficic attack would have been successful
+* `all`: get all types at once
 
 The available `age` are:
 

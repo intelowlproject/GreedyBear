@@ -1,3 +1,5 @@
+# This file is a part of GreedyBear https://github.com/honeynet/GreedyBear
+# See the file 'LICENSE' for copying permission.
 from abc import ABCMeta
 from datetime import datetime
 from ipaddress import IPv4Address
