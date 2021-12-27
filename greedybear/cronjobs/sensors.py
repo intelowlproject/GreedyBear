@@ -1,3 +1,5 @@
+# This file is a part of GreedyBear https://github.com/honeynet/GreedyBear
+# See the file 'LICENSE' for copying permission.
 from greedybear.cronjobs.base import ExtractDataFromElastic
 from greedybear.cronjobs.honeypots import Honeypot
 from greedybear.models import Sensors
