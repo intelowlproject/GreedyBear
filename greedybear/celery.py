@@ -68,4 +68,10 @@ app.conf.beat_schedule = {
         "schedule": crontab(hour=0),
         "options": {"queue": "default"},
     },
+    # once an hour
+    "monitor_honeypots": {
+        "task": "greedybear.tasks.monitor_honeypots",
+        "schedule": crontab(minute=15),
+        "options": {"queue": "default"},
+    },
 }

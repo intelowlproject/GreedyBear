@@ -19,3 +19,10 @@ def extract_sensors():
     from greedybear.cronjobs.sensors import ExtractSensors
 
     ExtractSensors().execute()
+
+
+@shared_task()
+def monitor_honeypots():
+    from greedybear.cronjobs.monitor_honeypots import MonitorHoneypots
+
+    MonitorHoneypots().execute()
