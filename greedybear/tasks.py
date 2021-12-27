@@ -6,11 +6,15 @@ from celery import shared_task
 
 
 @shared_task()
-def extract_attacks():
-    from greedybear.cronjobs.cowrie import ExtractCowrie
+def extract_log4pot():
     from greedybear.cronjobs.log4pot import ExtractLog4Pot
 
     ExtractLog4Pot().execute()
+
+
+def extract_cowrie():
+    from greedybear.cronjobs.cowrie import ExtractCowrie
+
     ExtractCowrie().execute()
 
 

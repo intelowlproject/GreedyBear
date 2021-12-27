@@ -57,9 +57,15 @@ def setup_loggers(*args, **kwargs):
 
 app.conf.beat_schedule = {
     # every 10 minutes
-    "extract_attacks": {
-        "task": "greedybear.tasks.extract_attacks",
+    "extract_log4pot": {
+        "task": "greedybear.tasks.extract_log4pot",
         "schedule": crontab(minute="*/10"),
+        "options": {"queue": "default"},
+    },
+    # every 10 minutes
+    "extract_cowrie": {
+        "task": "greedybear.tasks.extract_cowrie",
+        "schedule": crontab(minute="5/10"),
         "options": {"queue": "default"},
     },
     # once a day
