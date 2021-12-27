@@ -27,7 +27,7 @@ The available `age` are:
 
 The available `format` are:
 
-* `text`: plain text (just one line for each IOC)
+* `txt`: plain text (just one line for each IOC)
 * `csv`: CSV-like file (just one line for each IOC)
 * `json`: JSON file with additional information regarding the IOCs
 

@@ -94,7 +94,7 @@ def feeds(request, feed_type, attack_type, age, format_):
         f" by the following license: {FEEDS_LICENSE}"
     )
 
-    if format_ == "text":
+    if format_ == "txt":
         text_lines = [license_text]
         for ioc in iocs:
             text_lines.append(ioc.name)
@@ -113,7 +113,7 @@ def feeds(request, feed_type, attack_type, age, format_):
             headers={"Content-Disposition": 'attachment; filename="feeds.csv"'},
             status=200,
         )
-    else:
+    elif format_ == "json":
         # json
         json_list = []
         for ioc in iocs:
@@ -127,11 +127,14 @@ def feeds(request, feed_type, attack_type, age, format_):
             }
             json_list.append(json_item)
         return JsonResponse({"license": FEEDS_LICENSE, "iocs": json_list})
+    else:
+        logger.error("this is impossible. check the code")
+        return HttpResponseServerError()
 
 
 def _formatted_bad_request(format_):
-    if format_ == "csv":
-        return HttpResponseBadRequest
+    if format_ in ["csv", "txt"]:
+        return HttpResponseBadRequest()
     else:
         # json
         return JsonResponse({}, status=400)
