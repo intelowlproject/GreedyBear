@@ -99,7 +99,9 @@ def feeds(request, feed_type, attack_type, age, format_):
             rows.append([ioc.name])
         pseudo_buffer = Echo()
         writer = csv.writer(pseudo_buffer, quoting=csv.QUOTE_NONE)
-        return StreamingHttpResponse((writer.writerow(row) for row in rows), status=200)
+        return StreamingHttpResponse(
+            (writer.writerow(row) for row in rows), content_type="text/csv", status=200
+        )
     else:
         # json
         json_list = []
