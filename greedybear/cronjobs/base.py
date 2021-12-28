@@ -7,7 +7,7 @@ from django.conf import settings
 from elasticsearch_dsl import Search
 
 
-class ExtractDataFromElastic(metaclass=ABCMeta):
+class Cronjob(metaclass=ABCMeta):
     class ElasticServerDownException(Exception):
         pass
 

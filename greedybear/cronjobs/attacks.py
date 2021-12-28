@@ -5,12 +5,12 @@ from datetime import datetime
 from ipaddress import IPv4Address
 
 from greedybear.consts import PAYLOAD_REQUEST, SCANNER
-from greedybear.cronjobs.base import ExtractDataFromElastic
+from greedybear.cronjobs.base import Cronjob
 from greedybear.cronjobs.sensors import ExtractSensors
 from greedybear.models import IOC, Sensors
 
 
-class ExtractAttacks(ExtractDataFromElastic, metaclass=ABCMeta):
+class ExtractAttacks(Cronjob, metaclass=ABCMeta):
     class IOCWhitelist(Exception):
         pass
 

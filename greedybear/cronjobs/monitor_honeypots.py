@@ -1,7 +1,9 @@
-from greedybear.cronjobs.base import ExtractDataFromElastic
+# This file is a part of GreedyBear https://github.com/honeynet/GreedyBear
+# See the file 'LICENSE' for copying permission.
+from greedybear.cronjobs.base import Cronjob
 
 
-class MonitorHoneypots(ExtractDataFromElastic):
+class MonitorHoneypots(Cronjob):
     def __init__(self):
         super(MonitorHoneypots, self).__init__()
         self.honeypots_to_monitor = ["Log4pot", "Cowrie"]
