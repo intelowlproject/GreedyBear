@@ -5,22 +5,26 @@ from datetime import datetime
 from ipaddress import IPv4Address
 
 from greedybear.consts import PAYLOAD_REQUEST, SCANNER
-from greedybear.cronjobs.base import ExtractDataFromElastic
+from greedybear.cronjobs.base import Cronjob
 from greedybear.cronjobs.sensors import ExtractSensors
 from greedybear.models import IOC, Sensors
 
 
-class ExtractAttacks(ExtractDataFromElastic, metaclass=ABCMeta):
+class ExtractAttacks(Cronjob, metaclass=ABCMeta):
     class IOCWhitelist(Exception):
         pass
 
-    def __init__(self):
+    def __init__(self, minutes_back=None):
         super().__init__()
         self.first_time_run = False
+        self.minutes_back = minutes_back
 
     @property
     def minutes_back_to_lookup(self):
-        if self.first_time_run:
+        # overwrite base
+        if self.minutes_back:
+            minutes = self.minutes_back
+        elif self.first_time_run:
             minutes = 60 * 24 * 3  # 3 days
         else:
             minutes = 11

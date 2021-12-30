@@ -1,11 +1,11 @@
 # This file is a part of GreedyBear https://github.com/honeynet/GreedyBear
 # See the file 'LICENSE' for copying permission.
-from greedybear.cronjobs.base import ExtractDataFromElastic
+from greedybear.cronjobs.base import Cronjob
 from greedybear.cronjobs.honeypots import Honeypot
 from greedybear.models import Sensors
 
 
-class ExtractSensors(ExtractDataFromElastic):
+class ExtractSensors(Cronjob):
     """
     this cron is required to extract sensors IP addresses and whitelist them
     """

@@ -30,3 +30,10 @@ def monitor_honeypots():
     from greedybear.cronjobs.monitor_honeypots import MonitorHoneypots
 
     MonitorHoneypots().execute()
+
+
+@shared_task()
+def monitor_logs():
+    from greedybear.cronjobs.monitor_logs import MonitorLogs
+
+    MonitorLogs().execute()

@@ -65,7 +65,7 @@ app.conf.beat_schedule = {
     # every 10 minutes
     "extract_cowrie": {
         "task": "greedybear.tasks.extract_cowrie",
-        "schedule": crontab(minute="5/10"),
+        "schedule": crontab(minute="*/10"),
         "options": {"queue": "default"},
     },
     # once a day
@@ -77,7 +77,13 @@ app.conf.beat_schedule = {
     # once an hour
     "monitor_honeypots": {
         "task": "greedybear.tasks.monitor_honeypots",
-        "schedule": crontab(minute=15),
+        "schedule": crontab(minute=18),
+        "options": {"queue": "default"},
+    },
+    # once an hour
+    "monitor_logs": {
+        "task": "greedybear.tasks.monitor_logs",
+        "schedule": crontab(minute=33),
         "options": {"queue": "default"},
     },
 }

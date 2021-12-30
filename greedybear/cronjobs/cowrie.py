@@ -11,8 +11,8 @@ from greedybear.regex import REGEX_URL_PROTOCOL
 
 
 class ExtractCowrie(ExtractAttacks):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, minutes_back=None):
+        super().__init__(minutes_back=minutes_back)
         self.cowrie = Honeypot("Cowrie")
         self.added_scanners = 0
         self.payloads_in_message = 0
