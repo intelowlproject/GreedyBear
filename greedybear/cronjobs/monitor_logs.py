@@ -11,7 +11,7 @@ class MonitorLogs(Cronjob):
     def __init__(self):
         super(MonitorLogs, self).__init__()
         self.logs_to_monitor = ["greedybear", "api", "gui", "django", "celery"]
-        self.log_directory = "/var/log/greedybear/django"
+        self.log_directory = "/var/log/greedybear/django/"
 
     @property
     def minutes_back_to_lookup(self):
