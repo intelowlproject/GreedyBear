@@ -65,7 +65,7 @@ app.conf.beat_schedule = {
     # every 10 minutes
     "extract_cowrie": {
         "task": "greedybear.tasks.extract_cowrie",
-        "schedule": crontab(minute="5/10"),
+        "schedule": crontab(minute="*/10"),
         "options": {"queue": "default"},
     },
     # once a day
