@@ -12,8 +12,8 @@ from greedybear.regex import REGEX_CVE_BASE64COMMAND, REGEX_CVE_URL, REGEX_URL
 
 
 class ExtractLog4Pot(ExtractAttacks):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, minutes_back=None):
+        super().__init__(minutes_back=minutes_back)
         self.log4pot = Honeypot("Log4pot")
 
     def _log4pot_lookup(self):
