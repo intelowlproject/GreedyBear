@@ -12,6 +12,7 @@ def extract_log4pot():
     ExtractLog4Pot().execute()
 
 
+@shared_task()
 def extract_cowrie():
     from greedybear.cronjobs.cowrie import ExtractCowrie
 
