@@ -19,6 +19,9 @@ DJANGO_LOG_DIRECTORY = "/var/log/greedybear/django"
 MOCK_CONNECTIONS = os.environ.get("MOCK_CONNECTIONS", False) == "True"
 ELASTIC_ENDPOINT = os.getenv("ELASTIC_ENDPOINT", "").split(",")
 
+SLACK_TOKEN = os.environ.get("SLACK_TOKEN", False) == "True"
+SLACK_CHANNEL = os.environ.get("SLACK_CHANNEL", False) == "True"
+
 ALLOWED_HOSTS = ["*"]
 
 # Application definition
