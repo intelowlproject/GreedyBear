@@ -24,10 +24,14 @@ class MonitorLogs(Cronjob):
                 f"checking if the log {log_file} was populated in the last hour"
             )
             last_modification_time = getmtime(self.log_directory + log_file)
-            self.log.info(f"modification time {last_modification_time} for {log_file}")
             last_modification_datetime = datetime.fromtimestamp(last_modification_time)
             one_hour_ago = last_modification_datetime - timedelta(
                 minutes=self.minutes_back_to_lookup
+            )
+            self.log.info(
+                f"modification time {last_modification_time}"
+                f" ({last_modification_datetime}) for {log_file}."
+                f" Checking if it is greater than {one_hour_ago}"
             )
             if last_modification_datetime > one_hour_ago:
                 message = f"found errors in log file {log_file}"
