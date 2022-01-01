@@ -25,7 +25,7 @@ class MonitorLogs(Cronjob):
             )
             last_modification_time = getmtime(self.log_directory + log_file)
             last_modification_datetime = datetime.fromtimestamp(last_modification_time)
-            one_hour_ago = last_modification_datetime - timedelta(
+            one_hour_ago = datetime.today() - timedelta(
                 minutes=self.minutes_back_to_lookup
             )
             self.log.info(
