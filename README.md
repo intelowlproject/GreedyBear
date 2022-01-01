@@ -1,4 +1,4 @@
-<p align="center"><img src="gui/static/greedybear.png" width=450 height=519 alt="GreedyBear"/></p>
+<p align="center"><img src="gui/static/greedybear.png" width=350 height=404 alt="GreedyBear"/></p>
 
 # GreedyBear
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/honeynet/Greedybear)](https://github.com/honeynet/Greedybear/releases)
