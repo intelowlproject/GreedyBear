@@ -42,23 +42,6 @@ jobs:
         # We must fetch at least the immediate parents so that if this is
         # a pull request then we can checkout the head.
         fetch-depth: 2
-
-
-    - name: Set up Python
-      uses: actions/setup-python@v2
-      with:
-        python-version: '3.8'
-    - name: Install dependencies
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y --no-install-recommends apt-utils libsasl2-dev libssl-dev libldap2-dev python-dev libfuzzy-dev net-tools git osslsigncode exiftool
-        python -m pip install --upgrade pip
-        if [ -f requirements.txt ];
-        then pip install -r requirements.txt;
-        fi
-        # Set the `CODEQL-PYTHON` environment variable to the Python executable
-        # that includes the dependencies
-        echo "CODEQL_PYTHON=$(which python)" >> $GITHUB_ENV
         
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
