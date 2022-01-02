@@ -59,3 +59,28 @@ The tool has been created not only to provide the feeds from The Honeynet Projec
 
 If you manage one or more T-POTs of your own, you can get the code of this application and run Greedybear on your environment.
 In this way, you are able to provide new feeds of your own.
+
+### How to execute it locally for testing
+```commandline
+# clone the Greedybear project repository
+git clone https://github.com/honeynet/GreedyBear
+cd GreedyBear/
+
+# construct environment files from templates
+cp .env_template .env
+cd docker/
+cp env_file_template env_file
+cp env_file_postgres_template env_file_postgres
+cd ..
+
+# build the image locally
+docker-compose -p greedybear build
+
+# start the app
+docker-compose -p greedybear up
+
+# now the app is running on http://localhost:80
+
+# shut down the application
+docker-compose -p greedybear down
+```
