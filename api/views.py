@@ -12,9 +12,12 @@ from django.http import (
     StreamingHttpResponse,
 )
 from django.views.decorators.http import require_http_methods
-
+from rest_framework.decorators import api_view
+from rest_framework import status
+from rest_framework.response import Response 
 from greedybear.consts import FEEDS_LICENSE, GET, PAYLOAD_REQUEST, SCANNER
 from greedybear.models import IOC
+from greedybear.serializers import IOCSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -138,3 +141,14 @@ def _formatted_bad_request(format_):
     else:
         # json
         return JsonResponse({}, status=400)
+
+
+@api_view(['GET'])
+def enrichment_view(request):
+    observable_name = request.query_params.get('query')
+    try:
+        required_object = IOC.objects.get(name=observable_name)
+    except IOC.DoesNotExist:
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    serialized = IOCSerializer(required_object)  
+    return Response(serialized.data, status=status.HTTP_200_OK)

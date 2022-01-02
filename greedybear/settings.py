@@ -13,11 +13,12 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = os.environ.get("DJANGO_SECRET", None) or get_random_secret_key()
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get("DEBUG", False) == "True"
+# DEBUG = os.environ.get("DEBUG", False) == "True"
+DEBUG=False
 
-DJANGO_LOG_DIRECTORY = "/var/log/greedybear/django"
+DJANGO_LOG_DIRECTORY = "logrotate"
 MOCK_CONNECTIONS = os.environ.get("MOCK_CONNECTIONS", False) == "True"
-ELASTIC_ENDPOINT = os.getenv("ELASTIC_ENDPOINT", "").split(",")
+# ELASTIC_ENDPOINT = os.getenv("ELASTIC_ENDPOINT", "").split(",")
 
 SLACK_TOKEN = os.environ.get("SLACK_TOKEN", "")
 SLACK_CHANNEL = os.environ.get("SLACK_CHANNEL", "")
@@ -37,6 +38,7 @@ INSTALLED_APPS = [
     "gui.apps.GuiConfig",
     "api.apps.ApiConfig",
     "greedybear.apps.GreedyBearConfig",
+    'rest_framework',
 ]
 
 MIDDLEWARE = [
@@ -69,11 +71,17 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "greedybear.wsgi.application"
 
-DB_HOST = os.environ.get("DB_HOST")
-DB_PORT = os.environ.get("DB_PORT")
-DB_NAME = os.environ.get("DB_NAME", "greedybear_db")
-DB_USER = os.environ.get("DB_USER")
-DB_PASSWORD = os.environ.get("DB_PASSWORD")
+# DB_HOST = os.environ.get("DB_HOST")
+# DB_PORT = os.environ.get("DB_PORT")
+# DB_NAME = os.environ.get("DB_NAME", "greedybear_db")
+# DB_USER = os.environ.get("DB_USER")
+# DB_PASSWORD = os.environ.get("DB_PASSWORD")
+
+DB_HOST='0.0.0.0'
+DB_PORT='5432'
+DB_NAME='greedybeardb'
+DB_USER='root'
+DB_PASSWORD='root'
 
 DATABASES = {
     "default": {
@@ -87,7 +95,7 @@ DATABASES = {
 }
 
 ELASTIC_CLIENT = Elasticsearch(
-    ELASTIC_ENDPOINT,
+    [{'host': '0.0.0.0', 'port': 9200}],
     maxsize=20,
     retry_on_timeout=True,
     timeout=30,
