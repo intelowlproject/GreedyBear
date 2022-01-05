@@ -142,13 +142,16 @@ def _formatted_bad_request(format_):
         # json
         return JsonResponse({}, status=400)
 
-
 @api_view(['GET'])
 def enrichment_view(request):
     observable_name = request.query_params.get('query')
+    logger.info(f"Enrichment view requested for: {str(observable_name)}")
     try:
         required_object = IOC.objects.get(name=observable_name)
     except IOC.DoesNotExist:
-        return Response(status=status.HTTP_204_NO_CONTENT)
-    serialized = IOCSerializer(required_object)  
-    return Response(serialized.data, status=status.HTTP_200_OK)
+        return Response({'found':"false"}, status=status.HTTP_200_OK)
+    serialized = IOCSerializer(required_object)
+    response_data = serialized.data
+    # Adding a extra "found" feild to response to indicate that IOC was found in D
+    response_data['found']='true'
+    return Response(response_data, status=status.HTTP_200_OK)
