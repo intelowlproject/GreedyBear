@@ -1,5 +1,6 @@
 # This file is a part of GreedyBear https://github.com/honeynet/GreedyBear
 # See the file 'LICENSE' for copying permission.
+import re
 import csv
 import logging
 from datetime import datetime, timedelta
@@ -20,7 +21,8 @@ from greedybear.models import IOC
 from greedybear.serializers import IOCSerializer
 
 logger = logging.getLogger(__name__)
-
+regex_domain = r"^[a-zA-Z\d-]{1,60}(\.[a-zA-Z\d-]{1,60})*$"
+regex_ip = r"^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$"
 
 class Echo:
     """An object that implements just the write method of the file-like
@@ -145,6 +147,10 @@ def _formatted_bad_request(format_):
 @api_view(['GET'])
 def enrichment_view(request):
     observable_name = request.query_params.get('query')
+    if not re.match(regex_domain, observable_name):
+        return Response({"message":"Invalid Observable"}, status=status.HTTP_400_BAD_REQUEST)
+    if not re.match(regex_ip, observable_name):
+        return Response({"message":"Invalid Observable"}, status=status.HTTP_400_BAD_REQUEST)
     logger.info(f"Enrichment view requested for: {str(observable_name)}")
     try:
         required_object = IOC.objects.get(name=observable_name)
@@ -152,6 +158,6 @@ def enrichment_view(request):
         return Response({'found':"false"}, status=status.HTTP_200_OK)
     serialized = IOCSerializer(required_object)
     response_data = serialized.data
-    # Adding a extra "found" feild to response to indicate that IOC was found in D
-    response_data['found']='true'
+    # Adding a extra "found" feild to response to indicate that IOC was found in DB
+    response_data['found']=True
     return Response(response_data, status=status.HTTP_200_OK)
