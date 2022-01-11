@@ -18,11 +18,11 @@ from rest_framework import status
 from rest_framework.response import Response 
 from greedybear.consts import FEEDS_LICENSE, GET, PAYLOAD_REQUEST, SCANNER
 from greedybear.models import IOC
-from greedybear.serializers import IOCSerializer
+from api.serializers import IOCSerializer
+from greedybear.consts import GET
 
 logger = logging.getLogger(__name__)
-regex_domain = r"^[a-zA-Z\d-]{1,60}(\.[a-zA-Z\d-]{1,60})*$"
-regex_ip = r"^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$"
+
 
 class Echo:
     """An object that implements just the write method of the file-like
@@ -144,13 +144,9 @@ def _formatted_bad_request(format_):
         # json
         return JsonResponse({}, status=400)
 
-@api_view(['GET'])
+@api_view([GET])
 def enrichment_view(request):
     observable_name = request.query_params.get('query')
-    if not re.match(regex_domain, observable_name):
-        return Response({"message":"Invalid Observable"}, status=status.HTTP_400_BAD_REQUEST)
-    if not re.match(regex_ip, observable_name):
-        return Response({"message":"Invalid Observable"}, status=status.HTTP_400_BAD_REQUEST)
     logger.info(f"Enrichment view requested for: {str(observable_name)}")
     try:
         required_object = IOC.objects.get(name=observable_name)
