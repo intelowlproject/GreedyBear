@@ -13,10 +13,9 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SECRET_KEY = os.environ.get("DJANGO_SECRET", None) or get_random_secret_key()
 
 # SECURITY WARNING: don't run with debug turned on in production!
-# DEBUG = os.environ.get("DEBUG", False) == "True"
-DEBUG=False
+DEBUG = os.environ.get("DEBUG", False) == "True"
 
-DJANGO_LOG_DIRECTORY = "logrotate"
+DJANGO_LOG_DIRECTORY = "/var/log/greedybear/django"
 MOCK_CONNECTIONS = os.environ.get("MOCK_CONNECTIONS", False) == "True"
 # ELASTIC_ENDPOINT = os.getenv("ELASTIC_ENDPOINT", "").split(",")
 
