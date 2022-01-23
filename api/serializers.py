@@ -1,3 +1,4 @@
+from email.policy import default
 import re
 from rest_framework import serializers
 from greedybear.models import IOC
@@ -11,8 +12,8 @@ class IOCSerializer(serializers.ModelSerializer):
             'type', 
             'first_seen', 
             'last_seen', 
-            'days_seen', 
-            'number_of_days_seen', 
+            'days_seen',
+            'number_of_days_seen',
             'times_seen', 
             'log4j', 
             'cowrie', 
@@ -21,10 +22,11 @@ class IOCSerializer(serializers.ModelSerializer):
             'related_ioc',
         )
     
-    def regex_validate(self, data):
+    def validate(self, data):
+        """
+        Check the given observable against regex expression
+        """
         observable = data['observable_name']
-        if not re.match(REGEX_DOMAIN, observable):
-            raise serializers.ValidationError('Invalid Observable')
-        if not re.match(REGEX_IP, observable):
-             raise serializers.ValidationError('Invalid Observable')
-        return observable
+        if not re.match(REGEX_IP, observable) or not re.match(REGEX_DOMAIN, observable):
+            raise serializers.ValidationError("Observable must be an IP or a domain")
+        return data

@@ -153,7 +153,10 @@ def enrichment_view(request):
     except IOC.DoesNotExist:
         return Response({'found':"false"}, status=status.HTTP_200_OK)
     serialized = IOCSerializer(required_object)
-    response_data = serialized.data
-    # Adding a extra "found" feild to response to indicate that IOC was found in DB
-    response_data['found']=True
-    return Response(response_data, status=status.HTTP_200_OK)
+    if serialized.is_valid():
+        response_data = serialized.data
+        # Adding a extra "found" feild to response to indicate that IOC was found in DB
+        response_data['found']=True
+        return Response(response_data, status=status.HTTP_200_OK)
+    else:
+        return Response(serialized._errors, status=status.HTTP_400_BAD_REQUEST)
