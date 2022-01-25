@@ -18,7 +18,7 @@ from rest_framework import status
 from rest_framework.response import Response 
 from greedybear.consts import FEEDS_LICENSE, GET, PAYLOAD_REQUEST, SCANNER
 from greedybear.models import IOC
-from api.serializers import IOCSerializer
+from api.serializers import IOCSerializer, EnrichmentSerializer
 from greedybear.consts import GET
 
 logger = logging.getLogger(__name__)
@@ -148,10 +148,7 @@ def _formatted_bad_request(format_):
 def enrichment_view(request):
     observable_name = request.query_params.get('query')
     logger.info(f"Enrichment view requested for: {str(observable_name)}")
-    try:
-        required_object = IOC.objects.get(name=observable_name)
-    except IOC.DoesNotExist:
-        return Response({'found':"false"}, status=status.HTTP_200_OK)
+    required_object = EnrichmentSerializer.validate(observable_name)
     serialized = IOCSerializer(required_object)
     if serialized.is_valid():
         response_data = serialized.data
