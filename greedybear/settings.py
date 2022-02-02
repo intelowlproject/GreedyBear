@@ -6,6 +6,7 @@ import os
 
 from django.core.management.utils import get_random_secret_key
 from elasticsearch import Elasticsearch
+from datetime import timedelta
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -34,6 +35,11 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django.contrib.postgres",
+    # DRF
+    "rest_framework",
+    "durin",
+    "drf_spectacular",
+    # greedybear apps
     "gui.apps.GuiConfig",
     "api.apps.ApiConfig",
     "greedybear.apps.GreedyBearConfig",
@@ -68,6 +74,35 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "greedybear.wsgi.application"
+
+
+REST_FRAMEWORK = {
+    "DEFAULT_RENDERER_CLASSES": [
+        "rest_framework.renderers.JSONRenderer",
+    ],
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "durin.auth.CachedTokenAuthentication",
+    ],
+    "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
+    "EXCEPTION_HANDLER": "rest_framework.views.exception_handler",
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
+
+# DRF Spectacular
+SPECTACULAR_SETTINGS = {
+    "TITLE": "GreedyBear API specification",
+    "VERSION": "0.1.3",
+}
+
+# Django-Rest-Durin
+REST_DURIN = {
+    "DEFAULT_TOKEN_TTL": timedelta(days=14),
+    "TOKEN_CHARACTER_LENGTH": 32,
+    "USER_SERIALIZER": "durin.serializers.UserSerializer",
+    "AUTH_HEADER_PREFIX": "Token",
+    "TOKEN_CACHE_TIMEOUT": 300,  # 5 minutes
+    "REFRESH_TOKEN_ON_LOGIN": True,
+}
 
 DB_HOST = os.environ.get("DB_HOST")
 DB_PORT = os.environ.get("DB_PORT")

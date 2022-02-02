@@ -3,3 +3,5 @@ docs/build
 docker/env_file
 docker/env_file_postgres
 .env
+env/
+__pycache__
