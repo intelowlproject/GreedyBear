@@ -127,7 +127,9 @@ def feeds(request, feed_type, attack_type, age, format_):
                 "times_seen": ioc.times_seen,
             }
             json_list.append(json_item)
-        return Response({"license": FEEDS_LICENSE, "iocs": json_list}, status=status.HTTP_200_OK)
+        return Response(
+            {"license": FEEDS_LICENSE, "iocs": json_list}, status=status.HTTP_200_OK
+        )
     else:
         logger.error("this is impossible. check the code")
         return HttpResponseServerError()

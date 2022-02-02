@@ -7,7 +7,6 @@ from durin.admin import AuthTokenAdmin
 from durin.models import AuthToken, Client
 
 
-
 # Auth Token stuff
 class CustomAuthTokenAdmin(AuthTokenAdmin):
     """
@@ -40,8 +39,6 @@ class CustomAuthTokenAdmin(AuthTokenAdmin):
     def save_model(self, request, obj, form, change):
         obj.client = Client.objects.get(name="greedybear")
         super(CustomAuthTokenAdmin, self).save_model(request, obj, form, change)
-
-
 
 
 # Unregister the default admin view for AuthToken
