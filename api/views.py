@@ -3,15 +3,16 @@
 import csv
 import logging
 from datetime import datetime, timedelta
+from rest_framework import status
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
 
 from django.http import (
     HttpResponse,
     HttpResponseBadRequest,
     HttpResponseServerError,
-    JsonResponse,
     StreamingHttpResponse,
 )
-from django.views.decorators.http import require_http_methods
 
 from greedybear.consts import FEEDS_LICENSE, GET, PAYLOAD_REQUEST, SCANNER
 from greedybear.models import IOC
@@ -29,7 +30,7 @@ class Echo:
         return value
 
 
-@require_http_methods([GET])
+@api_view([GET])
 def feeds(request, feed_type, attack_type, age, format_):
     """
 
@@ -111,7 +112,7 @@ def feeds(request, feed_type, attack_type, age, format_):
             (writer.writerow(row) for row in rows),
             content_type="text/csv",
             headers={"Content-Disposition": 'attachment; filename="feeds.csv"'},
-            status=200,
+            status=status.HTTP_200_OK,
         )
     elif format_ == "json":
         # json
@@ -126,7 +127,7 @@ def feeds(request, feed_type, attack_type, age, format_):
                 "times_seen": ioc.times_seen,
             }
             json_list.append(json_item)
-        return JsonResponse({"license": FEEDS_LICENSE, "iocs": json_list})
+        return Response({"license": FEEDS_LICENSE, "iocs": json_list}, status=status.HTTP_200_OK)
     else:
         logger.error("this is impossible. check the code")
         return HttpResponseServerError()
@@ -137,4 +138,4 @@ def _formatted_bad_request(format_):
         return HttpResponseBadRequest()
     else:
         # json
-        return JsonResponse({}, status=400)
+        return Response({}, status=status.HTTP_400_BAD_REQUEST)
