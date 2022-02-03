@@ -84,3 +84,9 @@ docker-compose -p greedybear up
 # shut down the application
 docker-compose -p greedybear down
 ```
+Note that GreedyBear *needs* a running instance of ElasticSearch of a TPoT to function.
+If you don't have one, you can make the following changes to make GreeyBear spin up it's own ElasticSearch and Kibana instances 
+(...Care! This option would require enough RAM to run the additional containers. Suggested is >=16GB):
+
+1) In ```docker/env_file```, set the variable ```ELASTIC_ENDPOINT``` to ```http://elasticsearch:9200```.
+2) Add ```:docker/elasticsearch.yml``` to the last defined ```COMPOSE_FILE``` variable or uncomment the ```# local development with elasticsearch container``` block in ```.env``` file.
