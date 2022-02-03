@@ -3,10 +3,10 @@
 # flake8: noqa
 import logging
 import os
+from datetime import timedelta
 
 from django.core.management.utils import get_random_secret_key
 from elasticsearch import Elasticsearch
-from datetime import timedelta
 from version import VERSION
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))

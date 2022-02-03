@@ -1,8 +1,9 @@
 # This file is a part of GreedyBear https://github.com/honeynet/GreedyBear
 # See the file 'LICENSE' for copying permission.
 from django.urls import path
-from api.views import feeds
+
 from api.auth import LoginView, LogoutView
+from api.views import feeds
 
 urlpatterns = [
     # Auth APIs

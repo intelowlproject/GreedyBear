@@ -2,6 +2,7 @@
 # See the file 'LICENSE' for copying permission.
 
 import logging
+
 from django.contrib.auth import login, logout
 from drf_spectacular.extensions import OpenApiAuthenticationExtension
 from durin import views as durin_views
