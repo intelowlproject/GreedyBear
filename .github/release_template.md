@@ -1,13 +1,9 @@
 # Checklist for creating a new release
 
-
-- [ ] Change version number in `settings.SPECTACULAR_SETTINGS`
+- [ ] Update `CHANGELOG.md` for the new version
+- [ ] Change version number in `docs/source/conf.py` and `settings.SPECTACULAR_SETTINGS`
 - [ ] Verify CI Tests
 - [ ] Create release for the branch `develop`
-- [ ] Update `CHANGELOG.md` for the new version
-- [ ] Change version number in `docs/source/conf.py`
-- [ ] Verify CI Tests
-- [ ] Create release for the branch `dev`
 - [ ] Wait for dockerHub to finish the builds
 - [ ] Merge the PR to the `main` branch
 
