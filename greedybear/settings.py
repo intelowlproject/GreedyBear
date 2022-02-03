@@ -7,6 +7,7 @@ import os
 from django.core.management.utils import get_random_secret_key
 from elasticsearch import Elasticsearch
 from datetime import timedelta
+from version import VERSION
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -35,12 +36,12 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django.contrib.postgres",
+    "gui.apps.GuiConfig",
     # DRF
     "rest_framework",
     "durin",
     "drf_spectacular",
     # greedybear apps
-    "gui.apps.GuiConfig",
     "api.apps.ApiConfig",
     "greedybear.apps.GreedyBearConfig",
 ]
@@ -91,7 +92,7 @@ REST_FRAMEWORK = {
 # DRF Spectacular
 SPECTACULAR_SETTINGS = {
     "TITLE": "GreedyBear API specification",
-    "VERSION": "0.1.3",
+    "VERSION": VERSION,
 }
 
 # Django-Rest-Durin
