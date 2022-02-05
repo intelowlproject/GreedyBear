@@ -1,6 +1,3 @@
-from asyncore import write
-from email.policy import default
-from http.client import FOUND
 import re
 from rest_framework import serializers
 from greedybear.models import IOC
@@ -24,20 +21,24 @@ class IOCSerializer(serializers.ModelSerializer):
             'related_ioc',
         )
 
-class EnrichmentSerializer(IOCSerializer):
-    query = serializers.CharField(max_length=255, write_only=True)
+class EnrichmentSerializer(serializers.Serializer):
     found = serializers.BooleanField(read_only=True, default=False)
-    ico = IOCSerializer(read_only=True, default=None)
+    ioc = IOCSerializer(read_only=True, default=None)
+    class Meta:
+       fields = serializers.ALL_FIELDS
 
     def validate(self, data):
         """
         Check the given observable against regex expression
         """
-        observable = data['observable_name']
+        observable = data
+        print(f"OBservable: {(observable)}")
         if not re.match(REGEX_IP, observable) or not re.match(REGEX_DOMAIN, observable):
             raise serializers.ValidationError("Observable is not a valid IP or domain")
         try:
             required_object = IOC.objects.get(name=observable)
+            data["found"] = True
+            data["ioc"] = required_object
         except IOC.DoesNotExist:
-            raise serializers.ValidationError("Observable does not exist in the database")
+            data["found"] = False
         return required_object
