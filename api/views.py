@@ -1,6 +1,5 @@
 # This file is a part of GreedyBear https://github.com/honeynet/GreedyBear
 # See the file 'LICENSE' for copying permission.
-import re
 import csv
 import logging
 from datetime import datetime, timedelta
@@ -18,7 +17,7 @@ from rest_framework import status
 from rest_framework.response import Response 
 from greedybear.consts import FEEDS_LICENSE, GET, PAYLOAD_REQUEST, SCANNER
 from greedybear.models import IOC
-from api.serializers import IOCSerializer, EnrichmentSerializer
+from api.serializers import EnrichmentSerializer
 from greedybear.consts import GET
 
 logger = logging.getLogger(__name__)
