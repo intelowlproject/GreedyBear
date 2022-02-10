@@ -2,7 +2,7 @@
 # See the file 'LICENSE' for copying permission.
 from django.urls import path
 
-from api.views import feeds, enrichment_view
+from api.views import enrichment_view, feeds
 
 urlpatterns = [
     path("feeds/<str:feed_type>/<str:attack_type>/<str:age>.<str:format_>", feeds),

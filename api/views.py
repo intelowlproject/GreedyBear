@@ -12,13 +12,13 @@ from django.http import (
     StreamingHttpResponse,
 )
 from django.views.decorators.http import require_http_methods
-from rest_framework.decorators import api_view
 from rest_framework import status
+from rest_framework.decorators import api_view
 from rest_framework.response import Response
+
+from api.serializers import EnrichmentSerializer
 from greedybear.consts import FEEDS_LICENSE, GET, PAYLOAD_REQUEST, SCANNER
 from greedybear.models import IOC
-from api.serializers import EnrichmentSerializer
-from greedybear.consts import GET
 
 logger = logging.getLogger(__name__)
 

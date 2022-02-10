@@ -1,7 +1,9 @@
 import re
+
 from rest_framework import serializers
+
+from greedybear.consts import REGEX_DOMAIN, REGEX_IP
 from greedybear.models import IOC
-from greedybear.consts import REGEX_IP, REGEX_DOMAIN
 
 
 class IOCSerializer(serializers.ModelSerializer):
@@ -19,7 +21,7 @@ class EnrichmentSerializer(serializers.Serializer):
 
     def validate(self, data):
         """
-        Check the given observable against regex expression
+        Check a given observable against regex expression
         """
         observable = data["query"]
         if not re.match(REGEX_IP, observable) or not re.match(REGEX_DOMAIN, observable):
