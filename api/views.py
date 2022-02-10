@@ -14,7 +14,7 @@ from django.http import (
 from django.views.decorators.http import require_http_methods
 from rest_framework.decorators import api_view
 from rest_framework import status
-from rest_framework.response import Response 
+from rest_framework.response import Response
 from greedybear.consts import FEEDS_LICENSE, GET, PAYLOAD_REQUEST, SCANNER
 from greedybear.models import IOC
 from api.serializers import EnrichmentSerializer
@@ -143,11 +143,13 @@ def _formatted_bad_request(format_):
         # json
         return JsonResponse({}, status=400)
 
+
 @api_view([GET])
 def enrichment_view(request):
-    observable_name = request.query_params.get('query')
+    observable_name = request.query_params.get("query")
     logger.info(f"Enrichment view requested for: {str(observable_name)}")
-    serializer = EnrichmentSerializer(data=request.query_params, context={"request": request})
+    serializer = EnrichmentSerializer(
+        data=request.query_params, context={"request": request}
+    )
     serializer.is_valid(raise_exception=True)
     return Response(serializer.data, status=status.HTTP_200_OK)
-
