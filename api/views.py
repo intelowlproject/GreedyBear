@@ -36,7 +36,6 @@ class Echo:
 @require_http_methods([GET])
 def feeds(request, feed_type, attack_type, age, format_):
     """
-
     :param request:
     :param feed_type:
     :param attack_type:
