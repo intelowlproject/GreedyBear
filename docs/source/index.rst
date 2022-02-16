@@ -5,6 +5,10 @@ Welcome to GreedyBear's documentation!
    :maxdepth: 2
 
    Introduction
+   Installation
+   Usage
+   Contribute
+   Tests
 
 
 
