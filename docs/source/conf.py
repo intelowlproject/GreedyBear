@@ -25,8 +25,10 @@ project = "GreedyBear"
 copyright = "2021, The Honeynet Project"
 author = "Matteo Lodi"
 
-# The full version, including alpha/beta/rc tags
-release = "v0.1.3"
+# version
+version = "0.1.3"
+# release - It's the full version, including alpha/beta/rc tags
+release = "0.1.3"
 
 
 # -- General configuration ---------------------------------------------------
@@ -37,14 +39,16 @@ release = "v0.1.3"
 extensions = [
     "recommonmark",
     "sphinx_rtd_theme",
-    "sphinxcontrib.openapi",
-    "sphinxcontrib.redoc",
+#     "sphinxcontrib.openapi",
+#     "sphinxcontrib.redoc",
 ]
-redoc_uri = "https://cdn.jsdelivr.net/npm/redoc@next/bundles/redoc.standalone.js"
+# redoc_uri = "https://cdn.jsdelivr.net/npm/redoc@next/bundles/redoc.standalone.js"
 
+# The suffix(es) of source filenames.
+# You can specify multiple suffix as a list of string:
 source_suffix = [".rst", ".md"]
 
-master_doc = "index"
+root_doc = "index"
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
