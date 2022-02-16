@@ -90,3 +90,9 @@ If you don't have one, you can make the following changes to make GreeyBear spin
 
 1) In ```docker/env_file```, set the variable ```ELASTIC_ENDPOINT``` to ```http://elasticsearch:9200```.
 2) Add ```:docker/elasticsearch.yml``` to the last defined ```COMPOSE_FILE``` variable or uncomment the ```# local development with elasticsearch container``` block in ```.env``` file.
+
+
+
+## Documentation [![Documentation Status](https://readthedocs.org/projects/greedybear-docs/badge/?version=latest)](https://greedybear-docs.readthedocs.io/en/latest/?badge=latest)
+
+Documentation about IntelOwl installation, usage, configuration and contribution can be found at https://greedybear-docs.readthedocs.io/.
