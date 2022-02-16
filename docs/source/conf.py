@@ -37,7 +37,7 @@ release = "0.1.3"
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
-    "recommonmark",
+    "myst_parser",
     "sphinx_rtd_theme",
 #     "sphinxcontrib.openapi",
 #     "sphinxcontrib.redoc",
