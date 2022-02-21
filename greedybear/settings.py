@@ -17,7 +17,26 @@ DEBUG = os.environ.get("DEBUG", False) == "True"
 
 DJANGO_LOG_DIRECTORY = "/var/log/greedybear/django"
 MOCK_CONNECTIONS = os.environ.get("MOCK_CONNECTIONS", False) == "True"
-ELASTIC_ENDPOINT = os.getenv("ELASTIC_ENDPOINT", "").split(",")
+ELASTIC_ENDPOINT = os.getenv("ELASTIC_ENDPOINT", "")
+if ELASTIC_ENDPOINT:
+    ELASTIC_ENDPOINT = ELASTIC_ENDPOINT.split(",")
+else:
+    print(
+        "WARNING!!! You need an ElasticSearch TPOT instance to have the Greedybear to work correctly."
+    )
+    if not DEBUG:
+        print("you are in production mode: closing the application")
+        exit(9)
+
+if ELASTIC_ENDPOINT:
+    ELASTIC_CLIENT = Elasticsearch(
+        ELASTIC_ENDPOINT,
+        maxsize=20,
+        retry_on_timeout=True,
+        timeout=30,
+    )
+else:
+    ELASTIC_CLIENT = None
 
 SLACK_TOKEN = os.environ.get("SLACK_TOKEN", "")
 SLACK_CHANNEL = os.environ.get("SLACK_CHANNEL", "")
@@ -85,13 +104,6 @@ DATABASES = {
         "PASSWORD": DB_PASSWORD,
     },
 }
-
-ELASTIC_CLIENT = Elasticsearch(
-    ELASTIC_ENDPOINT,
-    maxsize=20,
-    retry_on_timeout=True,
-    timeout=30,
-)
 
 BROKER_URL = os.environ.get("BROKER_URL", "amqp://guest:guest@rabbitmq:5672")
 RESULT_BACKEND = "django-db"
