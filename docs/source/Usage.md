@@ -37,4 +37,4 @@ You can also query for a specific observable through the following URL:
 https://<greedybear_site>/api/enrichment?query=<observable_name>
 ```
 The `observable_name` can be:
-* An valid `IP` or `domain`
+* A valid `IP` or `domain`
