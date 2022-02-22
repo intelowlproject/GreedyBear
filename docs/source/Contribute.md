@@ -19,7 +19,7 @@ For this reason it is important to follow some easy rules based on a simple but 
 Keeping to a consistent code style throughout the project makes it easier to contribute and collaborate. We make use of [`psf/black`](https://github.com/psf/black) and [isort](https://pycqa.github.io/isort/) for code formatting and [`flake8`](https://flake8.pycqa.org) for style guides.
 
 ## How to start (Setup project and development instance)
-```commandline
+```bash
 # clone the Greedybear project repository
 git clone https://github.com/honeynet/GreedyBear
 cd GreedyBear/
@@ -45,7 +45,7 @@ pre-commit install
 ```
 Now you can start by building the image using docker-compose and run the project.
 
-```
+```bash
 # build the image locally
 docker-compose -p greedybear build
 
