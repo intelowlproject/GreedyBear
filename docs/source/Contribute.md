@@ -19,6 +19,7 @@ For this reason it is important to follow some easy rules based on a simple but 
 Keeping to a consistent code style throughout the project makes it easier to contribute and collaborate. We make use of [`psf/black`](https://github.com/psf/black) and [isort](https://pycqa.github.io/isort/) for code formatting and [`flake8`](https://flake8.pycqa.org) for style guides.
 
 ## How to start (Setup project and development instance)
+Start by cloning the project
 ```bash
 # clone the Greedybear project repository
 git clone https://github.com/honeynet/GreedyBear
@@ -31,7 +32,7 @@ cp env_file_template env_file
 cp env_file_postgres_template env_file_postgres
 cd ..
 ```
-
+Please create a new branch based on the **develop** branch that contains the most recent changes. This is mandatory.
 `git checkout -b myfeature develop`
 
 Then we strongly suggest to configure [pre-commit](https://github.com/pre-commit/pre-commit) to force linters on every commits you perform:
