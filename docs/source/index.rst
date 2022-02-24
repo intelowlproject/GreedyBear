@@ -9,6 +9,7 @@ Welcome to GreedyBear's documentation!
    Usage
    Contribute
    Tests
+   OpenAPI Doc <OpenAPI>
 
 
 
