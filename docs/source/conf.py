@@ -40,9 +40,18 @@ extensions = [
     "myst_parser",
     "sphinx_rtd_theme",
     "sphinxcontrib.openapi",
-#     "sphinxcontrib.redoc",
+    "sphinxcontrib.redoc",
 ]
-# redoc_uri = "https://cdn.jsdelivr.net/npm/redoc@next/bundles/redoc.standalone.js"
+redoc_uri = "https://cdn.jsdelivr.net/npm/redoc@next/bundles/redoc.standalone.js"
+
+redoc = [
+    {
+        "name": "GreedyBear Redoc",
+        "page": "Redoc",
+        "spec": "schema.yaml",
+        "opts": {"suppress-warnings": True, "hide-hostname": True},
+    }
+]
 
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:

@@ -10,6 +10,7 @@ Welcome to GreedyBear's documentation!
    Contribute
    Tests
    OpenAPI Doc <OpenAPI>
+   Redoc
 
 
 
