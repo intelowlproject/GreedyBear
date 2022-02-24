@@ -132,8 +132,6 @@ paths:
                 $ref: '#/components/schemas/feed-enrichment-InvalidRegexCheck'
               
   
-  
-          
 components:
   schemas:
     feeds:
