@@ -39,7 +39,7 @@ release = "0.1.3"
 extensions = [
     "myst_parser",
     "sphinx_rtd_theme",
-#     "sphinxcontrib.openapi",
+    "sphinxcontrib.openapi",
 #     "sphinxcontrib.redoc",
 ]
 # redoc_uri = "https://cdn.jsdelivr.net/npm/redoc@next/bundles/redoc.standalone.js"
