@@ -32,3 +32,6 @@ jobs:
     - name: isort
       run: |
         isort . --profile black --filter-files --check-only --diff --skip venv
+    - name: test
+      run: |
+        python manage.py test
