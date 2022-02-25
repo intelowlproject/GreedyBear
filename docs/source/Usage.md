@@ -1,5 +1,5 @@
 # Usage
-GreedyBear is created with the aim to collect the information from the TPOTs and generate some actionable feeds, so that they can be easliy accessible and act as valuable information to prevent and detect attacks.
+GreedyBear is created with the aim to collect the information from the TPOTs and generate some actionable feeds, so that they can be easily accessible and act as valuable information to prevent and detect attacks.
 
 ## Feeds
 The feeds are reachable through the following URL:

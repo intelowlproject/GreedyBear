@@ -93,6 +93,6 @@ If you don't have one, you can make the following changes to make GreeyBear spin
 
 
 
-## Documentation [![Documentation Status](https://readthedocs.org/projects/greedybear-docs/badge/?version=latest)](https://greedybear-docs.readthedocs.io/en/latest/?badge=latest)
+## Documentation [![Documentation Status](https://readthedocs.org/projects/greedybear/badge/?version=latest)](https://greedybear.readthedocs.io/en/latest/?badge=latest)
 
-Documentation about GreedyBear installation, usage, configuration and contribution can be found at https://greedybear-docs.readthedocs.io/.
+Documentation about GreedyBear installation, usage, configuration and contribution can be found at https://greedybear.readthedocs.io/.
