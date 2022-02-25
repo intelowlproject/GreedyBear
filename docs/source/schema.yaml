@@ -27,10 +27,9 @@ paths:
           enum: [log4j, cowrie, all]
         description: >
           The available feed_type are:
-            * `log4j` - attacks detected from the Log4pot
-            * `cowrie` - attacks detected from the Cowrie Honeypot
-            * `all` - get all types at once
-           
+           * `log4j` - attacks detected from the Log4pot
+           * `cowrie` - attacks detected from the Cowrie Honeypot
+           * `all` - get all types at once
       - name: attack_type
         in: path
         required: true
