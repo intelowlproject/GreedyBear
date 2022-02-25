@@ -30,6 +30,7 @@ In this way, you are able to provide new feeds of your own.
 TO install it locally, Please refer to our [installation guide](https://greedybear.readthedocs.io/en/latest/Installation.html)
 
 
+
 ## Documentation [![Documentation Status](https://readthedocs.org/projects/greedybear/badge/?version=latest)](https://greedybear.readthedocs.io/en/latest/?badge=latest)
 
 Documentation about GreedyBear installation, usage, configuration and contribution can be found at https://greedybear.readthedocs.io/.
