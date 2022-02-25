@@ -27,8 +27,7 @@ The tool has been created not only to provide the feeds from The Honeynet Projec
 If you manage one or more T-POTs of your own, you can get the code of this application and run Greedybear on your environment.
 In this way, you are able to provide new feeds of your own.
 
-TO install it locally, Please refer to our [installation guide](https://greedybear.readthedocs.io/en/latest/Installation.html)
-
+To install it locally, Please refer to our [installation guide](https://greedybear.readthedocs.io/en/latest/Installation.html)
 
 
 ## Documentation [![Documentation Status](https://readthedocs.org/projects/greedybear/badge/?version=latest)](https://greedybear.readthedocs.io/en/latest/?badge=latest)
