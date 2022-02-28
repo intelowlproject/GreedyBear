@@ -20,7 +20,9 @@ Keeping to a consistent code style throughout the project makes it easier to con
 
 ## How to start (Setup project and development instance)
 To start with the development setup, make sure you go through all the steps in [Installation Guide](https://greedybear.readthedocs.io/en/latest/Installation.html) and properly installed it.
+
 Please create a new branch based on the **develop** branch that contains the most recent changes. This is mandatory.
+
 `git checkout -b myfeature develop`
 
 Then we strongly suggest to configure [pre-commit](https://github.com/pre-commit/pre-commit) to force linters on every commits you perform:
@@ -33,7 +35,6 @@ pip install pre-commit
 pre-commit install
 ```
 
-Please create a new branch based on the **develop** branch that contains the most recent changes. This is mandatory.
 
 Remember that whenever you make changes, you need to rebuild the docker image to see the reflected changes.
 ## Create a pull request

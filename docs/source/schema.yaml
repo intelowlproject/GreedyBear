@@ -16,7 +16,7 @@ paths:
       tags:
       - feeds
       summary: Get the feeds data
-      description: Returns the feeds(it will be updated regularly every 10 mins)
+      description: Returns the feeds (it will be updated regularly every 10 mins)
       operationId: getFeeds
       parameters:
       - name: feed_type
@@ -39,7 +39,7 @@ paths:
         description: >
           The available attack_type are:
            * `scanner` - IP addresses captured by the honeypots while performing attacks
-           * `payload_request` - IP addresses and domains extracted from payloads that would have been executed after a speficic attack would have been successful.
+           * `payload_request` - IP addresses and domains extracted from payloads that would have been executed after a specific attack would have been successful.
            * `all` - get all types at once
       - name: age
         in: path
