@@ -13,6 +13,10 @@ The project goal is to extract data of the attacks detected by a [TPOT](https://
 
 [Official announcement here](https://www.honeynet.org/2021/12/27/new-project-available-greedybear/).
 
+## Documentation [![Documentation Status](https://readthedocs.org/projects/greedybear/badge/?version=latest)](https://greedybear.readthedocs.io/en/latest/?badge=latest)
+
+Documentation about GreedyBear installation, usage, configuration and contribution can be found at https://greedybear.readthedocs.io/.
+
 ## Public feeds
 
 There are public feeds provided by The Honeynet Project in this site: greedybear.honeynet.org. [Example](https://greedybear.honeynet.org/api/feeds/log4j/all/recent.txt)
@@ -30,8 +34,3 @@ If you manage one or more T-POTs of your own, you can get the code of this appli
 In this way, you are able to provide new feeds of your own.
 
 To install it locally, Please refer to our [installation guide](https://greedybear.readthedocs.io/en/latest/Installation.html)
-
-
-## Documentation [![Documentation Status](https://readthedocs.org/projects/greedybear/badge/?version=latest)](https://greedybear.readthedocs.io/en/latest/?badge=latest)
-
-Documentation about GreedyBear installation, usage, configuration and contribution can be found at https://greedybear.readthedocs.io/.
