@@ -2,7 +2,7 @@ name: Pull request automation
 
 on:
   pull_request:
-    branches: [ main, develop ]
+    branches: [ main, develop, testsuite ]
 
 jobs:
   build:
@@ -16,19 +16,33 @@ jobs:
       with:
         python-version: 3.9
 
-    - name: Install Dependencies
-      run: |
-        pip3 install --upgrade pip
-        pip3 install -r test-requirements.txt
+#     - name: Install Dependencies
+#       run: |
+#         pip3 install --upgrade pip
+#         pip3 install -r test-requirements.txt
 
-    - name: Black formatter
-      run: |
-        black . --check --diff
+#     - name: Black formatter
+#       run: |
+#         black . --check --diff
 
-    - name: Lint with flake8 (PEP8 enforcer + linter)
-      run: |
-        flake8 . --config=.flake8 --show-source
+#     - name: Lint with flake8 (PEP8 enforcer + linter)
+#       run: |
+#         flake8 . --config=.flake8 --show-source
 
-    - name: isort
+#     - name: isort
+#       run: |
+#         isort . --profile black --filter-files --check-only --diff --skip venv
+    - name: Before Build
       run: |
-        isort . --profile black --filter-files --check-only --diff --skip venv
+        cp .env_template .env
+        cp docker/env_file_template docker/env_file
+        cp docker/env_file_postgres_template docker/env_file_postgres
+    - name: Build and run containers
+      run: |
+        docker-compose -f docker/default.yml -f docker/ci.override.yml up --build
+#     - name: "Install requirements"
+#       run: |
+#         sudo docker exec greedybear_uwsgi pip3 install --no-cache-dir --compile -r requirements/test-requirements.txt
+#     - name: "Run Tests"
+#       run: |
+#         sudo docker exec greedybear_uwsgi python manage.py test
