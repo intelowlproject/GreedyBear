@@ -3,6 +3,8 @@ name: Pull request automation
 on:
   pull_request:
     branches: [ main, develop, testsuite ]
+  push:
+    branches: [ci]
 
 jobs:
   build:
