@@ -16,12 +16,12 @@ services:
       - env_file_app_ci
   
   nginx:
-  build:
-    context: ..
-    dockerfile: docker/Dockerfile_nginx
-  image: honeynet/greedybear:ci
-  volumes:
-    - ../configuration/nginx/http.conf:/etc/nginx/conf.d/default.conf
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile_nginx
+    image: honeynet/greedybear:ci
+    volumes:
+      - ../configuration/nginx/http.conf:/etc/nginx/conf.d/default.conf
 
   celery_beat:
     image: honeynet/greedybear:ci
