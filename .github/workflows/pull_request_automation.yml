@@ -48,3 +48,4 @@ jobs:
     - name: "Run Tests"
       run: |
         sudo docker exec greedybear_uwsgi python manage.py test
+
