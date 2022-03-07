@@ -2,9 +2,7 @@ name: Pull request automation
 
 on:
   pull_request:
-    branches: [ main, develop, testsuite ]
-  push:
-    branches: [ci]
+    branches: [ main, develop]
 
 jobs:
   build:
@@ -18,22 +16,18 @@ jobs:
       with:
         python-version: 3.9
 
-#     - name: Install Dependencies
-#       run: |
-#         pip3 install --upgrade pip
-#         pip3 install -r test-requirements.txt
+    - name: Black formatter
+      run: |
+        black . --check --diff
 
-#     - name: Black formatter
-#       run: |
-#         black . --check --diff
+    - name: Lint with flake8 (PEP8 enforcer + linter)
+      run: |
+        flake8 . --config=.flake8 --show-source
 
-#     - name: Lint with flake8 (PEP8 enforcer + linter)
-#       run: |
-#         flake8 . --config=.flake8 --show-source
-
-#     - name: isort
-#       run: |
-#         isort . --profile black --filter-files --check-only --diff --skip venv
+    - name: isort
+      run: |
+        isort . --profile black --filter-files --check-only --diff --skip venv
+        
     - name: Before Build
       run: |
         cp .env_template .env
