@@ -40,7 +40,7 @@ jobs:
         cp docker/env_file_postgres_template docker/env_file_postgres
     - name: Build and run containers
       run: |
-        docker-compose -f docker/default.yml -f docker/ci.override.yml up --build
+        docker-compose -f docker/default.yml -f docker/ci.override.yml up --build -d
     - name: "Install requirements"
       run: |
         sudo docker exec greedybear_uwsgi pip3 install --no-cache-dir --compile -r requirements/test-requirements.txt
