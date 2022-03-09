@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: CHeckout GreedyBear
+    - name: Checkout GreedyBear
       uses: actions/checkout@v2
     
     - name: Set up Python
@@ -39,6 +39,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: linters
     steps:
+    - name: Checkout GreedyBear
+      uses: actions/checkout@v2
+      
     - name: Before Build
       run: |
         ls
