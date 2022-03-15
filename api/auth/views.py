@@ -6,6 +6,7 @@ from django_user_agents.utils import get_user_agent
 
 logger = logging.getLogger(__name__)
 
+
 class LoginView(DurinViews.LoginView):
     def get_client_obj(self, request) -> Client:
         user_agent = get_user_agent(request)
@@ -24,6 +25,7 @@ class LoginView(DurinViews.LoginView):
                 logger.exception(f"Admin: '{user_name}' login failed.")
         return super(LoginView, self).post(request, *args, **kwargs)
 
+
 class LogoutView(DurinViews.LogoutView):
     def post(self, request, *args, **kwargs):
         uname = request.user.username
@@ -35,6 +37,7 @@ class LogoutView(DurinViews.LogoutView):
             except Exception:
                 logger.exception(f"administrator: '{uname}' session logout failed.")
         return super(LogoutView, self).post(request, format=None)
+
 
 APIAccessTokenView = DurinViews.APIAccessTokenView
 TokenSessionsViewSet = DurinViews.TokenSessionsViewSet
