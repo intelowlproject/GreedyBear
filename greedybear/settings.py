@@ -3,6 +3,7 @@
 # flake8: noqa
 import logging
 import os
+from datetime import timedelta
 
 from django.core.management.utils import get_random_secret_key
 from elasticsearch import Elasticsearch
@@ -56,7 +57,29 @@ INSTALLED_APPS = [
     "gui.apps.GuiConfig",
     "api.apps.ApiConfig",
     "greedybear.apps.GreedyBearConfig",
+    "rest_framework",
+    "durin",
+    "django_user_agents",
 ]
+
+REST_FRAMEWORK = {
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        'durin.auth.CachedTokenAuthentication',
+    ]
+}
+
+REST_DURIN = {
+        "DEFAULT_TOKEN_TTL": timedelta(days=31),
+        "TOKEN_CHARACTER_LENGTH": 32,
+        "USER_SERIALIZER": None,
+        "AUTH_HEADER_PREFIX": "Token",
+        "TOKEN_CACHE_TIMEOUT": 300,
+        "REFRESH_TOKEN_ON_LOGIN": True,
+        "AUTHTOKEN_SELECT_RELATED_LIST": ["user"],
+        "API_ACCESS_CLIENT_NAME": "GreedyBear Client",
+        "API_ACCESS_EXCLUDE_FROM_SESSIONS": True,
+        "API_ACCESS_RESPONSE_INCLUDE_TOKEN": True,
+}
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -66,6 +89,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    'django_user_agents.middleware.UserAgentMiddleware',
 ]
 
 ROOT_URLCONF = "greedybear.urls"
