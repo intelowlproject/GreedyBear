@@ -1,6 +1,6 @@
 # This file is a part of GreedyBear https://github.com/honeynet/GreedyBear
 # See the file 'LICENSE' for copying permission.
-from django.urls import path, include
+from django.urls import include, path
 
 from api.views import enrichment_view, feeds
 

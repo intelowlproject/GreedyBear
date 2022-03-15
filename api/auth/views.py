@@ -1,8 +1,9 @@
 import logging
+
 from django.contrib.auth import login, logout
+from django_user_agents.utils import get_user_agent
 from durin import views as DurinViews
 from durin.models import Client
-from django_user_agents.utils import get_user_agent
 
 logger = logging.getLogger(__name__)
 
