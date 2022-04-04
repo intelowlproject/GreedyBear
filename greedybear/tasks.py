@@ -38,3 +38,10 @@ def monitor_logs():
     from greedybear.cronjobs.monitor_logs import MonitorLogs
 
     MonitorLogs().execute()
+
+
+@shared_task()
+def db_backup():
+    from greedybear.cronjobs.db_backup import DbBackup
+
+    DbBackup().execute()

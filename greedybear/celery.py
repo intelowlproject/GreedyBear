@@ -3,6 +3,7 @@
 from __future__ import absolute_import, unicode_literals
 
 import os
+from datetime import timedelta
 
 from celery import Celery
 from celery.schedules import crontab
@@ -84,6 +85,12 @@ app.conf.beat_schedule = {
     "monitor_logs": {
         "task": "greedybear.tasks.monitor_logs",
         "schedule": crontab(minute=33),
+        "options": {"queue": "default"},
+    },
+    # run once every settings.DB_BACKUP_FREQUENCY * 24 hour
+    "db_backup": {
+        "task": "greedybear.tasks.db_backup",
+        "schedule": timedelta(days=settings.DB_BACKUP_FREQUENCY),
         "options": {"queue": "default"},
     },
 }

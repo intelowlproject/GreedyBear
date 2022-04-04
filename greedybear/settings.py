@@ -15,6 +15,13 @@ SECRET_KEY = os.environ.get("DJANGO_SECRET", None) or get_random_secret_key()
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = os.environ.get("DEBUG", False) == "True"
 
+# DB Backup Config
+# Backup Interval in days. Default: 1 day.
+DB_BACKUP_FREQUENCY = int(os.getenv("DB_BACKUP_FREQUENCY", 1))
+# Backup Storage Location and Max Backups. (When Max Backup is reached old backups are removed).
+DB_BACKUP_LOCATION = os.getenv("DB_BACKUP_LOCATION", "/opt/backups")
+DB_BACKUP_MAX_BACKUPS = os.getenv("DB_BACKUP_MAX_BACKUPS", 10)
+
 DJANGO_LOG_DIRECTORY = "/var/log/greedybear/django"
 MOCK_CONNECTIONS = os.environ.get("MOCK_CONNECTIONS", False) == "True"
 ELASTIC_ENDPOINT = os.getenv("ELASTIC_ENDPOINT", "")

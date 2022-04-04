@@ -4,8 +4,9 @@ ENV PYTHONUNBUFFERED 1
 ENV DJANGO_SETTINGS_MODULE greedybear.settings
 ENV PYTHONPATH /opt/deploy/greedybear
 ENV LOG_PATH /var/log/greedybear
+ENV DB_BACKUP_LOCATION /opt/backups
 
-RUN mkdir -p ${LOG_PATH} \
+RUN mkdir -p ${LOG_PATH} ${DB_BACKUP_LOCATION} \
     ${LOG_PATH}/django \
     ${LOG_PATH}/uwsgi
 
