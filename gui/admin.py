@@ -23,4 +23,6 @@ class IOCModelAdmin(admin.ModelAdmin):
         "related_urls",
         "scanner",
         "payload_request",
+        "log4j",
+        "cowrie",
     ]
