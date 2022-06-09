@@ -5,6 +5,8 @@ ENV DJANGO_SETTINGS_MODULE greedybear.settings
 ENV PYTHONPATH /opt/deploy/greedybear
 ENV LOG_PATH /var/log/greedybear
 
+ARG WATCHMAN=false
+
 RUN mkdir -p ${LOG_PATH} \
     ${LOG_PATH}/django \
     ${LOG_PATH}/uwsgi
@@ -32,3 +34,5 @@ RUN touch ${LOG_PATH}/django/api.log ${LOG_PATH}/django/api_errors.log \
     && touch ${LOG_PATH}/django/celery.log ${LOG_PATH}/django/celery_errors.log \
     && touch ${LOG_PATH}/django/django_errors.log ${LOG_PATH}/django/elasticsearch.log\
     && chown -R www-data:www-data ${LOG_PATH} /opt/deploy/
+
+RUN docker/scripts/watchman_install.sh

@@ -1,8 +1,36 @@
 version: '3.8'
 
 services:
-  nginx:
+  uwsgi:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      args:
+        WATCHMAN: "true"
+    image: honeynet/greedybear:test
     volumes:
-      - ../configuration/nginx/http.conf:/etc/nginx/conf.d/default.conf
+      - ../:/opt/deploy/greedybear
     ports:
       - "80:80"
+    environment:
+      - DEBUG=True
+      - DJANGO_TEST_SERVER=True
+      - DJANGO_WATCHMAN_TIMEOUT=20
+
+  nginx:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile_nginx
+    image: honeynet/greedybear_nginx:test
+    volumes:
+      - ../configuration/nginx/django_server.conf:/etc/nginx/conf.d/default.conf
+
+  celery_beat:
+    image: honeynet/greedybear:test
+    volumes:
+      - ../:/opt/deploy/greedybear
+
+  celery_worker_default:
+    image: honeynet/greedybear:test
+    volumes:
+      - ../:/opt/deploy/greedybear
