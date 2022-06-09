@@ -21,7 +21,7 @@ jobs:
     - name: Install Dependencies
       run: |
         pip3 install --upgrade pip
-        pip3 install -r test-requirements.txt
+        pip3 install -r requirements/test-requirements.txt
 
     - name: Black formatter
       run: |
@@ -53,7 +53,7 @@ jobs:
         sudo docker-compose -f docker/default.yml -f docker/ci.override.yml up --build -d
     - name: "Install requirements"
       run: |
-        docker exec greedybear_uwsgi pip3 install --no-cache-dir --compile -r test-requirements.txt
+        docker exec greedybear_uwsgi pip3 install --no-cache-dir --compile -r requirements/test-requirements.txt
     - name: "Run Tests"
       run: |
         sudo docker exec greedybear_uwsgi python manage.py test
