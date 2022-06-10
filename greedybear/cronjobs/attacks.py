@@ -4,7 +4,7 @@ from abc import ABCMeta
 from datetime import datetime
 from ipaddress import IPv4Address
 
-from greedybear.consts import PAYLOAD_REQUEST, SCANNER
+from greedybear.consts import DOMAIN, IP, PAYLOAD_REQUEST, SCANNER
 from greedybear.cronjobs.base import Cronjob
 from greedybear.cronjobs.sensors import ExtractSensors
 from greedybear.models import IOC, Sensors
@@ -88,9 +88,9 @@ class ExtractAttacks(Cronjob, metaclass=ABCMeta):
         try:
             IPv4Address(ioc)
         except ValueError:
-            ioc_type = "domain"
+            ioc_type = DOMAIN
         else:
-            ioc_type = "ip"
+            ioc_type = IP
         return ioc_type
 
     def _check_first_time_run(self, honeypot_flag):

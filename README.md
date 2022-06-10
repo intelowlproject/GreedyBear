@@ -13,9 +13,11 @@ The project goal is to extract data of the attacks detected by a [TPOT](https://
 
 [Official announcement here](https://www.honeynet.org/2021/12/27/new-project-available-greedybear/).
 
-## Feeds
+## Documentation [![Documentation Status](https://readthedocs.org/projects/greedybear/badge/?version=latest)](https://greedybear.readthedocs.io/en/latest/?badge=latest)
 
-### Public feeds
+Documentation about GreedyBear installation, usage, configuration and contribution can be found at https://greedybear.readthedocs.io/.
+
+## Public feeds
 
 There are public feeds provided by The Honeynet Project in this site: greedybear.honeynet.org. [Example](https://greedybear.honeynet.org/api/feeds/log4j/all/recent.txt)
 
@@ -23,36 +25,7 @@ Please do not perform too many requests to extract feeds or you will be banned.
 
 If you want to be updated regularly, please download the feeds only once every 10 minutes (this is the time between each internal update).
 
-
-### Available feeds
-The feeds are reachable through the following URL: 
-```
-https://<greedybear_site>/api/feeds/<feed_type>/<attack_type>/<age>.<format>
-```
-
-The available `feed_type` are:
-
-* `log4j`: attacks detected from the [Log4pot](https://github.com/thomaspatzke/Log4Pot).
-* `cowrie`: attacks detected from the [Cowrie Honeypot](https://github.com/cowrie/cowrie)
-* `all`: get all types at once
-
-The available `attack_type` are:
-
-* `scanner`: IP addresses captured by the honeypots while performing attacks
-* `payload_request`: IP addresses and domains extracted from payloads that would have been executed after a speficic attack would have been successful
-* `all`: get all types at once
-
-The available `age` are:
-
-* `recent`: most recent IOCs seen in the last 3 days
-* `persistent`: these IOCs are the ones that were seen regularly by the honeypots. This feeds will start empty once no prior data was collected and will become bigger over time.
-
-The available `format` are:
-
-* `txt`: plain text (just one line for each IOC)
-* `csv`: CSV-like file (just one line for each IOC)
-* `json`: JSON file with additional information regarding the IOCs
-
+To check all the available feeds, Please refer to our [usage guide](https://greedybear.readthedocs.io/en/latest/Usage.html)
 
 ## Run Greedybear on your environment
 The tool has been created not only to provide the feeds from The Honeynet Project's cluster of TPOTs.
@@ -60,27 +33,4 @@ The tool has been created not only to provide the feeds from The Honeynet Projec
 If you manage one or more T-POTs of your own, you can get the code of this application and run Greedybear on your environment.
 In this way, you are able to provide new feeds of your own.
 
-### How to execute it locally for testing
-```commandline
-# clone the Greedybear project repository
-git clone https://github.com/honeynet/GreedyBear
-cd GreedyBear/
-
-# construct environment files from templates
-cp .env_template .env
-cd docker/
-cp env_file_template env_file
-cp env_file_postgres_template env_file_postgres
-cd ..
-
-# build the image locally
-docker-compose -p greedybear build
-
-# start the app
-docker-compose -p greedybear up
-
-# now the app is running on http://localhost:80
-
-# shut down the application
-docker-compose -p greedybear down
-```
+To install it locally, Please refer to our [installation guide](https://greedybear.readthedocs.io/en/latest/Installation.html)

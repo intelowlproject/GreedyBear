@@ -3,3 +3,6 @@ docs/build
 docker/env_file
 docker/env_file_postgres
 .env
+__pycache__/
+# JetBrains IDEs (PyCharm, IntelliJ, etc.)
+.idea/
