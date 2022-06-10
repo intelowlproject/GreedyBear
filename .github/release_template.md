@@ -3,7 +3,7 @@
 - [ ] Update `CHANGELOG.md` for the new version
 - [ ] Change version number in `docs/source/conf.py`
 - [ ] Verify CI Tests
-- [ ] Create release for the branch `dev`
+- [ ] Create release for the branch `develop`
 - [ ] Wait for dockerHub to finish the builds
 - [ ] Merge the PR to the `main` branch
 
