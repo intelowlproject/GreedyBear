@@ -1,6 +1,8 @@
 from datetime import datetime
 
+from django.contrib.auth.models import User
 from django.test import TestCase
+from rest_framework.test import APIClient
 
 from greedybear.models import IOC
 
@@ -25,19 +27,29 @@ class EnrichmentViewTestCase(TestCase):
             related_urls=[],
         )
 
+        cls.superuser = User.objects.create_superuser(
+            username="test", email="test@greedybear.com", password="test"
+        )
+
     def test_for_vaild_unregistered_ip(self):
         """Check for a valid IP that is unavaliable in DB"""
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.superuser)
         response = self.client.get("/api/enrichment?query=192.168.0.1")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["found"], False)
 
     def test_for_invaild_unregistered_ip(self):
         """Check for a IP that Fails Regex Checks and is unavaliable in DB"""
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.superuser)
         response = self.client.get("/api/enrichment?query=30.168.1.255.1")
         self.assertEqual(response.status_code, 400)
 
     def test_for_vaild_registered_ip(self):
         """Check for a valid IP that is avaliable in DB"""
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.superuser)
         response = self.client.get("/api/enrichment?query=140.246.171.141")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["found"], True)
@@ -61,3 +73,8 @@ class EnrichmentViewTestCase(TestCase):
         self.assertEqual(
             response.json()["ioc"]["payload_request"], self.ioc.payload_request
         )
+
+    def test_for_invalid_authentication(self):
+        """Check for a invalid authentication"""
+        response = self.client.get("/api/enrichment?query=140.246.171.141")
+        self.assertEqual(response.status_code, 401)
