@@ -35,4 +35,4 @@ RUN touch ${LOG_PATH}/django/api.log ${LOG_PATH}/django/api_errors.log \
     && touch ${LOG_PATH}/django/django_errors.log ${LOG_PATH}/django/elasticsearch.log\
     && chown -R www-data:www-data ${LOG_PATH} /opt/deploy/
 
-RUN docker/scripts/watchman_install.sh
+RUN docker/watchman_install.sh
