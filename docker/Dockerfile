@@ -5,6 +5,8 @@ ENV DJANGO_SETTINGS_MODULE greedybear.settings
 ENV PYTHONPATH /opt/deploy/greedybear
 ENV LOG_PATH /var/log/greedybear
 
+ARG WATCHMAN=false
+
 RUN mkdir -p ${LOG_PATH} \
     ${LOG_PATH}/django \
     ${LOG_PATH}/uwsgi
@@ -17,8 +19,8 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 RUN pip3 install --upgrade pip
 
-COPY requirements.txt $PYTHONPATH/requirements.txt
-COPY test-requirements.txt $PYTHONPATH/test-requirements.txt
+COPY requirements/requirements.txt $PYTHONPATH/requirements.txt
+COPY requirements/test-requirements.txt $PYTHONPATH/test-requirements.txt
 WORKDIR $PYTHONPATH
 
 RUN pip3 install --no-cache-dir --compile -r requirements.txt
@@ -32,3 +34,5 @@ RUN touch ${LOG_PATH}/django/api.log ${LOG_PATH}/django/api_errors.log \
     && touch ${LOG_PATH}/django/celery.log ${LOG_PATH}/django/celery_errors.log \
     && touch ${LOG_PATH}/django/django_errors.log ${LOG_PATH}/django/elasticsearch.log\
     && chown -R www-data:www-data ${LOG_PATH} /opt/deploy/
+
+RUN docker/watchman_install.sh
