@@ -54,6 +54,8 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "django.contrib.postgres",
     "gui.apps.GuiConfig",
+    "rest_framework",
+    "rest_framework.authtoken",
     "api.apps.ApiConfig",
     "greedybear.apps.GreedyBearConfig",
 ]
