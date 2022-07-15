@@ -63,9 +63,12 @@ INSTALLED_APPS = [
     "gui.apps.GuiConfig",
     "rest_framework",
     "rest_framework.authtoken",
+    "drf_spectacular",
     "api.apps.ApiConfig",
     "greedybear.apps.GreedyBearConfig",
 ]
+
+REST_FRAMEWORK = {"DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema"}
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",

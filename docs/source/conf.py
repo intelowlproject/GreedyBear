@@ -48,7 +48,7 @@ redoc = [
     {
         "name": "API docs",
         "page": "Redoc",
-        "spec": "schema.yaml",
+        "spec": "schema.yml",
         "opts": {"suppress-warnings": True, "hide-hostname": True},
     }
 ]

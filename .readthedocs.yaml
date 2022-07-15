@@ -15,7 +15,7 @@ python:
   version: "3.8"
   # Install our python package before building the docs
   install:
-    - requirements: docs/requirements/docs-requirements.txt
+    - requirements: requirements/docs-requirements.txt
   system_packages: false
 
 

@@ -1,0 +1,22 @@
+openapi: 3.0.3
+info:
+  title: GreedyBear API specification
+  version: 0.2.0
+paths:
+  /api/enrichment:
+    get:
+      operationId: api_enrichment_retrieve
+      tags:
+      - api
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          description: No response body
+components:
+  securitySchemes:
+    tokenAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: Token-based authentication with required prefix "Token"
