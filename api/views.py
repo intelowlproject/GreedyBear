@@ -11,6 +11,9 @@ from django.http import (
     JsonResponse,
     StreamingHttpResponse,
 )
+from drf_spectacular.utils import extend_schema as add_docs
+from drf_spectacular.utils import inline_serializer
+from rest_framework import serializers as rfs
 from rest_framework import status
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import (
@@ -21,7 +24,7 @@ from rest_framework.decorators import (
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from api.serializers import EnrichmentSerializer
+from api.serializers import EnrichmentSerializer, IOCSerializer
 from greedybear.consts import FEEDS_LICENSE, GET, PAYLOAD_REQUEST, SCANNER
 from greedybear.models import IOC
 
@@ -38,15 +41,13 @@ class Echo:
         return value
 
 
+@add_docs(
+    description="Request if a specific observable (domain or IP address) has been listed by GreedyBear"
+)
 @api_view([GET])
 def feeds(request, feed_type, attack_type, age, format_):
     """
-    :param request:
-    :param feed_type:
-    :param attack_type:
-    :param age:
-    :param format_:
-    :return:
+    Extract Structured IOC Feeds from GreedyBear
     """
     source = str(request.user)
     logger.info(
@@ -148,6 +149,16 @@ def _formatted_bad_request(format_):
         return JsonResponse({}, status=400)
 
 
+@add_docs(
+    description="Request if a specific observable (domain or IP address) has been listed by GreedyBear",
+    request=EnrichmentSerializer,
+    responses={
+        200: inline_serializer(
+            name="EnrichmentSerializerResponse",
+            fields={"found": rfs.BooleanField(), "ioc": IOCSerializer},
+        ),
+    },
+)
 @api_view([GET])
 @authentication_classes([TokenAuthentication])
 @permission_classes([IsAuthenticated])
