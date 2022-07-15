@@ -1,2 +1,2 @@
-API docs
+GreedyBear API Redoc
 ===========================
