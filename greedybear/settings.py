@@ -41,6 +41,13 @@ else:
 SLACK_TOKEN = os.environ.get("SLACK_TOKEN", "")
 SLACK_CHANNEL = os.environ.get("SLACK_CHANNEL", "")
 
+VERSION = "0.2.0"
+# drf-spectacular
+SPECTACULAR_SETTINGS = {
+    "TITLE": "GreedyBear API specification",
+    "VERSION": VERSION,
+}
+
 ALLOWED_HOSTS = ["*"]
 
 # Application definition
