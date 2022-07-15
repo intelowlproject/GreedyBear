@@ -11,7 +11,6 @@ from django.http import (
     JsonResponse,
     StreamingHttpResponse,
 )
-from django.views.decorators.http import require_http_methods
 from rest_framework import status
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import (
@@ -39,7 +38,7 @@ class Echo:
         return value
 
 
-@require_http_methods([GET])
+@api_view([GET])
 def feeds(request, feed_type, attack_type, age, format_):
     """
     :param request:
