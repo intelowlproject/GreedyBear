@@ -37,6 +37,16 @@ pre-commit install
 
 
 Remember that whenever you make changes, you need to rebuild the docker image to see the reflected changes.
+
+
+#### NOTE about documentation:
+
+If you made any changes to an existing model/serializer/view, please run the following command to generate a new version of the API schema and docs:
+
+```bash
+docker exec -it greedybear_uwsgi python manage.py spectacular --file docs/source/schema.yml && make html
+```
+
 ## Create a pull request
 
 ### Remember!!!
