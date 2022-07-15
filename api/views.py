@@ -41,14 +41,9 @@ class Echo:
         return value
 
 
-@add_docs(
-    description="Request if a specific observable (domain or IP address) has been listed by GreedyBear"
-)
+@add_docs(description="Extract Structured IOC Feeds from GreedyBear")
 @api_view([GET])
 def feeds(request, feed_type, attack_type, age, format_):
-    """
-    Extract Structured IOC Feeds from GreedyBear
-    """
     source = str(request.user)
     logger.info(
         f"request from {source}. Feed type: {feed_type}, attack_type: {attack_type},"
@@ -151,7 +146,10 @@ def _formatted_bad_request(format_):
 
 @add_docs(
     description="Request if a specific observable (domain or IP address) has been listed by GreedyBear",
-    request=EnrichmentSerializer,
+    request=inline_serializer(
+        name="EnrichmentSerializerRequest",
+        fields={"query": rfs.StringRelatedField()},
+    ),
     responses={
         200: inline_serializer(
             name="EnrichmentSerializerResponse",
