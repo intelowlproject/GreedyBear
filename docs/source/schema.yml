@@ -6,23 +6,24 @@ paths:
   /api/enrichment:
     get:
       operationId: enrichment_retrieve
+      description: Request if a specific observable (domain or IP address) has been
+        listed by GreedyBear
       tags:
       - enrichment
       security:
       - tokenAuth: []
       responses:
         '200':
-          description: No response body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnrichmentSerializerResponse'
+          description: ''
   /api/feeds/{feed_type}/{attack_type}/{age}.{format_}:
     get:
       operationId: feeds_._retrieve
-      description: |-
-        :param request:
-        :param feed_type:
-        :param attack_type:
-        :param age:
-        :param format_:
-        :return:
+      description: Request if a specific observable (domain or IP address) has been
+        listed by GreedyBear
       parameters:
       - in: path
         name: age
@@ -54,6 +55,14 @@ paths:
         '200':
           description: No response body
 components:
+  schemas:
+    EnrichmentSerializerResponse:
+      type: object
+      properties:
+        found:
+          type: boolean
+      required:
+      - found
   securitySchemes:
     basicAuth:
       type: http

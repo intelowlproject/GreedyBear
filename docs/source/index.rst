@@ -9,5 +9,5 @@ Welcome to GreedyBear's documentation!
    Usage
    Contribute
    Tests
-re   OpenAPI
+   OpenAPI
    Redoc
