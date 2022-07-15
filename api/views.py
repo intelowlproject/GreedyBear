@@ -41,6 +41,7 @@ class Echo:
         return value
 
 
+# The Doc does not work as intended. We should refactor this by correctly leveraging DRF
 @add_docs(description="Extract Structured IOC Feeds from GreedyBear")
 @api_view([GET])
 def feeds(request, feed_type, attack_type, age, format_):
@@ -144,11 +145,12 @@ def _formatted_bad_request(format_):
         return JsonResponse({}, status=400)
 
 
+# The Doc does not work as intended. We should refactor this by correctly leveraging DRF
 @add_docs(
     description="Request if a specific observable (domain or IP address) has been listed by GreedyBear",
     request=inline_serializer(
         name="EnrichmentSerializerRequest",
-        fields={"query": rfs.StringRelatedField()},
+        fields={"query": rfs.CharField()},
     ),
     responses={
         200: inline_serializer(
