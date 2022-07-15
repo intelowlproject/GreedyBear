@@ -10,8 +10,6 @@ services:
     image: honeynet/greedybear:test
     volumes:
       - ../:/opt/deploy/greedybear
-    ports:
-      - "80:80"
     environment:
       - DEBUG=True
       - DJANGO_TEST_SERVER=True
