@@ -5,16 +5,63 @@ info:
 paths:
   /api/enrichment:
     get:
-      operationId: api_enrichment_retrieve
+      operationId: enrichment_retrieve
       tags:
-      - api
+      - enrichment
       security:
       - tokenAuth: []
       responses:
         '200':
           description: No response body
+  /api/feeds/{feed_type}/{attack_type}/{age}.{format_}:
+    get:
+      operationId: feeds_._retrieve
+      description: |-
+        :param request:
+        :param feed_type:
+        :param attack_type:
+        :param age:
+        :param format_:
+        :return:
+      parameters:
+      - in: path
+        name: age
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: attack_type
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: feed_type
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: format_
+        schema:
+          type: string
+        required: true
+      tags:
+      - feeds
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
 components:
   securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid
     tokenAuth:
       type: apiKey
       in: header
