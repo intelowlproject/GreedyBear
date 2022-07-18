@@ -1,3 +1,3 @@
-GreedyBear API
+GreedyBear API docs
 ===============
-.. openapi:: schema.yaml
+.. openapi:: schema.yml
