@@ -18,15 +18,15 @@ Now you can start by building the image using docker-compose and run the project
 
 ```bash
 # build the image locally
-docker-compose -p greedybear build
+docker-compose build
 
 # start the app
-docker-compose -p greedybear up
+docker-compose up
 
 # now the app is running on http://localhost:80
 
 # shut down the application
-docker-compose -p greedybear down
+docker-compose down
 ```
 Note that GreedyBear *needs* a running instance of ElasticSearch of a TPoT to function.
 If you don't have one, you can make the following changes to make GreeyBear spin up it's own ElasticSearch and Kibana instances.
