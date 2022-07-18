@@ -41,6 +41,13 @@ else:
 SLACK_TOKEN = os.environ.get("SLACK_TOKEN", "")
 SLACK_CHANNEL = os.environ.get("SLACK_CHANNEL", "")
 
+VERSION = "0.2.0"
+# drf-spectacular
+SPECTACULAR_SETTINGS = {
+    "TITLE": "GreedyBear API specification",
+    "VERSION": VERSION,
+}
+
 ALLOWED_HOSTS = ["*"]
 
 # Application definition
@@ -56,9 +63,12 @@ INSTALLED_APPS = [
     "gui.apps.GuiConfig",
     "rest_framework",
     "rest_framework.authtoken",
+    "drf_spectacular",
     "api.apps.ApiConfig",
     "greedybear.apps.GreedyBearConfig",
 ]
+
+REST_FRAMEWORK = {"DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema"}
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",

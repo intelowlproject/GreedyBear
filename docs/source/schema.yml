@@ -1,0 +1,78 @@
+openapi: 3.0.3
+info:
+  title: GreedyBear API specification
+  version: 0.2.0
+paths:
+  /api/enrichment:
+    get:
+      operationId: enrichment_retrieve
+      description: Request if a specific observable (domain or IP address) has been
+        listed by GreedyBear
+      tags:
+      - enrichment
+      security:
+      - tokenAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EnrichmentSerializerResponse'
+          description: ''
+  /api/feeds/{feed_type}/{attack_type}/{age}.{format_}:
+    get:
+      operationId: feeds_._retrieve
+      description: Request if a specific observable (domain or IP address) has been
+        listed by GreedyBear
+      parameters:
+      - in: path
+        name: age
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: attack_type
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: feed_type
+        schema:
+          type: string
+        required: true
+      - in: path
+        name: format_
+        schema:
+          type: string
+        required: true
+      tags:
+      - feeds
+      security:
+      - cookieAuth: []
+      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+components:
+  schemas:
+    EnrichmentSerializerResponse:
+      type: object
+      properties:
+        found:
+          type: boolean
+      required:
+      - found
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid
+    tokenAuth:
+      type: apiKey
+      in: header
+      name: Authorization
+      description: Token-based authentication with required prefix "Token"

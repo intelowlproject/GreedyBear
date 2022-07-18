@@ -9,14 +9,5 @@ Welcome to GreedyBear's documentation!
    Usage
    Contribute
    Tests
-   OpenAPI Doc <OpenAPI>
+   OpenAPI
    Redoc
-
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`

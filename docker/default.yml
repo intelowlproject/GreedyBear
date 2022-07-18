@@ -36,13 +36,12 @@ services:
     container_name: greedybear_nginx
     restart: unless-stopped
     volumes:
-      - ../configuration/nginx/https.conf:/etc/nginx/conf.d/default.conf
-      - /usr/local/share/ca-certificates:/usr/local/share/ca-certificates
-      - /etc/ssl/private:/etc/ssl/private
+      - ../configuration/nginx/http.conf:/etc/nginx/conf.d/default.conf
+      - ../configuration/nginx/errors.conf:/etc/nginx/errors.conf
       - nginx_logs:/var/log/nginx
       - static_content:/var/www/static
     ports:
-      - "443:443"
+      - "80:80"
     depends_on:
       - uwsgi
 
