@@ -21,7 +21,7 @@ async function provaAPI() {
 
 function Home() {
     return (
-        <div className='jumbotron'>
+        <div>
             <h1> Titolo Home Page </h1>
             <p> paragrafo home page </p>
             <p> paragrafo 2 home page </p>
