@@ -16,7 +16,7 @@ The available feed_type are:
 The available attack_type are:
 
 * `scanner`: IP addresses captured by the honeypots while performing attacks
-* `payload_request': IP addresses and domains extracted from payloads that would have been executed after a speficic attack would have been successful
+* `payload_request`: IP addresses and domains extracted from payloads that would have been executed after a speficic attack would have been successful
 * `all`: get all types at once
 
 
