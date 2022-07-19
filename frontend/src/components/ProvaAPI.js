@@ -19,7 +19,7 @@ async function provaAPI() {
     }
   }
 
-function Home() {
+function ProvaAPI() {
     return (
         <div>
             <h1> Titolo Home Page </h1>
@@ -30,4 +30,4 @@ function Home() {
     );    
 }
 
-export default Home;
+export default ProvaAPI;
