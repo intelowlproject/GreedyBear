@@ -26,3 +26,10 @@ class IOC(models.Model):
     related_urls = pg_fields.ArrayField(
         models.CharField(max_length=900, blank=True), blank=True, default=list
     )
+
+
+class Statistics(models.Model):
+    source = models.CharField(max_length=15, blank=False)
+    feeds_api = models.BooleanField(blank=False, default=False)
+    enrichment_view_api = models.BooleanField(blank=False, default=False)
+    request_date = models.DateTimeField(blank=False, default=datetime.utcnow)
