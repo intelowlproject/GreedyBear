@@ -7,7 +7,7 @@ import {
   FEEDS_STATISTICS_DOWNLOADS_URI,
   FEEDS_STATISTICS_TYPES_URI,
   ENRICHMENT_STATISTICS_SOURCES_URI,
-  ENRICHMENT_STATISTICS_DOWNLOADS_URI ,
+  ENRICHMENT_STATISTICS_REQUESTS_URI ,
 } from "../../../constants/api";
 
 import {
@@ -85,7 +85,7 @@ export const EnrichmentSourcesChart = React.memo(() => {
 export const EnrichmentRequestsChart = React.memo(() => {
   const chartProps = React.useMemo(
     () => ({
-      url: ENRICHMENT_STATISTICS_DOWNLOADS_URI,
+      url: ENRICHMENT_STATISTICS_REQUESTS_URI,
       accessorFnAggregation: (d) => d,
       componentsFn: () =>
         Object.entries(ENRICHMENT_COLOR_MAP).slice(1, 2).map(([dkey, color]) => (

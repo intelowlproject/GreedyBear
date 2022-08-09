@@ -15,13 +15,13 @@ import {
     FeedsTypesChart
 } from "./utils/charts";
 
-const charts1 = [
+const feedsChartList = [
     ["FeedsSourcesChart", "Feeds: Sources", FeedsSourcesChart],
     ["FeedsDownloadsChart", "Feeds: Downloads", FeedsDownloadsChart],
     ["FeedsTypesChart", "Feeds: Types", FeedsTypesChart]
 ];
 
-const charts2 = [
+const enrichmentChartList = [
     ["EnrichmentSourcesChart", "Enrichment Service: Sources", EnrichmentSourcesChart],
     ["EnrichmentRequestsChart", "Enrichment Service: Requests", EnrichmentRequestsChart],
 ];
@@ -41,7 +41,7 @@ function Dashboard() {
                 />
             </div>
             <Row className="d-flex flex-wrap flex-lg-nowrap">
-                {charts1.map(([id, header, Component], i) => (
+                {feedsChartList.map(([id, header, Component]) => (
                     <Col key={id} md={12} lg={4}>
                         <SmallInfoCard
                         id={id}
@@ -57,7 +57,7 @@ function Dashboard() {
                 ))}
             </Row>
             <Row className="d-flex flex-wrap flex-lg-nowrap mt-4">
-                {charts2.map(([id, header, Component], i) => (
+                {enrichmentChartList.map(([id, header, Component]) => (
                     <Col key={id} md={12} lg={6}>
                         <SmallInfoCard
                         id={id}
