@@ -67,6 +67,7 @@ INSTALLED_APPS = [
     "drf_spectacular",
     "api.apps.ApiConfig",
     "greedybear.apps.GreedyBearConfig",
+    "certego_saas",
 ]
 
 REST_FRAMEWORK = {"DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema"}

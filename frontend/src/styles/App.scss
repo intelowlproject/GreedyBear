@@ -7,8 +7,11 @@
     scroll-behavior: smooth !important;
 }
 
+main {
+  min-height: 85vh !important;
+}
+
 footer {
-    position: absolute;
     left: 0;
     bottom: 0;
     width: 100%;

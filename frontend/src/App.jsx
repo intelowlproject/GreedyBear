@@ -10,7 +10,9 @@ function App() {
     return (
         <BrowserRouter>
             <AppHeader />
-            <AppMain />
+            <main role="main" className="px-1 px-md-5 mx-auto">
+                <AppMain />
+            </main>
             <AppFooter />
         </BrowserRouter>
     );     

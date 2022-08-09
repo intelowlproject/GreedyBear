@@ -1,5 +1,6 @@
 import React from "react";
 import { Row, Col, Container } from "reactstrap";
+import { FaTwitter } from "react-icons/fa";
 
 import { ScrollToTopButton } from "@certego/certego-ui";
 
@@ -30,7 +31,7 @@ function AppFooter() {
                   rel="noopener noreferrer"
                   className="ms-md-2 twitter-follow-button"
                 >
-                Follow @intel_owl
+                <FaTwitter /> Follow @intel_owl
                 </a>
               </Col>
             </Row>
