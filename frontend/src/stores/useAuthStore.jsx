@@ -11,45 +11,16 @@ const TOKEN_STORAGE_KEY = "GREEDYBEAR_AUTH_TOKEN";
 // hook/ store see: https://github.com/pmndrs/zustand
 const useAuthStore = create((set, get) => ({
     loading: false,
-    token: localStorage.getItem(TOKEN_STORAGE_KEY) || null,
+    // extract the user from the response from the API that we will use to get the isAuthenticated boolean value
     user: { full_name: "", first_name: "", last_name: "", email: "" },
-    access: null,
+    // todo change this to use axios and get if it is authenticated
     isAuthenticated: () => !!get().token,
-    updateToken: (newValue) => {
-        localStorage.setItem(TOKEN_STORAGE_KEY, newValue.toString());
-        set({ token: newValue });
-    },
-    deleteToken: () => {
-        localStorage.removeItem(TOKEN_STORAGE_KEY);
-        set({ token: null });
-    },
     service: {
-        fetchUserAccess: async () => {
-            try {
-              const resp = await axios.get(USERACCESS_URI, {
-                certegoUIenableProgressBar: false,
-              });
-              set({
-                user: resp.data.user,
-                access: resp.data.access,
-              });
-            } catch (err) {
-              addToast(
-                "Error fetching user access information!",
-                err.parsedMsg,
-                "danger"
-              );
-            }
-        },
         loginUser: async (body) => {
           try {
             set({ loading: true });
             const resp = await axios.post(`${AUTH_BASE_URI}/login`, body, {
               certegoUIenableProgressBar: false,
-            });
-            console.log(resp);
-            get().updateToken(resp.data.token, {
-              expires: new Date(resp.data.expiry),
             });
             addToast("You've been logged in!", null, "success");
             return Promise.resolve(resp);
@@ -63,7 +34,6 @@ const useAuthStore = create((set, get) => ({
         logoutUser: async () => {
           set({ loading: true });
           const onLogoutCb = () => {
-            get().deleteToken();
             set({ loading: false });
             addToast("Logged out!", null, "info");
           };
@@ -73,17 +43,7 @@ const useAuthStore = create((set, get) => ({
             })
             .then(onLogoutCb)
             .catch(onLogoutCb);
-        },
-        forceLogout: () => {
-          addToast(
-            "Invalid token. You will be logged out shortly",
-            null,
-            "spinner",
-            true,
-            1000
-          );
-          return setTimeout(get().service.logoutUser, 500);
-        },
+        }
     },
 }));
 
