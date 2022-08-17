@@ -17,6 +17,10 @@ import { NavLink } from "@certego/certego-ui";
 // constants
 import { GREEDYBEAR_DOCS_URL } from "../constants/environment";
 
+// local
+import UserMenu from "./widget/UserMenu";
+import { useAuthStore } from "../stores";
+
 const guestLinks = (
   <NavItem>
     <RRNavLink
@@ -46,6 +50,11 @@ const rightLinks = (
 
 function AppHeader() {
 
+  // auth store
+  const isAuthenticated = useAuthStore(
+    React.useCallback((s) => s.isAuthenticated(), [])
+  );
+
   return (
     <header className="fixed-top">
       {/* nav bar */}
@@ -72,7 +81,8 @@ function AppHeader() {
           {/* Navbar Right Side */}
           <Nav navbar className="ms-auto d-flex align-items-center">
             {rightLinks}
-            {guestLinks}
+            {<UserMenu />}
+            {!isAuthenticated ? guestLinks : <UserMenu />}
           </Nav>
         </Collapse>
       </Navbar>

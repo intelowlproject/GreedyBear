@@ -4,6 +4,7 @@ import { useRoutes } from "react-router-dom";
 import NotFoundPage from "./NotFoundPage";
 import Home from "../components/home/Home";
 import Login from "../components/auth/Login";
+import Logout from "../components/auth/Logout";
 import Dashboard from "../components/dashboard/Dashboard"
 
 function AppMain() {
@@ -15,6 +16,10 @@ function AppMain() {
       {
         path: "/login",
         element: <Login />,
+      },
+      {
+        path: "/logout",
+        element: <Logout />,
       },
       {
         path: "/dashboard",

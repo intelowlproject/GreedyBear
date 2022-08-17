@@ -15,4 +15,11 @@ urlpatterns = [
     path("enrichment", enrichment_view),
     # router viewsets
     path("", include(router.urls)),
+    # auth
+    # path("auth/", include("api.authentication.urls")),
+    # certego_saas:
+    # default apps (user),
+    path("", include("certego_saas.urls")),
+    # auth
+    path("auth/", include("certego_saas.apps.auth.urls")),
 ]
