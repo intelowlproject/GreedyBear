@@ -27,7 +27,6 @@ function UserMenu(props) {
             </DropdownItem>
             <DropdownItem divider />
             {/* Logout */}
-            
             <DropdownNavLink to="/logout">
               <FiLogOut className="me-2" /> Logout
             </DropdownNavLink>

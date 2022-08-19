@@ -263,3 +263,10 @@ class StatisticsViewSet(viewsets.ViewSet):
             range_str = "7d"
 
         return parse_humanized_range(range_str)
+
+
+@api_view([GET])
+@authentication_classes([CookieTokenAuthentication])
+@permission_classes([IsAuthenticated])
+def isAuth_view(request):
+    return Response(status=status.HTTP_200_OK)

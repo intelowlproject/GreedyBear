@@ -49,10 +49,15 @@ const rightLinks = (
 );
 
 function AppHeader() {
-
   // auth store
+  // const [isAuth, isAuthenticated] = useAuthStore(
+  //   React.useCallback((s) => [s.isAuth, s.isAuthenticated], [])
+  // );
+  // React.useEffect(isAuth, [isAuth]);
+  
+
   const isAuthenticated = useAuthStore(
-    React.useCallback((s) => s.isAuthenticated(), [])
+    React.useCallback((s) => s.isAuthenticated, [])
   );
 
   return (
@@ -81,7 +86,6 @@ function AppHeader() {
           {/* Navbar Right Side */}
           <Nav navbar className="ms-auto d-flex align-items-center">
             {rightLinks}
-            {<UserMenu />}
             {!isAuthenticated ? guestLinks : <UserMenu />}
           </Nav>
         </Collapse>
