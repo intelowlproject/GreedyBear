@@ -3,7 +3,7 @@
 from django.urls import include, path
 from rest_framework import routers
 
-from api.views import StatisticsViewSet, enrichment_view, feeds, isAuth_view
+from api.views import StatisticsViewSet, checkAuthentication, enrichment_view, feeds
 
 # Routers provide an easy way of automatically determining the URL conf.
 router = routers.DefaultRouter(trailing_slash=False)
@@ -15,8 +15,8 @@ urlpatterns = [
     path("enrichment", enrichment_view),
     # router viewsets
     path("", include(router.urls)),
-    # auth
-    path("isauth", isAuth_view),
+    # authentication
+    path("authentication", checkAuthentication),
     # certego_saas:
     # default apps (user),
     path("", include("certego_saas.urls")),

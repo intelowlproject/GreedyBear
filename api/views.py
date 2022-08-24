@@ -19,8 +19,6 @@ from drf_spectacular.utils import extend_schema as add_docs
 from drf_spectacular.utils import inline_serializer
 from rest_framework import serializers as rfs
 from rest_framework import status, viewsets
-
-# from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import (
     action,
     api_view,
@@ -268,5 +266,6 @@ class StatisticsViewSet(viewsets.ViewSet):
 @api_view([GET])
 @authentication_classes([CookieTokenAuthentication])
 @permission_classes([IsAuthenticated])
-def isAuth_view(request):
+def checkAuthentication(request):
+    logger.debug(f"user {request.user}")
     return Response(status=status.HTTP_200_OK)

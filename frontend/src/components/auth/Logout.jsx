@@ -11,14 +11,10 @@ export default function Logout() {
     React.useCallback((s) => [s.loading, s.service.logoutUser], [])
   );
 
-  console.log(loading)
-
   React.useEffect(() => {
-
-    console.log(loading)
-    
     if (!loading) {
       logoutUser();
+      
     }
   }, [loading, logoutUser]);
 

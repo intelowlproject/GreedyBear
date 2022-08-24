@@ -5,6 +5,7 @@ import {
   NavItem,
   Collapse,
   NavbarBrand,
+  NavbarToggler,
 } from "reactstrap";
 import { NavLink as RRNavLink } from "react-router-dom";
 import { MdHome } from "react-icons/md";
@@ -49,13 +50,12 @@ const rightLinks = (
 );
 
 function AppHeader() {
-  // auth store
-  // const [isAuth, isAuthenticated] = useAuthStore(
-  //   React.useCallback((s) => [s.isAuth, s.isAuthenticated], [])
-  // );
-  // React.useEffect(isAuth, [isAuth]);
-  
+  console.debug("AppHeader rendered!");
 
+  // local state
+  const [isOpen, setIsOpen] = React.useState(false);
+  
+  // auth store
   const isAuthenticated = useAuthStore(
     React.useCallback((s) => s.isAuthenticated, [])
   );
@@ -67,9 +67,10 @@ function AppHeader() {
         <NavbarBrand tag={RRNavLink} to="/">
         GreedyBear
         </NavbarBrand>
-        <Collapse navbar >
+        <NavbarToggler onClick={() => setIsOpen(!isOpen)} />
+        <Collapse navbar isOpen={isOpen}>
           {/* Navbar Left Side */}
-          <Nav navbar>
+          <Nav navbar className="ms-1 d-flex align-items-center">
             <NavItem>
               <NavLink className="d-flex-start-center" end to="/">
                 <MdHome />

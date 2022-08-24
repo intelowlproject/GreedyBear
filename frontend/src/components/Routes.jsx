@@ -69,4 +69,4 @@ const authRoutesLazy = [
     ),
   }));
   
-  export { publicRoutesLazy, noAuthRoutesLazy, authRoutesLazy };
+  export { publicRoutesLazy, noAuthRoutesLazy, authRoutesLazy};

@@ -20,6 +20,7 @@ const blogPosts = [
 ];
 
 function Home() {
+    console.debug("Home rendered!");
 
     return (
         <>

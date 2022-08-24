@@ -7,17 +7,20 @@ import { useAuthStore } from "../stores";
  */
  function withAuth(WrappedComponent) {
     function AuthenticatedComponent(props) {
+      
       // stores
-      const [isAuthenticated, isAuth, fetchUserAccess] = useAuthStore(
+      const [isAuthenticated, checkAuthentication, fetchUserAccess] = useAuthStore(
         React.useCallback(
-          (s) => [s.isAuthenticated, s.isAuth, s.service.fetchUserAccess],
+          (s) => [s.isAuthenticated, s.checkAuthentication, s.service.fetchUserAccess],
           []
         )
       );
-    
-      React.useEffect(isAuth, [isAuth]);
+      
+      React.useLayoutEffect(() => {
+        checkAuthentication();
+      }, [checkAuthentication]);
 
-      React.useEffect(() => {
+      React.useLayoutEffect(() => {
         if (isAuthenticated) {
           fetchUserAccess();
         }

@@ -30,7 +30,6 @@ export default function AuthGuard({ children }) {
   }
 
   if (!isAuthenticated && !loading) {
-    console.log("redirect da logout")
     return (
       <Navigate
         to={{

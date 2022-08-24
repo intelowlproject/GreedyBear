@@ -33,6 +33,7 @@ const onValidate = (values) => {
 
 //Component
 function Login() {
+  console.debug("Login rendered!");
 
   // local state
   const [passwordShown, setPasswordShown] = React.useState(false);

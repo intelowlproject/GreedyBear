@@ -2,15 +2,28 @@ import React from "react";
 import { Row, Col, Container } from "reactstrap";
 import { FaTwitter } from "react-icons/fa";
 
-import { ScrollToTopButton } from "@certego/certego-ui";
+import { ScrollToTopButton, Toaster, useToastr } from "@certego/certego-ui";
 
 import { VERSION } from "../constants/environment";
 
+// constants
+const selector = (state) => state.toasts;
+
 function AppFooter() {
+  console.debug("AppFooter rendered!");
+
+  // consume store
+  const toasts = useToastr(selector);
   
     return (
       <footer>
         <div className="d-flex flex-column">
+          {/* Toasts */}
+          <section className="fixed-bottom" id="app-toasts">
+            {toasts.map((tProps) => (
+              <Toaster key={tProps.id} {...tProps} />
+            ))}
+          </section>
           {/* Footer */}
           <Container fluid className="border-top mt-2 py-1">
             <Row

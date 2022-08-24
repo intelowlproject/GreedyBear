@@ -13,4 +13,4 @@ export const USERACCESS_URI = `${API_BASE_URI}/me/access`;
 
 // auth
 export const AUTH_BASE_URI = `${API_BASE_URI}/auth`;
-export const IS_AUTH_URI = `${API_BASE_URI}/isauth`;
+export const CHECK_AUTHENTICATION_URI = `${API_BASE_URI}/authentication`;
