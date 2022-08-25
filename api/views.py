@@ -4,6 +4,7 @@ import csv
 import logging
 from datetime import datetime, timedelta
 
+from certego_saas.apps.auth.backend import CookieTokenAuthentication
 from certego_saas.ext.helpers import parse_humanized_range
 from django.db.models import Count, Q
 from django.db.models.functions import Trunc
@@ -18,7 +19,6 @@ from drf_spectacular.utils import extend_schema as add_docs
 from drf_spectacular.utils import inline_serializer
 from rest_framework import serializers as rfs
 from rest_framework import status, viewsets
-from rest_framework.authentication import TokenAuthentication
 from rest_framework.decorators import (
     action,
     api_view,
@@ -168,7 +168,7 @@ def _formatted_bad_request(format_):
     },
 )
 @api_view([GET])
-@authentication_classes([TokenAuthentication])
+@authentication_classes([CookieTokenAuthentication])
 @permission_classes([IsAuthenticated])
 def enrichment_view(request):
     observable_name = request.query_params.get("query")
@@ -261,3 +261,13 @@ class StatisticsViewSet(viewsets.ViewSet):
             range_str = "7d"
 
         return parse_humanized_range(range_str)
+
+
+@api_view([GET])
+@authentication_classes([CookieTokenAuthentication])
+@permission_classes([IsAuthenticated])
+def checkAuthentication(request):
+    logger.info(f"User: {request.user}, Administrator: {request.user.is_superuser}")
+    return Response(
+        {"is_superuser": request.user.is_superuser}, status=status.HTTP_200_OK
+    )

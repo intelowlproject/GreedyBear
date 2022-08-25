@@ -3,6 +3,8 @@ import { Link } from 'react-router-dom';
 import { Container } from "reactstrap";
 
 function NotFoundPage() {
+    console.debug("NotFoundPage rendered!");
+
     return (
         <Container className="d-flex flex-column center">
             <h2> Page not found </h2>

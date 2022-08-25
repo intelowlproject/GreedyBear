@@ -5,6 +5,7 @@ import {
   NavItem,
   Collapse,
   NavbarBrand,
+  NavbarToggler,
 } from "reactstrap";
 import { NavLink as RRNavLink } from "react-router-dom";
 import { MdHome } from "react-icons/md";
@@ -16,6 +17,10 @@ import { NavLink } from "@certego/certego-ui";
 
 // constants
 import { GREEDYBEAR_DOCS_URL } from "../constants/environment";
+
+// local
+import UserMenu from "./widget/UserMenu";
+import { useAuthStore } from "../stores";
 
 const guestLinks = (
   <NavItem>
@@ -45,6 +50,15 @@ const rightLinks = (
 );
 
 function AppHeader() {
+  console.debug("AppHeader rendered!");
+
+  // local state
+  const [isOpen, setIsOpen] = React.useState(false);
+  
+  // auth store
+  const isAuthenticated = useAuthStore(
+    React.useCallback((s) => s.isAuthenticated, [])
+  );
 
   return (
     <header className="fixed-top">
@@ -53,9 +67,10 @@ function AppHeader() {
         <NavbarBrand tag={RRNavLink} to="/">
         GreedyBear
         </NavbarBrand>
-        <Collapse navbar >
+        <NavbarToggler onClick={() => setIsOpen(!isOpen)} />
+        <Collapse navbar isOpen={isOpen}>
           {/* Navbar Left Side */}
-          <Nav navbar>
+          <Nav navbar className="ms-1 d-flex align-items-center">
             <NavItem>
               <NavLink className="d-flex-start-center" end to="/">
                 <MdHome />
@@ -72,7 +87,7 @@ function AppHeader() {
           {/* Navbar Right Side */}
           <Nav navbar className="ms-auto d-flex align-items-center">
             {rightLinks}
-            {guestLinks}
+            {!isAuthenticated ? guestLinks : <UserMenu />}
           </Nav>
         </Collapse>
       </Navbar>

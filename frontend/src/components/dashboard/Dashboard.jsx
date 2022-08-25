@@ -27,6 +27,7 @@ const enrichmentChartList = [
 ];
 
 function Dashboard() {
+    console.debug("Dashboard rendered!");
     const { range, onTimeIntervalChange } = useTimePickerStore();
 
     return (

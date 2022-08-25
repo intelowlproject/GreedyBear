@@ -4,12 +4,56 @@ import {
   Label,
   Container,
   Input,
+  Spinner,
   Button,
 } from "reactstrap";
+import { Form, Formik } from "formik";
 
 import { ContentSection } from "@certego/certego-ui";
 
+import { useAuthStore } from "../../stores";
+
+// constants
+const initialValues = {
+  username: "",
+  password: "",
+};
+
+// methods
+const onValidate = (values) => {
+  const errors = {};
+  if (!values.username) {
+    errors.username = "Required";
+  }
+  if (!values.password) {
+    errors.password = "Required";
+  }
+  return errors;
+};
+
+//Component
 function Login() {
+  console.debug("Login rendered!");
+
+  // local state
+  const [passwordShown, setPasswordShown] = React.useState(false);
+
+  // auth store
+  const loginUser = useAuthStore(
+    React.useCallback((s) => s.service.loginUser, [])
+  );
+
+  // callbacks
+  const onSubmit = React.useCallback(
+    async (values, _formik) => {
+      try {
+        await loginUser(values);
+      } catch (e) {
+        // handled inside loginUser
+      }
+    },
+    [loginUser]
+  );
 
   return (
     <ContentSection className="bg-body">
@@ -17,8 +61,15 @@ function Login() {
         <ContentSection>
           <h3 className="fw-bold">Log In</h3>
           <hr />
-            {/* Form */}
-            <form>
+          {/* Form */}
+          <Formik
+            initialValues={initialValues}
+            validate={onValidate}
+            onSubmit={onSubmit}
+            validateOnChange
+          >
+            {(formik) => (
+              <Form>
                 {/* username */}
                 <FormGroup>
                   <Label for="LoginForm__username">Username</Label>
@@ -28,6 +79,7 @@ function Login() {
                     name="username"
                     placeholder="Enter username"
                     autoComplete="username"
+                    onChange={formik.handleChange}
                   />
                 </FormGroup>
                 {/* password */}
@@ -35,11 +87,21 @@ function Login() {
                   <Label for="LoginForm__password">Password</Label>
                   <Input
                     id="LoginForm__password"
-                    type="password"
+                    type={passwordShown ? "text" : "password"}
                     name="password"
                     placeholder="Enter password"
                     autoComplete="current-password"
+                    onChange={formik.handleChange}
                   />
+                </FormGroup>
+                <FormGroup check>
+                  <Input
+                    id="LoginForm__showPassword"
+                    type="checkbox"
+                    defaultChecked={passwordShown}
+                    onChange={() => setPasswordShown(!passwordShown)}
+                  />
+                  <Label check>Show password</Label>
                 </FormGroup>
                 <div className="text-muted mb-3">
                   Don&apos;t have an account? Contact the administrator for
@@ -49,13 +111,16 @@ function Login() {
                 <FormGroup className="d-flex-center">
                   <Button
                     type="submit"
+                    disabled={!(formik.isValid || formik.isSubmitting)}
                     color="primary"
                     outline
                    >
-                    Login
+                    {formik.isSubmitting && <Spinner size="sm" />} Login
                   </Button>
                 </FormGroup>
-            </form>
+              </Form>
+            )}
+          </Formik>
         </ContentSection>
       </Container>
     </ContentSection>

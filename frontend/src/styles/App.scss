@@ -17,6 +17,14 @@ footer {
     width: 100%;
 }
 
+section.fixed-bottom {
+  margin-bottom: 7.5rem;
+}
+
+#app-toasts {
+  z-index: 9999 !important;
+}
+
 // commons/
 
 .severity,
@@ -50,6 +58,17 @@ footer {
     width: auto !important;
     padding: 0.6rem 0.3rem;
   }
+}
+
+// extra/
+
+.cookiealert {
+  z-index: 99999 !important;
+  opacity: 1 !important;
+  border-radius: 0;
+  color: $white;
+  background-color: $black;
+  border: 1px solid $accent-2;
 }
 
 // misc/

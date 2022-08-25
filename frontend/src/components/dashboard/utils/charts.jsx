@@ -17,6 +17,8 @@ import {
 } from "../../../constants";
 
 export const FeedsSourcesChart = React.memo(() => {
+  console.debug("FeedsSourcesChart rendered!");
+
     const chartProps = React.useMemo(
         () => ({
           url: FEEDS_STATISTICS_SOURCES_URI,
@@ -39,6 +41,8 @@ export const FeedsSourcesChart = React.memo(() => {
 });
 
 export const FeedsDownloadsChart = React.memo(() => {
+  console.debug("FeedsDownloadsChart rendered!");
+
   const chartProps = React.useMemo(
     () => ({
       url: FEEDS_STATISTICS_DOWNLOADS_URI,
@@ -61,6 +65,8 @@ export const FeedsDownloadsChart = React.memo(() => {
 });
 
 export const EnrichmentSourcesChart = React.memo(() => {
+  console.debug("EnrichmentSourcesChart rendered!");
+
   const chartProps = React.useMemo(
     () => ({
       url: ENRICHMENT_STATISTICS_SOURCES_URI,
@@ -83,6 +89,8 @@ export const EnrichmentSourcesChart = React.memo(() => {
 });
 
 export const EnrichmentRequestsChart = React.memo(() => {
+  console.debug("EnrichmentRequestsChart rendered!");
+
   const chartProps = React.useMemo(
     () => ({
       url: ENRICHMENT_STATISTICS_REQUESTS_URI,
@@ -105,6 +113,8 @@ export const EnrichmentRequestsChart = React.memo(() => {
 });
 
 export const FeedsTypesChart = React.memo(() => {
+  console.debug("FeedsTypesChart rendered!");
+
   const chartProps = React.useMemo(
     () => ({
       url: FEEDS_STATISTICS_TYPES_URI,
