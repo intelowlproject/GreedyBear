@@ -6,15 +6,26 @@ import {
   DropdownItem,
 } from "reactstrap";
 import { FiLogOut } from "react-icons/fi";
+import { IoMdSettings } from "react-icons/io";
 
 import { UserBubble, DropdownNavLink } from "@certego/certego-ui";
 
 import { useAuthStore } from "../../stores";
 
+const djangoAdminLink = (
+    <>
+      <DropdownNavLink to="/admin/" target="_blank">
+        <IoMdSettings className="me-2" /> Django Admin Interface
+      </DropdownNavLink>
+      <DropdownItem divider />
+    </>
+);
 
 function UserMenu(props) {
     // auth store
-    const user = useAuthStore(React.useCallback((s) => s.user, []));
+    const [user, isSuperuser] = useAuthStore(
+      React.useCallback((s) => [s.user, s.isSuperuser], [])
+    );
 
     return (
         <UncontrolledDropdown nav inNavbar {...props}>
@@ -26,6 +37,8 @@ function UserMenu(props) {
               logged in as <b>{`${user?.username}`}</b>
             </DropdownItem>
             <DropdownItem divider />
+            {/* Django Admin Interface */}
+            {isSuperuser ? djangoAdminLink : null}
             {/* Logout */}
             <DropdownNavLink to="/logout">
               <FiLogOut className="me-2" /> Logout

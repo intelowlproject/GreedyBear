@@ -9,10 +9,14 @@ import { USERACCESS_URI, AUTH_BASE_URI, CHECK_AUTHENTICATION_URI } from "../cons
 const useAuthStore = create((set, get) => ({
     loading: false,
     user: { full_name: "", first_name: "", last_name: "", email: "" },
+    isSuperuser: false,
     isAuthenticated: false,
     checkAuthentication: async () => {
       try {
-        await axios.get(CHECK_AUTHENTICATION_URI);
+        const resp = await axios.get(CHECK_AUTHENTICATION_URI);
+        set({
+          isSuperuser: resp.data.isSuperuser,
+        });
         if( !get().isAuthenticated) {
           set({isAuthenticated: true});
         }

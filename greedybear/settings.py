@@ -79,7 +79,6 @@ INSTALLED_APPS = [
     "django.contrib.postgres",
     # rest framework libs
     "rest_framework",
-    # "rest_framework.authtoken",
     "drf_spectacular",
     "api.apps.ApiConfig",
     # certego libs
@@ -90,7 +89,6 @@ INSTALLED_APPS = [
     "certego_saas.apps.organization",
     # greedybear apps
     "greedybear.apps.GreedyBearConfig",
-    # "api.authentication",
 ]
 
 REST_FRAMEWORK = {
