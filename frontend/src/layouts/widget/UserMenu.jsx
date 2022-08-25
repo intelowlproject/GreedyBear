@@ -12,14 +12,6 @@ import { UserBubble, DropdownNavLink } from "@certego/certego-ui";
 
 import { useAuthStore } from "../../stores";
 
-const djangoAdminLink = (
-    <>
-      <DropdownNavLink to="/admin/" target="_blank">
-        <IoMdSettings className="me-2" /> Django Admin Interface
-      </DropdownNavLink>
-      <DropdownItem divider />
-    </>
-);
 
 function UserMenu(props) {
     // auth store
@@ -38,7 +30,14 @@ function UserMenu(props) {
             </DropdownItem>
             <DropdownItem divider />
             {/* Django Admin Interface */}
-            {isSuperuser ? djangoAdminLink : null}
+            {isSuperuser && 
+              <>
+                <DropdownNavLink to="/admin/" target="_blank">
+                  <IoMdSettings className="me-2" /> Django Admin Interface
+                </DropdownNavLink>
+                <DropdownItem divider />
+              </>
+            }
             {/* Logout */}
             <DropdownNavLink to="/logout">
               <FiLogOut className="me-2" /> Logout

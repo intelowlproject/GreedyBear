@@ -267,7 +267,7 @@ class StatisticsViewSet(viewsets.ViewSet):
 @authentication_classes([CookieTokenAuthentication])
 @permission_classes([IsAuthenticated])
 def checkAuthentication(request):
-    logger.debug(f"User: {request.user}, Administrator: {request.user.is_superuser}")
+    logger.info(f"User: {request.user}, Administrator: {request.user.is_superuser}")
     return Response(
-        {"isSuperuser": request.user.is_superuser}, status=status.HTTP_200_OK
+        {"is_superuser": request.user.is_superuser}, status=status.HTTP_200_OK
     )

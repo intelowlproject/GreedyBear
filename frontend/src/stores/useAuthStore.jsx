@@ -3,7 +3,7 @@ import create from "zustand";
 
 import { addToast } from "@certego/certego-ui";
 
-import { USERACCESS_URI, AUTH_BASE_URI, CHECK_AUTHENTICATION_URI } from "../constants/api";
+import { USERACCESS_URI, CHECK_AUTHENTICATION_URI, LOGIN_URI, LOGOUT_URI } from "../constants/api";
 
 // hook/ store see: https://github.com/pmndrs/zustand
 const useAuthStore = create((set, get) => ({
@@ -15,7 +15,7 @@ const useAuthStore = create((set, get) => ({
       try {
         const resp = await axios.get(CHECK_AUTHENTICATION_URI);
         set({
-          isSuperuser: resp.data.isSuperuser,
+          isSuperuser: resp.data.is_superuser,
         });
         if( !get().isAuthenticated) {
           set({isAuthenticated: true});
@@ -46,7 +46,7 @@ const useAuthStore = create((set, get) => ({
         loginUser: async (body) => {
           try {
             set({ loading: true });
-            const resp = await axios.post(`${AUTH_BASE_URI}/login`, body, {
+            const resp = await axios.post(LOGIN_URI, body, {
               certegoUIenableProgressBar: false,
             });
             if( !get().isAuthenticated) {
@@ -71,7 +71,7 @@ const useAuthStore = create((set, get) => ({
             addToast("Logged out!", null, "info");
           };
           return axios
-            .post(`${AUTH_BASE_URI}/logout`, null, {
+            .post(LOGOUT_URI, null, {
               certegoUIenableProgressBar: false,
             })
             .then(onLogoutCb)

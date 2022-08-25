@@ -56,7 +56,7 @@ cd ./frontend && npm install
 npm start
 ```
 
-- Now you can access the auto-reloading frontend on `http://localhost:3000`. It acts as proxy for API requests to original app web server.
+- Now you can access the auto-reloading frontend on `http://localhost:3001`. It acts as proxy for API requests to original app web server.
 
 - JS app main configs are available in `package.json` and `enviroments.js`.
 
