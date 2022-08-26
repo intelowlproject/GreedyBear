@@ -15,11 +15,11 @@ Please delete options that are not relevant.
 
 # Checklist
 
-- [ ] I have read and understood the rules about [how to Contribute](https://intelowl.readthedocs.io/en/latest/Contribute.html) to this project
+- [ ] I have read and understood the rules about [how to Contribute](https://greedybear.readthedocs.io/en/latest/Contribute.html) to this project
 - [ ] The pull request is for the branch `develop`
 - [ ] I have added documentation of the new features.
 - [ ] The tests gave 0 errors.
-- [ ] Linters (`Black`, `Flake`, `Isort`) gave 0 errors. If you have correctly installed [pre-commit](https://intelowl.readthedocs.io/en/latest/Contribute.html#how-to-start-setup-project-and-development-instance), it does these checks and adjustments on your behalf.
+- [ ] Linters (`Black`, `Flake`, `Isort`) gave 0 errors. If you have correctly installed [pre-commit](https://greedybear.readthedocs.io/en/latest/Contribute.html#how-to-start-setup-project-and-development-instance), it does these checks and adjustments on your behalf.
 - [ ] The commits were squashed into a single one (optional, they will be squashed anyway by the maintainer)
 - [ ] If changes were made to an existing model/serializer/view, the docs were updated and regenerated (check [CONTRIBUTE.md](./Contribute.md)).
   

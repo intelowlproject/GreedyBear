@@ -17,6 +17,7 @@ from django.http import (
 )
 from drf_spectacular.utils import extend_schema as add_docs
 from drf_spectacular.utils import inline_serializer
+from durin import views as durin_views
 from rest_framework import serializers as rfs
 from rest_framework import status, viewsets
 from rest_framework.decorators import (
@@ -271,3 +272,7 @@ def checkAuthentication(request):
     return Response(
         {"is_superuser": request.user.is_superuser}, status=status.HTTP_200_OK
     )
+
+
+TokenSessionsViewSet = durin_views.TokenSessionsViewSet
+APIAccessTokenView = durin_views.APIAccessTokenView

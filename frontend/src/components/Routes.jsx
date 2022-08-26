@@ -8,6 +8,7 @@ const Home = React.lazy(() => import("./home/Home"));
 const Login = React.lazy(() => import("./auth/Login"));
 const Logout = React.lazy(() => import("./auth/Logout"));
 const Dashboard = React.lazy(() => import("./dashboard/Dashboard"));
+const Sessions = React.lazy(() => import("./me/sessions/Sessions"));
 
 // public components
 const publicRoutesLazy = [
@@ -57,6 +58,15 @@ const authRoutesLazy = [
       element: (
         <Suspense fallback={<FallBackLoading />}>
           <Logout />
+        </Suspense>
+      ),
+    },
+    /* API Access/Sessions Management */
+    {
+      path: "/me/sessions",
+      element: (
+        <Suspense fallback={<FallBackLoading />}>
+          <Sessions />
         </Suspense>
       ),
     },

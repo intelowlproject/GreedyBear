@@ -1,4 +1,5 @@
 import React from "react";
+import { AUTHENTICATION_STATUSES } from "../constants";
 
 import { useAuthStore } from "../stores";
 
@@ -21,7 +22,7 @@ import { useAuthStore } from "../stores";
       }, [checkAuthentication]);
 
       React.useLayoutEffect(() => {
-        if (isAuthenticated) {
+        if (isAuthenticated === AUTHENTICATION_STATUSES.TRUE) {
           fetchUserAccess();
         }
       }, [isAuthenticated, fetchUserAccess]); // onAuthStateChange

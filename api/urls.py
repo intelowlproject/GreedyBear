@@ -3,11 +3,19 @@
 from django.urls import include, path
 from rest_framework import routers
 
-from api.views import StatisticsViewSet, checkAuthentication, enrichment_view, feeds
+from api.views import (
+    APIAccessTokenView,
+    StatisticsViewSet,
+    TokenSessionsViewSet,
+    checkAuthentication,
+    enrichment_view,
+    feeds,
+)
 
 # Routers provide an easy way of automatically determining the URL conf.
 router = routers.DefaultRouter(trailing_slash=False)
 router.register(r"statistics", StatisticsViewSet, basename="statistics")
+router.register(r"sessions", TokenSessionsViewSet, basename="auth_tokensessions")
 
 # These come after /api/..
 urlpatterns = [
@@ -17,6 +25,7 @@ urlpatterns = [
     path("", include(router.urls)),
     # authentication
     path("authentication", checkAuthentication),
+    path("apiaccess", APIAccessTokenView.as_view(), name="auth_apiaccess"),
     # certego_saas:
     # default apps (user),
     path("", include("certego_saas.urls")),
