@@ -5,31 +5,30 @@ import { Navigate, useLocation } from "react-router-dom";
 import { FallBackLoading, addToast } from "@certego/certego-ui";
 
 import { useAuthStore } from "../stores";
+import { AUTHENTICATION_STATUSES } from "../constants";
 
 /*
 Wrapper for Routes which should be accessible only to a authenticated user
 */
 export default function AuthGuard({ children }) {
   // store
-  const [loading, isAuthenticated] = useAuthStore(
-    React.useCallback((s) => [s.loading, s.isAuthenticated], [])
-  );
+  const isAuthenticated = useAuthStore(React.useCallback((s) => s.isAuthenticated, []));
 
   const location = useLocation();
   const didJustLogout = location?.pathname.includes("logout");
 
   // side effects
   React.useEffect(() => {
-    if (!didJustLogout && !isAuthenticated && !loading) {
+    if (!didJustLogout && (isAuthenticated === AUTHENTICATION_STATUSES.FALSE)) {
       addToast("Login required to access the requested page.", null, "info");
     }
-  }, [didJustLogout, isAuthenticated, loading]);
+  }, [didJustLogout, isAuthenticated]);
 
-  if (loading) {
+  if (isAuthenticated === AUTHENTICATION_STATUSES.PENDING) {
     return <FallBackLoading />;
   }
 
-  if (!isAuthenticated && !loading) {
+  if (isAuthenticated === AUTHENTICATION_STATUSES.FALSE) {
     return (
       <Navigate
         to={{

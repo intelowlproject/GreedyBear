@@ -6,7 +6,7 @@ import {
   DropdownItem,
 } from "reactstrap";
 import { FiLogOut } from "react-icons/fi";
-import { IoMdSettings } from "react-icons/io";
+import { IoMdKey, IoMdSettings } from "react-icons/io";
 
 import { UserBubble, DropdownNavLink } from "@certego/certego-ui";
 
@@ -31,13 +31,15 @@ function UserMenu(props) {
             <DropdownItem divider />
             {/* Django Admin Interface */}
             {isSuperuser && 
-              <>
-                <DropdownNavLink to="/admin/" target="_blank">
-                  <IoMdSettings className="me-2" /> Django Admin Interface
-                </DropdownNavLink>
-                <DropdownItem divider />
-              </>
+              <DropdownNavLink to="/admin/" target="_blank">
+                <IoMdSettings className="me-2" /> Django Admin Interface
+              </DropdownNavLink>
             }
+            {/* API Access/Sessions */}
+            <DropdownNavLink to="/me/sessions">
+              <IoMdKey className="me-2" /> API Access / Sessions
+            </DropdownNavLink>
+            <DropdownItem divider />
             {/* Logout */}
             <DropdownNavLink to="/logout">
               <FiLogOut className="me-2" /> Logout

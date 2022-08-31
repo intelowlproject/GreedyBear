@@ -21,6 +21,7 @@ import { GREEDYBEAR_DOCS_URL } from "../constants/environment";
 // local
 import UserMenu from "./widget/UserMenu";
 import { useAuthStore } from "../stores";
+import { AUTHENTICATION_STATUSES } from "../constants";
 
 const guestLinks = (
   <NavItem>
@@ -87,7 +88,7 @@ function AppHeader() {
           {/* Navbar Right Side */}
           <Nav navbar className="ms-auto d-flex align-items-center">
             {rightLinks}
-            {!isAuthenticated ? guestLinks : <UserMenu />}
+            {isAuthenticated === AUTHENTICATION_STATUSES.FALSE ? guestLinks : <UserMenu />}
           </Nav>
         </Collapse>
       </Navbar>

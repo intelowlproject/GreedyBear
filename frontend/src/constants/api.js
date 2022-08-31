@@ -16,3 +16,5 @@ export const AUTH_BASE_URI = `${API_BASE_URI}/auth`;
 export const CHECK_AUTHENTICATION_URI = `${API_BASE_URI}/authentication`;
 export const LOGIN_URI = `${AUTH_BASE_URI}/login`;
 export const LOGOUT_URI = `${AUTH_BASE_URI}/logout`;
+export const SESSIONS_BASE_URI = `${API_BASE_URI}/sessions`;
+export const APIACCESS_BASE_URI = `${API_BASE_URI}/apiaccess`;
