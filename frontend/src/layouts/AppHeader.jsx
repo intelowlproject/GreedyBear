@@ -88,7 +88,7 @@ function AppHeader() {
           {/* Navbar Right Side */}
           <Nav navbar className="ms-auto d-flex align-items-center">
             {rightLinks}
-            {(isAuthenticated === AUTHENTICATION_STATUSES.FALSE) ? guestLinks : <UserMenu />}
+            {isAuthenticated === AUTHENTICATION_STATUSES.FALSE ? guestLinks : <UserMenu />}
           </Nav>
         </Collapse>
       </Navbar>
