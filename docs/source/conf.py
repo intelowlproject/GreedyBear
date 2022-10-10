@@ -26,9 +26,9 @@ copyright = "2021, The Honeynet Project"
 author = "Matteo Lodi"
 
 # version
-version = "0.2.1"
+version = "1.0.0"
 # release - It's the full version, including alpha/beta/rc tags
-release = "0.2.1"
+release = "1.0.0"
 
 
 # -- General configuration ---------------------------------------------------
