@@ -6,6 +6,11 @@ from django.contrib.postgres import fields as pg_fields
 from django.db import models
 
 
+class viewType(models.TextChoices):
+    FEEDS_VIEW = "feeds"
+    ENRICHMENT_VIEW = "enrichment"
+
+
 class Sensors(models.Model):
     address = models.CharField(max_length=15, blank=False)
 
@@ -26,3 +31,14 @@ class IOC(models.Model):
     related_urls = pg_fields.ArrayField(
         models.CharField(max_length=900, blank=True), blank=True, default=list
     )
+
+
+class Statistics(models.Model):
+    source = models.CharField(max_length=15, blank=False)
+    view = models.CharField(
+        max_length=32,
+        blank=False,
+        choices=viewType.choices,
+        default=viewType.FEEDS_VIEW.value,
+    )
+    request_date = models.DateTimeField(blank=False, default=datetime.utcnow)

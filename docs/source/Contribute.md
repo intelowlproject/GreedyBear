@@ -47,6 +47,66 @@ If you made any changes to an existing model/serializer/view, please run the fol
 docker exec -it greedybear_uwsgi python manage.py spectacular --file docs/source/schema.yml && make html
 ```
 
+### Frontend
+
+To start the frontend in "develop" mode, you can execute the startup npm script within the folder `frontend`:
+
+```bash
+cd frontend/
+# Install
+npm i
+# Start
+DANGEROUSLY_DISABLE_HOST_CHECK=true npm start
+# See https://create-react-app.dev/docs/proxying-api-requests-in-development/#invalid-host-header-errors-after-configuring-proxy for why we use that flag in development mode
+```
+
+Most of the time you would need to test the changes you made together with the backend. In that case, you would need to run the backend locally too:
+
+```commandline
+docker-compose up
+```
+
+#### Certego-UI
+
+The GreedyBear Frontend is tightly linked to the [`certego-ui`](https://github.com/certego/certego-ui) library. Most of the React components are imported from there. Because of this, it may happen that, during development, you would need to work on that library too.
+To install the `certego-ui` library, please take a look to [npm link](https://docs.npmjs.com/cli/v8/commands/npm-link) and remember to start certego-ui without installing peer dependencies (to avoid conflicts with GreedyBear dependencies):
+
+```bash
+git clone https://github.com/certego/certego-ui.git
+# change directory to the folder where you have the cloned the library
+cd certego-ui/
+# install, without peer deps (to use packages of GreedyBear)
+npm i --legacy-peer-deps
+# create link to the project (this will globally install this package)
+sudo npm link
+# compile the library
+npm start
+```
+
+Then, open another command line tab, create a link in the `frontend` to the `certego-ui` and re-install and re-start the frontend application (see previous section):
+
+```bash
+cd frontend/
+npm link @certego/certego-ui
+```
+
+This trick will allow you to see reflected every changes you make in the `certego-ui` directly in the running `frontend` application.
+
+##### Example application
+
+The `certego-ui` application comes with an example project that showcases the components that you can re-use and import to other projects, like GreedyBear:
+
+```bash
+# To have the Example application working correctly, be sure to have installed `certego-ui` *without* the `--legacy-peer-deps` option and having it started in another command line
+cd certego-ui/
+npm i
+npm start
+# go to another tab
+cd certego-ui/example/
+npm i
+npm start
+```
+
 ## Create a pull request
 
 ### Remember!!!

@@ -6,3 +6,4 @@ psycopg2-binary~=2.9.2
 slack-sdk~=3.12.0
 djangorestframework==3.13.1
 drf-spectacular==0.22.0
+certego-saas==0.2.0

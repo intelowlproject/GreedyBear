@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from django.contrib.auth.models import User
+from certego_saas.apps.user.models import User
 from django.test import TestCase
 from rest_framework.test import APIClient
 

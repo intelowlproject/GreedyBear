@@ -3,11 +3,14 @@
 # flake8: noqa
 import logging
 import os
+from datetime import timedelta
+from pathlib import Path
 
 from django.core.management.utils import get_random_secret_key
 from elasticsearch import Elasticsearch
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_STATIC_PATH = os.path.join(BASE_DIR, "static/")
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get("DJANGO_SECRET", None) or get_random_secret_key()
@@ -17,6 +20,11 @@ DEBUG = os.environ.get("DEBUG", False) == "True"
 
 DJANGO_LOG_DIRECTORY = "/var/log/greedybear/django"
 MOCK_CONNECTIONS = os.environ.get("MOCK_CONNECTIONS", False) == "True"
+STAGE = "ci"
+STAGE_PRODUCTION = STAGE == "production"
+STAGE_LOCAL = STAGE == "local"
+STAGE_CI = STAGE == "ci"
+
 ELASTIC_ENDPOINT = os.getenv("ELASTIC_ENDPOINT", "")
 if ELASTIC_ENDPOINT:
     ELASTIC_ENDPOINT = ELASTIC_ENDPOINT.split(",")
@@ -41,14 +49,23 @@ else:
 SLACK_TOKEN = os.environ.get("SLACK_TOKEN", "")
 SLACK_CHANNEL = os.environ.get("SLACK_CHANNEL", "")
 
-VERSION = "0.2.1"
+VERSION = "1.0.0"
 # drf-spectacular
 SPECTACULAR_SETTINGS = {
     "TITLE": "GreedyBear API specification",
     "VERSION": VERSION,
 }
 
+# drf-recaptcha (not used in GreedyBear but required by certego-saas pkg)
+DRF_RECAPTCHA_SECRET_KEY = ""
+DRF_RECAPTCHA_TESTING = True
+DRF_RECAPTCHA_TESTING_PASS = True
+
 ALLOWED_HOSTS = ["*"]
+
+# certego_saas
+HOST_URI = "http://localhost"
+HOST_NAME = "GreedyBear"
 
 # Application definition
 INSTALLED_APPS = [
@@ -60,15 +77,45 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django.contrib.postgres",
-    "gui.apps.GuiConfig",
+    # rest framework libs
     "rest_framework",
-    "rest_framework.authtoken",
     "drf_spectacular",
     "api.apps.ApiConfig",
+    # certego libs
+    "durin",
+    "certego_saas",
+    "certego_saas.apps.auth",
+    "certego_saas.apps.user",
+    "certego_saas.apps.organization",
+    # greedybear apps
     "greedybear.apps.GreedyBearConfig",
 ]
 
-REST_FRAMEWORK = {"DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema"}
+REST_FRAMEWORK = {
+    "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
+    # Exception Handling
+    "EXCEPTION_HANDLER": "certego_saas.ext.exceptions.custom_exception_handler",
+    # Auth
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "certego_saas.apps.auth.backend.CookieTokenAuthentication"
+    ],
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
+
+# Django-Rest-Durin
+REST_DURIN = {
+    "DEFAULT_TOKEN_TTL": timedelta(days=14),
+    "TOKEN_CHARACTER_LENGTH": 32,
+    "USER_SERIALIZER": "certego_saas.apps.user.serializers.UserSerializer",
+    "AUTH_HEADER_PREFIX": "Token",
+    "TOKEN_CACHE_TIMEOUT": 300,  # 5 minutes
+    "REFRESH_TOKEN_ON_LOGIN": True,
+    "API_ACCESS_CLIENT_NAME": "pygreedybear",
+    "API_ACCESS_EXCLUDE_FROM_SESSIONS": True,
+    "API_ACCESS_RESPONSE_INCLUDE_TOKEN": True,
+    # not part of durin but used in data migration
+    "API_ACCESS_CLIENT_TOKEN_TTL": timedelta(days=3650),
+}
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -85,7 +132,9 @@ ROOT_URLCONF = "greedybear.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [],
+        "DIRS": [
+            os.path.join(BASE_STATIC_PATH, "reactapp"),
+        ],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
@@ -99,6 +148,8 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "greedybear.wsgi.application"
+
+DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 DB_HOST = os.environ.get("DB_HOST")
 DB_PORT = os.environ.get("DB_PORT")
@@ -120,6 +171,7 @@ DATABASES = {
 BROKER_URL = os.environ.get("BROKER_URL", "amqp://guest:guest@rabbitmq:5672")
 RESULT_BACKEND = "django-db"
 
+AUTH_USER_MODEL = "certego_saas_user.User"  # custom user model
 
 # Password validation
 
@@ -155,7 +207,10 @@ USE_TZ = False
 # Static files (CSS, JavaScript, Images)
 
 STATIC_URL = "/static/"
-STATIC_ROOT = os.path.join(BASE_DIR, "static/")
+STATIC_ROOT = BASE_STATIC_PATH
+STATICFILES_DIRS = [
+    ("reactapp", "/var/www/reactapp"),
+]
 
 
 INFO_OR_DEBUG_LEVEL = "DEBUG" if DEBUG else "INFO"

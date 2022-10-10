@@ -4,6 +4,10 @@ import csv
 import logging
 from datetime import datetime, timedelta
 
+from certego_saas.apps.auth.backend import CookieTokenAuthentication
+from certego_saas.ext.helpers import parse_humanized_range
+from django.db.models import Count, Q
+from django.db.models.functions import Trunc
 from django.http import (
     HttpResponse,
     HttpResponseBadRequest,
@@ -13,10 +17,11 @@ from django.http import (
 )
 from drf_spectacular.utils import extend_schema as add_docs
 from drf_spectacular.utils import inline_serializer
+from durin import views as durin_views
 from rest_framework import serializers as rfs
-from rest_framework import status
-from rest_framework.authentication import TokenAuthentication
+from rest_framework import status, viewsets
 from rest_framework.decorators import (
+    action,
     api_view,
     authentication_classes,
     permission_classes,
@@ -26,7 +31,7 @@ from rest_framework.response import Response
 
 from api.serializers import EnrichmentSerializer, IOCSerializer
 from greedybear.consts import FEEDS_LICENSE, GET, PAYLOAD_REQUEST, SCANNER
-from greedybear.models import IOC
+from greedybear.models import IOC, Statistics, viewType
 
 logger = logging.getLogger(__name__)
 
@@ -99,6 +104,10 @@ def feeds(request, feed_type, attack_type, age, format_):
         f" by the following license: {FEEDS_LICENSE}"
     )
 
+    source_ip = str(request.META["REMOTE_ADDR"])
+    request_source = Statistics(source=source_ip)
+    request_source.save()
+
     if format_ == "txt":
         text_lines = [license_text]
         for ioc in iocs:
@@ -160,7 +169,7 @@ def _formatted_bad_request(format_):
     },
 )
 @api_view([GET])
-@authentication_classes([TokenAuthentication])
+@authentication_classes([CookieTokenAuthentication])
 @permission_classes([IsAuthenticated])
 def enrichment_view(request):
     observable_name = request.query_params.get("query")
@@ -169,4 +178,101 @@ def enrichment_view(request):
         data=request.query_params, context={"request": request}
     )
     serializer.is_valid(raise_exception=True)
+
+    source_ip = str(request.META["REMOTE_ADDR"])
+    request_source = Statistics(source=source_ip, view=viewType.ENRICHMENT_VIEW.value)
+    request_source.save()
+
     return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class StatisticsViewSet(viewsets.ViewSet):
+    @action(detail=True, methods=["GET"])
+    def feeds(self, request, pk=None):
+        if pk == "sources":
+            annotations = {
+                "Sources": Count(
+                    "source", distinct=True, filter=Q(view=viewType.FEEDS_VIEW.value)
+                )
+            }
+        elif pk == "downloads":
+            annotations = {
+                "Downloads": Count("source", filter=Q(view=viewType.FEEDS_VIEW.value))
+            }
+        else:
+            logger.error("this is impossible. check the code")
+            return HttpResponseServerError()
+        return self.__aggregation_response_static_statistics(annotations)
+
+    @action(detail=True, methods=["get"])
+    def enrichment(self, request, pk=None):
+        if pk == "sources":
+            annotations = {
+                "Sources": Count(
+                    "source",
+                    distinct=True,
+                    filter=Q(view=viewType.ENRICHMENT_VIEW.value),
+                )
+            }
+        elif pk == "requests":
+            annotations = {
+                "Requests": Count(
+                    "source", filter=Q(view=viewType.ENRICHMENT_VIEW.value)
+                )
+            }
+        else:
+            logger.error("this is impossible. check the code")
+            return HttpResponseServerError()
+        return self.__aggregation_response_static_statistics(annotations)
+
+    @action(detail=False, methods=["get"])
+    def feeds_types(self, request):
+        annotations = {
+            "Log4j": Count("name", filter=Q(log4j=True)),
+            "Cowrie": Count("name", filter=Q(cowrie=True)),
+        }
+        return self.__aggregation_response_static_ioc(annotations)
+
+    def __aggregation_response_static_statistics(self, annotations: dict) -> Response:
+        delta, basis = self.__parse_range(self.request)
+        qs = (
+            Statistics.objects.filter(request_date__gte=delta)
+            .annotate(date=Trunc("request_date", basis))
+            .values("date")
+            .annotate(**annotations)
+        )
+        return Response(qs)
+
+    def __aggregation_response_static_ioc(self, annotations: dict) -> Response:
+        delta, basis = self.__parse_range(self.request)
+        qs = (
+            IOC.objects.filter(last_seen__gte=delta)
+            .annotate(date=Trunc("last_seen", basis))
+            .values("date")
+            .annotate(**annotations)
+        )
+        return Response(qs)
+
+    @staticmethod
+    def __parse_range(request):
+        try:
+            range_str = request.GET["range"]
+        except KeyError:
+            # default
+            range_str = "7d"
+
+        return parse_humanized_range(range_str)
+
+
+@api_view([GET])
+@authentication_classes([CookieTokenAuthentication])
+@permission_classes([IsAuthenticated])
+def checkAuthentication(request):
+    logger.info(f"User: {request.user}, Administrator: {request.user.is_superuser}")
+    return Response(
+        {"is_superuser": request.user.is_superuser}, status=status.HTTP_200_OK
+    )
+
+
+TokenSessionsViewSet = durin_views.TokenSessionsViewSet
+APIAccessTokenView = durin_views.APIAccessTokenView

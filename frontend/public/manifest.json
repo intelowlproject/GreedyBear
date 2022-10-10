@@ -1,0 +1,16 @@
+{
+  "short_name": "GreedyBear",
+  "name": "GreedyBear",
+  "theme_color": "#0b2b38",
+  "background_color": "#00161f",
+  "display": "standalone",
+  "orientation": "portrait",
+  "start_url": ".",
+  "icons": [
+    {
+      "src": "favicon.ico",
+      "sizes": "64x64 32x32 24x24 16x16",
+      "type": "image/x-icon"
+    }
+  ]
+}
