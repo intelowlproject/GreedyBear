@@ -12,7 +12,6 @@ def render_reactapp(request):
 urlpatterns = [
     # admin
     path("admin/", admin.site.urls, name="admin"),
-    # re_path("^gui/", include("gui.urls")),
     re_path("^api/", include("api.urls")),
     re_path(r"^(?!api)$", render_reactapp),
     re_path(r"^(?!api)(?:.*)/?$", render_reactapp),

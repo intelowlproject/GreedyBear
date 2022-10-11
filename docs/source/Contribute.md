@@ -1,5 +1,8 @@
 # Contribute
 
+## General Guidance
+Please refer to [IntelOwl Documentation](https://intelowl.readthedocs.io/en/latest/) for everything missing here.
+
 ## Rules
 GreedyBear welcomes contributors from anywhere and from any kind of education or skill level. We strive to create a community of developers that is welcoming, friendly and right.
 

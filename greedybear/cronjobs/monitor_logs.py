@@ -10,7 +10,7 @@ from greedybear.slack import send_message
 class MonitorLogs(Cronjob):
     def __init__(self):
         super(MonitorLogs, self).__init__()
-        self.logs_to_monitor = ["greedybear", "api", "gui", "django", "celery"]
+        self.logs_to_monitor = ["greedybear", "api", "django", "celery"]
         self.log_directory = "/var/log/greedybear/django/"
 
     @property

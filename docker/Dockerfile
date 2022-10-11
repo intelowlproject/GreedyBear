@@ -46,7 +46,6 @@ COPY . $PYTHONPATH
 COPY docker/wait-for-it.sh /wait-for-it.sh
 
 RUN touch ${LOG_PATH}/django/api.log ${LOG_PATH}/django/api_errors.log \
-    && touch ${LOG_PATH}/django/gui.log ${LOG_PATH}/django/gui_errors.log \
     && touch ${LOG_PATH}/django/greedybear.log ${LOG_PATH}/django/greedybear_errors.log \
     && touch ${LOG_PATH}/django/celery.log ${LOG_PATH}/django/celery_errors.log \
     && touch ${LOG_PATH}/django/django_errors.log ${LOG_PATH}/django/elasticsearch.log\
