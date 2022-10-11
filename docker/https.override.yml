@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   nginx:
-    image: honeynet/greedybear_nginx:prod
+    image: intelowlproject/greedybear_nginx:prod
     volumes:
       - ../configuration/nginx/https.conf:/etc/nginx/conf.d/default.conf
       - /usr/local/share/ca-certificates:/usr/local/share/ca-certificates
