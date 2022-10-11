@@ -252,18 +252,6 @@ LOGGING = {
             "filename": f"{DJANGO_LOG_DIRECTORY}/api_errors.log",
             "formatter": "stdfmt",
         },
-        "gui": {
-            "level": INFO_OR_DEBUG_LEVEL,
-            "class": "logging.handlers.WatchedFileHandler",
-            "filename": f"{DJANGO_LOG_DIRECTORY}/gui.log",
-            "formatter": "stdfmt",
-        },
-        "gui_error": {
-            "level": "ERROR",
-            "class": "logging.handlers.WatchedFileHandler",
-            "filename": f"{DJANGO_LOG_DIRECTORY}/gui_errors.log",
-            "formatter": "stdfmt",
-        },
         "greedybear": {
             "level": INFO_OR_DEBUG_LEVEL,
             "class": "logging.handlers.WatchedFileHandler",
@@ -296,11 +284,6 @@ LOGGING = {
         },
         "api": {
             "handlers": ["api", "api_error"],
-            "level": INFO_OR_DEBUG_LEVEL,
-            "propagate": True,
-        },
-        "gui": {
-            "handlers": ["gui", "gui_error"],
             "level": INFO_OR_DEBUG_LEVEL,
             "propagate": True,
         },
