@@ -10,8 +10,24 @@ https://<greedybear_site>/api/feeds/<feed_type>/<attack_type>/<age>.<format>
 The available feed_type are:
 
 * `log4j`: attacks detected from the Log4pot.
-* `cowrie`: attacks detected from the Cowrie Honeypot
+* `cowrie`: attacks detected from the Cowrie Honeypot.
 * `all`: get all types at once
+* The following honeypot feeds exist (for extraction of (only) the source IPs):
+  * `heralding`
+  * `ciscoasa`
+  * `honeytrap`
+  * `dionaea`
+  * `conpot`
+  * `adbhoney`
+  * `tanner`
+  * `citrixhoneypot`
+  * `mailoney`
+  * `ipphoney`
+  * `ddospot`
+  * `elasticpot`
+  * `dicompot`
+  * `redishoneypot`
+  * `sentrypeer`
 
 The available attack_type are:
 

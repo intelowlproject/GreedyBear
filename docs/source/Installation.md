@@ -28,6 +28,14 @@ docker-compose up
 # shut down the application
 docker-compose down
 ```
+*Note:* To create a superuser run the following:
+```bash
+docker exec -ti greedybear_uwsgi python3 manage.py createsuperuser
+```
+
+In `greedybear/consts.py`, you might want to change the variable `GENERAL_HONEYPOTS` to include/exclude the extraction of source IPs for specific honeypots.
+This is used for honeypots that are not specifically implemented to extract additional information (so not Log4Pot and Cowrie).
+
 Note that GreedyBear *needs* a running instance of ElasticSearch of a TPoT to function.
 If you don't have one, you can make the following changes to make GreeyBear spin up it's own ElasticSearch and Kibana instances.
 (...Care! This option would require enough RAM to run the additional containers. Suggested is >=16GB):
