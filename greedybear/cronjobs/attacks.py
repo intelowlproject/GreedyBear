@@ -30,7 +30,9 @@ class ExtractAttacks(Cronjob, metaclass=ABCMeta):
             minutes = 11
         return minutes
 
-    def _add_ioc(self, ioc, attack_type, related_urls=None, log4j=False, cowrie=False):
+    def _add_ioc(
+        self, ioc, attack_type, related_urls=None, log4j=False, cowrie=False, general=""
+    ):  # FEEDS
         self.log.info(
             f"saving ioc {ioc} for attack_type {attack_type} and related_urls {related_urls}"
         )
@@ -70,6 +72,11 @@ class ExtractAttacks(Cronjob, metaclass=ABCMeta):
             if cowrie:
                 ioc_instance.cowrie = True
 
+            # FEEDS - add general honeypot to list, if it is no already in it
+            if general != "":
+                if general not in ioc_instance.general:
+                    ioc_instance.general.append(general)
+
             if ioc_instance:
                 ioc_instance.save()
 
@@ -93,7 +100,7 @@ class ExtractAttacks(Cronjob, metaclass=ABCMeta):
             ioc_type = IP
         return ioc_type
 
-    def _check_first_time_run(self, honeypot_flag):
+    def _check_first_time_run(self, honeypot_flag, general=False):
         all_ioc = IOC.objects.all()
         if not all_ioc:
             # plus, we extract the sensors addresses so we can whitelist them
@@ -101,7 +108,14 @@ class ExtractAttacks(Cronjob, metaclass=ABCMeta):
             self.first_time_run = True
         else:
             # if this is not the overall first time, it could that honeypot first time
-            honeypot_ioc = IOC.objects.filter(**{f"{honeypot_flag}": True})
+            # FEEDS for a general honeypot it needs to be checked if it's in the list
+            if not general:
+                honeypot_ioc = IOC.objects.filter(**{f"{honeypot_flag}": True})
+            else:
+                honeypot_ioc = IOC.objects.filter(
+                    **{"general__icontains": honeypot_flag}
+                )
+
             if not honeypot_ioc:
                 # first time we execute this project.
                 # So we increment the time range to get the data from the last 3 days

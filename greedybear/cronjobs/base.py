@@ -4,7 +4,7 @@ import logging
 from abc import ABCMeta, abstractmethod
 
 from django.conf import settings
-from elasticsearch_dsl import Search
+from elasticsearch_dsl import Q, Search
 
 
 class Cronjob(metaclass=ABCMeta):
@@ -31,9 +31,19 @@ class Cronjob(metaclass=ABCMeta):
         search = Search(using=self.elastic_client, index="logstash-*")
         self.log.debug(f"minutes_back_to_lookup: {self.minutes_back_to_lookup}")
         gte_date = f"now-{self.minutes_back_to_lookup}m/m"
-        search = search.filter(
-            "range", **{"timestamp": {"gte": gte_date, "lte": "now/m"}}
+        # Some honeypots have different column for the time
+        # like 'timestamp' others 'start_time','end_time'
+        # This chooses the one that exists
+        q = Q(
+            "bool",
+            should=[
+                Q("range", timestamp={"gte": gte_date, "lte": "now/m"}),
+                Q("range", end_time={"gte": gte_date, "lte": "now/m"}),
+                Q("range", **{"@timestamp": {"gte": gte_date, "lte": "now/m"}}),
+            ],
+            minimum_should_match=1,
         )
+        search = search.query(q)
         search = search.filter("term", **{"type.keyword": honeypot.name})
         return search
 
