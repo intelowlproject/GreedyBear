@@ -68,6 +68,13 @@ app.conf.beat_schedule = {
         "schedule": crontab(minute="*/10"),
         "options": {"queue": "default"},
     },
+    # FEEDS
+    # every 10 minutes
+    "extract_general": {
+        "task": "greedybear.tasks.extract_general",
+        "schedule": crontab(minute="*/10"),
+        "options": {"queue": "default"},
+    },
     # once a day
     "extract_sensors": {
         "task": "greedybear.tasks.extract_sensors",

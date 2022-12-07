@@ -22,6 +22,7 @@ class EnrichmentViewTestCase(TestCase):
             times_seen=1,
             log4j=True,
             cowrie=True,
+            general=["heralding", "ciscoasa"],  # FEEDS
             scanner=True,
             payload_request=True,
             related_urls=[],
@@ -69,6 +70,7 @@ class EnrichmentViewTestCase(TestCase):
         self.assertEqual(response.json()["ioc"]["times_seen"], self.ioc.times_seen)
         self.assertEqual(response.json()["ioc"]["log4j"], self.ioc.log4j)
         self.assertEqual(response.json()["ioc"]["cowrie"], self.ioc.cowrie)
+        self.assertEqual(response.json()["ioc"]["general"], self.ioc.general)  # FEEDS
         self.assertEqual(response.json()["ioc"]["scanner"], self.ioc.scanner)
         self.assertEqual(
             response.json()["ioc"]["payload_request"], self.ioc.payload_request

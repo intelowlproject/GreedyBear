@@ -1,5 +1,6 @@
 # This file is a part of GreedyBear https://github.com/honeynet/GreedyBear
 # See the file 'LICENSE' for copying permission.
+from greedybear.consts import GENERAL_HONEYPOTS
 from greedybear.cronjobs.base import Cronjob
 from greedybear.cronjobs.honeypots import Honeypot
 
@@ -8,6 +9,9 @@ class MonitorHoneypots(Cronjob):
     def __init__(self):
         super(MonitorHoneypots, self).__init__()
         self.honeypots_to_monitor = [Honeypot("Log4pot"), Honeypot("Cowrie")]
+        # FEEDS - add monitor for all general honeypots from list
+        for idx, hp in enumerate(GENERAL_HONEYPOTS):
+            self.honeypots_to_monitor.append(Honeypot(hp))
 
     @property
     def minutes_back_to_lookup(self):

@@ -30,7 +30,13 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from api.serializers import EnrichmentSerializer, IOCSerializer
-from greedybear.consts import FEEDS_LICENSE, GET, PAYLOAD_REQUEST, SCANNER
+from greedybear.consts import (
+    FEEDS_LICENSE,
+    GENERAL_HONEYPOTS,
+    GET,
+    PAYLOAD_REQUEST,
+    SCANNER,
+)
 from greedybear.models import IOC, Statistics, viewType
 
 logger = logging.getLogger(__name__)
@@ -57,6 +63,7 @@ def feeds(request, feed_type, attack_type, age, format_):
     )
 
     feed_choices = ["log4j", "cowrie", "all"]
+    feed_choices.extend([x.lower() for x in GENERAL_HONEYPOTS])  # FEEDS
     if feed_type not in feed_choices:
         return _formatted_bad_request(format_)
 
@@ -75,7 +82,11 @@ def feeds(request, feed_type, attack_type, age, format_):
     query_dict = {}
 
     if feed_type != "all":
-        query_dict[feed_type] = True
+        # accept feed_type if it is in the general honeypots list
+        if feed_type in [x.lower() for x in GENERAL_HONEYPOTS]:
+            query_dict["general__icontains"] = feed_type
+        else:
+            query_dict[feed_type] = True
 
     if attack_type != "all":
         query_dict[attack_type] = True
@@ -227,10 +238,14 @@ class StatisticsViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=["get"])
     def feeds_types(self, request):
+        # FEEDS
         annotations = {
             "Log4j": Count("name", filter=Q(log4j=True)),
             "Cowrie": Count("name", filter=Q(cowrie=True)),
         }
+        # feed_type for each general honeypot in the list
+        for hp in GENERAL_HONEYPOTS:
+            annotations[hp] = Count("name", Q(general__icontains=hp.lower()))
         return self.__aggregation_response_static_ioc(annotations)
 
     def __aggregation_response_static_statistics(self, annotations: dict) -> Response:

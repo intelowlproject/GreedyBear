@@ -19,6 +19,16 @@ def extract_cowrie():
     ExtractCowrie().execute()
 
 
+# FEEDS
+
+
+@shared_task()
+def extract_general():
+    from greedybear.cronjobs.general import ExtractGeneral
+
+    ExtractGeneral().execute()
+
+
 @shared_task()
 def extract_sensors():
     from greedybear.cronjobs.sensors import ExtractSensors

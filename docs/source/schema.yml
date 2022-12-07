@@ -1,8 +1,113 @@
 openapi: 3.0.3
 info:
   title: GreedyBear API specification
-  version: 0.2.1
+  version: 1.0.1
 paths:
+  /api/apiaccess:
+    get:
+      operationId: apiaccess_retrieve
+      description: |-
+        Durin's APIAccessTokenView.
+
+        - ``GET`` -> get token-client pair info
+        - ``POST`` -> create and get token-client pair info
+        - ``DELETE`` -> delete existing API access token
+
+        .. versionadded:: 1.0.0
+      tags:
+      - apiaccess
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIAccessToken'
+          description: ''
+    post:
+      operationId: apiaccess_create
+      description: |-
+        Durin's APIAccessTokenView.
+
+        - ``GET`` -> get token-client pair info
+        - ``POST`` -> create and get token-client pair info
+        - ``DELETE`` -> delete existing API access token
+
+        .. versionadded:: 1.0.0
+      tags:
+      - apiaccess
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/APIAccessToken'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/APIAccessToken'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/APIAccessToken'
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIAccessToken'
+          description: ''
+    delete:
+      operationId: apiaccess_destroy
+      description: |-
+        Durin's APIAccessTokenView.
+
+        - ``GET`` -> get token-client pair info
+        - ``POST`` -> create and get token-client pair info
+        - ``DELETE`` -> delete existing API access token
+
+        .. versionadded:: 1.0.0
+      tags:
+      - apiaccess
+      security:
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /api/auth/login:
+    post:
+      operationId: auth_login_create
+      description: |-
+        Extends ``durin.views.LoginView``.
+
+        Responds with ``Set-cookie`` header and empty response data.
+      tags:
+      - auth
+      responses:
+        '200':
+          description: No response body
+  /api/auth/logout:
+    post:
+      operationId: auth_logout_create
+      description: |-
+        Extends ``durin.views.LogoutView``.
+
+        Responds with ``Set-cookie`` header and empty response data.
+      tags:
+      - auth
+      security:
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/authentication:
+    get:
+      operationId: authentication_retrieve
+      tags:
+      - authentication
+      responses:
+        '200':
+          description: No response body
   /api/enrichment:
     get:
       operationId: enrichment_retrieve
@@ -10,8 +115,6 @@ paths:
         listed by GreedyBear
       tags:
       - enrichment
-      security:
-      - tokenAuth: []
       responses:
         '200':
           content:
@@ -22,8 +125,7 @@ paths:
   /api/feeds/{feed_type}/{attack_type}/{age}.{format_}:
     get:
       operationId: feeds_._retrieve
-      description: Request if a specific observable (domain or IP address) has been
-        listed by GreedyBear
+      description: Extract Structured IOC Feeds from GreedyBear
       parameters:
       - in: path
         name: age
@@ -48,14 +150,165 @@ paths:
       tags:
       - feeds
       security:
-      - cookieAuth: []
-      - basicAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/me/access:
+    get:
+      operationId: me_access_retrieve
+      description: "\n    Returns user's access information.\n    "
+      tags:
+      - me
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserAccess'
+          description: ''
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/APIException'
+          description: ''
+  /api/sessions:
+    get:
+      operationId: sessions_list
+      description: |-
+        Durin's TokenSessionsViewSet.
+
+        - Returns list of active sessions of authed user.
+        - Only ``list()`` and ``delete()`` operations.
+
+        .. versionadded:: 1.0.0
+      tags:
+      - sessions
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TokenSessions'
+          description: ''
+  /api/sessions/{id}:
+    delete:
+      operationId: sessions_destroy
+      description: |-
+        Durin's TokenSessionsViewSet.
+
+        - Returns list of active sessions of authed user.
+        - Only ``list()`` and ``delete()`` operations.
+
+        .. versionadded:: 1.0.0
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this auth token.
+        required: true
+      tags:
+      - sessions
+      security:
+      - {}
+      responses:
+        '204':
+          description: No response body
+  /api/statistics/{id}/enrichment:
+    get:
+      operationId: statistics_enrichment_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - statistics
+      security:
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/statistics/{id}/feeds:
+    get:
+      operationId: statistics_feeds_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - statistics
+      security:
+      - {}
+      responses:
+        '200':
+          description: No response body
+  /api/statistics/feeds_types:
+    get:
+      operationId: statistics_feeds_types_retrieve
+      tags:
+      - statistics
+      security:
       - {}
       responses:
         '200':
           description: No response body
 components:
   schemas:
+    APIAccessToken:
+      type: object
+      description: |-
+        Used in :class:`durin.views.APIAccessTokenView`.
+
+        .. versionadded:: 1.0.0
+      properties:
+        client:
+          type: string
+          readOnly: true
+        created:
+          type: string
+          format: date-time
+          readOnly: true
+        expiry:
+          type: string
+          format: date-time
+          readOnly: true
+        has_expired:
+          type: boolean
+          readOnly: true
+        expires_in_str:
+          type: string
+          readOnly: true
+        token:
+          type: string
+          readOnly: true
+          description: Token is auto-generated on save.
+      required:
+      - client
+      - created
+      - expires_in_str
+      - expiry
+      - has_expired
+      - token
+    APIException:
+      type: object
+      properties:
+        errors:
+          type: object
+          additionalProperties: {}
+      required:
+      - errors
     EnrichmentSerializerResponse:
       type: object
       properties:
@@ -63,16 +316,56 @@ components:
           type: boolean
       required:
       - found
-  securitySchemes:
-    basicAuth:
-      type: http
-      scheme: basic
-    cookieAuth:
-      type: apiKey
-      in: cookie
-      name: sessionid
-    tokenAuth:
-      type: apiKey
-      in: header
-      name: Authorization
-      description: Token-based authentication with required prefix "Token"
+    TokenSessions:
+      type: object
+      description: |-
+        Used in :class:`durin.views.TokenSessionsViewSet`.
+
+        .. versionadded:: 1.0.0
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        client:
+          type: string
+          readOnly: true
+        created:
+          type: string
+          format: date-time
+          readOnly: true
+        expiry:
+          type: string
+          format: date-time
+          readOnly: true
+        has_expired:
+          type: boolean
+          readOnly: true
+        is_current:
+          type: boolean
+          readOnly: true
+        expires_in_str:
+          type: string
+      required:
+      - client
+      - created
+      - expires_in_str
+      - expiry
+      - has_expired
+      - id
+      - is_current
+    UserAccess:
+      type: object
+      description: |-
+        Used by :class:`~.views.UserAccessView`.
+
+        Ideally, this serializer should be extended inside your
+        service's source code adding user relevant information
+        and then point to it with the
+        ``USER_ACCESS_SERIALIZER`` settings variable.
+      properties:
+        user:
+          type: object
+          additionalProperties: {}
+          readOnly: true
+      required:
+      - user
