@@ -476,6 +476,7 @@ cd $myFOLDER
 # Create Systemctl Service
 fuBANNER "Creating Service ..."
 echo "$GREEDYBEAR_SERVICE" > /etc/systemd/system/greedybear.service
+sed -i "s@\/opt\/GreedyBear@$myFOLDER@g" /etc/systemd/system/greedybear.service
 # Enable+Start Systemctl Service
 systemctl daemon-reload
 systemctl enable greedybear.service
