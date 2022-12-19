@@ -42,3 +42,11 @@ If you don't have one, you can make the following changes to make GreeyBear spin
 
 1. In ```docker/env_file```, set the variable ```ELASTIC_ENDPOINT``` to ```http://elasticsearch:9200```.
 2. Add ```:docker/elasticsearch.yml``` to the last defined ```COMPOSE_FILE``` variable or uncomment the ```# local development with elasticsearch container``` block in ```.env``` file.
+
+## Installer for TPot Instance
+The file 'installer_on_tpot.sh' allows the automatic installation of Greedybear on an existing TPot instance.
+You can choose the type of Greedybear you want to install (http, https or local).
+The installer will either clone Greedybear to '/opt/GreedyBear' or if Greedybear exists on your system you need to input the absolute path to the existing Greedybear folder.
+It will prompt you for the necessary information/secrets needed.
+
+Example: `sudo ./installer.sh --type=http --folder=/opt/GreedyBear`
