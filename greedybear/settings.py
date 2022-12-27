@@ -48,7 +48,7 @@ else:
 SLACK_TOKEN = os.environ.get("SLACK_TOKEN", "")
 SLACK_CHANNEL = os.environ.get("SLACK_CHANNEL", "")
 
-VERSION = "1.0.1"
+VERSION = os.environ.get("REACT_APP_INTELOWL_VERSION", "").replace("v", "")
 # drf-spectacular
 SPECTACULAR_SETTINGS = {
     "TITLE": "GreedyBear API specification",
