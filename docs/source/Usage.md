@@ -28,6 +28,7 @@ The available feed_type are:
   * `dicompot`
   * `redishoneypot`
   * `sentrypeer`
+  * `glutton`
 
 The available attack_type are:
 
