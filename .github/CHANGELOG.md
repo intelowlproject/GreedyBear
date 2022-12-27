@@ -1,4 +1,7 @@
 # Changelog
+## [v1.0.2](https://github.com/honeynet/GreedyBear/releases/tag/v1.0.2)
+* Added Installer Script for GreedyBear directly on a TPOT
+
 
 ## [v1.0.1](https://github.com/honeynet/GreedyBear/releases/tag/v1.0.1)
 

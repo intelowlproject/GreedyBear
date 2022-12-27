@@ -1,7 +1,7 @@
 # Checklist for creating a new release
 
 - [ ] Update `CHANGELOG.md` for the new version
-- [ ] Change version number in `docs/source/conf.py`, `docs/source/schema.yml`, `greedybear/settings.py` and `docker/default.yml`
+- [ ] Change version number in `docs/source/schema.yml`, `docker/.version`
 - [ ] Verify CI Tests
 - [ ] Create release for the branch `develop`.
 Write the following statement there (change the version number):

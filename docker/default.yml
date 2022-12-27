@@ -10,7 +10,7 @@ services:
       - ./env_file_postgres
 
   uwsgi:
-    image: intelowlproject/greedybear:v1.0.1
+    image: intelowlproject/greedybear:prod
     container_name: greedybear_uwsgi
     volumes:
       - ../configuration/uwsgi/greedybear.ini:/etc/uwsgi/sites/greedybear.ini
@@ -26,7 +26,7 @@ services:
       - postgres
 
   nginx:
-    image: intelowlproject/greedybear_nginx:v1.0.1
+    image: intelowlproject/greedybear_nginx:prod
     container_name: greedybear_nginx
     restart: unless-stopped
     volumes:
@@ -48,7 +48,7 @@ services:
       - postgres
 
   celery_beat:
-    image: intelowlproject/greedybear:v1.0.1
+    image: intelowlproject/greedybear:prod
     container_name: greedybear_celery_beat
     restart: unless-stopped
     command: /usr/local/bin/celery -A greedybear.celery beat --uid www-data --gid www-data --pidfile= --schedule=/tmp/celerybeat-schedule
@@ -62,7 +62,7 @@ services:
       - uwsgi
 
   celery_worker_default:
-    image: intelowlproject/greedybear:v1.0.1
+    image: intelowlproject/greedybear:prod
     container_name: greedybear_celery_worker_default
     restart: unless-stopped
     stop_grace_period: 3m
