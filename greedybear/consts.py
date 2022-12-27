@@ -20,6 +20,7 @@ GENERAL_HONEYPOTS = [
     "Dicompot",
     "Redishoneypot",
     "Sentrypeer",
+    "Glutton",
 ]
 
 GET = "GET"
