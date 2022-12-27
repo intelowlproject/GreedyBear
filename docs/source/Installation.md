@@ -43,6 +43,27 @@ If you don't have one, you can make the following changes to make GreeyBear spin
 1. In ```docker/env_file```, set the variable ```ELASTIC_ENDPOINT``` to ```http://elasticsearch:9200```.
 2. Add ```:docker/elasticsearch.yml``` to the last defined ```COMPOSE_FILE``` variable or uncomment the ```# local development with elasticsearch container``` block in ```.env``` file.
 
+## Update and Re-build
+
+### Rebuilding the project / Creating custom docker build
+If you make some code changes and you like to rebuild the project, follow these steps:
+
+1. Be sure that your `.env` file has a `COMPOSE_FILE` variable which mounts the `docker/local.override.yml` compose file.
+2. `docker-compose build` to build the new docker image.
+1. Start the containers with `docker-compose up`.
+
+### Update to the most recent version
+To update the project with the most recent available code you have to follow these steps:
+
+```bash
+$ cd <your_intel_owl_directory> # go into the project directory
+$ git pull # pull new repository changes
+$ docker pull intelowlproject/greedybear:prod # pull new docker images
+$ docker-compose down # stop and destroy the currently running GreedyBear containers 
+$ docker-compose up # restart the GreedyBear application
+```
+
+
 ## Installer for TPot Instance
 The file 'installer_on_tpot.sh' allows the automatic installation of Greedybear on an existing TPot instance.
 You can choose the type of Greedybear you want to install (http, https or local).
