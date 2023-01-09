@@ -26,28 +26,23 @@ ARG WATCHMAN=false
 
 RUN mkdir -p ${LOG_PATH} \
     ${LOG_PATH}/django \
-    ${LOG_PATH}/uwsgi
-
-# python3-psycopg2 is required to use PostgresSQL with Django
-RUN apk --no-cache -U add util-linux libsasl libressl-dev \
+    ${LOG_PATH}/uwsgi \
+    && apk --no-cache -U add util-linux libsasl libressl-dev \
+    # py3-psycopg2 is required to use PostgresSQL with Django
     vim net-tools py3-psycopg2 bash uwsgi \
     && pip3 install --upgrade pip
 
-COPY requirements/project-requirements.txt $PYTHONPATH/project-requirements.txt
-COPY requirements/test-requirements.txt $PYTHONPATH/test-requirements.txt
 WORKDIR $PYTHONPATH
-
-RUN pip3 install --no-cache-dir --compile -r project-requirements.txt
-
 COPY . $PYTHONPATH
-COPY docker/wait-for-it.sh /wait-for-it.sh
 
-RUN touch ${LOG_PATH}/django/api.log ${LOG_PATH}/django/api_errors.log \
+# separation is required to avoid to re-execute os installation in case of change of python requirements
+RUN pip3 install --no-cache-dir --compile -r $PYTHONPATH/requirements/project-requirements.txt \
+    && touch ${LOG_PATH}/django/api.log ${LOG_PATH}/django/api_errors.log \
     && touch ${LOG_PATH}/django/greedybear.log ${LOG_PATH}/django/greedybear_errors.log \
     && touch ${LOG_PATH}/django/celery.log ${LOG_PATH}/django/celery_errors.log \
     && touch ${LOG_PATH}/django/django_errors.log ${LOG_PATH}/django/elasticsearch.log\
     && adduser -S -H -u 2000 -D -g www-data www-data \
     && chown -R www-data:www-data ${LOG_PATH} /opt/deploy/ \
-    && rm -rf docs/ frontend/ tests/ .github/
+    && rm -rf docs/ frontend/ tests/ .github/ \
+    && /bin/bash ./docker/watchman_install.sh
 
-RUN /bin/bash ./docker/watchman_install.sh

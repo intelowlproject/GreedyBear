@@ -2,7 +2,7 @@
 
 date
 echo "starting wait_for_it for uwsgi"
-/wait-for-it.sh -t 15 postgres:$DB_PORT
+/opt/deploy/greedybear/docker/wait-for-it.sh -t 15 postgres:$DB_PORT
 date
 
 until cd /opt/deploy/greedybear
