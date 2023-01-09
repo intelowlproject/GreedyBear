@@ -26,5 +26,5 @@ if [[ $DEBUG == "True" ]] && [[ $DJANGO_TEST_SERVER == "True" ]];
 then
     python manage.py runserver 0.0.0.0:8001
 else
-    /usr/local/bin/uwsgi --ini /etc/uwsgi/sites/greedybear.ini
+    /usr/local/bin/uwsgi --ini /etc/uwsgi/uwsgi.ini
 fi
