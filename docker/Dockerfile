@@ -27,9 +27,8 @@ ARG WATCHMAN=false
 RUN mkdir -p ${LOG_PATH} \
     ${LOG_PATH}/django \
     ${LOG_PATH}/uwsgi \
-    && apk --no-cache -U add util-linux libsasl libressl-dev \
     # py3-psycopg2 is required to use PostgresSQL with Django
-    vim net-tools py3-psycopg2 bash uwsgi \
+    && apk --no-cache -U add bash uwsgi py3-psycopg2 \
     && pip3 install --upgrade pip
 
 WORKDIR $PYTHONPATH
