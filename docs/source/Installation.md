@@ -71,3 +71,10 @@ The installer will either clone Greedybear to '/opt/GreedyBear' or if Greedybear
 It will prompt you for the necessary information/secrets needed.
 
 Example: `sudo ./installer.sh --type=http --folder=/opt/GreedyBear`
+
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+This installer is not officialy supported neither by Greedybear nor by TPOT maintainers.
+It must be considered as a POC to have GB and TPOT installed in the same place.
+Greedybear is supported to be executed only in a separate instance and to connect externally with the TPOTs.
+</div>
