@@ -120,11 +120,39 @@ Also remember to pull the most recent changes available in the **develop** branc
 ### Install testing requirements
 Run `pip install -r requirements/test-requirements.txt` to install the requirements to validate your code.
 
-#### Pass linting and tests
+### Linting
  Run `psf/black` to lint the files automatically, then `flake8` to check and `isort`.
 
  (if you installed `pre-commit` this is performed automatically at every commit)
 
-  if you get any errors, fix them.
-  Once you make sure that everything is working fine, please squash all of our commits into a single one and finally create a pull request.
+### Tests
 
+#### Frontend tests
+All the frontend tests must be run from the folder `frontend`.
+The tests can contain log messages, you can suppress then with the environment variable `SUPPRESS_JEST_LOG=True`.
+
+##### Run all tests
+
+```
+npm test
+```
+
+##### Run a specific component tests
+
+```
+npm test -- -t <componentPath>
+// example
+npm test tests/components/auth/Login.test.jsx
+```
+
+##### Run a specific test
+
+```
+npm test -- -t '<describeString> <testString>'
+// example
+npm test -- -t "Login component User login"
+```
+
+
+if you get any errors, fix them.
+Once you make sure that everything is working fine, please squash all of our commits into a single one and finally create a pull request.
