@@ -104,7 +104,17 @@ function Login() {
                   <Label check>Show password</Label>
                 </FormGroup>
                 <div className="text-muted mb-3">
-                  Don&apos;t have an account? Please reach out <a className="link-ul-primary" href="https://twitter.com/intel_owl" target="_blank" rel="noopener noreferrer">IntelOwl Maintainers</a> or other members of The Honeynet Project if you are interested in gain access to the protected services
+                  Don&apos;t have an account? Please reach out{" "}
+                  <a
+                    className="link-ul-primary"
+                    href="https://twitter.com/intel_owl"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    IntelOwl Maintainers
+                  </a>{" "}
+                  or other members of The Honeynet Project if you are interested
+                  in gain access to the protected services
                 </div>
                 {/* Submit */}
                 <FormGroup className="d-flex-center">
@@ -113,7 +123,7 @@ function Login() {
                     disabled={!(formik.isValid || formik.isSubmitting)}
                     color="primary"
                     outline
-                   >
+                  >
                     {formik.isSubmitting && <Spinner size="sm" />} Login
                   </Button>
                 </FormGroup>

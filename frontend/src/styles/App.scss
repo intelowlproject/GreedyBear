@@ -3,8 +3,8 @@
 
 // App.jsx
 * {
-    scroll-margin-top: 75px !important;
-    scroll-behavior: smooth !important;
+  scroll-margin-top: 75px !important;
+  scroll-behavior: smooth !important;
 }
 
 main {
@@ -12,9 +12,9 @@ main {
 }
 
 footer {
-    left: 0;
-    bottom: 0;
-    width: 100%;
+  left: 0;
+  bottom: 0;
+  width: 100%;
 }
 
 section.fixed-bottom {
@@ -100,29 +100,28 @@ section.fixed-bottom {
   overflow-y: auto;
 }
 
-
 .twitter-follow-button {
-    /* stylelint-disable scss/at-extend-no-missing-placeholder */
-    @extend .btn;
-    @extend .btn-xs;
-    /* stylelint-enable scss/at-extend-no-missing-placeholder */
-  
-    background-color: #1da1f2;
-    color: $light;
-    font-weight: 450;
-  
-    &:hover {
-      background-color: shade-color(#1da1f2, 20%);
-      color: $light !important;
-    }
+  /* stylelint-disable scss/at-extend-no-missing-placeholder */
+  @extend .btn;
+  @extend .btn-xs;
+  /* stylelint-enable scss/at-extend-no-missing-placeholder */
+
+  background-color: #1da1f2;
+  color: $light;
+  font-weight: 450;
+
+  &:hover {
+    background-color: shade-color(#1da1f2, 20%);
+    color: $light !important;
   }
+}
 
 .badge-top-end-corner {
-    top: -1.25em;
-    right: 0.75em;
-    font-size: x-small;
-    position: relative;
-    vertical-align: baseline;
+  top: -1.25em;
+  right: 0.75em;
+  font-size: x-small;
+  position: relative;
+  vertical-align: baseline;
 }
 
 /* Media queries */
