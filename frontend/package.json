@@ -3,6 +3,11 @@
   "version": "0.1.0",
   "private": true,
   "proxy": "http://localhost:80/",
+  "config": {
+    "eslint": ".github/configurations/node_linters/eslint/.eslintrc.json",
+    "stylelint": ".github/configurations/node_linters/stylelint/.stylelintrc.json",
+    "prettier": ".github/configurations/node_linters/prettier/.prettierrc.js"
+  },
   "dependencies": {
     "@certego/certego-ui": "^0.1.1",
     "axios": "^0.27.2",
@@ -22,8 +27,17 @@
   "scripts": {
     "start": "PORT=3001 react-scripts start",
     "build": "react-scripts build",
-    "test": "jest",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "test": "TZ=UTC jest ./tests --silent",
+    "test-coverage": "npm test -- --coverage=true",
+    "lint-config-install": "npm i",
+    "lint": "eslint 'src/**/*.{js,jsx}' 'tests/**/*.{js,jsx}'",
+    "lint-fix": "npm run lint -- --fix",
+    "lint-scss-config-install": "npm i",
+    "lint-scss": "stylelint 'src/scss/**/*.{css,scss}'",
+    "lint-scss-fix": "npm run lint-scss -- --fix",
+    "formatter": "prettier 'src/**/*.{js,jsx}' 'tests/**/*.{js,jsx}' 'src/scss/**/*.{css,scss}' --check",
+    "formatter-fix": "npm run formatter -- --write"
   },
   "eslintConfig": {
     "extends": [
