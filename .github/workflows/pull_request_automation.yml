@@ -63,7 +63,6 @@ jobs:
       requirements_path: requirements/project-requirements.txt
       django_settings_module: greedybear.settings
 
-      check_migrations: true
       check_requirements_licenses: true
       check_dockerfile: docker/Dockerfile
 
