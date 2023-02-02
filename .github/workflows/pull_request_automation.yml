@@ -21,12 +21,12 @@ jobs:
 
 
 
-  node:
+  frontend-tests:
     needs: detect-changes
     if: ${{ needs.detect-changes.outputs.frontend > 0 }}
     uses: ./.github/workflows/_node.yml
     with:
-      working_directory: .github/test/node_test
+      working_directory: ./frontend
 
       use_eslint: true
       use_prettier: true
@@ -46,7 +46,7 @@ jobs:
         ["18"]
 
 
-  python:
+  backend-tests:
      needs: detect-changes
      if: ${{ needs.detect-changes.outputs.backend > 0 }}
      uses: ./.github/workflows/_python.yml
