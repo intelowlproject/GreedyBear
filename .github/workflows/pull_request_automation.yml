@@ -83,7 +83,7 @@ jobs:
         {
         "ENVIRONMENT": "ci",
         "DJANGO_SECRET": "ci_secret",
-        "DB_HOST": "postgres_host",
+        "DB_HOST": "https://localhost",
         "DB_PORT": "5432",
         "DB_USER": "user",
         "DB_PASSWORD": "password",
