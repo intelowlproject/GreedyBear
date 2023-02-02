@@ -63,6 +63,7 @@ jobs:
       requirements_path: requirements/project-requirements.txt
       django_settings_module: greedybear.settings
 
+      check_migrations: true
       check_requirements_licenses: true
       check_dockerfile: docker/Dockerfile
 
@@ -72,9 +73,6 @@ jobs:
       use_rabbitmq: false
       use_mongo: false
       use_celery: false
-
-      celery_app: greedybear.celery
-      celery_queues: default
 
       use_coverage: true
       upload_coverage: true
