@@ -65,7 +65,7 @@ jobs:
 
       check_migrations: true
       check_requirements_licenses: true
-      check_dockerfile: Dockerfile
+      check_dockerfile: docker/Dockerfile
 
       use_postgres: true
       use_memcached: false
