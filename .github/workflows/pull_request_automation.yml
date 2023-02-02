@@ -92,7 +92,7 @@ jobs:
         "DB_PASSWORD": "password",
         "DB_NAME": "greedybear_db",
         "ELASTICSEARCH_ENABLED": "False",
-        "ELASTICSEARCH_HOST": "",
+        "ELASTICSEARCH_HOST": "test_host",
         "ELASTICSEARCH_NO_OF_SHARDS: "1",
         "ELASTICSEARCH_NO_OF_REPLICAS": "0",
         "STAGE":"ci",
