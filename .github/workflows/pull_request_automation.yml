@@ -53,6 +53,9 @@ jobs:
      secrets: inherit
      with:
       working_directory: .
+
+      custom_command: cp docker/env_file_postgres_template docker/env_file_postgres
+
       use_black: true
       use_isort: true
       use_flake8: true
