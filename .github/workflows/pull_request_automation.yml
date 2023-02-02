@@ -80,6 +80,7 @@ jobs:
 
       env: >-
         {
+        "ENVIRONMENT": "ci",
         "DJANGO_SECRET": "ci_secret",
         "DB_HOST": "postgres",
         "DB_PORT": "5432",
