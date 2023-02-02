@@ -60,14 +60,11 @@ jobs:
       use_bandit: false
       use_autoflake: false
 
-      run_codeql: true
-
       requirements_path: requirements/project-requirements.txt
       django_settings_module: greedybear.settings
 
       check_migrations: true
       check_requirements_licenses: true
-      check_docs_directory: docs/source
       check_dockerfile: Dockerfile
 
       use_postgres: true
