@@ -19,14 +19,9 @@ class MonitorHoneypots(Cronjob):
 
     def run(self):
         for honeypot_to_monitor in self.honeypots_to_monitor:
-            self.log.info(
-                f"checking if logs from the honeypot {honeypot_to_monitor.name} are available"
-            )
+            self.log.info(f"checking if logs from the honeypot {honeypot_to_monitor.name} are available")
             search = self._base_search(honeypot_to_monitor)
 
             hits = search[:10].execute()
             if not hits:
-                self.log.warning(
-                    f"no logs available for the Honeypot {honeypot_to_monitor.name}."
-                    f" Something could be wrong in the TPOT cluster"
-                )
+                self.log.warning(f"no logs available for the Honeypot {honeypot_to_monitor.name}." f" Something could be wrong in the TPOT cluster")

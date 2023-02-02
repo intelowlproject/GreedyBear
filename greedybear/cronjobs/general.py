@@ -14,9 +14,7 @@ class ExtractGeneral(ExtractAttacks):
         super().__init__(minutes_back=minutes_back)
         self.general = []
         self.added_scanners = [0] * len(GENERAL_HONEYPOTS)
-        for idx, hp in enumerate(
-            GENERAL_HONEYPOTS
-        ):  # Create Honeypot for each Honeypot from list
+        for idx, hp in enumerate(GENERAL_HONEYPOTS):  # Create Honeypot for each Honeypot from list
             self.general.append(Honeypot(hp))
 
     def _general_lookup(self):
