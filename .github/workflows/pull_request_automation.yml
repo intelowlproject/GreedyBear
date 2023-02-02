@@ -3,10 +3,8 @@ name: CI
 on:
   pull_request:
     branches:
-      - master
       - main
       - develop
-      - dev
 
 # discard previous execution if you commit to a branch that is already running
 concurrency:
@@ -36,8 +34,6 @@ jobs:
 
       run_codeql: true
 
-      custom_command: npm exec -c whoami
-
       use_react: true
       check_packages_licenses: true
       use_jest: true
@@ -56,43 +52,57 @@ jobs:
      uses: ./.github/workflows/_python.yml
      secrets: inherit
      with:
-      working_directory: .github/test/python_test
-      use_black: false
+      working_directory: .
+      use_black: true
       use_isort: true
       use_flake8: true
-      use_pylint: true
+      use_pylint: false
       use_bandit: false
-      use_autoflake: true
+      use_autoflake: false
 
       run_codeql: true
 
-      requirements_path: .github/test/python_test/requirements.txt
-      packages_path: .github/test/python_test/packages.txt
-      django_settings_module: python_test.settings
+      requirements_path: requirements/project-requirements.txt
+      django_settings_module: greedybear.settings
 
       check_migrations: true
       check_requirements_licenses: true
-      check_docs_directory:
+      check_docs_directory: docs/source
       check_dockerfile: Dockerfile
 
-      use_postgres: false
+      use_postgres: true
       use_memcached: false
       use_elastic_search: false
-      use_rabbitmq: true
+      use_rabbitmq: false
       use_mongo: false
-      use_celery: true
+      use_celery: false
 
-      celery_app: python_test.celery
+      celery_app: greedybear.celery
       celery_queues: default
 
       use_coverage: true
       upload_coverage: true
       tags_for_slow_tests: main
-      tags_for_manual_tests: manual
 
-      custom_command: whoami ; ls -la
       env: >-
-        {"KEY": "VALUE"}
+        {
+        "DB_HOST": "postgres",
+        "DB_PORT": "5432",
+        "DB_USER": "user",
+        "DB_PASSWORD": "password",
+        "DB_NAME": "greedybear_db",
+        "ELASTICSEARCH_ENABLED": "False",
+        "ELASTICSEARCH_HOST": "",
+        "ELASTICSEARCH_NO_OF_SHARDS: "1",
+        "ELASTICSEARCH_NO_OF_REPLICAS": "0",
+        "STAGE":"ci",
+        "DEBUG": "True",
+        "DISABLE_LOGGING_TEST": "True",
+        "MOCK_CONNECTIONS": "True",
+        "HTTPS_ENABLED": "not_enabled",
+        "DJANGO_SETTINGS_MODULE": "greedybear.settings",
+        "BROKER_URL": "amqp://guest:guest@rabbitmq:5672",
+        }
       python_versions: >-
         ["3.9"]
       max_timeout: 15
