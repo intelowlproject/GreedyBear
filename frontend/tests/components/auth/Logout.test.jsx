@@ -3,9 +3,9 @@ import axios from "axios";
 import "@testing-library/jest-dom";
 import { render, screen, waitFor } from "@testing-library/react";
 import { BrowserRouter } from "react-router-dom";
+import { renderHook } from "@testing-library/react-hooks";
 import { LOGOUT_URI } from "../../../src/constants/api";
 import Logout from "../../../src/components/auth/Logout";
-import { renderHook } from "@testing-library/react-hooks";
 import { useAuthStore } from "../../../src/stores";
 
 jest.mock("axios");

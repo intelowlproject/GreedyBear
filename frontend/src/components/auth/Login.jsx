@@ -31,7 +31,7 @@ const onValidate = (values) => {
   return errors;
 };
 
-//Component
+// Component
 function Login() {
   console.debug("Login rendered!");
 

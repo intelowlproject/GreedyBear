@@ -39,7 +39,7 @@ function AppFooter() {
           >
             <Col>
               <a
-                href={`https://twitter.com/intel_owl`}
+                href="https://twitter.com/intel_owl"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="ms-md-2 twitter-follow-button"

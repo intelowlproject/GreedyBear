@@ -8,7 +8,7 @@ import { ContentSection } from "@certego/certego-ui";
 import { PUBLIC_URL, VERSION } from "../../constants/environment";
 
 const versionText = VERSION;
-//const versionText = "v1.0.0";
+// const versionText = "v1.0.0";
 const logoBgImg = `url('${PUBLIC_URL}/greedybear.png')`;
 const blogPosts = [
   {
