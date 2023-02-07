@@ -30,14 +30,8 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from api.serializers import EnrichmentSerializer, IOCSerializer
-from greedybear.consts import (
-    FEEDS_LICENSE,
-    GENERAL_HONEYPOTS,
-    GET,
-    PAYLOAD_REQUEST,
-    SCANNER,
-)
-from greedybear.models import IOC, Statistics, viewType
+from greedybear.consts import FEEDS_LICENSE, GET, PAYLOAD_REQUEST, SCANNER
+from greedybear.models import IOC, GeneralHoneypot, Statistics, viewType
 
 logger = logging.getLogger(__name__)
 
@@ -63,8 +57,11 @@ def feeds(request, feed_type, attack_type, age, format_):
     )
 
     feed_choices = ["log4j", "cowrie", "all"]
-    feed_choices.extend([x.lower() for x in GENERAL_HONEYPOTS])  # FEEDS
+    generalHoneypots = GeneralHoneypot.objects.all().filter(active=True)
+    feed_choices.extend([hp.name.lower() for hp in generalHoneypots])  # FEEDS
+
     if feed_type not in feed_choices:
+        logger.info(f"Feed type {feed_type} not in feed_choises {feed_choices}")
         return _formatted_bad_request(format_)
 
     attack_types = ["scanner", "payload_request", "all"]
@@ -83,7 +80,7 @@ def feeds(request, feed_type, attack_type, age, format_):
 
     if feed_type != "all":
         # accept feed_type if it is in the general honeypots list
-        if feed_type in [x.lower() for x in GENERAL_HONEYPOTS]:
+        if feed_type in [hp.name.lower() for hp in generalHoneypots]:
             query_dict["general__icontains"] = feed_type
         else:
             query_dict[feed_type] = True
@@ -244,8 +241,9 @@ class StatisticsViewSet(viewsets.ViewSet):
             "Cowrie": Count("name", filter=Q(cowrie=True)),
         }
         # feed_type for each general honeypot in the list
-        for hp in GENERAL_HONEYPOTS:
-            annotations[hp] = Count("name", Q(general__icontains=hp.lower()))
+        generalHoneypots = GeneralHoneypot.objects.all().filter(active=True)
+        for hp in generalHoneypots:
+            annotations[hp.name] = Count("name", Q(general__icontains=hp.name.lower()))
         return self.__aggregation_response_static_ioc(annotations)
 
     def __aggregation_response_static_statistics(self, annotations: dict) -> Response:

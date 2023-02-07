@@ -51,9 +51,6 @@ jobs:
     - name: Build and run containers
       run: |
         sudo docker-compose -f docker/default.yml -f docker/ci.override.yml up --build -d
-    - name: "Install requirements"
-      run: |
-        docker exec greedybear_uwsgi pip3 install --no-cache-dir --compile -r requirements/test-requirements.txt
     - name: "Run Tests"
       run: |
-        sudo docker exec greedybear_uwsgi python manage.py test
+        docker exec greedybear_uwsgi python manage.py test
