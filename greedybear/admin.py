@@ -1,8 +1,14 @@
 # This file is a part of GreedyBear https://github.com/honeynet/GreedyBear
 # See the file 'LICENSE' for copying permission.
-from django.contrib import admin
+import logging
 
-from greedybear.models import IOC
+from django.contrib import admin, messages
+from django.db.models import Q
+from django.utils.translation import ngettext
+
+from greedybear.models import IOC, GeneralHoneypot
+
+logger = logging.getLogger(__name__)
 
 # there is no need to view the sensors in the admin page.
 # @admin.register(Sensors)
@@ -26,3 +32,44 @@ class IOCModelAdmin(admin.ModelAdmin):
         "log4j",
         "cowrie",
     ]
+
+
+@admin.register(GeneralHoneypot)
+class GeneralHoneypotAdmin(admin.ModelAdmin):
+    list_display = [
+        "name",
+        "active",
+    ]
+    actions = ["disable_honeypot", "enable_honeypot"]
+
+    @admin.action(description="Disable selected honeypot")
+    def disable_honeypot(self, request, queryset):
+        declinable = Q(active=True)
+        honeypots = queryset.filter(declinable).all()
+        number_updated = honeypots.update(active=False)
+        self.message_user(
+            request,
+            ngettext(
+                "%d honeypot was successfully disabled.",
+                "%d honeypots were successfully disabled.",
+                number_updated,
+            )
+            % number_updated,
+            messages.SUCCESS,
+        )
+
+    @admin.action(description="Enable selected honeypot")
+    def enable_honeypot(self, request, queryset):
+        enableable = Q(active=False)
+        honeypots = queryset.filter(enableable).all()
+        number_updated = honeypots.update(active=True)
+        self.message_user(
+            request,
+            ngettext(
+                "%d honeypot was successfully enabled.",
+                "%d honeypots were successfully enabled.",
+                number_updated,
+            )
+            % number_updated,
+            messages.SUCCESS,
+        )
