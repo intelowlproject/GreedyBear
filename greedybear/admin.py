@@ -44,8 +44,8 @@ class GeneralHoneypotAdmin(admin.ModelAdmin):
 
     @admin.action(description="Disable selected honeypot")
     def disable_honeypot(self, request, queryset):
-        declinable = Q(active=True)
-        honeypots = queryset.filter(declinable).all()
+        disableable = Q(active=True)
+        honeypots = queryset.filter(disableable).all()
         number_updated = honeypots.update(active=False)
         self.message_user(
             request,
