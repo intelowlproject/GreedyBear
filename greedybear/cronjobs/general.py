@@ -1,9 +1,10 @@
 # This file is a part of GreedyBear https://github.com/honeynet/GreedyBear
 # See the file 'LICENSE' for copying permission.
 
-from greedybear.consts import GENERAL_HONEYPOTS, SCANNER
+from greedybear.consts import SCANNER
 from greedybear.cronjobs.attacks import ExtractAttacks
 from greedybear.cronjobs.honeypots import Honeypot
+from greedybear.models import GeneralHoneypot
 
 # FEEDS
 # Extract only source IPs from a list of Honeypots
@@ -13,9 +14,11 @@ class ExtractGeneral(ExtractAttacks):
     def __init__(self, minutes_back=None):
         super().__init__(minutes_back=minutes_back)
         self.general = []
-        self.added_scanners = [0] * len(GENERAL_HONEYPOTS)
-        for idx, hp in enumerate(GENERAL_HONEYPOTS):  # Create Honeypot for each Honeypot from list
-            self.general.append(Honeypot(hp))
+        generalHoneypots = GeneralHoneypot.objects.all().filter(active=True)
+        self.added_scanners = [0] * generalHoneypots.count()
+        # Create Honeypot for each active Honeypot
+        for hp in generalHoneypots:
+            self.general.append(Honeypot(hp.name))
 
     def _general_lookup(self):
         for idx, hp in enumerate(self.general):

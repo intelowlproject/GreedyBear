@@ -14,7 +14,7 @@ from drf_spectacular.utils import extend_schema as add_docs
 from drf_spectacular.utils import inline_serializer
 from durin import views as durin_views
 from greedybear.consts import FEEDS_LICENSE, GENERAL_HONEYPOTS, GET, PAYLOAD_REQUEST, SCANNER
-from greedybear.models import IOC, Statistics, viewType
+from greedybear.models import IOC, GeneralHoneypot, Statistics, viewType
 from rest_framework import serializers as rfs
 from rest_framework import status, viewsets
 from rest_framework.decorators import action, api_view, authentication_classes, permission_classes
@@ -42,8 +42,11 @@ def feeds(request, feed_type, attack_type, age, format_):
     logger.info(f"request from {source}. Feed type: {feed_type}, attack_type: {attack_type}," f" Age: {age}, format: {format_}")
 
     feed_choices = ["log4j", "cowrie", "all"]
-    feed_choices.extend([x.lower() for x in GENERAL_HONEYPOTS])  # FEEDS
+    generalHoneypots = GeneralHoneypot.objects.all().filter(active=True)
+    feed_choices.extend([hp.name.lower() for hp in generalHoneypots])  # FEEDS
+
     if feed_type not in feed_choices:
+        logger.info(f"Feed type {feed_type} not in feed_choises {feed_choices}")
         return _formatted_bad_request(format_)
 
     attack_types = ["scanner", "payload_request", "all"]
@@ -62,7 +65,7 @@ def feeds(request, feed_type, attack_type, age, format_):
 
     if feed_type != "all":
         # accept feed_type if it is in the general honeypots list
-        if feed_type in [x.lower() for x in GENERAL_HONEYPOTS]:
+        if feed_type in [hp.name.lower() for hp in generalHoneypots]:
             query_dict["general__icontains"] = feed_type
         else:
             query_dict[feed_type] = True
@@ -209,8 +212,9 @@ class StatisticsViewSet(viewsets.ViewSet):
             "Cowrie": Count("name", filter=Q(cowrie=True)),
         }
         # feed_type for each general honeypot in the list
-        for hp in GENERAL_HONEYPOTS:
-            annotations[hp] = Count("name", Q(general__icontains=hp.lower()))
+        generalHoneypots = GeneralHoneypot.objects.all().filter(active=True)
+        for hp in generalHoneypots:
+            annotations[hp.name] = Count("name", Q(general__icontains=hp.name.lower()))
         return self.__aggregation_response_static_ioc(annotations)
 
     def __aggregation_response_static_statistics(self, annotations: dict) -> Response:

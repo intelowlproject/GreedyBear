@@ -42,3 +42,8 @@ class Statistics(models.Model):
         default=viewType.FEEDS_VIEW.value,
     )
     request_date = models.DateTimeField(blank=False, default=datetime.utcnow)
+
+
+class GeneralHoneypot(models.Model):
+    name = models.CharField(max_length=15, blank=False)
+    active = models.BooleanField(blank=False, default=True)
