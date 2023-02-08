@@ -32,7 +32,7 @@
     "start": "PORT=3001 react-scripts start",
     "build": "react-scripts build",
     "eject": "react-scripts eject",
-    "test": "TZ=UTC jest ./tests --silent",
+    "test": "TZ=UTC jest ./tests",
     "test-coverage": "npm test -- --coverage=true",
     "lint-config-install": "cd ../.github/configurations/node_linters/eslint && npm i",
     "lint": "eslint 'src/**/*.{js,jsx}' 'tests/**/*.{js,jsx}'",
