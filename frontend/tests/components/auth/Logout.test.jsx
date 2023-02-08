@@ -9,14 +9,14 @@ import Logout from "../../../src/components/auth/Logout";
 import { useAuthStore } from "../../../src/stores";
 
 jest.mock("axios");
-// jest.mock("zustand")
 
 describe("Logout component", () => {
   // mock login request
   axios.post.mockImplementation(() => Promise.resolve());
 
   test("User logout", async () => {
-    // user logged in before the logout action
+    // user logged in before the logout action:
+    // Another option is to mock zustand and useAuthStore, but this solution is easier
     const { result } = renderHook(() =>
       useAuthStore((s) => [s.isAuthenticated, s.service.loginUser])
     );

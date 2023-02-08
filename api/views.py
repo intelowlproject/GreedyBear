@@ -13,7 +13,7 @@ from django.http import HttpResponse, HttpResponseBadRequest, HttpResponseServer
 from drf_spectacular.utils import extend_schema as add_docs
 from drf_spectacular.utils import inline_serializer
 from durin import views as durin_views
-from greedybear.consts import FEEDS_LICENSE, GENERAL_HONEYPOTS, GET, PAYLOAD_REQUEST, SCANNER
+from greedybear.consts import FEEDS_LICENSE, GET, PAYLOAD_REQUEST, SCANNER
 from greedybear.models import IOC, GeneralHoneypot, Statistics, viewType
 from rest_framework import serializers as rfs
 from rest_framework import status, viewsets
