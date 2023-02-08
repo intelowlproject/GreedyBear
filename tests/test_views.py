@@ -2,9 +2,8 @@ from datetime import datetime
 
 from certego_saas.apps.user.models import User
 from django.test import TestCase
-from rest_framework.test import APIClient
-
 from greedybear.models import IOC
+from rest_framework.test import APIClient
 
 
 class EnrichmentViewTestCase(TestCase):
@@ -28,9 +27,7 @@ class EnrichmentViewTestCase(TestCase):
             related_urls=[],
         )
 
-        cls.superuser = User.objects.create_superuser(
-            username="test", email="test@greedybear.com", password="test"
-        )
+        cls.superuser = User.objects.create_superuser(username="test", email="test@greedybear.com", password="test")
 
     def test_for_vaild_unregistered_ip(self):
         """Check for a valid IP that is unavaliable in DB"""
@@ -64,17 +61,13 @@ class EnrichmentViewTestCase(TestCase):
             response.json()["ioc"]["last_seen"],
             self.ioc.last_seen.isoformat(sep="T", timespec="microseconds"),
         )
-        self.assertEqual(
-            response.json()["ioc"]["number_of_days_seen"], self.ioc.number_of_days_seen
-        )
+        self.assertEqual(response.json()["ioc"]["number_of_days_seen"], self.ioc.number_of_days_seen)
         self.assertEqual(response.json()["ioc"]["times_seen"], self.ioc.times_seen)
         self.assertEqual(response.json()["ioc"]["log4j"], self.ioc.log4j)
         self.assertEqual(response.json()["ioc"]["cowrie"], self.ioc.cowrie)
         self.assertEqual(response.json()["ioc"]["general"], self.ioc.general)  # FEEDS
         self.assertEqual(response.json()["ioc"]["scanner"], self.ioc.scanner)
-        self.assertEqual(
-            response.json()["ioc"]["payload_request"], self.ioc.payload_request
-        )
+        self.assertEqual(response.json()["ioc"]["payload_request"], self.ioc.payload_request)
 
     def test_for_invalid_authentication(self):
         """Check for a invalid authentication"""

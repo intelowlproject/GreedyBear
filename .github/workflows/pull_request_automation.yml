@@ -1,56 +1,103 @@
-name: Pull request automation
+name: CI
 
 on:
   pull_request:
-    branches: [ main, develop ]
+    branches:
+      - main
+      - develop
+
+# discard previous execution if you commit to a branch that is already running
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  linters:
+  detect-changes:
+    uses: ./.github/workflows/_detect_changes.yml
+    with:
+      backend_directories: .github
+      frontend_directories: .github
+      ubuntu_version: latest
 
-    runs-on: ubuntu-latest
 
-    steps:
-    - name: Checkout GreedyBear
-      uses: actions/checkout@v2
-    
-    - name: Set up Python
-      uses: actions/setup-python@v3.0.0
-      with:
-        python-version: 3.9
-        
-    - name: Install Dependencies
-      run: |
-        pip3 install --upgrade pip
-        pip3 install -r requirements/test-requirements.txt
 
-    - name: Black formatter
-      run: |
-        black . --check --diff
+  frontend-tests:
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.frontend > 0 }}
+    uses: ./.github/workflows/_node.yml
+    with:
+      working_directory: ./frontend
 
-    - name: Lint with flake8 (PEP8 enforcer + linter)
-      run: |
-        flake8 . --config=.flake8 --show-source
+      use_eslint: true
+      use_prettier: true
+      use_stylelint: true
 
-    - name: isort
-      run: |
-        isort . --profile black --filter-files --check-only --diff --skip venv
+      run_codeql: true
 
-  tests:
-    runs-on: ubuntu-latest
-    needs: linters
-    steps:
-    - name: Checkout GreedyBear
-      uses: actions/checkout@v2
-      
-    - name: Before Build
-      run: |
-        ls
-        cp .env_template .env
-        cp docker/env_file_template docker/env_file
-        cp docker/env_file_postgres_template docker/env_file_postgres
-    - name: Build and run containers
-      run: |
-        sudo docker-compose -f docker/default.yml -f docker/ci.override.yml up --build -d
-    - name: "Run Tests"
-      run: |
-        docker exec greedybear_uwsgi python manage.py test
+      use_react: true
+      check_packages_licenses: true
+      use_jest: true
+
+      use_coverage: true
+      upload_coverage: true
+      max_timeout: 15
+      ubuntu_version: 22.04
+      node_versions: >-
+        ["18"]
+
+
+  backend-tests:
+     needs: detect-changes
+     if: ${{ needs.detect-changes.outputs.backend > 0 }}
+     uses: ./.github/workflows/_python.yml
+     secrets: inherit
+     with:
+      working_directory: .
+
+      use_black: true
+      use_isort: true
+      use_flake8: true
+      use_pylint: false
+      use_bandit: false
+      use_autoflake: false
+
+      requirements_path: requirements/project-requirements.txt
+      django_settings_module: greedybear.settings
+
+      check_migrations: true
+      check_requirements_licenses: true
+      check_dockerfile: docker/Dockerfile
+
+      use_postgres: true
+      use_memcached: false
+      use_elastic_search: false
+      use_rabbitmq: false
+      use_mongo: false
+      use_celery: false
+
+      use_coverage: true
+      upload_coverage: true
+      tags_for_slow_tests: main
+
+      env: >-
+        {
+        "ENVIRONMENT": "ci",
+        "DJANGO_SECRET": "ci_secret",
+        "DB_HOST": "localhost",
+        "DB_PORT": "5432",
+        "DB_USER": "user",
+        "DB_PASSWORD": "password",
+        "ELASTIC_ENDPOINT": "test_host",
+        "STAGE":"ci",
+        "DEBUG": "True",
+        "MOCK_CONNECTIONS": "True",
+        "POSTGRES_PASSWORD": "password",
+        "POSTGRES_USER": "user",
+        "POSTGRES_DB": "greedybear_db",
+        "HTTPS_ENABLED": "not_enabled",
+        "BROKER_URL": "amqp://guest:guest@rabbitmq:5672",
+        }
+      python_versions: >-
+        ["3.9"]
+      max_timeout: 15
+      ubuntu_version: 20.04

@@ -12,14 +12,16 @@ Wrapper for Routes which should be accessible only to a authenticated user
 */
 export default function AuthGuard({ children }) {
   // store
-  const isAuthenticated = useAuthStore(React.useCallback((s) => s.isAuthenticated, []));
+  const isAuthenticated = useAuthStore(
+    React.useCallback((s) => s.isAuthenticated, [])
+  );
 
   const location = useLocation();
   const didJustLogout = location?.pathname.includes("logout");
 
   // side effects
   React.useEffect(() => {
-    if (!didJustLogout && (isAuthenticated === AUTHENTICATION_STATUSES.FALSE)) {
+    if (!didJustLogout && isAuthenticated === AUTHENTICATION_STATUSES.FALSE) {
       addToast("Login required to access the requested page.", null, "info");
     }
   }, [didJustLogout, isAuthenticated]);

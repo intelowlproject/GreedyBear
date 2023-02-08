@@ -30,12 +30,8 @@ class ExtractAttacks(Cronjob, metaclass=ABCMeta):
             minutes = 11
         return minutes
 
-    def _add_ioc(
-        self, ioc, attack_type, related_urls=None, log4j=False, cowrie=False, general=""
-    ):  # FEEDS
-        self.log.info(
-            f"saving ioc {ioc} for attack_type {attack_type} and related_urls {related_urls}"
-        )
+    def _add_ioc(self, ioc, attack_type, related_urls=None, log4j=False, cowrie=False, general=""):  # FEEDS
+        self.log.info(f"saving ioc {ioc} for attack_type {attack_type} and related_urls {related_urls}")
         try:
             today = datetime.today().date()
             ioc_type = self._get_ioc_type(ioc)
@@ -112,9 +108,7 @@ class ExtractAttacks(Cronjob, metaclass=ABCMeta):
             if not general:
                 honeypot_ioc = IOC.objects.filter(**{f"{honeypot_flag}": True})
             else:
-                honeypot_ioc = IOC.objects.filter(
-                    **{"general__icontains": honeypot_flag}
-                )
+                honeypot_ioc = IOC.objects.filter(**{"general__icontains": honeypot_flag})
 
             if not honeypot_ioc:
                 # first time we execute this project.

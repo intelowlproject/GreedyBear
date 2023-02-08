@@ -1,16 +1,8 @@
 # This file is a part of GreedyBear https://github.com/honeynet/GreedyBear
 # See the file 'LICENSE' for copying permission.
+from api.views import APIAccessTokenView, StatisticsViewSet, TokenSessionsViewSet, checkAuthentication, enrichment_view, feeds
 from django.urls import include, path
 from rest_framework import routers
-
-from api.views import (
-    APIAccessTokenView,
-    StatisticsViewSet,
-    TokenSessionsViewSet,
-    checkAuthentication,
-    enrichment_view,
-    feeds,
-)
 
 # Routers provide an easy way of automatically determining the URL conf.
 router = routers.DefaultRouter(trailing_slash=False)
