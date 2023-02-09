@@ -15,8 +15,8 @@ jobs:
   detect-changes:
     uses: ./.github/workflows/_detect_changes.yml
     with:
-      backend_directories: .github
-      frontend_directories: .github
+      backend_directories: .
+      frontend_directories: ./frontend
       ubuntu_version: latest
 
 
