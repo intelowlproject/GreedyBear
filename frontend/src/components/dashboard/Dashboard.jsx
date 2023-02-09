@@ -18,6 +18,9 @@ import {
 const feedsChartList = [
     ["FeedsSourcesChart", "Feeds: Sources", FeedsSourcesChart],
     ["FeedsDownloadsChart", "Feeds: Downloads", FeedsDownloadsChart],
+];
+
+const feedsTypesChartList = [
     ["FeedsTypesChart", "Feeds: Types", FeedsTypesChart]
 ];
 
@@ -42,8 +45,8 @@ function Dashboard() {
                 />
             </div>
             <Row className="d-flex flex-wrap flex-lg-nowrap">
-                {feedsChartList.map(([id, header, Component]) => (
-                    <Col key={id} md={12} lg={4}>
+                {feedsTypesChartList.map(([id, header, Component]) => (
+                    <Col key={id} md={12} lg={12}>
                         <SmallInfoCard
                         id={id}
                         header={header}
@@ -53,6 +56,22 @@ function Dashboard() {
                             </div>
                         }
                         style={{ minHeight: 360 }}
+                        />
+                    </Col>
+                ))}
+            </Row>
+            <Row className="d-flex flex-wrap flex-lg-nowrap mt-4">
+                {feedsChartList.map(([id, header, Component]) => (
+                    <Col key={id} md={12} lg={6}>
+                        <SmallInfoCard
+                        id={id}
+                        header={header}
+                        body={
+                            <div className="pt-2">
+                            <Component />
+                            </div>
+                        }
+                        style={{ minHeight: 360}}
                         />
                     </Col>
                 ))}

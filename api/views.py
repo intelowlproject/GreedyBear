@@ -258,8 +258,14 @@ class StatisticsViewSet(viewsets.ViewSet):
 
     def __aggregation_response_static_ioc(self, annotations: dict) -> Response:
         delta, basis = self.__parse_range(self.request)
+
+        honeypot_disabled = []
+        generalHoneypots = GeneralHoneypot.objects.all().filter(active=False)
+        honeypot_disabled.extend([hp.name for hp in generalHoneypots])
+
         qs = (
             IOC.objects.filter(last_seen__gte=delta)
+            .exclude(general__overlap=honeypot_disabled)
             .annotate(date=Trunc("last_seen", basis))
             .values("date")
             .annotate(**annotations)

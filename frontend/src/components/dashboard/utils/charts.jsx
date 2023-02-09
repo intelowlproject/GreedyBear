@@ -1,7 +1,7 @@
 import React from "react";
 import { Bar, Area } from "recharts";
 
-import { AnyChartWidget } from "@certego/certego-ui";
+import { AnyChartWidget, getRandomColorsArray } from "@certego/certego-ui";
 import { 
   FEEDS_STATISTICS_SOURCES_URI,
   FEEDS_STATISTICS_DOWNLOADS_URI,
@@ -13,8 +13,10 @@ import {
 import {
   FEED_COLOR_MAP,
   ENRICHMENT_COLOR_MAP,
-  FEED_TYPE_COLOR_MAP,
 } from "../../../constants";
+
+// constants
+const colors = getRandomColorsArray(30, true);
 
 export const FeedsSourcesChart = React.memo(() => {
   console.debug("FeedsSourcesChart rendered!");
@@ -119,15 +121,18 @@ export const FeedsTypesChart = React.memo(() => {
     () => ({
       url: FEEDS_STATISTICS_TYPES_URI,
       accessorFnAggregation: (d) => d,
-      componentsFn: () =>
-        Object.entries(FEED_TYPE_COLOR_MAP).map(([dKey, color]) => (
+      componentsFn: (respData) => {
+        const [data] = respData;
+        if (!respData || !respData?.length) return null;
+        return Object.entries(data).slice(1,).map(([dKey], i) => (
           <Bar 
             stackId="feedtype" 
             key={dKey} 
             dataKey={dKey} 
-            fill={color} 
+            fill={colors[i]} 
           />
-        )),
+      ));
+      },
     }),
     []
   );

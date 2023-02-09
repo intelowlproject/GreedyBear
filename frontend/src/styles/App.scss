@@ -149,3 +149,7 @@ section.fixed-bottom {
 .dropdown-divider {
   border-top: 3px solid rgba(0, 0, 0, 30%);
 }
+
+.recharts-tooltip-wrapper{
+  z-index: 99999 !important;
+}
