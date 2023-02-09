@@ -60,7 +60,6 @@ npm start
 
 - JS app main configs are available in `package.json` and `enviroments.js`.
 
-
 ### External Docs
 
 - [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).

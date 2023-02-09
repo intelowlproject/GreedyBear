@@ -52,8 +52,8 @@ class Echo:
 def feeds(request, feed_type, attack_type, age, format_):
     source = str(request.user)
     logger.info(
-        f"request from {source}. Feed type: {feed_type}, attack_type: {attack_type},"
-        f" Age: {age}, format: {format_}"
+        f"request from {source}. Feed type: {feed_type},"
+        f" attack_type: {attack_type}, Age: {age}, format: {format_}"
     )
 
     feed_choices = ["log4j", "cowrie", "all"]

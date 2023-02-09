@@ -1,9 +1,8 @@
 import re
 
-from rest_framework import serializers
-
 from greedybear.consts import REGEX_DOMAIN, REGEX_IP
 from greedybear.models import IOC
+from rest_framework import serializers
 
 
 class IOCSerializer(serializers.ModelSerializer):

@@ -2,17 +2,17 @@ import React from "react";
 import { Container, Row, Col } from "reactstrap";
 
 import {
-    ElasticTimePicker,
-    useTimePickerStore,
-    SmallInfoCard,
+  ElasticTimePicker,
+  useTimePickerStore,
+  SmallInfoCard,
 } from "@certego/certego-ui";
 
 import {
-    FeedsSourcesChart,
-    FeedsDownloadsChart,
-    EnrichmentSourcesChart,
-    EnrichmentRequestsChart,
-    FeedsTypesChart
+  FeedsSourcesChart,
+  FeedsDownloadsChart,
+  EnrichmentSourcesChart,
+  EnrichmentRequestsChart,
+  FeedsTypesChart,
 } from "./utils/charts";
 
 const feedsChartList = [
@@ -25,13 +25,21 @@ const feedsTypesChartList = [
 ];
 
 const enrichmentChartList = [
-    ["EnrichmentSourcesChart", "Enrichment Service: Sources", EnrichmentSourcesChart],
-    ["EnrichmentRequestsChart", "Enrichment Service: Requests", EnrichmentRequestsChart],
+  [
+    "EnrichmentSourcesChart",
+    "Enrichment Service: Sources",
+    EnrichmentSourcesChart,
+  ],
+  [
+    "EnrichmentRequestsChart",
+    "Enrichment Service: Requests",
+    EnrichmentRequestsChart,
+  ],
 ];
 
 function Dashboard() {
-    console.debug("Dashboard rendered!");
-    const { range, onTimeIntervalChange } = useTimePickerStore();
+  console.debug("Dashboard rendered!");
+  const { range, onTimeIntervalChange } = useTimePickerStore();
 
     return (
         <Container fluid id="Dashboard">
