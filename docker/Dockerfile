@@ -13,7 +13,7 @@ RUN npm install
 RUN PUBLIC_URL=/static/reactapp/ npm run build
 
 # Stage 2: Backend
-FROM python:3.9.9-buster
+FROM python:3.9.16-alpine3.17
 
 COPY --from=frontend-build /build /var/www/reactapp
 
@@ -26,29 +26,22 @@ ARG WATCHMAN=false
 
 RUN mkdir -p ${LOG_PATH} \
     ${LOG_PATH}/django \
-    ${LOG_PATH}/uwsgi
+    ${LOG_PATH}/uwsgi \
+    # py3-psycopg2 is required to use PostgresSQL with Django
+    && apk --no-cache -U add bash uwsgi py3-psycopg2 \
+    && pip3 install --upgrade pip
 
-# python3-psycopg2 is required to use PostgresSQL with Django
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends apt-utils libsasl2-dev libssl-dev \
-    vim python-dev libfuzzy-dev net-tools python3-psycopg2 \
-    && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
-RUN pip3 install --upgrade pip
-
-COPY requirements/requirements.txt $PYTHONPATH/requirements.txt
-COPY requirements/test-requirements.txt $PYTHONPATH/test-requirements.txt
 WORKDIR $PYTHONPATH
-
-RUN pip3 install --no-cache-dir --compile -r requirements.txt
-
 COPY . $PYTHONPATH
-COPY docker/wait-for-it.sh /wait-for-it.sh
 
-RUN touch ${LOG_PATH}/django/api.log ${LOG_PATH}/django/api_errors.log \
+# separation is required to avoid to re-execute os installation in case of change of python requirements
+RUN pip3 install --no-cache-dir --compile -r $PYTHONPATH/requirements/project-requirements.txt \
+    && touch ${LOG_PATH}/django/api.log ${LOG_PATH}/django/api_errors.log \
     && touch ${LOG_PATH}/django/greedybear.log ${LOG_PATH}/django/greedybear_errors.log \
     && touch ${LOG_PATH}/django/celery.log ${LOG_PATH}/django/celery_errors.log \
     && touch ${LOG_PATH}/django/django_errors.log ${LOG_PATH}/django/elasticsearch.log\
-    && chown -R www-data:www-data ${LOG_PATH} /opt/deploy/
+    && adduser -S -H -u 2000 -D -g www-data www-data \
+    && chown -R www-data:www-data ${LOG_PATH} /opt/deploy/ \
+    && rm -rf docs/ frontend/ tests/ .github/ \
+    && /bin/bash ./docker/watchman_install.sh
 
-RUN docker/watchman_install.sh

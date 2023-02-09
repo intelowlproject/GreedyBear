@@ -53,9 +53,7 @@ class CustomAuthTokenAdmin(AuthTokenAdmin):
         return False
 
     def save_model(self, request, obj, form, change):
-        obj.client = Client.objects.get(
-            name=settings.REST_DURIN["API_ACCESS_CLIENT_NAME"]
-        )
+        obj.client = Client.objects.get(name=settings.REST_DURIN["API_ACCESS_CLIENT_NAME"])
         super().save_model(request, obj, form, change)
 
 

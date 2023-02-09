@@ -1,4 +1,5 @@
 # Required Secrets
+ENVIRONMENT=production
 DJANGO_SECRET=
 DB_HOST=postgres
 DB_PORT=5432

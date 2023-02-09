@@ -1,0 +1,19 @@
+repos:
+-   repo: https://github.com/pycqa/flake8
+    rev: 5.0.4
+    hooks:
+    - id: flake8
+      exclude: docs/conf.py
+      args: ["--config", ".github/configurations/python_linters/.flake8"]
+
+-   repo: https://github.com/pycqa/isort
+    rev: 5.10.1
+    hooks:
+      - id: isort
+        args: ["--settings-path", ".github/configurations/python_linters/.isort.cfg", "--filter-files", "--skip", "venv"]
+
+-   repo: https://github.com/psf/black
+    rev: 22.3.0
+    hooks:
+      - id: black
+        args: ["--config", ".github/configurations/python_linters/.black"]

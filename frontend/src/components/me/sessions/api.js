@@ -41,8 +41,4 @@ async function deleteTokenById(id, clientName) {
   }
 }
 
-export {
-  createNewToken,
-  deleteToken,
-  deleteTokenById,
-};
+export { createNewToken, deleteToken, deleteTokenById };

@@ -1,7 +1,7 @@
 // api/ auth
 export const API_BASE_URI = "/api";
 
-// statistics 
+// statistics
 export const FEEDS_STATISTICS_SOURCES_URI = `${API_BASE_URI}/statistics/sources/feeds`;
 export const FEEDS_STATISTICS_DOWNLOADS_URI = `${API_BASE_URI}/statistics/downloads/feeds`;
 export const FEEDS_STATISTICS_TYPES_URI = `${API_BASE_URI}/statistics/feeds_types`;
