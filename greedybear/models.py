@@ -26,11 +26,15 @@ class IOC(models.Model):
     log4j = models.BooleanField(blank=False, default=False)
     cowrie = models.BooleanField(blank=False, default=False)
     # FEEDS - list of honeypots from general list, from which the IOC was detected
-    general = pg_fields.ArrayField(models.CharField(max_length=32, blank=True), blank=True, default=list)
+    general = pg_fields.ArrayField(
+        models.CharField(max_length=32, blank=True), blank=True, default=list
+    )
     scanner = models.BooleanField(blank=False, default=False)
     payload_request = models.BooleanField(blank=False, default=False)
     related_ioc = models.ManyToManyField("self", blank=True, symmetrical=True)
-    related_urls = pg_fields.ArrayField(models.CharField(max_length=900, blank=True), blank=True, default=list)
+    related_urls = pg_fields.ArrayField(
+        models.CharField(max_length=900, blank=True), blank=True, default=list
+    )
 
 
 class Statistics(models.Model):

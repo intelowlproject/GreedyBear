@@ -4,6 +4,7 @@
 from unittest import TestCase
 
 from django.db.models import Q
+
 from greedybear.cronjobs import general
 from greedybear.models import IOC
 

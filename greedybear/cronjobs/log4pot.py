@@ -52,10 +52,16 @@ class ExtractLog4Pot(ExtractAttacks):
             if match_command:
                 # we are losing the protocol but that's ok for now
                 base64_encoded = match_command.group(1)
-                self.log.info(f"found base64 encoded command {base64_encoded}" f" in payload from base64 code for CVE-2021-44228")
+                self.log.info(
+                    f"found base64 encoded command {base64_encoded}"
+                    f" in payload from base64 code for CVE-2021-44228"
+                )
                 try:
                     decoded_str = base64.b64decode(base64_encoded).decode()
-                    self.log.info(f"decoded base64 command to {decoded_str}" f" from payload from base64 code for CVE-2021-44228")
+                    self.log.info(
+                        f"decoded base64 command to {decoded_str}"
+                        f" from payload from base64 code for CVE-2021-44228"
+                    )
                 except Exception as e:
                     self.log.warning(e, stack_info=True)
                 else:
@@ -64,10 +70,15 @@ class ExtractLog4Pot(ExtractAttacks):
                         hidden_url = match_url.group()
                         if "://" not in hidden_url:
                             hidden_url = "tcp://" + hidden_url
-                        self.log.info(f"found hidden URL {hidden_url}" f" in payload for CVE-2021-44228")
+                        self.log.info(
+                            f"found hidden URL {hidden_url}"
+                            f" in payload for CVE-2021-44228"
+                        )
 
                         hidden_hostname = urlparse(hidden_url).hostname
-                        self.log.info(f"extracted hostname {hidden_hostname} from {hidden_url}")
+                        self.log.info(
+                            f"extracted hostname {hidden_hostname} from {hidden_url}"
+                        )
 
             # add scanner
             if scanner_ip:
@@ -77,7 +88,9 @@ class ExtractLog4Pot(ExtractAttacks):
             # add first URL
             if hostname:
                 related_urls = [url] if url else None
-                self._add_ioc(hostname, PAYLOAD_REQUEST, related_urls=related_urls, log4j=True)
+                self._add_ioc(
+                    hostname, PAYLOAD_REQUEST, related_urls=related_urls, log4j=True
+                )
                 added_payloads += 1
 
             # add hidden URL
@@ -94,32 +107,57 @@ class ExtractLog4Pot(ExtractAttacks):
             # once all have added, we can add the foreign keys
             self._add_fks(scanner_ip, hostname, hidden_hostname)
 
-        self.log.info(f"added {added_scanners} scanners, {added_payloads} payloads" f" and {added_hidden_payloads} hidden payloads")
+        self.log.info(
+            f"added {added_scanners} scanners, {added_payloads} payloads"
+            f" and {added_hidden_payloads} hidden payloads"
+        )
 
     def _add_fks(self, scanner_ip, hostname, hidden_hostname):
-        self.log.info(f"adding foreign keys for the following iocs: {scanner_ip}, {hostname}, {hidden_hostname}")
+        self.log.info(
+            f"adding foreign keys for the following iocs: {scanner_ip}, {hostname}, {hidden_hostname}"
+        )
         scanner_ip_instance = IOC.objects.filter(name=scanner_ip).first()
         hostname_instance = IOC.objects.filter(name=hostname).first()
         hidden_hostname_instance = IOC.objects.filter(name=hidden_hostname).first()
 
         if scanner_ip_instance:
-            if hostname_instance and hostname_instance not in scanner_ip_instance.related_ioc.all():
+            if (
+                hostname_instance
+                and hostname_instance not in scanner_ip_instance.related_ioc.all()
+            ):
                 scanner_ip_instance.related_ioc.add(hostname_instance)
-            if hidden_hostname_instance and hidden_hostname_instance not in scanner_ip_instance.related_ioc.all():
+            if (
+                hidden_hostname_instance
+                and hidden_hostname_instance
+                not in scanner_ip_instance.related_ioc.all()
+            ):
                 scanner_ip_instance.related_ioc.add(hidden_hostname_instance)
             scanner_ip_instance.save()
 
         if hostname_instance:
-            if scanner_ip_instance and scanner_ip_instance not in hostname_instance.related_ioc.all():
+            if (
+                scanner_ip_instance
+                and scanner_ip_instance not in hostname_instance.related_ioc.all()
+            ):
                 hostname_instance.related_ioc.add(scanner_ip_instance)
-            if hidden_hostname_instance and hidden_hostname_instance not in hostname_instance.related_ioc.all():
+            if (
+                hidden_hostname_instance
+                and hidden_hostname_instance not in hostname_instance.related_ioc.all()
+            ):
                 hostname_instance.related_ioc.add(hidden_hostname_instance)
             hostname_instance.save()
 
         if hidden_hostname_instance:
-            if hostname_instance and hostname_instance not in hidden_hostname_instance.related_ioc.all():
+            if (
+                hostname_instance
+                and hostname_instance not in hidden_hostname_instance.related_ioc.all()
+            ):
                 hidden_hostname_instance.related_ioc.add(hostname_instance)
-            if scanner_ip_instance and scanner_ip_instance not in hidden_hostname_instance.related_ioc.all():
+            if (
+                scanner_ip_instance
+                and scanner_ip_instance
+                not in hidden_hostname_instance.related_ioc.all()
+            ):
                 hidden_hostname_instance.related_ioc.add(scanner_ip_instance)
             hidden_hostname_instance.save()
 
@@ -127,7 +165,9 @@ class ExtractLog4Pot(ExtractAttacks):
         self.log.info(f"extracting scanner IP from correlation_id {correlation_id}")
         scanner_ip = None
         search = self._base_search(self.log4pot)
-        search = search.filter("term", **{"correlation_id.keyword": str(correlation_id)})
+        search = search.filter(
+            "term", **{"correlation_id.keyword": str(correlation_id)}
+        )
         search = search.filter("term", reason="request")
         search = search.source(["src_ip"])
         # only one should be available
@@ -137,9 +177,13 @@ class ExtractLog4Pot(ExtractAttacks):
             break
 
         if scanner_ip:
-            self.log.info(f"extracted scanner IP {scanner_ip} from correlation_id {correlation_id}")
+            self.log.info(
+                f"extracted scanner IP {scanner_ip} from correlation_id {correlation_id}"
+            )
         else:
-            self.log.warning(f"scanner IP was not extracted from correlation_id {correlation_id}")
+            self.log.warning(
+                f"scanner IP was not extracted from correlation_id {correlation_id}"
+            )
 
         return scanner_ip
 

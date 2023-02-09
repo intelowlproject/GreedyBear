@@ -1,7 +1,9 @@
 import re
+
+from rest_framework import serializers
+
 from greedybear.consts import GENERAL_HONEYPOTS, REGEX_DOMAIN, REGEX_IP
 from greedybear.models import IOC
-from rest_framework import serializers
 
 
 class IOCSerializer(serializers.ModelSerializer):
@@ -37,8 +39,8 @@ class FeedSerializer(serializers.Serializer):
     feed_choices = ["log4j", "cowrie", "all"] + [x.lower() for x in GENERAL_HONEYPOTS]
     attack_choices = ["scanner", "payload_request", "all"]
     age_choices = ["persistent", "recent"]
-    format_choices = ["json","csv", "txt"]
-    
+    format_choices = ["json", "csv", "txt"]
+
     feed_type = serializers.ChoiceField(write_only=True, choices=feed_choices)
     attack_type = serializers.ChoiceField(write_only=True, choices=attack_choices)
     age = serializers.ChoiceField(write_only=True, choices=age_choices)
