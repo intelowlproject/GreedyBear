@@ -55,7 +55,7 @@ function AppHeader() {
 
   // local state
   const [isOpen, setIsOpen] = React.useState(false);
-  
+
   // auth store
   const isAuthenticated = useAuthStore(
     React.useCallback((s) => s.isAuthenticated, [])
@@ -66,7 +66,7 @@ function AppHeader() {
       {/* nav bar */}
       <Navbar dark expand="lg">
         <NavbarBrand tag={RRNavLink} to="/">
-        GreedyBear
+          GreedyBear
         </NavbarBrand>
         <NavbarToggler onClick={() => setIsOpen(!isOpen)} />
         <Collapse navbar isOpen={isOpen}>
@@ -79,16 +79,20 @@ function AppHeader() {
               </NavLink>
             </NavItem>
             <NavItem>
-            <NavLink className="d-flex-start-center" end to="/dashboard">
-              <GoDashboard />
-              <span className="ms-1">Dashboard</span>
+              <NavLink className="d-flex-start-center" end to="/dashboard">
+                <GoDashboard />
+                <span className="ms-1">Dashboard</span>
               </NavLink>
             </NavItem>
           </Nav>
           {/* Navbar Right Side */}
           <Nav navbar className="ms-auto d-flex align-items-center">
             {rightLinks}
-            {isAuthenticated === AUTHENTICATION_STATUSES.FALSE ? guestLinks : <UserMenu />}
+            {isAuthenticated === AUTHENTICATION_STATUSES.FALSE ? (
+              guestLinks
+            ) : (
+              <UserMenu />
+            )}
           </Nav>
         </Collapse>
       </Navbar>

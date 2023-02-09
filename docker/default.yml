@@ -13,7 +13,7 @@ services:
     image: intelowlproject/greedybear:prod
     container_name: greedybear_uwsgi
     volumes:
-      - ../configuration/uwsgi/greedybear.ini:/etc/uwsgi/sites/greedybear.ini
+      - ../configuration/uwsgi/greedybear.ini:/etc/uwsgi/uwsgi.ini
       - generic_logs:/var/log/greedybear
       - static_content:/opt/deploy/greedybear/static
     entrypoint:

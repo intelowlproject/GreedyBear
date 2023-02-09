@@ -1,7 +1,6 @@
 import datetime
 
 from django.test import TestCase
-
 from greedybear.models import IOC
 
 

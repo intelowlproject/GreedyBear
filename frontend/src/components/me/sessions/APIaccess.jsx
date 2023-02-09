@@ -15,7 +15,7 @@ import {
 } from "@certego/certego-ui";
 
 import { createNewToken, deleteToken } from "./api";
-import { APIACCESS_BASE_URI } from "../../../constants/api"
+import { APIACCESS_BASE_URI } from "../../../constants/api";
 
 function GenerateIcon() {
   return (
@@ -51,8 +51,9 @@ export default function APIAccess() {
             Note: This is an irreversible operation.
           </p>
           <p>
-            Once deleted, you cannot use this API key to access GreedyBear&apos;s
-            API. However, you will be able to generate a new one.
+            Once deleted, you cannot use this API key to access
+            GreedyBear&apos;s API. However, you will be able to generate a new
+            one.
           </p>
           Are you sure you wish to proceed ?
         </div>

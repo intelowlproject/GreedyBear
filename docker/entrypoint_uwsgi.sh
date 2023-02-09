@@ -2,7 +2,7 @@
 
 date
 echo "starting wait_for_it for uwsgi"
-/wait-for-it.sh -t 15 postgres:$DB_PORT
+/opt/deploy/greedybear/docker/wait-for-it.sh -t 15 postgres:$DB_PORT
 date
 
 until cd /opt/deploy/greedybear
@@ -26,5 +26,5 @@ if [[ $DEBUG == "True" ]] && [[ $DJANGO_TEST_SERVER == "True" ]];
 then
     python manage.py runserver 0.0.0.0:8001
 else
-    /usr/local/bin/uwsgi --ini /etc/uwsgi/sites/greedybear.ini
+    /usr/local/bin/uwsgi --ini /etc/uwsgi/uwsgi.ini
 fi

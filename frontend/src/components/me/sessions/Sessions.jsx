@@ -23,7 +23,7 @@ export default function Sessions() {
       {/* API Access */}
       <h6>API Access</h6>
       <ContentSection className="bg-body border border-dark">
-        <APIAccess/>
+        <APIAccess />
       </ContentSection>
       {/* Sessions List */}
       <h6>Browser Sessions</h6>
