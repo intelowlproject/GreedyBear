@@ -2,7 +2,7 @@ import React from "react";
 import { Bar, Area } from "recharts";
 
 import { AnyChartWidget, getRandomColorsArray } from "@certego/certego-ui";
-import { 
+import {
   FEEDS_STATISTICS_SOURCES_URI,
   FEEDS_STATISTICS_DOWNLOADS_URI,
   FEEDS_STATISTICS_TYPES_URI,
@@ -10,10 +10,7 @@ import {
   ENRICHMENT_STATISTICS_REQUESTS_URI,
 } from "../../../constants/api";
 
-import {
-  FEED_COLOR_MAP,
-  ENRICHMENT_COLOR_MAP,
-} from "../../../constants";
+import { FEED_COLOR_MAP, ENRICHMENT_COLOR_MAP } from "../../../constants";
 
 // constants
 const colors = getRandomColorsArray(30, true);
@@ -132,14 +129,16 @@ export const FeedsTypesChart = React.memo(() => {
       componentsFn: (respData) => {
         const [data] = respData;
         if (!respData || !respData?.length) return null;
-        return Object.entries(data).slice(1,).map(([dKey], i) => (
-          <Bar 
-            stackId="feedtype" 
-            key={dKey} 
-            dataKey={dKey} 
-            fill={colors[i]} 
-          />
-      ));
+        return Object.entries(data)
+          .slice(1)
+          .map(([dKey], i) => (
+            <Bar
+              stackId="feedtype"
+              key={dKey}
+              dataKey={dKey}
+              fill={colors[i]}
+            />
+          ));
       },
     }),
     []
