@@ -3,6 +3,7 @@ import { FallBackLoading } from "@certego/certego-ui";
 
 import IfAuthRedirectGuard from "../wrappers/ifAuthRedirectGuard";
 import AuthGuard from "../wrappers/AuthGuard";
+import { Feeds } from "./feeds/Feeds";
 
 const Home = React.lazy(() => import("./home/Home"));
 const Login = React.lazy(() => import("./auth/Login"));
@@ -27,6 +28,15 @@ const publicRoutesLazy = [
     element: (
       <Suspense fallback={<FallBackLoading />}>
         <Dashboard />
+      </Suspense>
+    ),
+  },
+  /* Feeds */
+  {
+    path: "/feeds",
+    element: (
+      <Suspense fallback={<FallBackLoading />}>
+        <Feeds />
       </Suspense>
     ),
   },
