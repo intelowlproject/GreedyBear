@@ -30,6 +30,7 @@ class IOCModelAdmin(admin.ModelAdmin):
         "payload_request",
         "log4j",
         "cowrie",
+        "general",
     ]
 
 

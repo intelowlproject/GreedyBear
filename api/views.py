@@ -39,7 +39,7 @@ class Echo:
 @api_view([GET])
 def feeds(request, feed_type, attack_type, age, format_):
     source = str(request.user)
-    logger.info(f"request from {source}. Feed type: {feed_type}, attack_type: {attack_type}, Age: {age}, format: {format_}")
+    logger.info(f"request from {source}. Feed type: {feed_type}," f" attack_type: {attack_type}, Age: {age}, format: {format_}")
 
     feed_choices = ["log4j", "cowrie", "all"]
     generalHoneypots = GeneralHoneypot.objects.all().filter(active=True)
@@ -224,7 +224,18 @@ class StatisticsViewSet(viewsets.ViewSet):
 
     def __aggregation_response_static_ioc(self, annotations: dict) -> Response:
         delta, basis = self.__parse_range(self.request)
-        qs = IOC.objects.filter(last_seen__gte=delta).annotate(date=Trunc("last_seen", basis)).values("date").annotate(**annotations)
+
+        honeypot_disabled = []
+        generalHoneypots = GeneralHoneypot.objects.all().filter(active=False)
+        honeypot_disabled.extend([hp.name for hp in generalHoneypots])
+
+        qs = (
+            IOC.objects.filter(last_seen__gte=delta)
+            .exclude(general__overlap=honeypot_disabled)
+            .annotate(date=Trunc("last_seen", basis))
+            .values("date")
+            .annotate(**annotations)
+        )
         return Response(qs)
 
     @staticmethod
