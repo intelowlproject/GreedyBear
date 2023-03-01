@@ -130,25 +130,18 @@ export const FeedsTypesChart = React.memo(() => {
         console.debug("respData", respData);
         if (!respData || !respData?.length) return null;
 
-        // Exctract keys only from respData[0]: 
-        // feed types are the same for all elements of respData. 
+        // Exctract keys only from respData[0]:
+        // feed types are the same for all elements of respData.
         // Slice "date" field: we are only interested in feeds types.
         const feedsTypes = [];
         Object.entries(respData[0])
-        .slice(1)
-        .map(([dKey],i) => (
-          feedsTypes[i]=dKey
-        ));
+          .slice(1)
+          .map(([dKey], i) => (feedsTypes[i] = dKey));
 
         // map each feed type to a color
         return feedsTypes.map((dKey, i) => (
-            <Bar
-              stackId="feedtype"
-              key={dKey}
-              dataKey={dKey}
-              fill={colors[i]}
-            />
-          ));
+          <Bar stackId="feedtype" key={dKey} dataKey={dKey} fill={colors[i]} />
+        ));
       },
     }),
     []
