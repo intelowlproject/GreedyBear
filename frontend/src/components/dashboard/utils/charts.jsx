@@ -127,11 +127,21 @@ export const FeedsTypesChart = React.memo(() => {
       url: FEEDS_STATISTICS_TYPES_URI,
       accessorFnAggregation: (d) => d,
       componentsFn: (respData) => {
-        const [data] = respData;
+        console.debug("respData", respData);
         if (!respData || !respData?.length) return null;
-        return Object.entries(data)
-          .slice(1)
-          .map(([dKey], i) => (
+
+        // Exctract keys only from respData[0]: 
+        // feed types are the same for all elements of respData. 
+        // Slice "date" field: we are only interested in feeds types.
+        const feedsTypes = [];
+        Object.entries(respData[0])
+        .slice(1)
+        .map(([dKey],i) => (
+          feedsTypes[i]=dKey
+        ));
+
+        // map each feed type to a color
+        return feedsTypes.map((dKey, i) => (
             <Bar
               stackId="feedtype"
               key={dKey}
