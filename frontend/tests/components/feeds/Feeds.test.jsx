@@ -13,31 +13,36 @@ jest.mock("@certego/certego-ui", () => {
     total_pages: 1,
     results: {
       license: "licenseTest",
-      iocs: [{
-        "value": "test",
-        SCANNER: true,
-        PAYLOAD_REQUEST: true,
-        "first_seen": "2023-03-15",
-        "last_seen": "2023-03-15",
-        "times_seen": 1,
-        "feed_type": "log4j",
-      }]
+      iocs: [
+        {
+          value: "test",
+          SCANNER: true,
+          PAYLOAD_REQUEST: true,
+          first_seen: "2023-03-15",
+          last_seen: "2023-03-15",
+          times_seen: 1,
+          feed_type: "log4j",
+        },
+      ],
     },
   };
 
   const MockTableComponent = () => <div>table</div>;
   const loader = (props) => {
-    return <originalModule.Loader loading={false} {...props}/>;} ;
+    return <originalModule.Loader loading={false} {...props} />;
+  };
 
   //Mock the useAxiosComponentLoader and useDataTable
   return {
     __esModule: true,
     ...originalModule,
-    
-    useAxiosComponentLoader: jest.fn(() => 
-      [["Honeytrap","Glutton","CitrixHoneypot"], loader]),
-    
-    useDataTable: jest.fn(() => [feeds, <MockTableComponent />, jest.fn()])
+
+    useAxiosComponentLoader: jest.fn(() => [
+      ["Honeytrap", "Glutton", "CitrixHoneypot"],
+      loader,
+    ]),
+
+    useDataTable: jest.fn(() => [feeds, <MockTableComponent />, jest.fn()]),
   };
 });
 
@@ -63,7 +68,10 @@ describe("Feeds component", () => {
     expect(ageSelectElement).toBeInTheDocument();
 
     const buttonElement = screen.getByRole("link", { name: /Raw data/i });
-    expect(buttonElement).toHaveAttribute('href', '/api/feeds/all/all/recent.json');
+    expect(buttonElement).toHaveAttribute(
+      "href",
+      "/api/feeds/all/all/recent.json"
+    );
 
     await user.selectOptions(feedTypeSelectElement, "log4j");
     await user.selectOptions(attackTypeSelectElement, "scanner");
@@ -71,8 +79,10 @@ describe("Feeds component", () => {
 
     await waitFor(() => {
       // check link has been changed
-      expect(buttonElement).toHaveAttribute('href', '/api/feeds/log4j/scanner/persistent.json');
+      expect(buttonElement).toHaveAttribute(
+        "href",
+        "/api/feeds/log4j/scanner/persistent.json"
+      );
     });
-
   });
 });
