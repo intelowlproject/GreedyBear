@@ -1,7 +1,7 @@
 import React from "react";
 import { Bar, Area } from "recharts";
 
-import { AnyChartWidget } from "@certego/certego-ui";
+import { AnyChartWidget, getRandomColorsArray } from "@certego/certego-ui";
 import {
   FEEDS_STATISTICS_SOURCES_URI,
   FEEDS_STATISTICS_DOWNLOADS_URI,
@@ -10,11 +10,10 @@ import {
   ENRICHMENT_STATISTICS_REQUESTS_URI,
 } from "../../../constants/api";
 
-import {
-  FEED_COLOR_MAP,
-  ENRICHMENT_COLOR_MAP,
-  FEED_TYPE_COLOR_MAP,
-} from "../../../constants";
+import { FEED_COLOR_MAP, ENRICHMENT_COLOR_MAP } from "../../../constants";
+
+// constants
+const colors = getRandomColorsArray(30, true);
 
 export const FeedsSourcesChart = React.memo(() => {
   console.debug("FeedsSourcesChart rendered!");
@@ -127,10 +126,23 @@ export const FeedsTypesChart = React.memo(() => {
     () => ({
       url: FEEDS_STATISTICS_TYPES_URI,
       accessorFnAggregation: (d) => d,
-      componentsFn: () =>
-        Object.entries(FEED_TYPE_COLOR_MAP).map(([dKey, color]) => (
-          <Bar stackId="feedtype" key={dKey} dataKey={dKey} fill={color} />
-        )),
+      componentsFn: (respData) => {
+        console.debug("respData", respData);
+        if (!respData || !respData?.length) return null;
+
+        // Exctract keys only from respData[0]:
+        // feed types are the same for all elements of respData.
+        // Slice "date" field: we are only interested in feeds types.
+        const feedsTypes = [];
+        Object.entries(respData[0])
+          .slice(1)
+          .map(([dKey], i) => (feedsTypes[i] = dKey));
+
+        // map each feed type to a color
+        return feedsTypes.map((dKey, i) => (
+          <Bar stackId="feedtype" key={dKey} dataKey={dKey} fill={colors[i]} />
+        ));
+      },
     }),
     []
   );

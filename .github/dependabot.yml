@@ -17,7 +17,7 @@ updates:
       day: "tuesday"
     target-branch: "develop"
     reviewers:
-      - x
+      - drosetti
 
 
   - package-ecosystem: "docker"
