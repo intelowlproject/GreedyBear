@@ -2,6 +2,7 @@ from datetime import datetime
 
 from certego_saas.apps.user.models import User
 from django.test import TestCase
+from greedybear.consts import FEEDS_LICENSE
 from greedybear.models import IOC
 from rest_framework.test import APIClient
 
@@ -73,3 +74,50 @@ class EnrichmentViewTestCase(TestCase):
         """Check for a invalid authentication"""
         response = self.client.get("/api/enrichment?query=140.246.171.141")
         self.assertEqual(response.status_code, 401)
+
+
+class FeedsViewTestCase(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super(FeedsViewTestCase, cls).setUpClass()
+        current_time = datetime.utcnow()
+        cls.ioc = IOC.objects.create(
+            name="140.246.171.141",
+            type="testing_type",
+            first_seen=current_time,
+            last_seen=current_time,
+            days_seen=[current_time],
+            number_of_days_seen=1,
+            times_seen=1,
+            log4j=True,
+            cowrie=False,
+            general=["heralding", "ciscoasa"],  # FEEDS
+            scanner=True,
+            payload_request=False,
+            related_urls=[],
+        )
+
+        cls.superuser = User.objects.create_superuser(username="test", email="test@greedybear.com", password="test")
+
+    def test_200_feeds(self):
+        response = self.client.get("/api/feeds/all/all/recent.json")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["license"], FEEDS_LICENSE)
+        self.assertEqual(response.json()["iocs"][0]["feed_type"], "log4j")
+        self.assertEqual(response.json()["iocs"][0]["times_seen"], 1)
+        self.assertEqual(response.json()["iocs"][0]["scanner"], True)
+        self.assertEqual(response.json()["iocs"][0]["payload_request"], False)
+
+    def test_400_feeds(self):
+        response = self.client.get("/api/feeds/test/all/recent.json")
+        self.assertEqual(response.status_code, 400)
+
+    def test_200_feeds_pagination(self):
+        response = self.client.get("/api/feeds/?page_size=10&page=1&feed_type=all&attack_type=all&age=recent")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["count"], 1)
+        self.assertEqual(response.json()["total_pages"], 1)
+
+    def test_400_feeds_pagination(self):
+        response = self.client.get("/api/feeds/?page_size=10&page=1&feed_type=all&attack_type=test&age=recent")
+        self.assertEqual(response.status_code, 400)
