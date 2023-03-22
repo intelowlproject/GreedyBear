@@ -8,7 +8,7 @@ from api.views import (
     enrichment_view,
     feeds,
     feeds_pagination,
-    general_honeypot_view,
+    general_honeypot_list,
 )
 from django.urls import include, path
 from rest_framework import routers
@@ -23,7 +23,7 @@ urlpatterns = [
     path("feeds/", feeds_pagination),
     path("feeds/<str:feed_type>/<str:attack_type>/<str:age>.<str:format_>", feeds),
     path("enrichment", enrichment_view),
-    path("generalhoneypot", general_honeypot_view),
+    path("general_honeypot", general_honeypot_list),
     # router viewsets
     path("", include(router.urls)),
     # authentication

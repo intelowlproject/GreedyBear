@@ -1,21 +1,42 @@
 from datetime import datetime
+from itertools import product
 
 from api.serializers import FeedsResponseSerializer, FeedsSerializer
 from django.test import TestCase
 from greedybear.consts import PAYLOAD_REQUEST, SCANNER
-from greedybear.models import IOC
+from greedybear.models import GeneralHoneypot
 from rest_framework.serializers import ValidationError
 
 
 class FeedsSerializersTestCase(TestCase):
+    @classmethod
+    def setUpClass(self):
+        GeneralHoneypot.objects.create(
+            name="adbhoney",
+            active=True,
+        )
+
+    @classmethod
+    def tearDownClass(self):
+        # db clean
+        GeneralHoneypot.objects.all().delete()
+
     def test_valid_fields(self):
-        data_ = {"feed_type": "all", "attack_type": "all", "age": "recent", "format": "txt"}
-        serializer = FeedsSerializer(data=data_)
-        valid = serializer.is_valid(raise_exception=True)
-        self.assertEqual(valid, True)
+        feed_type_choices = ["all", "log4j", "cowrie", "adbhoney"]
+        attack_type_choices = ["all", "scanner", "payload_request"]
+        age_choices = ["recent", "persistent"]
+        format_choices = ["txt", "json", "csv"]
+        # genereted all the possible valid input data using cartesian product
+        valid_data_choices = product(feed_type_choices, attack_type_choices, age_choices, format_choices)
+
+        for element in valid_data_choices:
+            data_ = {"feed_type": element[0], "attack_type": element[1], "age": element[2], "format": element[3]}
+            serializer = FeedsSerializer(data=data_)
+            valid = serializer.is_valid(raise_exception=True)
+            self.assertEqual(valid, True)
 
     def test_invalid_fields(self):
-        data_ = {"feed_type": "feed_type", "attack_type": "attack", "age": "age", "format": "format"}
+        data_ = {"feed_type": "invalid_feed_type", "attack_type": "invalid_attack_type", "age": "invalid_age", "format": "invalid_format"}
         serializer = FeedsSerializer(data=data_)
         try:
             serializer.is_valid(raise_exception=True)
@@ -28,47 +49,47 @@ class FeedsSerializersTestCase(TestCase):
 
 class FeedsResponseSerializersTestCase(TestCase):
     @classmethod
-    def setUpClass(cls):
-        super(FeedsResponseSerializersTestCase, cls).setUpClass()
-        current_time = datetime.utcnow()
-        cls.ioc = IOC.objects.create(
-            name="140.246.171.141",
-            type="testing_type",
-            first_seen=current_time,
-            last_seen=current_time,
-            days_seen=[current_time],
-            number_of_days_seen=1,
-            times_seen=1,
-            log4j=True,
-            cowrie=False,
-            general=[],
-            scanner=True,
-            payload_request=True,
-            related_urls=[],
+    def setUpClass(self):
+        GeneralHoneypot.objects.create(
+            name="adbhoney",
+            active=True,
         )
 
+    @classmethod
+    def tearDownClass(self):
+        # db clean
+        GeneralHoneypot.objects.all().delete()
+
     def test_valid_fields(self):
-        data_ = {
-            "value": self.ioc.name,
-            SCANNER: self.ioc.scanner,
-            PAYLOAD_REQUEST: self.ioc.payload_request,
-            "first_seen": self.ioc.first_seen.strftime("%Y-%m-%d"),
-            "last_seen": self.ioc.last_seen.strftime("%Y-%m-%d"),
-            "times_seen": self.ioc.times_seen,
-            "feed_type": "log4j",
-        }
-        serializer = FeedsResponseSerializer(data=data_)
-        valid = serializer.is_valid()
-        self.assertEqual(valid, True)
+        scanner_choices = [True, False]
+        payload_request_choices = [True, False]
+        feed_type_choices = ["all", "log4j", "cowrie", "adbhoney"]
+
+        # generete all possible valid input data using cartesian product
+        valid_data_choices = product(scanner_choices, payload_request_choices, feed_type_choices)
+
+        for element in valid_data_choices:
+            data_ = {
+                "value": "140.246.171.141",
+                SCANNER: element[0],
+                PAYLOAD_REQUEST: element[1],
+                "first_seen": "2023-03-20",
+                "last_seen": "2023-03-21",
+                "times_seen": "5",
+                "feed_type": element[2],
+            }
+            serializer = FeedsResponseSerializer(data=data_)
+            valid = serializer.is_valid(raise_exception=True)
+            self.assertEqual(valid, True)
 
     def test_invalid_fields(self):
         data_ = {
             "value": True,
-            SCANNER: "scanner",
-            PAYLOAD_REQUEST: "payload_request",
+            SCANNER: "invalid_scanner",
+            PAYLOAD_REQUEST: "invalid_payload_request",
             "first_seen": "31-2023-03",
             "last_seen": "31-2023-03",
-            "times_seen": "times_seen",
+            "times_seen": "invalid_times_seen",
             "feed_type": False,
         }
         serializer = FeedsResponseSerializer(data=data_)
