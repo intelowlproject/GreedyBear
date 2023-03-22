@@ -90,7 +90,7 @@ class FeedsResponseSerializersTestCase(TestCase):
             "first_seen": "31-2023-03",
             "last_seen": "31-2023-03",
             "times_seen": "invalid_times_seen",
-            "feed_type": False,
+            "feed_type": "invalid_feed_type",
         }
         serializer = FeedsResponseSerializer(data=data_)
         try:

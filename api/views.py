@@ -77,6 +77,10 @@ def get_queryset(request, feed_type, attack_type, age, format_):
         else:
             # accept feed_type if it is in the general honeypots list
             query_dict["general__icontains"] = feed_type
+    else:
+        honeypot_disabled = []
+        for hp in GeneralHoneypot.objects.all().filter(active=False):
+            honeypot_disabled.extend([hp.name, hp.name.lower()])
 
     if attack_type != "all":
         query_dict[attack_type] = True
@@ -89,7 +93,7 @@ def get_queryset(request, feed_type, attack_type, age, format_):
         # ordering by "feed_type" is done in feed_response function
         if ordering is None or ordering == "feed_type" or ordering == "-feed_type":
             ordering = "-last_seen"
-        iocs = IOC.objects.filter(**query_dict).order_by(ordering)[:5000]
+        iocs = IOC.objects.exclude(general__overlap=honeypot_disabled).filter(**query_dict).order_by(ordering)[:5000]
     elif age == "persistent":
         # scanners detected in the last 14 days
         fourteen_days_ago = datetime.utcnow() - timedelta(days=14)
@@ -101,7 +105,7 @@ def get_queryset(request, feed_type, attack_type, age, format_):
         # ordering by "feed_type" is done in feed_response function
         if ordering is None or ordering == "feed_type" or ordering == "-feed_type":
             ordering = "-times_seen"
-        iocs = IOC.objects.filter(**query_dict).order_by(ordering)[:5000]
+        iocs = IOC.objects.exclude(general__overlap=honeypot_disabled).filter(**query_dict).order_by(ordering)[:5000]
 
     # save request source for statistics
     source_ip = str(request.META["REMOTE_ADDR"])
