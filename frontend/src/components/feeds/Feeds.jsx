@@ -30,6 +30,12 @@ const ageChoices = [
   { label: "Persistant", value: "persistent" },
 ];
 
+const initialValues = {
+  feeds_type: "all",
+  attack_type: "all",
+  age: "recent",
+};
+
 const toPassTableProps = {
   columns: feedsTableColumns,
   tableEmptyNode: (
@@ -45,11 +51,6 @@ let honeypotFeedsType = [];
 export default function Feeds() {
   console.debug("Feeds rendered!");
 
-  const [initialValues, setInitialValues] = React.useState({
-    feeds_type: "all",
-    attack_type: "all",
-    age: "recent",
-  });
   console.debug("Feeds-initialValues", initialValues);
 
   const [url, setUrl] = React.useState(
@@ -96,17 +97,15 @@ export default function Feeds() {
         setUrl(
           `${FEEDS_BASE_URI}/${values.feeds_type}/${values.attack_type}/${values.age}.json`
         );
-        setInitialValues({
-          feeds_type: values.feeds_type,
-          attack_type: values.attack_type,
-          age: values.age,
-        });
+        initialValues.feeds_type = values.feeds_type;
+        initialValues.attack_type = values.attack_type;
+        initialValues.age = values.age;
         refetch();
       } catch (e) {
         console.debug(e);
       }
     },
-    [setUrl, setInitialValues, refetch]
+    [setUrl, refetch]
   );
 
   return (
@@ -128,7 +127,6 @@ export default function Feeds() {
             <Formik initialValues={initialValues} onSubmit={onSubmit}>
               {(formik) => (
                 <Form>
-                  {/* username */}
                   <FormGroup row>
                     <Col sm={12} md={4}>
                       <Label
@@ -190,6 +188,7 @@ export default function Feeds() {
         )}
       />
       <ContentSection className="mt-3 bg-dark border border-dark shadow">
+        {/*Table*/}
         {tableNode}
       </ContentSection>
     </Container>
