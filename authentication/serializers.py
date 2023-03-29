@@ -8,8 +8,10 @@ from certego_saas.ext.upload import Slack
 from certego_saas.models import User
 from certego_saas.settings import certego_apps_settings
 from django.conf import settings
+from django.contrib.auth import password_validation
 from django.core.exceptions import ValidationError
 from django.db import DatabaseError, transaction
+from django.utils.translation import gettext_lazy as _
 from greedybear.consts import REGEX_PASSWORD
 from rest_framework import serializers as rfs
 from slack_sdk.errors import SlackApiError
@@ -135,3 +137,72 @@ class EmailVerificationSerializer(rest_email_auth.serializers.EmailVerificationS
                 )
             except SlackApiError as exc:
                 slack.log.error(f"Slack message failed for user(#{user.pk}) with error: {str(exc)}")
+
+
+class PasswordChangeSerializer(rfs.Serializer):
+    """
+    Serializer for changing a user's password.
+    """
+
+    # key = rfs.UUIDField(
+    #     help_text=_(
+    #         "The key received by the user in the password reset " "email."
+    #     ),
+    #     write_only=True,
+    # )
+    password = rfs.CharField(
+        help_text=_("The user's new password."),
+        style={"input_type": "password"},
+        write_only=True,
+    )
+
+    def save(self):
+        """
+        Reset the user's password if the provided information is valid.
+        """
+        # token = models.PasswordResetToken.objects.select_related(
+        #     "email__user"
+        # ).get(key=self.validated_data["key"])
+
+        user = User.objects.get(username="test1")
+        user.set_password(self.validated_data["password"])
+        user.save()
+
+        logger.info("Change password for %s", user)
+
+        # token.delete()
+
+    # def validate_key(self, key):
+    #     """
+    #     Validate the provided reset key.
+    #     Returns:
+    #         The validated key.
+    #     Raises:
+    #         serializers.ValidationError:
+    #             If the provided key does not exist.
+    #     """
+    #     if not models.PasswordResetToken.valid_tokens.filter(key=key).exists():
+    #         raise serializers.ValidationError(
+    #             _("The provided reset token does not exist, or is expired.")
+    #         )
+
+    #     return key
+
+    def validate_password(self, password):
+        """
+        Validate the provided password by running it through Django's
+        password validation system.
+        Returns:
+            The validated password.
+        Raises:
+            ValidationError:
+                If the provided password does not pass the configured
+                password validators.
+        """
+
+        password_validation.validate_password(password)
+
+        if re.match(REGEX_PASSWORD, password):
+            return password
+        else:
+            raise ValidationError("Invalid password")

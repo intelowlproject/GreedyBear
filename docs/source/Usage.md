@@ -1,5 +1,35 @@
 # Usage
 
+## User management
+
+### Registration
+Since Greedybear v1.0.2 we added a Registration Page that can be used to manage Registration requests when providing GreedyBear as a Service.
+
+After an user registration, an email is sent to the user to verify their email address. If necessary, there are buttons on the login page to resend the verification email and to reset the password.
+
+Once the user has verified their email, they would be manually vetted before being allowed to use the GreedyBear platform. The registration requests would be handled in the Django Admin page by admins.
+If you have GreedyBear deployed on an AWS instance you can use the SES service.
+
+In a development environment the emails that would be sent are written to the standard output.
+
+### Recaptcha configuration
+The Registration Page contains a Recaptcha form from Google. By default, that Recaptcha is not configured and is not shown.
+
+If your intention is to publish GreedyBear as a Service you should first remember to comply to the [AGPL License](https://github.com/intelowlproject/IntelOwl/blob/master/LICENSE), then you should configure the Recaptcha Key for your site and add that value in the `RECAPTCHA_SITEKEY` in the `docker/env_template.js` file.
+In that case, you would need to [re-build](/Installation.md#update-and-rebuild) the application to have the changes properly reflected.
+
+### Amazon SES
+
+If you like, you could use Amazon SES for sending automated emails.
+
+First, you need to configure the environment variable `AWS_SES` to `True` to enable it.
+Then you have to add some credentials for AWS: if you have GreedyBear deployed on the AWS infrastructure, you can use IAM credentials:
+to allow that just set `AWS_IAM_ACCESS` to `True`. If that is not the case, you have to set both `AWS_ACESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`.
+
+Additionally, if you are not using the default AWS region of us-east-1, you need to specify your `AWS_REGION`.
+You can customize the AWS Region location of you services by changing the environment variable `AWS_REGION`. Default is `eu-central-1`.
+
+
 ## Feeds
 GreedyBear is created with the aim to collect the information from the TPOTs and generate some actionable feeds, so that they can be easily accessible and act as valuable information to prevent and detect attacks.
 

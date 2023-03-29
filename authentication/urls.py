@@ -12,6 +12,7 @@ from .views import (
     RegistrationView,
     ResendVerificationView,
     TokenSessionsViewSet,
+    changePassword,
     checkAuthentication,
 )
 
@@ -41,6 +42,7 @@ urlpatterns = [
         name="auth_request-password-reset",
     ),
     path("reset-password", PasswordResetView.as_view(), name="auth_reset-password"),
+    path("change-password", changePassword),
     # auth
     path("", include("certego_saas.apps.auth.urls")),
     path("apiaccess", APIAccessTokenView.as_view(), name="auth_apiaccess"),
