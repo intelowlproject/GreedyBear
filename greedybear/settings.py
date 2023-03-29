@@ -95,6 +95,9 @@ REST_FRAMEWORK = {
     # Auth
     "DEFAULT_AUTHENTICATION_CLASSES": ["certego_saas.apps.auth.backend.CookieTokenAuthentication"],
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    # Pagination
+    "DEFAULT_PAGINATION_CLASS": "certego_saas.ext.pagination.CustomPageNumberPagination",
+    "PAGE_SIZE": 10,
 }
 
 # Django-Rest-Durin
