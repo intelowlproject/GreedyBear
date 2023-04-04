@@ -22,11 +22,14 @@ class EnrichmentViewTestCase(TestCase):
             times_seen=1,
             log4j=True,
             cowrie=True,
-            general=["heralding", "ciscoasa"],  # FEEDS
             scanner=True,
             payload_request=True,
             related_urls=[],
         )
+
+        cls.hp1 = cls.ioc.general_honeypot.create(name="heralding")  # FEEDS
+        cls.hp2 = cls.ioc.general_honeypot.create(name="ciscoasa")  # FEEDS
+        cls.ioc.save()
 
         cls.superuser = User.objects.create_superuser(username="test", email="test@greedybear.com", password="test")
 
@@ -66,7 +69,8 @@ class EnrichmentViewTestCase(TestCase):
         self.assertEqual(response.json()["ioc"]["times_seen"], self.ioc.times_seen)
         self.assertEqual(response.json()["ioc"]["log4j"], self.ioc.log4j)
         self.assertEqual(response.json()["ioc"]["cowrie"], self.ioc.cowrie)
-        self.assertEqual(response.json()["ioc"]["general"], self.ioc.general)  # FEEDS
+        self.assertEqual(response.json()["ioc"]["general_honeypot"][0], self.hp1.pk)  # FEEDS
+        self.assertEqual(response.json()["ioc"]["general_honeypot"][1], self.hp2.pk)  # FEEDS
         self.assertEqual(response.json()["ioc"]["scanner"], self.ioc.scanner)
         self.assertEqual(response.json()["ioc"]["payload_request"], self.ioc.payload_request)
 
@@ -91,11 +95,14 @@ class FeedsViewTestCase(TestCase):
             times_seen=1,
             log4j=True,
             cowrie=False,
-            general=["heralding", "ciscoasa"],  # FEEDS
             scanner=True,
             payload_request=False,
             related_urls=[],
         )
+
+        cls.ioc.general_honeypot.create(name="heralding")  # FEEDS
+        cls.ioc.general_honeypot.create(name="ciscoasa")  # FEEDS
+        cls.ioc.save()
 
         cls.superuser = User.objects.create_superuser(username="test", email="test@greedybear.com", password="test")
 

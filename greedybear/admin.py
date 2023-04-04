@@ -30,8 +30,12 @@ class IOCModelAdmin(admin.ModelAdmin):
         "payload_request",
         "log4j",
         "cowrie",
-        "general",
+        "general_honeypots",
     ]
+    filter_horizontal = ["general_honeypot", "related_ioc"]
+
+    def general_honeypots(self, ioc):
+        return ", ".join([str(element) for element in ioc.general_honeypot.all()])
 
 
 @admin.register(GeneralHoneypot)

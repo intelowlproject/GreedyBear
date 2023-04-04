@@ -17,11 +17,14 @@ class ModelsTestCase(TestCase):
             times_seen=1,
             log4j=True,
             cowrie=True,
-            general=["heralding", "ciscoasa"],  # FEEDS
             scanner=True,
             payload_request=True,
             related_urls=[],
         )
+        hp1 = ioc.general_honeypot.create(name="heralding")  # FEEDS
+        hp2 = ioc.general_honeypot.create(name="ciscoasa")  # FEEDS
+        ioc.save()
+
         self.assertEqual(ioc.name, "testing_ioc")
         self.assertEqual(ioc.type, "testing_type")
         self.assertEqual(ioc.first_seen, current_time)
@@ -31,7 +34,9 @@ class ModelsTestCase(TestCase):
         self.assertEqual(ioc.times_seen, 1)
         self.assertEqual(ioc.log4j, True)
         self.assertEqual(ioc.cowrie, True)
-        self.assertEqual(ioc.general, ["heralding", "ciscoasa"])  # FEEDS
         self.assertEqual(ioc.scanner, True)
         self.assertEqual(ioc.payload_request, True)
         self.assertEqual(ioc.related_urls, [])
+
+        self.assertIn(hp1, ioc.general_honeypot.all())
+        self.assertIn(hp2, ioc.general_honeypot.all())
