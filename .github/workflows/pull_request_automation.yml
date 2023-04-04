@@ -15,11 +15,9 @@ jobs:
   detect-changes:
     uses: ./.github/workflows/_detect_changes.yml
     with:
-      backend_directories: .
-      frontend_directories: ./frontend
+      backend_directories: api greedybear
+      frontend_directories: frontend
       ubuntu_version: latest
-
-
 
   frontend-tests:
     needs: detect-changes
