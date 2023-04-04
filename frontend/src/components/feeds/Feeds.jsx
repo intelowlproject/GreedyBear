@@ -115,7 +115,13 @@ export default function Feeds() {
           Feeds&nbsp;
           <small className="text-muted">{feedsData?.count} total</small>
         </h1>
-        <Button className="mb-auto" color="primary" outline href={url} target="_blank">
+        <Button
+          className="mb-auto"
+          color="primary"
+          outline
+          href={url}
+          target="_blank"
+        >
           <VscJson />
           &nbsp;Raw data
         </Button>
