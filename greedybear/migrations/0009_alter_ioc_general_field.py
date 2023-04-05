@@ -6,9 +6,8 @@ def migrateData(apps, schema_editor):
 
     for ioc in IOC.objects.all():
         for honeypot in ioc.general:
-            if honeypot != "":
-                if honeypot not in ioc.general_honeypot.all():
-                    ioc.general_honeypot.create(name=honeypot)
+            if honeypot and honeypot not in ioc.general_honeypot.all():
+                ioc.general_honeypot.create(name=honeypot)
         ioc.save()
 
 
