@@ -3,7 +3,7 @@
 ## User management
 
 ### Registration
-Since Greedybear v1.0.2 we added a Registration Page that can be used to manage Registration requests when providing GreedyBear as a Service.
+Since Greedybear v1.1.0 we added a Registration Page that can be used to manage Registration requests when providing GreedyBear as a Service.
 
 After an user registration, an email is sent to the user to verify their email address. If necessary, there are buttons on the login page to resend the verification email and to reset the password.
 
@@ -24,7 +24,7 @@ If you like, you could use Amazon SES for sending automated emails.
 
 First, you need to configure the environment variable `AWS_SES` to `True` to enable it.
 Then you have to add some credentials for AWS: if you have GreedyBear deployed on the AWS infrastructure, you can use IAM credentials:
-to allow that just set `AWS_IAM_ACCESS` to `True`. If that is not the case, you have to set both `AWS_ACESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`.
+to allow that just set `AWS_IAM_ACCESS` to `True`. If that is not the case, you have to set both `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`.
 
 Additionally, if you are not using the default AWS region of us-east-1, you need to specify your `AWS_REGION`.
 You can customize the AWS Region location of you services by changing the environment variable `AWS_REGION`. Default is `eu-central-1`.
