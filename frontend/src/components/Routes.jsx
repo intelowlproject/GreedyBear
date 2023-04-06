@@ -12,6 +12,7 @@ const EmailVerification = React.lazy(() => import("./auth/EmailVerification"));
 const ResetPassword = React.lazy(() => import("./auth/ResetPassword"));
 const Dashboard = React.lazy(() => import("./dashboard/Dashboard"));
 const Sessions = React.lazy(() => import("./me/sessions/Sessions"));
+const Feeds = React.lazy(() => import("./feeds/Feeds"));
 
 // public components
 const publicRoutesLazy = [
@@ -30,6 +31,15 @@ const publicRoutesLazy = [
     element: (
       <Suspense fallback={<FallBackLoading />}>
         <Dashboard />
+      </Suspense>
+    ),
+  },
+  /* Feeds */
+  {
+    path: "/feeds",
+    element: (
+      <Suspense fallback={<FallBackLoading />}>
+        <Feeds />
       </Suspense>
     ),
   },
