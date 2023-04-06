@@ -21,7 +21,7 @@ function Layout() {
     <>
       <AppHeader />
       <main role="main" className="px-1 px-md-5 mx-auto">
-          <Outlet />
+        <Outlet />
       </main>
     </>
   );
@@ -45,8 +45,7 @@ function AppMain() {
     },
   ]);
 
+  return routes;
+}
 
-    return routes;
-  }
-  
-  export default AppMain;
+export default AppMain;

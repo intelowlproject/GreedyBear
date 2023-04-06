@@ -8,7 +8,7 @@ import {
   NavbarToggler,
 } from "reactstrap";
 import { NavLink as RRNavLink } from "react-router-dom";
-import { MdHome } from "react-icons/md";
+import { MdHome, MdOutlineFeed } from "react-icons/md";
 import { RiBookReadFill } from "react-icons/ri";
 import { GoDashboard } from "react-icons/go";
 
@@ -55,7 +55,7 @@ function AppHeader() {
 
   // local state
   const [isOpen, setIsOpen] = React.useState(false);
-  
+
   // auth store
   const isAuthenticated = useAuthStore(
     React.useCallback((s) => s.isAuthenticated, [])
@@ -66,7 +66,7 @@ function AppHeader() {
       {/* nav bar */}
       <Navbar dark expand="lg">
         <NavbarBrand tag={RRNavLink} to="/">
-        GreedyBear
+          GreedyBear
         </NavbarBrand>
         <NavbarToggler onClick={() => setIsOpen(!isOpen)} />
         <Collapse navbar isOpen={isOpen}>
@@ -79,16 +79,26 @@ function AppHeader() {
               </NavLink>
             </NavItem>
             <NavItem>
-            <NavLink className="d-flex-start-center" end to="/dashboard">
-              <GoDashboard />
-              <span className="ms-1">Dashboard</span>
+              <NavLink className="d-flex-start-center" end to="/dashboard">
+                <GoDashboard />
+                <span className="ms-1">Dashboard</span>
+              </NavLink>
+            </NavItem>
+            <NavItem>
+              <NavLink className="d-flex-start-center" end to="/feeds">
+                <MdOutlineFeed />
+                <span className="ms-1">Feeds</span>
               </NavLink>
             </NavItem>
           </Nav>
           {/* Navbar Right Side */}
           <Nav navbar className="ms-auto d-flex align-items-center">
             {rightLinks}
-            {isAuthenticated === AUTHENTICATION_STATUSES.FALSE ? guestLinks : <UserMenu />}
+            {isAuthenticated === AUTHENTICATION_STATUSES.FALSE ? (
+              guestLinks
+            ) : (
+              <UserMenu />
+            )}
           </Nav>
         </Collapse>
       </Navbar>

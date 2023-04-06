@@ -23,7 +23,7 @@ Documentation about GreedyBear installation, usage, configuration and contributi
 
 ## Public feeds
 
-There are public feeds provided by The Honeynet Project in this [site](greedybear.honeynet.org). [Example](https://greedybear.honeynet.org/api/feeds/log4j/all/recent.txt)
+There are public feeds provided by [The Honeynet Project](https://www.honeynet.org) in this [site](https://greedybear.honeynet.org). [Example](https://greedybear.honeynet.org/api/feeds/log4j/all/recent.txt)
 
 Please do not perform too many requests to extract feeds or you will be banned.
 
@@ -45,3 +45,20 @@ If you manage one or more T-POTs of your own, you can get the code of this appli
 In this way, you are able to provide new feeds of your own.
 
 To install it locally, Please refer to our [installation guide](https://greedybear.readthedocs.io/en/latest/Installation.html)
+
+## Sponsors
+
+#### Certego
+
+<a href="https://www.certego.net/?utm_source=greedybear"> <img style="margin-right: 2px" width=250 height=71 src="docs/static/Certego.png" alt="Certego Logo"/></a>
+
+[Certego](https://www.certego.net/?utm_source=greedybear) is a MDR (Managed Detection and Response) and Threat Intelligence Provider based in Italy.
+
+Started as a personal Christmas project from [Matteo Lodi](https://twitter.com/matte_lodi), since then GreedyBear is being improved mainly thanks to the efforts of the Certego Threat Intelligence Team.
+
+#### The Honeynet Project
+
+<a href="https://www.honeynet.org"> <img style="border: 0.2px solid black" width=125 height=125 src="docs/static/honeynet_logo.png" alt="Honeynet.org logo"> </a>
+
+[The Honeynet Project](https://www.honeynet.org) is a non-profit organization working on creating open source cyber security tools and sharing knowledge about cyber threats.
+

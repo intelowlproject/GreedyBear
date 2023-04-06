@@ -3,26 +3,6 @@
 SCANNER = "scanner"
 PAYLOAD_REQUEST = "payload_request"
 
-# List of Honeypots from which only source IP of attacker is extracted - case sensitive naming
-GENERAL_HONEYPOTS = [
-    "Heralding",
-    "Ciscoasa",
-    "Honeytrap",
-    "Dionaea",
-    "ConPot",
-    "Adbhoney",
-    "Tanner",
-    "CitrixHoneypot",
-    "Mailoney",
-    "Ipphoney",
-    "Ddospot",
-    "ElasticPot",
-    "Dicompot",
-    "Redishoneypot",
-    "Sentrypeer",
-    "Glutton",
-]
-
 GET = "GET"
 POST = "POST"
 

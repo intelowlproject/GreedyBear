@@ -3,20 +3,27 @@
   "version": "0.1.0",
   "private": true,
   "proxy": "http://localhost:80/",
+  "config": {
+    "eslint": ".github/configurations/node_linters/eslint/.eslintrc.json",
+    "stylelint": ".github/configurations/node_linters/stylelint/.stylelintrc.json",
+    "prettier": ".github/configurations/node_linters/prettier/.prettierrc.js"
+  },
   "dependencies": {
     "@certego/certego-ui": "^0.1.1",
-    "@testing-library/jest-dom": "^5.16.4",
-    "@testing-library/user-event": "^13.5.0",
     "axios": "^0.27.2",
     "axios-hooks": "^3.0.4",
     "bootstrap": ">=5.0.0",
     "formik": "^2.2.9",
+    "prop-types": "^15.8.1",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
+    "react-icons": "^4.7.1",
     "react-router-dom": "^6.3.0",
     "react-scripts": "^5.0.1",
     "react-table": "^7.8.0",
+    "react-use": "^17.4.0",
     "reactstrap": "^9.1.2",
+    "recharts": "^2.3.2",
     "sass": "^1.52.1",
     "web-vitals": "^2.1.4",
     "zustand": "^4.0.0"
@@ -24,8 +31,17 @@
   "scripts": {
     "start": "PORT=3001 react-scripts start",
     "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "test": "TZ=UTC jest ./tests",
+    "test-coverage": "npm test -- --coverage=true",
+    "lint-config-install": "cd ../.github/configurations/node_linters/eslint && npm i",
+    "lint": "eslint 'src/**/*.{js,jsx}' 'tests/**/*.{js,jsx}'",
+    "lint-fix": "npm run lint -- --fix",
+    "lint-scss-config-install": "cd ../.github/configurations/node_linters/stylelint && npm i",
+    "lint-scss": "stylelint --config ../.github/configurations/node_linters/stylelint/.stylelintrc.json 'src/styles/**/*.{css,scss}'",
+    "lint-scss-fix": "npm run lint-scss -- --fix",
+    "formatter": "prettier 'src/**/*.{js,jsx}' 'tests/**/*.{js,jsx}' 'src/styles/*.{css,scss}' --check",
+    "formatter-fix": "npm run formatter -- --write"
   },
   "eslintConfig": {
     "extends": [
@@ -44,5 +60,23 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "devDependencies": {
+    "@babel/preset-env": "^7.20.2",
+    "@babel/preset-react": "^7.18.6",
+    "@testing-library/jest-dom": "^5.16.5",
+    "@testing-library/react": "^12.1.5",
+    "@testing-library/react-hooks": "^8.0.1",
+    "@testing-library/user-event": "^14.0.0",
+    "babel-jest": "^29.4.1",
+    "eslint-config-airbnb": "^19.0.4",
+    "eslint-config-prettier": "^8.6.0",
+    "eslint-plugin-import": "^2.27.5",
+    "eslint-plugin-jsx-a11y": "^6.7.1",
+    "eslint-plugin-react": "^7.32.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "jest": "^27.5.1",
+    "prettier": "2.8.4",
+    "stylelint": "^14.16.1"
   }
 }

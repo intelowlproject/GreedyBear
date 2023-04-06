@@ -4,40 +4,23 @@ import csv
 import logging
 from datetime import datetime, timedelta
 
+from api.serializers import EnrichmentSerializer, FeedsResponseSerializer, FeedsSerializer, IOCSerializer
 from certego_saas.apps.auth.backend import CookieTokenAuthentication
 from certego_saas.ext.helpers import parse_humanized_range
+from certego_saas.ext.pagination import CustomPageNumberPagination
 from django.db.models import Count, Q
 from django.db.models.functions import Trunc
-from django.http import (
-    HttpResponse,
-    HttpResponseBadRequest,
-    HttpResponseServerError,
-    JsonResponse,
-    StreamingHttpResponse,
-)
+from django.http import HttpResponse, HttpResponseServerError, StreamingHttpResponse
 from drf_spectacular.utils import extend_schema as add_docs
 from drf_spectacular.utils import inline_serializer
 from durin import views as durin_views
+from greedybear.consts import FEEDS_LICENSE, GET, PAYLOAD_REQUEST, SCANNER
+from greedybear.models import IOC, GeneralHoneypot, Statistics, viewType
 from rest_framework import serializers as rfs
 from rest_framework import status, viewsets
-from rest_framework.decorators import (
-    action,
-    api_view,
-    authentication_classes,
-    permission_classes,
-)
+from rest_framework.decorators import action, api_view, authentication_classes, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-
-from api.serializers import EnrichmentSerializer, IOCSerializer
-from greedybear.consts import (
-    FEEDS_LICENSE,
-    GENERAL_HONEYPOTS,
-    GET,
-    PAYLOAD_REQUEST,
-    SCANNER,
-)
-from greedybear.models import IOC, Statistics, viewType
 
 logger = logging.getLogger(__name__)
 
@@ -56,37 +39,46 @@ class Echo:
 @add_docs(description="Extract Structured IOC Feeds from GreedyBear")
 @api_view([GET])
 def feeds(request, feed_type, attack_type, age, format_):
+    logger.info(f"request /api/feeds with params: feed type: {feed_type}, attack_type: {attack_type}, Age: {age}, format: {format_}")
+    iocs_queryset = get_queryset(request, feed_type, attack_type, age, format_)
+    resp_data = feeds_response(request, iocs_queryset, feed_type, format_)
+    return Response(resp_data, status=status.HTTP_200_OK)
+
+
+@api_view([GET])
+def feeds_pagination(request):
+    params = request.query_params
+    logger.info(f"request /api/feeds with params: {params}")
+
+    paginator = CustomPageNumberPagination()
+    iocs_queryset = get_queryset(request, params["feed_type"], params["attack_type"], params["age"], "json")
+    iocs = paginator.paginate_queryset(iocs_queryset, request)
+    resp_data = feeds_response(request, iocs, params["feed_type"], "json")
+    return paginator.get_paginated_response(resp_data)
+
+
+def get_queryset(request, feed_type, attack_type, age, format_):
     source = str(request.user)
-    logger.info(
-        f"request from {source}. Feed type: {feed_type}, attack_type: {attack_type},"
-        f" Age: {age}, format: {format_}"
-    )
+    logger.info(f"request from {source}. Feed type: {feed_type}, attack_type: {attack_type}, Age: {age}, format: {format_}")
 
-    feed_choices = ["log4j", "cowrie", "all"]
-    feed_choices.extend([x.lower() for x in GENERAL_HONEYPOTS])  # FEEDS
-    if feed_type not in feed_choices:
-        return _formatted_bad_request(format_)
+    serializer = FeedsSerializer(data={"feed_type": feed_type, "attack_type": attack_type, "age": age, "format": format_})
+    serializer.is_valid(raise_exception=True)
 
-    attack_types = ["scanner", "payload_request", "all"]
-    if attack_type not in attack_types:
-        return _formatted_bad_request(format_)
-
-    age_choices = ["persistent", "recent"]
-    if age not in age_choices:
-        return _formatted_bad_request(format_)
-
-    formats = ["csv", "json", "txt"]
-    if format_ not in formats:
-        return _formatted_bad_request(format_)
+    ordering = request.query_params.get("ordering")
+    # if ordering == "value" replace it with "name" (the corresponding field in the iocs model)
+    if ordering == "value":
+        ordering = "name"
+    elif ordering == "-value":
+        ordering = "-name"
 
     query_dict = {}
 
     if feed_type != "all":
-        # accept feed_type if it is in the general honeypots list
-        if feed_type in [x.lower() for x in GENERAL_HONEYPOTS]:
-            query_dict["general__icontains"] = feed_type
-        else:
+        if feed_type == "log4j" or feed_type == "cowrie":
             query_dict[feed_type] = True
+        else:
+            # accept feed_type if it is in the general honeypots list
+            query_dict["general_honeypot__name__iexact"] = feed_type
 
     if attack_type != "all":
         query_dict[attack_type] = True
@@ -95,7 +87,11 @@ def feeds(request, feed_type, attack_type, age, format_):
         # everything in the last 3 days
         three_days_ago = datetime.utcnow() - timedelta(days=3)
         query_dict["last_seen__gte"] = three_days_ago
-        iocs = IOC.objects.filter(**query_dict).order_by("-last_seen")[:5000]
+        # if ordering == "feed_type" or None replace it with the default value "-last_seen"
+        # ordering by "feed_type" is done in feed_response function
+        if ordering is None or ordering == "feed_type" or ordering == "-feed_type":
+            ordering = "-last_seen"
+        iocs = IOC.objects.exclude(general_honeypot__active=False).filter(**query_dict).order_by(ordering)[:5000]
     elif age == "persistent":
         # scanners detected in the last 14 days
         fourteen_days_ago = datetime.utcnow() - timedelta(days=14)
@@ -103,21 +99,26 @@ def feeds(request, feed_type, attack_type, age, format_):
         # ... and at least detected 10 different days
         number_of_days_seen = 10
         query_dict["number_of_days_seen__gte"] = number_of_days_seen
-        # order by the number of times seen
-        iocs = IOC.objects.filter(**query_dict).order_by("-times_seen")[:1000]
-    else:
-        logger.error("this is impossible. check the code")
-        return HttpResponseServerError()
+        # if ordering == "feed_type" or None replace it with the default value "-times_seen"
+        # ordering by "feed_type" is done in feed_response function
+        if ordering is None or ordering == "feed_type" or ordering == "-feed_type":
+            ordering = "-times_seen"
+        iocs = IOC.objects.exclude(general_honeypot__active=False).filter(**query_dict).order_by(ordering)[:5000]
 
-    license_text = (
-        f"# These feeds are generated by The Honeynet Project"
-        f" once every 10 minutes and are protected"
-        f" by the following license: {FEEDS_LICENSE}"
-    )
-
+    # save request source for statistics
     source_ip = str(request.META["REMOTE_ADDR"])
     request_source = Statistics(source=source_ip)
     request_source.save()
+
+    logger.info(f"Number of iocs returned: {len(iocs)}")
+    return iocs
+
+
+def feeds_response(request, iocs, feed_type, format_):
+    logger.info(f"Format feeds in: {format_}")
+    license_text = (
+        f"# These feeds are generated by The Honeynet Project" f" once every 10 minutes and are protected" f" by the following license: {FEEDS_LICENSE}"
+    )
 
     if format_ == "txt":
         text_lines = [license_text]
@@ -141,28 +142,46 @@ def feeds(request, feed_type, attack_type, age, format_):
     elif format_ == "json":
         # json
         json_list = []
+        ioc_feed_type = ""
         for ioc in iocs:
-            json_item = {
+            if feed_type not in ["all", "log4j", "cowrie"]:
+                ioc_feed_type = feed_type
+            else:
+                if ioc.log4j:
+                    ioc_feed_type = "log4j"
+                elif ioc.cowrie:
+                    ioc_feed_type = "cowrie"
+                else:
+                    ioc_feed_type = str(ioc.general_honeypot.first()).lower()
+
+            data_ = {
                 "value": ioc.name,
                 SCANNER: ioc.scanner,
                 PAYLOAD_REQUEST: ioc.payload_request,
                 "first_seen": ioc.first_seen.strftime("%Y-%m-%d"),
                 "last_seen": ioc.last_seen.strftime("%Y-%m-%d"),
                 "times_seen": ioc.times_seen,
+                "feed_type": ioc_feed_type,
             }
-            json_list.append(json_item)
-        return JsonResponse({"license": FEEDS_LICENSE, "iocs": json_list})
-    else:
-        logger.error("this is impossible. check the code")
-        return HttpResponseServerError()
 
+            serializer_item = FeedsResponseSerializer(data=data_)
+            serializer_item.is_valid(raise_exception=True)
+            json_list.append(serializer_item.data)
 
-def _formatted_bad_request(format_):
-    if format_ in ["csv", "txt"]:
-        return HttpResponseBadRequest()
-    else:
-        # json
-        return JsonResponse({}, status=400)
+    # check if sorting the results by feed_type
+    ordering = request.query_params.get("ordering")
+    sorted_list = []
+    if ordering == "feed_type":
+        sorted_list = sorted(json_list, key=lambda k: k["feed_type"])
+    elif ordering == "-feed_type":
+        sorted_list = sorted(json_list, key=lambda k: k["feed_type"], reverse=True)
+
+    if sorted_list:
+        logger.info("Return feeds sorted by feed_type field")
+        json_list = sorted_list
+
+    logger.info(f"Number of feeds returned: {len(json_list)}")
+    return {"license": FEEDS_LICENSE, "iocs": json_list}
 
 
 # The Doc does not work as intended. We should refactor this by correctly leveraging DRF
@@ -185,9 +204,7 @@ def _formatted_bad_request(format_):
 def enrichment_view(request):
     observable_name = request.query_params.get("query")
     logger.info(f"Enrichment view requested for: {str(observable_name)}")
-    serializer = EnrichmentSerializer(
-        data=request.query_params, context={"request": request}
-    )
+    serializer = EnrichmentSerializer(data=request.query_params, context={"request": request})
     serializer.is_valid(raise_exception=True)
 
     source_ip = str(request.META["REMOTE_ADDR"])
@@ -201,15 +218,9 @@ class StatisticsViewSet(viewsets.ViewSet):
     @action(detail=True, methods=["GET"])
     def feeds(self, request, pk=None):
         if pk == "sources":
-            annotations = {
-                "Sources": Count(
-                    "source", distinct=True, filter=Q(view=viewType.FEEDS_VIEW.value)
-                )
-            }
+            annotations = {"Sources": Count("source", distinct=True, filter=Q(view=viewType.FEEDS_VIEW.value))}
         elif pk == "downloads":
-            annotations = {
-                "Downloads": Count("source", filter=Q(view=viewType.FEEDS_VIEW.value))
-            }
+            annotations = {"Downloads": Count("source", filter=Q(view=viewType.FEEDS_VIEW.value))}
         else:
             logger.error("this is impossible. check the code")
             return HttpResponseServerError()
@@ -226,11 +237,7 @@ class StatisticsViewSet(viewsets.ViewSet):
                 )
             }
         elif pk == "requests":
-            annotations = {
-                "Requests": Count(
-                    "source", filter=Q(view=viewType.ENRICHMENT_VIEW.value)
-                )
-            }
+            annotations = {"Requests": Count("source", filter=Q(view=viewType.ENRICHMENT_VIEW.value))}
         else:
             logger.error("this is impossible. check the code")
             return HttpResponseServerError()
@@ -240,28 +247,26 @@ class StatisticsViewSet(viewsets.ViewSet):
     def feeds_types(self, request):
         # FEEDS
         annotations = {
-            "Log4j": Count("name", filter=Q(log4j=True)),
-            "Cowrie": Count("name", filter=Q(cowrie=True)),
+            "Log4j": Count("name", distinct=True, filter=Q(log4j=True)),
+            "Cowrie": Count("name", distinct=True, filter=Q(cowrie=True)),
         }
         # feed_type for each general honeypot in the list
-        for hp in GENERAL_HONEYPOTS:
-            annotations[hp] = Count("name", Q(general__icontains=hp.lower()))
+        generalHoneypots = GeneralHoneypot.objects.all().filter(active=True)
+        for hp in generalHoneypots:
+            annotations[hp.name] = Count("name", Q(general_honeypot__name__iexact=hp.name.lower()))
         return self.__aggregation_response_static_ioc(annotations)
 
     def __aggregation_response_static_statistics(self, annotations: dict) -> Response:
         delta, basis = self.__parse_range(self.request)
-        qs = (
-            Statistics.objects.filter(request_date__gte=delta)
-            .annotate(date=Trunc("request_date", basis))
-            .values("date")
-            .annotate(**annotations)
-        )
+        qs = Statistics.objects.filter(request_date__gte=delta).annotate(date=Trunc("request_date", basis)).values("date").annotate(**annotations)
         return Response(qs)
 
     def __aggregation_response_static_ioc(self, annotations: dict) -> Response:
         delta, basis = self.__parse_range(self.request)
+
         qs = (
             IOC.objects.filter(last_seen__gte=delta)
+            .exclude(general_honeypot__active=False)
             .annotate(date=Trunc("last_seen", basis))
             .values("date")
             .annotate(**annotations)
@@ -284,9 +289,22 @@ class StatisticsViewSet(viewsets.ViewSet):
 @permission_classes([IsAuthenticated])
 def checkAuthentication(request):
     logger.info(f"User: {request.user}, Administrator: {request.user.is_superuser}")
-    return Response(
-        {"is_superuser": request.user.is_superuser}, status=status.HTTP_200_OK
-    )
+    return Response({"is_superuser": request.user.is_superuser}, status=status.HTTP_200_OK)
+
+
+@api_view([GET])
+def general_honeypot_list(request):
+    logger.info(f"Requested general honeypots list from {request.user}.")
+    active = request.query_params.get("onlyActive")
+    honeypots = []
+    generalHoneypots = GeneralHoneypot.objects.all()
+    if active == "true":
+        generalHoneypots = generalHoneypots.filter(active=True)
+        logger.info("Requested only active general honeypots")
+    honeypots.extend([hp.name for hp in generalHoneypots])
+
+    logger.info(f"General honeypots: {honeypots}")
+    return Response(honeypots)
 
 
 TokenSessionsViewSet = durin_views.TokenSessionsViewSet

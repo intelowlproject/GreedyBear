@@ -18,9 +18,7 @@ class Cronjob(metaclass=ABCMeta):
 
     def _healthcheck(self):
         if not self.elastic_client.ping():
-            raise self.ElasticServerDownException(
-                "elastic server is not reachable, could be down"
-            )
+            raise self.ElasticServerDownException("elastic server is not reachable, could be down")
 
     def _base_search(self, honeypot):
         """

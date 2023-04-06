@@ -4,7 +4,6 @@
 from unittest import TestCase
 
 from django.db.models import Q
-
 from greedybear.cronjobs import general
 from greedybear.models import IOC
 
@@ -18,5 +17,5 @@ class GeneralTestCase(TestCase):
         self.assertTrue(a.success)
         iocs = []
         for hp in ["heralding", "ciscoasa"]:
-            iocs.extend(IOC.objects.filter(Q(general__icontains=hp)))
+            iocs.extend(IOC.objects.filter(Q(general_honeypot__name__iexact=hp)))
         self.assertTrue(iocs)

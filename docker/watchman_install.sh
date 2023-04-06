@@ -3,6 +3,7 @@
 # This script can be disabled during development using REPO_DOWNLOADER_ENABLED=true env variable
 if [ "WATCHMAN" = "false" ]; then echo "Skipping WATCHMAN installation because we are not in test mode"; exit 0;  fi
 
+apk add gcc linux-headers build-base
 pip3 install --compile -r requirements/django-server-requirements.txt
 
 # install Watchman to enhance performance on the Django development Server

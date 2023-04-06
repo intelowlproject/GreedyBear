@@ -19,7 +19,7 @@ DEBUG = os.environ.get("DEBUG", False) == "True"
 
 DJANGO_LOG_DIRECTORY = "/var/log/greedybear/django"
 MOCK_CONNECTIONS = os.environ.get("MOCK_CONNECTIONS", False) == "True"
-STAGE = "ci"
+STAGE = os.environ.get("ENVIRONMENT", "production")
 STAGE_PRODUCTION = STAGE == "production"
 STAGE_LOCAL = STAGE == "local"
 STAGE_CI = STAGE == "ci"
@@ -28,9 +28,7 @@ ELASTIC_ENDPOINT = os.getenv("ELASTIC_ENDPOINT", "")
 if ELASTIC_ENDPOINT:
     ELASTIC_ENDPOINT = ELASTIC_ENDPOINT.split(",")
 else:
-    print(
-        "WARNING!!! You need an ElasticSearch TPOT instance to have the Greedybear to work correctly."
-    )
+    print("WARNING!!! You need an ElasticSearch TPOT instance to have the Greedybear to work correctly.")
     if not DEBUG:
         print("you are in production mode: closing the application")
         exit(9)
@@ -95,10 +93,11 @@ REST_FRAMEWORK = {
     # Exception Handling
     "EXCEPTION_HANDLER": "certego_saas.ext.exceptions.custom_exception_handler",
     # Auth
-    "DEFAULT_AUTHENTICATION_CLASSES": [
-        "certego_saas.apps.auth.backend.CookieTokenAuthentication"
-    ],
+    "DEFAULT_AUTHENTICATION_CLASSES": ["certego_saas.apps.auth.backend.CookieTokenAuthentication"],
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+    # Pagination
+    "DEFAULT_PAGINATION_CLASS": "certego_saas.ext.pagination.CustomPageNumberPagination",
+    "PAGE_SIZE": 10,
 }
 
 # Django-Rest-Durin
@@ -213,92 +212,96 @@ STATICFILES_DIRS = [
 
 
 INFO_OR_DEBUG_LEVEL = "DEBUG" if DEBUG else "INFO"
-LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "formatters": {
-        "stdfmt": {
-            "format": "%(asctime)s - %(name)s - %(funcName)s - %(levelname)s - %(message)s",
+LOGGING = (
+    {
+        "version": 1,
+        "disable_existing_loggers": False,
+        "formatters": {
+            "stdfmt": {
+                "format": "%(asctime)s - %(name)s - %(funcName)s - %(levelname)s - %(message)s",
+            },
         },
-    },
-    "handlers": {
-        "celery": {
-            "level": INFO_OR_DEBUG_LEVEL,
-            "class": "logging.handlers.WatchedFileHandler",
-            "filename": f"{DJANGO_LOG_DIRECTORY}/celery.log",
-            "formatter": "stdfmt",
+        "handlers": {
+            "celery": {
+                "level": INFO_OR_DEBUG_LEVEL,
+                "class": "logging.handlers.WatchedFileHandler",
+                "filename": f"{DJANGO_LOG_DIRECTORY}/celery.log",
+                "formatter": "stdfmt",
+            },
+            "celery_error": {
+                "level": "ERROR",
+                "class": "logging.handlers.WatchedFileHandler",
+                "filename": f"{DJANGO_LOG_DIRECTORY}/celery_errors.log",
+                "formatter": "stdfmt",
+            },
+            "elasticsearch": {
+                "level": INFO_OR_DEBUG_LEVEL,
+                "class": "logging.handlers.WatchedFileHandler",
+                "filename": f"{DJANGO_LOG_DIRECTORY}/elasticsearch.log",
+                "formatter": "stdfmt",
+            },
+            "api": {
+                "level": INFO_OR_DEBUG_LEVEL,
+                "class": "logging.handlers.WatchedFileHandler",
+                "filename": f"{DJANGO_LOG_DIRECTORY}/api.log",
+                "formatter": "stdfmt",
+            },
+            "api_error": {
+                "level": "ERROR",
+                "class": "logging.handlers.WatchedFileHandler",
+                "filename": f"{DJANGO_LOG_DIRECTORY}/api_errors.log",
+                "formatter": "stdfmt",
+            },
+            "greedybear": {
+                "level": INFO_OR_DEBUG_LEVEL,
+                "class": "logging.handlers.WatchedFileHandler",
+                "filename": f"{DJANGO_LOG_DIRECTORY}/greedybear.log",
+                "formatter": "stdfmt",
+            },
+            "greedybear_error": {
+                "level": "ERROR",
+                "class": "logging.handlers.WatchedFileHandler",
+                "filename": f"{DJANGO_LOG_DIRECTORY}/greedybear_errors.log",
+                "formatter": "stdfmt",
+            },
+            "django_unhandled_errors": {
+                "level": "ERROR",
+                "class": "logging.handlers.WatchedFileHandler",
+                "filename": f"{DJANGO_LOG_DIRECTORY}/django_errors.log",
+                "formatter": "stdfmt",
+            },
         },
-        "celery_error": {
-            "level": "ERROR",
-            "class": "logging.handlers.WatchedFileHandler",
-            "filename": f"{DJANGO_LOG_DIRECTORY}/celery_errors.log",
-            "formatter": "stdfmt",
+        "loggers": {
+            "celery": {
+                "handlers": ["celery", "celery_error"],
+                "level": INFO_OR_DEBUG_LEVEL,
+                "propagate": True,
+            },
+            "elasticsearch": {
+                "handlers": ["elasticsearch"],
+                "level": INFO_OR_DEBUG_LEVEL,
+                "propagate": True,
+            },
+            "api": {
+                "handlers": ["api", "api_error"],
+                "level": INFO_OR_DEBUG_LEVEL,
+                "propagate": True,
+            },
+            "greedybear": {
+                "handlers": ["greedybear", "greedybear_error"],
+                "level": INFO_OR_DEBUG_LEVEL,
+                "propagate": True,
+            },
+            "django": {
+                "handlers": ["django_unhandled_errors"],
+                "level": "ERROR",
+                "propagate": True,
+            },
         },
-        "elasticsearch": {
-            "level": INFO_OR_DEBUG_LEVEL,
-            "class": "logging.handlers.WatchedFileHandler",
-            "filename": f"{DJANGO_LOG_DIRECTORY}/elasticsearch.log",
-            "formatter": "stdfmt",
-        },
-        "api": {
-            "level": INFO_OR_DEBUG_LEVEL,
-            "class": "logging.handlers.WatchedFileHandler",
-            "filename": f"{DJANGO_LOG_DIRECTORY}/api.log",
-            "formatter": "stdfmt",
-        },
-        "api_error": {
-            "level": "ERROR",
-            "class": "logging.handlers.WatchedFileHandler",
-            "filename": f"{DJANGO_LOG_DIRECTORY}/api_errors.log",
-            "formatter": "stdfmt",
-        },
-        "greedybear": {
-            "level": INFO_OR_DEBUG_LEVEL,
-            "class": "logging.handlers.WatchedFileHandler",
-            "filename": f"{DJANGO_LOG_DIRECTORY}/greedybear.log",
-            "formatter": "stdfmt",
-        },
-        "greedybear_error": {
-            "level": "ERROR",
-            "class": "logging.handlers.WatchedFileHandler",
-            "filename": f"{DJANGO_LOG_DIRECTORY}/greedybear_errors.log",
-            "formatter": "stdfmt",
-        },
-        "django_unhandled_errors": {
-            "level": "ERROR",
-            "class": "logging.handlers.WatchedFileHandler",
-            "filename": f"{DJANGO_LOG_DIRECTORY}/django_errors.log",
-            "formatter": "stdfmt",
-        },
-    },
-    "loggers": {
-        "celery": {
-            "handlers": ["celery", "celery_error"],
-            "level": INFO_OR_DEBUG_LEVEL,
-            "propagate": True,
-        },
-        "elasticsearch": {
-            "handlers": ["elasticsearch"],
-            "level": INFO_OR_DEBUG_LEVEL,
-            "propagate": True,
-        },
-        "api": {
-            "handlers": ["api", "api_error"],
-            "level": INFO_OR_DEBUG_LEVEL,
-            "propagate": True,
-        },
-        "greedybear": {
-            "handlers": ["greedybear", "greedybear_error"],
-            "level": INFO_OR_DEBUG_LEVEL,
-            "propagate": True,
-        },
-        "django": {
-            "handlers": ["django_unhandled_errors"],
-            "level": "ERROR",
-            "propagate": True,
-        },
-    },
-}
+    }
+    if not STAGE_CI
+    else {}
+)
 
 # disable some really noisy logs
 es_logger = logging.getLogger("elasticsearch")

@@ -1,35 +1,40 @@
 version: 2
+
 updates:
   - package-ecosystem: "pip"
-    directory: "/"
+    directory: "/requirements"
     schedule:
       interval: "weekly"
       day: "tuesday"
-    target-branch: "dev"
-    open-pull-requests-limit: 1
-    ignore:
-      # ignore all patch updates since we are using ~=
-      # this does not work for security updates
-      - dependency-name: "*"
-        update-types: [ "version-update:semver-patch" ]
+    target-branch: "develop"
+    reviewers:
+      - mlodi
+
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+      day: "tuesday"
+    target-branch: "develop"
+    reviewers:
+      - drosetti
+
 
   - package-ecosystem: "docker"
     directory: "/docker"
     schedule:
       interval: "weekly"
       day: "tuesday"
-    target-branch: "dev"
-    open-pull-requests-limit: 1
-    ignore:
-      # ignore all patch updates since we are using ~=
-      # this does not work for security updates
-      - dependency-name: "*"
-        update-types: [ "version-update:semver-patch" ]
+    target-branch: "develop"
+    reviewers:
+      - mlodi
+
 
   - package-ecosystem: "github-actions"
-    directory: "/"
+    directory: "/.github"
     schedule:
       interval: "weekly"
       day: "tuesday"
-    target-branch: "dev"
-    open-pull-requests-limit: 1
+    target-branch: "develop"
+    reviewers:
+      - mlodi

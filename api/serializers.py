@@ -1,9 +1,11 @@
+import logging
 import re
 
+from greedybear.consts import REGEX_DOMAIN, REGEX_IP
+from greedybear.models import IOC, GeneralHoneypot
 from rest_framework import serializers
 
-from greedybear.consts import REGEX_DOMAIN, REGEX_IP
-from greedybear.models import IOC
+logger = logging.getLogger(__name__)
 
 
 class IOCSerializer(serializers.ModelSerializer):
@@ -33,3 +35,39 @@ class EnrichmentSerializer(serializers.Serializer):
         except IOC.DoesNotExist:
             data["found"] = False
         return data
+
+
+def feed_type_validation(feed_type):
+    feed_choices = ["log4j", "cowrie", "all"]
+    generalHoneypots = GeneralHoneypot.objects.all().filter(active=True)
+    feed_choices.extend([hp.name.lower() for hp in generalHoneypots])  # FEEDS
+
+    if feed_type not in feed_choices:
+        logger.info(f"Feed type {feed_type} not in feed_choises {feed_choices}")
+        raise serializers.ValidationError("Invalid feed_type")
+    return feed_type
+
+
+class FeedsSerializer(serializers.Serializer):
+    feed_type = serializers.CharField(max_length=120)
+    attack_type = serializers.ChoiceField(choices=["scanner", "payload_request", "all"])
+    age = serializers.ChoiceField(choices=["persistent", "recent"])
+    format = serializers.ChoiceField(choices=["csv", "json", "txt"], default="json")
+
+    def validate_feed_type(self, feed_type):
+        logger.debug(f"FeedsSerializer - Validation feed_type: '{feed_type}'")
+        return feed_type_validation(feed_type)
+
+
+class FeedsResponseSerializer(serializers.Serializer):
+    feed_type = serializers.CharField(max_length=120)
+    value = serializers.CharField(max_length=120)
+    scanner = serializers.BooleanField()
+    payload_request = serializers.BooleanField()
+    first_seen = serializers.DateField(format="%Y-%m-%d")
+    last_seen = serializers.DateField(format="%Y-%m-%d")
+    times_seen = serializers.IntegerField()
+
+    def validate_feed_type(self, feed_type):
+        logger.debug(f"FeedsResponseSerializer - validation feed_type: '{feed_type}'")
+        return feed_type_validation(feed_type)

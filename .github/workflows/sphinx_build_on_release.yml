@@ -19,7 +19,6 @@ jobs:
       - name: Install docs requirements
         run: |
           pip install -r requirements/docs-requirements.txt
-
       - name: Build docs
         run: |
           make -C docs html
