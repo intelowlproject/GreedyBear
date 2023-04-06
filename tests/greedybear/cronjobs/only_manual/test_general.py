@@ -17,5 +17,5 @@ class GeneralTestCase(TestCase):
         self.assertTrue(a.success)
         iocs = []
         for hp in ["heralding", "ciscoasa"]:
-            iocs.extend(IOC.objects.filter(Q(general__icontains=hp)))
+            iocs.extend(IOC.objects.filter(Q(general_honeypot__name__iexact=hp)))
         self.assertTrue(iocs)
