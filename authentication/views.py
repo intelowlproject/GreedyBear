@@ -16,7 +16,7 @@ from rest_framework.decorators import api_view, authentication_classes, permissi
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from .serializers import EmailVerificationSerializer, PasswordChangeSerializer, RegistrationSerializer
+from .serializers import EmailVerificationSerializer, RegistrationSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -63,17 +63,6 @@ class ResendVerificationView(rest_email_auth.views.ResendVerificationView, Recap
 def checkAuthentication(request):
     logger.info(f"User: {request.user}, Administrator: {request.user.is_superuser}")
     return Response({"is_superuser": request.user.is_superuser}, status=status.HTTP_200_OK)
-
-
-@api_view([GET])
-# @authentication_classes([CookieTokenAuthentication])
-# @permission_classes([IsAuthenticated])
-def changePassword(request):
-    logger.info(f"User {request.user} requests to change password")
-    user = User.objects.get(username=request.user)
-    logger.info(user)
-    PasswordChangeSerializer
-    return Response({user.email}, status=status.HTTP_200_OK)
 
 
 TokenSessionsViewSet = durin_views.TokenSessionsViewSet
