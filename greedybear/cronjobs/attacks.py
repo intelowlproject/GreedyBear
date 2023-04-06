@@ -70,8 +70,8 @@ class ExtractAttacks(Cronjob, metaclass=ABCMeta):
 
             # FEEDS - add general honeypot to list, if it is no already in it
             if general != "":
-                if general not in ioc_instance.general:
-                    ioc_instance.general.append(general)
+                if general not in ioc_instance.general_honeypot.all():
+                    ioc_instance.general_honeypot.create(name=general)
 
             if ioc_instance:
                 ioc_instance.save()
@@ -108,7 +108,7 @@ class ExtractAttacks(Cronjob, metaclass=ABCMeta):
             if not general:
                 honeypot_ioc = IOC.objects.filter(**{f"{honeypot_flag}": True})
             else:
-                honeypot_ioc = IOC.objects.filter(**{"general__icontains": honeypot_flag})
+                honeypot_ioc = IOC.objects.filter(**{"general_honeypot__name__iexact": honeypot_flag})
 
             if not honeypot_ioc:
                 # first time we execute this project.
