@@ -13,7 +13,7 @@ RUN npm install
 RUN PUBLIC_URL=/static/reactapp/ npm run build
 
 # Stage 2: Backend
-FROM python:3.9.16-alpine3.17
+FROM python:3.11.3-alpine3.17
 
 COPY --from=frontend-build /build /var/www/reactapp
 
