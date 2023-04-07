@@ -32,6 +32,7 @@ services:
     volumes:
       - ../configuration/nginx/http.conf:/etc/nginx/conf.d/default.conf
       - ../configuration/nginx/errors.conf:/etc/nginx/errors.conf
+      - ../configuration/nginx/locations.conf:/etc/nginx/locations.conf
       - nginx_logs:/var/log/nginx
       - static_content:/var/www/static
     ports:
