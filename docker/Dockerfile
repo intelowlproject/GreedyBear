@@ -15,8 +15,6 @@ RUN PUBLIC_URL=/static/reactapp/ npm run build
 # Stage 2: Backend
 FROM python:3.9.16-alpine3.17
 
-COPY --from=frontend-build /build /var/www/reactapp
-
 ENV PYTHONUNBUFFERED 1
 ENV DJANGO_SETTINGS_MODULE greedybear.settings
 ENV PYTHONPATH /opt/deploy/greedybear
@@ -33,6 +31,8 @@ RUN mkdir -p ${LOG_PATH} \
 
 WORKDIR $PYTHONPATH
 COPY . $PYTHONPATH
+
+COPY --from=frontend-build /build /var/www/reactapp
 
 # separation is required to avoid to re-execute os installation in case of change of python requirements
 RUN pip3 install --no-cache-dir --compile -r $PYTHONPATH/requirements/project-requirements.txt \
