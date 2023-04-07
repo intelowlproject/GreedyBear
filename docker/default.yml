@@ -20,6 +20,7 @@ services:
       - ./docker/entrypoint_uwsgi.sh
     expose:
       - "8001"
+      - "1717"
     env_file:
       - env_file
     depends_on:

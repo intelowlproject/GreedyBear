@@ -27,5 +27,5 @@ if [[ $DEBUG == "True" ]] && [[ $DJANGO_TEST_SERVER == "True" ]];
 then
     python manage.py runserver 0.0.0.0:8001
 else
-    /usr/local/bin/uwsgi --ini /etc/uwsgi/uwsgi.ini
+    /usr/bin/uwsgi --ini /etc/uwsgi/uwsgi.ini  --stats 127.0.0.1:1717 --stats-http
 fi
