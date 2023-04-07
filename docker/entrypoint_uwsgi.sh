@@ -12,6 +12,7 @@ done
 
 # Apply database migrations
 echo "Waiting for db to be ready..."
+python manage.py makemigrations durin
 python manage.py migrate
 
 # Collect static files

@@ -7,3 +7,5 @@ RUN rm $NGINX_LOG_DIR/access.log $NGINX_LOG_DIR/error.log
 RUN touch $NGINX_LOG_DIR/access.log $NGINX_LOG_DIR/error.log
 RUN chown 33:33 $NGINX_LOG_DIR/access.log $NGINX_LOG_DIR/error.log
 VOLUME $NGINX_LOG_DIR
+
+HEALTHCHECK --interval=3s --start-period=2s --timeout=2s --retries=5 CMD curl --fail http://localhost/hc || exit 1

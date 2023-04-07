@@ -45,3 +45,5 @@ RUN pip3 install --no-cache-dir --compile -r $PYTHONPATH/requirements/project-re
     && rm -rf docs/ frontend/ tests/ .github/ \
     && /bin/bash ./docker/watchman_install.sh
 
+HEALTHCHECK --interval=10s --timeout=2s --start-period=20s --retries=5 CMD nc -z localhost 8001 || exit 1
+
