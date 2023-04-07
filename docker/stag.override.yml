@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  uwsgi:
+    image: intelowlproject/greedybear:stag
+
+  nginx:
+    image: intelowlproject/greedybear_nginx:stag
+
+  celery_beat:
+    image: intelowlproject/greedybear:stag
+
+  celery_worker_default:
+    image: intelowlproject/greedybear:stag

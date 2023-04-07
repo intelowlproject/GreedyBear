@@ -15,8 +15,6 @@ RUN PUBLIC_URL=/static/reactapp/ npm run build
 # Stage 2: Backend
 FROM python:3.9.16-alpine3.17
 
-COPY --from=frontend-build /build /var/www/reactapp
-
 ENV PYTHONUNBUFFERED 1
 ENV DJANGO_SETTINGS_MODULE greedybear.settings
 ENV PYTHONPATH /opt/deploy/greedybear
@@ -28,11 +26,12 @@ RUN mkdir -p ${LOG_PATH} \
     ${LOG_PATH}/django \
     ${LOG_PATH}/uwsgi \
     # py3-psycopg2 is required to use PostgresSQL with Django
-    && apk --no-cache -U add bash uwsgi py3-psycopg2 \
+    && apk --no-cache -U add bash py3-psycopg2 gcc python3-dev alpine-sdk linux-headers \
     && pip3 install --upgrade pip
 
 WORKDIR $PYTHONPATH
 COPY . $PYTHONPATH
+COPY --from=frontend-build /build /var/www/reactapp
 
 # separation is required to avoid to re-execute os installation in case of change of python requirements
 RUN pip3 install --no-cache-dir --compile -r $PYTHONPATH/requirements/project-requirements.txt \
@@ -43,5 +42,8 @@ RUN pip3 install --no-cache-dir --compile -r $PYTHONPATH/requirements/project-re
     && adduser -S -H -u 2000 -D -g www-data www-data \
     && chown -R www-data:www-data ${LOG_PATH} /opt/deploy/ \
     && rm -rf docs/ frontend/ tests/ .github/ \
-    && /bin/bash ./docker/watchman_install.sh
+    && /bin/bash ./docker/watchman_install.sh \
+    && apk del gcc python3-dev alpine-sdk linux-headers
+
+HEALTHCHECK --interval=10s --timeout=2s --start-period=20s --retries=5 CMD nc -z localhost 8001 || exit 1
 

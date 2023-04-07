@@ -12,6 +12,7 @@ done
 
 # Apply database migrations
 echo "Waiting for db to be ready..."
+python manage.py makemigrations durin
 python manage.py migrate
 
 # Collect static files
@@ -26,5 +27,5 @@ if [[ $DEBUG == "True" ]] && [[ $DJANGO_TEST_SERVER == "True" ]];
 then
     python manage.py runserver 0.0.0.0:8001
 else
-    /usr/local/bin/uwsgi --ini /etc/uwsgi/uwsgi.ini
+    /usr/local/bin/uwsgi --ini /etc/uwsgi/sites/greedybear.ini  --stats 127.0.0.1:1717 --stats-http
 fi

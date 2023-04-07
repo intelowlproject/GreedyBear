@@ -8,7 +8,7 @@ updates:
       day: "tuesday"
     target-branch: "develop"
     reviewers:
-      - mlodi
+      - mlodic
 
   - package-ecosystem: "npm"
     directory: "/frontend"
@@ -27,7 +27,7 @@ updates:
       day: "tuesday"
     target-branch: "develop"
     reviewers:
-      - mlodi
+      - mlodic
 
 
   - package-ecosystem: "github-actions"
@@ -37,4 +37,4 @@ updates:
       day: "tuesday"
     target-branch: "develop"
     reviewers:
-      - mlodi
+      - mlodic
