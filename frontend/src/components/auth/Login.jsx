@@ -6,12 +6,17 @@ import {
   Input,
   Spinner,
   Button,
+  Row,
 } from "reactstrap";
 import { Form, Formik } from "formik";
 
 import { ContentSection } from "@certego/certego-ui";
 
 import { useAuthStore } from "../../stores";
+import {
+  ResendVerificationEmailButton,
+  ForgotPasswordButton,
+} from "./utils/registration-buttons";
 
 // constants
 const initialValues = {
@@ -103,19 +108,6 @@ function Login() {
                   />
                   <Label check>Show password</Label>
                 </FormGroup>
-                <div className="text-muted mb-3">
-                  Don&apos;t have an account? Please reach out{" "}
-                  <a
-                    className="link-ul-primary"
-                    href="https://twitter.com/intel_owl"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    IntelOwl Maintainers
-                  </a>{" "}
-                  or other members of The Honeynet Project if you are interested
-                  in gain access to the protected services
-                </div>
                 {/* Submit */}
                 <FormGroup className="d-flex-center">
                   <Button
@@ -131,6 +123,11 @@ function Login() {
             )}
           </Formik>
         </ContentSection>
+        {/* popover buttons */}
+        <Row className="d-flex flex-column align-items-end g-0">
+          <ForgotPasswordButton />
+          <ResendVerificationEmailButton />
+        </Row>
       </Container>
     </ContentSection>
   );
