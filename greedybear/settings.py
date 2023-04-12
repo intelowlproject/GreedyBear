@@ -24,6 +24,10 @@ STAGE_PRODUCTION = STAGE == "production"
 STAGE_LOCAL = STAGE == "local"
 STAGE_CI = STAGE == "ci"
 
+PUBLIC_DEPLOYMENT = os.environ.get("PUBLIC_DEPLOYMENT", "True") == "True"
+
+AWS_REGION = os.environ.get("AWS_REGION")
+
 ELASTIC_ENDPOINT = os.getenv("ELASTIC_ENDPOINT", "")
 if ELASTIC_ENDPOINT:
     ELASTIC_ENDPOINT = ELASTIC_ENDPOINT.split(",")
@@ -46,16 +50,18 @@ else:
 SLACK_TOKEN = os.environ.get("SLACK_TOKEN", "")
 SLACK_CHANNEL = os.environ.get("SLACK_CHANNEL", "")
 
-VERSION = os.environ.get("REACT_APP_INTELOWL_VERSION", "").replace("v", "")
+VERSION = os.environ.get("REACT_APP_GREEDYBEAR_VERSION", "").replace("v", "")
 # drf-spectacular
 SPECTACULAR_SETTINGS = {
     "TITLE": "GreedyBear API specification",
     "VERSION": VERSION,
 }
 
-# drf-recaptcha (not used in GreedyBear but required by certego-saas pkg)
-DRF_RECAPTCHA_SECRET_KEY = ""
-DRF_RECAPTCHA_TESTING = True
+# drf-recaptcha
+DRF_RECAPTCHA_SECRET_KEY = (
+    str(os.environ.get("RECAPTCHA_SECRET_KEY_IO_PUBLIC")) if PUBLIC_DEPLOYMENT and not DEBUG else str(os.environ.get("RECAPTCHA_SECRET_KEY_IO_LOCAL"))
+)
+DRF_RECAPTCHA_TESTING = STAGE_LOCAL or STAGE_CI
 DRF_RECAPTCHA_TESTING_PASS = True
 
 ALLOWED_HOSTS = ["*"]
@@ -86,6 +92,10 @@ INSTALLED_APPS = [
     "certego_saas.apps.organization",
     # greedybear apps
     "greedybear.apps.GreedyBearConfig",
+    "authentication",
+    # auth
+    "rest_email_auth",
+    "drf_recaptcha",
 ]
 
 REST_FRAMEWORK = {
@@ -115,6 +125,19 @@ REST_DURIN = {
     "API_ACCESS_CLIENT_TOKEN_TTL": timedelta(days=3650),
 }
 
+# django-rest-email-auth
+REST_EMAIL_AUTH = {
+    "EMAIL_VERIFICATION_URL": HOST_URI + "/verify-email?key={key}",
+    "PASSWORD_RESET_URL": HOST_URI + "/reset-password?key={key}",
+    "REGISTRATION_SERIALIZER": "authentication.serializers.RegistrationSerializer",
+    "EMAIL_VERIFICATION_PASSWORD_REQUIRED": False,
+    "EMAIL_SUBJECT_VERIFICATION": "GreedyBear - Please Verify Your Email Address",
+    "EMAIL_SUBJECT_DUPLICATE": "GreedyBear - Registration Attempt",
+    "PATH_TO_VERIFY_EMAIL_TEMPLATE": "authentication/emails/verify-email",
+    "PATH_TO_DUPLICATE_EMAIL_TEMPLATE": "authentication/emails/duplicate-email",
+    "PATH_TO_RESET_EMAIL_TEMPLATE": "authentication/emails/reset-password",
+}
+
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
@@ -136,6 +159,7 @@ TEMPLATES = [
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
+                "certego_saas.templates.context_processors.host",  # custom
                 "django.template.context_processors.debug",
                 "django.template.context_processors.request",
                 "django.contrib.auth.context_processors.auth",
@@ -270,6 +294,38 @@ LOGGING = (
                 "filename": f"{DJANGO_LOG_DIRECTORY}/django_errors.log",
                 "formatter": "stdfmt",
             },
+            "authentication": {
+                "level": INFO_OR_DEBUG_LEVEL,
+                "class": "logging.handlers.RotatingFileHandler",
+                "filename": f"{DJANGO_LOG_DIRECTORY}/authentication.log",
+                "formatter": "stdfmt",
+                "maxBytes": 20 * 1024 * 1024,
+                "backupCount": 6,
+            },
+            "authentication_errors": {
+                "level": "ERROR",
+                "class": "logging.handlers.RotatingFileHandler",
+                "filename": f"{DJANGO_LOG_DIRECTORY}/authentication_errors.log",
+                "formatter": "stdfmt",
+                "maxBytes": 20 * 1024 * 1024,
+                "backupCount": 6,
+            },
+            "rest_email_auth": {
+                "level": INFO_OR_DEBUG_LEVEL,
+                "class": "logging.handlers.RotatingFileHandler",
+                "filename": f"{DJANGO_LOG_DIRECTORY}/authentication.log",
+                "formatter": "stdfmt",
+                "maxBytes": 20 * 1024 * 1024,
+                "backupCount": 6,
+            },
+            "rest_email_auth_errors": {
+                "level": "ERROR",
+                "class": "logging.handlers.RotatingFileHandler",
+                "filename": f"{DJANGO_LOG_DIRECTORY}/authentication_errors.log",
+                "formatter": "stdfmt",
+                "maxBytes": 20 * 1024 * 1024,
+                "backupCount": 6,
+            },
         },
         "loggers": {
             "celery": {
@@ -287,6 +343,11 @@ LOGGING = (
                 "level": INFO_OR_DEBUG_LEVEL,
                 "propagate": True,
             },
+            "authentication": {
+                "handlers": ["authentication", "authentication_errors"],
+                "level": INFO_OR_DEBUG_LEVEL,
+                "propagate": True,
+            },
             "greedybear": {
                 "handlers": ["greedybear", "greedybear_error"],
                 "level": INFO_OR_DEBUG_LEVEL,
@@ -295,6 +356,11 @@ LOGGING = (
             "django": {
                 "handlers": ["django_unhandled_errors"],
                 "level": "ERROR",
+                "propagate": True,
+            },
+            "rest_email_auth": {
+                "handlers": ["rest_email_auth", "rest_email_auth_errors"],
+                "level": INFO_OR_DEBUG_LEVEL,
                 "propagate": True,
             },
         },
@@ -309,3 +375,33 @@ if DEBUG:
     es_logger.setLevel(logging.INFO)
 else:
     es_logger.setLevel(logging.WARNING)
+
+# email
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL")
+DEFAULT_EMAIL = os.environ.get("DEFAULT_EMAIL")
+AWS_SES = os.environ.get("AWS_SES", False) == "True"
+
+if STAGE_LOCAL:
+    # The console backend writes the emails that would be sent to the standard output
+    # https://docs.djangoproject.com/en/4.1/topics/email/#console-backend
+    EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+elif STAGE_CI:
+    # force in-memory backend for tests/internal deployments
+    # https://docs.djangoproject.com/en/2.1/topics/email/#in-memory-backend
+    # https://docs.djangoproject.com/en/2.1/topics/testing/tools/#topics-testing-email
+    EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+else:
+    if AWS_SES:
+        # Use amazon SES via django-ses
+        # see: https://github.com/django-ses/django-ses
+        EMAIL_BACKEND = "django_ses.SESBackend"
+        AWS_SES_REGION_NAME = AWS_REGION
+        AWS_SES_REGION_ENDPOINT = f"email.{AWS_SES_REGION_NAME}.amazonaws.com"
+    else:
+        EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+        EMAIL_HOST = os.environ.get("EMAIL_HOST")
+        EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER")
+        EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD")
+        EMAIL_PORT = os.environ.get("EMAIL_PORT")
+        EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", False) == "True"
+        EMAIL_USE_SSL = os.environ.get("EMAIL_USE_SSL", False) == "True"

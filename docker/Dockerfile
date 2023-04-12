@@ -6,6 +6,8 @@ WORKDIR /
 COPY frontend/ .
 # copy version file as an env file
 COPY docker/.version .env.local
+# copy env.js file (also mounted as docker volume)
+COPY docker/env_template.js public/env.js
 # install and build
 RUN npm install npm@latest --location=global
 RUN npm install
@@ -39,6 +41,7 @@ RUN pip3 install --no-cache-dir --compile -r $PYTHONPATH/requirements/project-re
     && touch ${LOG_PATH}/django/greedybear.log ${LOG_PATH}/django/greedybear_errors.log \
     && touch ${LOG_PATH}/django/celery.log ${LOG_PATH}/django/celery_errors.log \
     && touch ${LOG_PATH}/django/django_errors.log ${LOG_PATH}/django/elasticsearch.log\
+    && touch ${LOG_PATH}/django/authentication.log ${LOG_PATH}/django/authentication_errors.log \
     && adduser -S -H -u 2000 -D -g www-data www-data \
     && chown -R www-data:www-data ${LOG_PATH} /opt/deploy/ \
     && rm -rf docs/ frontend/ tests/ .github/ \
