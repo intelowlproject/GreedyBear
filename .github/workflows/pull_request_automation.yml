@@ -74,7 +74,7 @@ jobs:
       use_elastic_search: false
       use_rabbitmq: true
       use_mongo: false
-      use_celery: true
+      use_celery: false
 
       use_coverage: true
       upload_coverage: true
