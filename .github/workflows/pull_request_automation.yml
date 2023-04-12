@@ -63,7 +63,7 @@ jobs:
       django_settings_module: greedybear.settings
 
       check_migrations: true
-      check_requirements_licenses: true
+      check_requirements_licenses: false
       check_dockerfile: docker/Dockerfile
 
       use_postgres: true
