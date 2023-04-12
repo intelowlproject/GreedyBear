@@ -67,11 +67,14 @@ jobs:
       check_dockerfile: docker/Dockerfile
 
       use_postgres: true
+      postgres_db: greedybear_db
+      postgres_user: user
+      postgres_password: password
       use_memcached: false
       use_elastic_search: false
-      use_rabbitmq: false
+      use_rabbitmq: true
       use_mongo: false
-      use_celery: false
+      use_celery: true
 
       use_coverage: true
       upload_coverage: true
