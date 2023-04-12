@@ -1,4 +1,4 @@
-celery~=5.2.2
+celery~=5.2.7
 elasticsearch-dsl~=7.4.1
 Django~=3.2.18
 psycopg2-binary~=2.9.6
