@@ -163,6 +163,9 @@ DATABASES = {
         "PORT": DB_PORT,
         "USER": DB_USER,
         "PASSWORD": DB_PASSWORD,
+        "TIMEOUT": 180,
+        "CONN_MAX_AGE": 3600,
+        "CONN_HEALTH_CHECKS": True,
     },
 }
 
