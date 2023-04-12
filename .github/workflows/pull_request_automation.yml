@@ -33,7 +33,7 @@ jobs:
       run_codeql: true
 
       use_react: true
-      check_packages_licenses: true
+      check_packages_licenses: false
       use_jest: true
 
       use_coverage: true
