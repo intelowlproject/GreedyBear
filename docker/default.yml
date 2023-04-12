@@ -1,5 +1,9 @@
 version: '3.8'
 
+x-no-healthcheck: &no-healthcheck
+  healthcheck:
+    disable: true
+
 services:
   postgres:
     image: library/postgres:13-alpine
@@ -13,13 +17,14 @@ services:
     image: intelowlproject/greedybear:prod
     container_name: greedybear_uwsgi
     volumes:
-      - ../configuration/uwsgi/greedybear.ini:/etc/uwsgi/uwsgi.ini
+      - ../configuration/uwsgi/greedybear.ini:/etc/uwsgi/sites/greedybear.ini
       - generic_logs:/var/log/greedybear
       - static_content:/opt/deploy/greedybear/static
     entrypoint:
       - ./docker/entrypoint_uwsgi.sh
     expose:
       - "8001"
+      - "1717"
     env_file:
       - env_file
     depends_on:
@@ -32,6 +37,7 @@ services:
     volumes:
       - ../configuration/nginx/http.conf:/etc/nginx/conf.d/default.conf
       - ../configuration/nginx/errors.conf:/etc/nginx/errors.conf
+      - ../configuration/nginx/locations.conf:/etc/nginx/locations.conf
       - nginx_logs:/var/log/nginx
       - static_content:/var/www/static
     ports:
@@ -60,6 +66,7 @@ services:
       - rabbitmq
       - postgres
       - uwsgi
+    <<: *no-healthcheck
 
   celery_worker_default:
     image: intelowlproject/greedybear:prod
@@ -75,6 +82,7 @@ services:
       - rabbitmq
       - postgres
       - uwsgi
+    <<: *no-healthcheck
 
 
 volumes:

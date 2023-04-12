@@ -1,4 +1,7 @@
 # Changelog
+## [v1.1.1](https://github.com/honeynet/GreedyBear/releases/tag/v1.1.1)
+Various fixes to the previous release
+
 ## [v1.1.0](https://github.com/honeynet/GreedyBear/releases/tag/v1.1.0)
 **New features**
 * Added a new "Feeds" section in the GUI where it is possible to browse available feeds
