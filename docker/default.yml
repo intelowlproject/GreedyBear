@@ -48,6 +48,8 @@ services:
   rabbitmq:
     image: library/rabbitmq:3.9-alpine
     container_name: greedybear_rabbitmq
+    volumes:
+      - ../configuration/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
     logging:
       driver: none
     depends_on:
