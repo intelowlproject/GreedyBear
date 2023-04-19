@@ -29,7 +29,7 @@ RUN mkdir -p ${LOG_PATH} \
     ${LOG_PATH}/uwsgi \
     # py3-psycopg2 is required to use PostgresSQL with Django
     && apk --no-cache -U add bash py3-psycopg2 gcc python3-dev alpine-sdk linux-headers \
-    && pip3 install --upgrade pip
+    && pip3 install --no-cache-dir --upgrade pip
 
 WORKDIR $PYTHONPATH
 COPY . $PYTHONPATH
