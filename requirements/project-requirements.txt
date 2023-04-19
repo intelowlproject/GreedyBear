@@ -1,6 +1,6 @@
 celery~=5.2.7
 elasticsearch-dsl~=7.4.1
-Django~=3.2.18
+Django~=4.2
 psycopg2-binary~=2.9.6
 slack-sdk~=3.12.0
 djangorestframework~=3.13.1
