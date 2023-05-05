@@ -10,7 +10,7 @@ jobs:
     steps:
       - uses: infraway/tweet-action@v1.0.1
         with:
-          status: "published #IntelOwl ${{github.ref_name}}! https://github.com/intelowlproject/GreedyBear/releases/tag/${{github.ref_name}} #ThreatIntelligence #CyberSecurity #OpenSource #osint #honeypot #tpot"
+          status: "published #GreedyBear ${{github.ref_name}}! https://github.com/intelowlproject/GreedyBear/releases/tag/${{github.ref_name}} #ThreatIntelligence #CyberSecurity #OpenSource #osint #honeypot #tpot"
           api_key: ${{ secrets.TWITTER_API_KEY }}
           api_key_secret: ${{ secrets.TWITTER_API_KEY_SECRET }}
           access_token: ${{ secrets.TWITTER_ACCESS_TOKEN }}

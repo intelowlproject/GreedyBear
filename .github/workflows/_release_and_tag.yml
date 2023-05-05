@@ -57,6 +57,7 @@ jobs:
           generate_release_notes: true
           prerelease: false
           target_commitish: ${{ github.base_ref }}
+          append_body: true
 
       - uses: actions/setup-python@v1
         if: inputs.publish_on_pypi || inputs.publish_on_test_pypi
@@ -90,7 +91,7 @@ jobs:
       - uses: actions/setup-node@v3
         if: inputs.publish_on_npm
         with:
-          node-version: '16.x'
+          node-version: '18.x'
           registry-url: 'https://registry.npmjs.org'
           scope: '@certego'
 
