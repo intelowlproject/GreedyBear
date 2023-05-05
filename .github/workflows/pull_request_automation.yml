@@ -70,7 +70,7 @@ jobs:
       postgres_db: greedybear_db
       postgres_user: user
       postgres_password: password
-      postgres_version: 10.14
+      postgres_version: 11
       use_memcached: false
       use_elastic_search: false
       use_rabbitmq: true
