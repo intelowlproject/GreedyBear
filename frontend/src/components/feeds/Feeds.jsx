@@ -27,7 +27,7 @@ const attackTypeChoices = [
 
 const ageChoices = [
   { label: "Recent", value: "recent" },
-  { label: "Persistant", value: "persistent" },
+  { label: "Persistent", value: "persistent" },
 ];
 
 const initialValues = {
@@ -144,7 +144,7 @@ export default function Feeds() {
                       <Select
                         id="Feeds__feeds_type"
                         name="feeds_type"
-                        value={formik.values.feeds_type}
+                        value={initialValues.feeds_type}
                         choices={feedTypeChoices.concat(honeypotFeedsType)}
                         onChange={(e) => {
                           formik.handleChange(e);
@@ -162,6 +162,7 @@ export default function Feeds() {
                       <Select
                         id="Feeds__attack_type"
                         name="attack_type"
+                        value={initialValues.attack_type}
                         choices={attackTypeChoices}
                         onChange={(e) => {
                           formik.handleChange(e);
@@ -179,6 +180,7 @@ export default function Feeds() {
                       <Select
                         id="Feeds__age"
                         name="age"
+                        value={initialValues.age}
                         choices={ageChoices}
                         onChange={(e) => {
                           formik.handleChange(e);

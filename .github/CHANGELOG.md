@@ -1,4 +1,11 @@
 # Changelog
+## [v1.2.0](https://github.com/honeynet/GreedyBear/releases/tag/v1.2.0)
+**New features**
+* Added a new "Registration" page to allow people to register to the service.
+
+**Stability issues**
+* Several bug fixing and dep upgrades
+
 ## [v1.1.1](https://github.com/honeynet/GreedyBear/releases/tag/v1.1.1)
 Various fixes to the previous release
 
