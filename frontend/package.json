@@ -24,7 +24,7 @@
     "react-table": "^7.8.0",
     "react-use": "^17.4.0",
     "reactstrap": "^9.1.2",
-    "recharts": "^2.3.2",
+    "recharts": "^2.6.0",
     "sass": "^1.52.1",
     "web-vitals": "^2.1.4",
     "zustand": "^4.0.0"
