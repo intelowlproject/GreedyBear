@@ -16,7 +16,7 @@ inputs:
 
   use_stylelint:
     description: Use stylelint formatter
-    required: false
+    required: true
 
   check_packages_licenses:
     description: Check if npm packages have a valid license.

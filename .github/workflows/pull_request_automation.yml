@@ -28,7 +28,7 @@ jobs:
 
       use_eslint: true
       use_prettier: true
-      use_stylelint: true
+      use_stylelint: false
 
       run_codeql: true
 
