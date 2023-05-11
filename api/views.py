@@ -13,7 +13,6 @@ from django.db.models.functions import Trunc
 from django.http import HttpResponse, HttpResponseServerError, StreamingHttpResponse
 from drf_spectacular.utils import extend_schema as add_docs
 from drf_spectacular.utils import inline_serializer
-from durin import views as durin_views
 from greedybear.consts import FEEDS_LICENSE, GET, PAYLOAD_REQUEST, SCANNER
 from greedybear.models import IOC, GeneralHoneypot, Statistics, viewType
 from rest_framework import serializers as rfs
@@ -285,14 +284,6 @@ class StatisticsViewSet(viewsets.ViewSet):
 
 
 @api_view([GET])
-@authentication_classes([CookieTokenAuthentication])
-@permission_classes([IsAuthenticated])
-def checkAuthentication(request):
-    logger.info(f"User: {request.user}, Administrator: {request.user.is_superuser}")
-    return Response({"is_superuser": request.user.is_superuser}, status=status.HTTP_200_OK)
-
-
-@api_view([GET])
 def general_honeypot_list(request):
     logger.info(f"Requested general honeypots list from {request.user}.")
     active = request.query_params.get("onlyActive")
@@ -305,7 +296,3 @@ def general_honeypot_list(request):
 
     logger.info(f"General honeypots: {honeypots}")
     return Response(honeypots)
-
-
-TokenSessionsViewSet = durin_views.TokenSessionsViewSet
-APIAccessTokenView = durin_views.APIAccessTokenView

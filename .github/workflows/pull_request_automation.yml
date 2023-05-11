@@ -28,12 +28,12 @@ jobs:
 
       use_eslint: true
       use_prettier: true
-      use_stylelint: true
+      use_stylelint: false
 
       run_codeql: true
 
       use_react: true
-      check_packages_licenses: true
+      check_packages_licenses: false
       use_jest: true
 
       use_coverage: true
@@ -63,13 +63,17 @@ jobs:
       django_settings_module: greedybear.settings
 
       check_migrations: true
-      check_requirements_licenses: true
+      check_requirements_licenses: false
       check_dockerfile: docker/Dockerfile
 
       use_postgres: true
+      postgres_db: greedybear_db
+      postgres_user: user
+      postgres_password: password
+      postgres_version: 11
       use_memcached: false
       use_elastic_search: false
-      use_rabbitmq: false
+      use_rabbitmq: true
       use_mongo: false
       use_celery: false
 

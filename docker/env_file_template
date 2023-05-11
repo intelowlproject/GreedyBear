@@ -6,6 +6,30 @@ DB_PORT=5432
 DB_USER=user
 DB_PASSWORD=password
 
+# used for automated correspondence from the site manager
+DEFAULT_FROM_EMAIL=
+# used for correspondence with users
+DEFAULT_EMAIL=
+
+# SMTP backend
+EMAIL_HOST= 
+EMAIL_HOST_USER= 
+EMAIL_HOST_PASSWORD= 
+EMAIL_PORT=
+EMAIL_USE_TLS=False
+EMAIL_USE_SSL=False
+
+# AWS
+## S3 storage
+AWS_IAM_ACCESS=False
+### to use if no IAM credentials are provided
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+## region
+AWS_REGION=eu-central-1
+## to use for sending mail with SES
+AWS_SES=False
+
 ELASTIC_ENDPOINT=
 
 SLACK_TOKEN=
@@ -14,3 +38,12 @@ SLACK_CHANNEL=
 STAGE="production"
 DEBUG=False
 MOCK_CONNECTIONS=False
+
+# True for public deployment, False for internal deployment
+PUBLIC_DEPLOYMENT=False
+
+# drf-recaptcha
+## localhost, internal deployments
+RECAPTCHA_SECRET_KEY_IO_LOCAL=""
+## public deployment
+RECAPTCHA_SECRET_KEY_IO_PUBLIC=""

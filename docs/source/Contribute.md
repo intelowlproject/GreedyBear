@@ -35,7 +35,7 @@ python3 -m venv venv
 source venv/bin/activate
 # from the project base directory
 pip install pre-commit
-pre-commit install
+pre-commit install -c .github/.pre-commit-config.yaml
 ```
 
 
@@ -117,17 +117,24 @@ Please create pull requests only for the branch **develop**. That code will be p
 
 Also remember to pull the most recent changes available in the **develop** branch before submitting your PR. If your PR has merge conflicts caused by this behavior, it won't be accepted.
 
-### Install testing requirements
-Run `pip install -r requirements/test-requirements.txt` to install the requirements to validate your code.
-
-### Linting
- Run `psf/black` to lint the files automatically, then `flake8` to check and `isort`.
-
- (if you installed `pre-commit` this is performed automatically at every commit)
-
 ### Tests
 
-#### Frontend tests
+#### Backend
+
+##### Install testing requirements
+You have to install `pre-commit` to have your code adjusted and fixed with the available linters:
+```commandline
+pip install pre-commit
+pre-commit install -c .github/.pre-commit-config.yaml
+```
+Once done that, you won't have to think about linters anymore.
+
+##### Run all tests
+```commandline
+docker exec intelowl_uwsgi python3 manage.py test
+```
+
+#### Frontend
 All the frontend tests must be run from the folder `frontend`.
 The tests can contain log messages, you can suppress then with the environment variable `SUPPRESS_JEST_LOG=True`.
 
