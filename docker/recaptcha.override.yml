@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  uwsgi:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+    image: intelowlproject/greedybear:prod
+
+  celery_beat:
+    image: intelowlproject/greedybear:prod
+
+  celery_worker_default:
+    image: intelowlproject/greedybear:prod
