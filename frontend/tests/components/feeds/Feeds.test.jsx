@@ -60,7 +60,9 @@ describe("Feeds component", () => {
       </BrowserRouter>
     );
 
-    const buttonFeedsLicense = screen.getByRole("link", { name: /Feeds license/i });
+    const buttonFeedsLicense = screen.getByRole("link", {
+      name: /Feeds license/i,
+    });
     expect(buttonFeedsLicense).toHaveAttribute(
       "href",
       "https://github.com/intelowlproject/GreedyBear/blob/main/FEEDS_LICENSE.md"

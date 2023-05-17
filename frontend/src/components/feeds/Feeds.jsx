@@ -117,87 +117,92 @@ export default function Feeds() {
           <small className="text-muted">{feedsData?.count} total</small>
         </h1>
         <Button
-            className="mb-3 mt-auto"
-            color="primary"
-            outline
-            href={FEEDS_LICENSE}
-            target="_blank"
-          >
-            <TbLicense />
-            &nbsp;Feeds license
-          </Button>
+          className="mb-3 mt-auto"
+          color="primary"
+          outline
+          href={FEEDS_LICENSE}
+          target="_blank"
+        >
+          <TbLicense />
+          &nbsp;Feeds license
+        </Button>
       </div>
       <ContentSection>
-        <Row className="mb-4 mt-2 justify-content-between"> 
+        <Row className="mb-4 mt-2 justify-content-between">
           <Col sm={12} md={9}>
-            {/* Form */}   
+            {/* Form */}
             <Loader
-            render={() => (
-            <Formik initialValues={initialValues} onSubmit={onSubmit}>
-              {(formik) => (
-                <Form>
-                  <FormGroup row>
-                    <Col sm={12} md={4}>
-                      <Label
-                        className="form-control-label"
-                        htmlFor="Feeds__feeds_type"
-                      >
-                        Feed type:
-                      </Label>
-                      <Select
-                        id="Feeds__feeds_type"
-                        name="feeds_type"
-                        value={initialValues.feeds_type}
-                        choices={feedTypeChoices.concat(honeypotFeedsType)}
-                        onChange={(e) => {
-                          formik.handleChange(e);
-                          formik.submitForm();
-                        }}
-                      />
-                    </Col>
-                    <Col sm={12} md={4}>
-                      <Label
-                        className="form-control-label"
-                        htmlFor="Feeds__attack_type"
-                      >
-                        Attack type:
-                      </Label>
-                      <Select
-                        id="Feeds__attack_type"
-                        name="attack_type"
-                        value={initialValues.attack_type}
-                        choices={attackTypeChoices}
-                        onChange={(e) => {
-                          formik.handleChange(e);
-                          formik.submitForm();
-                        }}
-                      />
-                    </Col>
-                    <Col sm={12} md={4}>
-                      <Label
-                        className="form-control-label"
-                        htmlFor="Feeds__age"
-                      >
-                        Age:
-                      </Label>
-                      <Select
-                        id="Feeds__age"
-                        name="age"
-                        value={initialValues.age}
-                        choices={ageChoices}
-                        onChange={(e) => {
-                          formik.handleChange(e);
-                          formik.submitForm();
-                        }}
-                      />
-                    </Col>
-                  </FormGroup>
-                </Form>
+              render={() => (
+                <Formik initialValues={initialValues} onSubmit={onSubmit}>
+                  {(formik) => (
+                    <Form>
+                      <FormGroup row>
+                        <Col sm={12} md={4}>
+                          <Label
+                            className="form-control-label"
+                            htmlFor="Feeds__feeds_type"
+                          >
+                            Feed type:
+                          </Label>
+                          <Select
+                            id="Feeds__feeds_type"
+                            name="feeds_type"
+                            value={initialValues.feeds_type}
+                            choices={feedTypeChoices.concat(honeypotFeedsType)}
+                            onChange={(e) => {
+                              formik.handleChange(e);
+                              formik.submitForm();
+                            }}
+                          />
+                        </Col>
+                        <Col sm={12} md={4}>
+                          <Label
+                            className="form-control-label"
+                            htmlFor="Feeds__attack_type"
+                          >
+                            Attack type:
+                          </Label>
+                          <Select
+                            id="Feeds__attack_type"
+                            name="attack_type"
+                            value={initialValues.attack_type}
+                            choices={attackTypeChoices}
+                            onChange={(e) => {
+                              formik.handleChange(e);
+                              formik.submitForm();
+                            }}
+                          />
+                        </Col>
+                        <Col sm={12} md={4}>
+                          <Label
+                            className="form-control-label"
+                            htmlFor="Feeds__age"
+                          >
+                            Age:
+                          </Label>
+                          <Select
+                            id="Feeds__age"
+                            name="age"
+                            value={initialValues.age}
+                            choices={ageChoices}
+                            onChange={(e) => {
+                              formik.handleChange(e);
+                              formik.submitForm();
+                            }}
+                          />
+                        </Col>
+                      </FormGroup>
+                    </Form>
+                  )}
+                </Formik>
               )}
-            </Formik>
-            )} />
+            />
           </Col>
-          <Col sm={12} md={2} className="d-flex justify-content-end align-items-end">
+          <Col
+            sm={12}
+            md={2}
+            className="d-flex justify-content-end align-items-end"
+          >
             <Button
               className="mb-3"
               color="primary"
@@ -210,8 +215,8 @@ export default function Feeds() {
             </Button>
           </Col>
         </Row>
-          {/*Table*/}
-          {tableNode}
+        {/*Table*/}
+        {tableNode}
       </ContentSection>
     </Container>
   );
