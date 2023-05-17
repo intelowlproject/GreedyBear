@@ -1,6 +1,8 @@
 import React from "react";
-import { Container, Button, Col, Label, FormGroup } from "reactstrap";
-import { FEEDS_BASE_URI } from "../../constants/api";
+import { Container, Button, Col, Label, FormGroup, Row } from "reactstrap";
+import { VscJson } from "react-icons/vsc";
+import { TbLicense } from "react-icons/tb";
+import { FEEDS_BASE_URI, GENERAL_HONEYPOT_URI } from "../../constants/api";
 import {
   ContentSection,
   Select,
@@ -8,9 +10,8 @@ import {
   useDataTable,
 } from "@certego/certego-ui";
 import { Form, Formik } from "formik";
-import { VscJson } from "react-icons/vsc";
-import { GENERAL_HONEYPOT_URI } from "../../constants/api";
 import { feedsTableColumns } from "./tableColumns";
+import { FEEDS_LICENSE } from "../../constants";
 
 // costants
 const feedTypeChoices = [
@@ -116,20 +117,22 @@ export default function Feeds() {
           <small className="text-muted">{feedsData?.count} total</small>
         </h1>
         <Button
-          className="mb-auto"
-          color="primary"
-          outline
-          href={url}
-          target="_blank"
-        >
-          <VscJson />
-          &nbsp;Raw data
-        </Button>
+            className="mb-3 mt-auto"
+            color="primary"
+            outline
+            href={FEEDS_LICENSE}
+            target="_blank"
+          >
+            <TbLicense />
+            &nbsp;Feeds license
+          </Button>
       </div>
-      <Loader
-        render={() => (
-          <ContentSection>
-            {/* Form */}
+      <ContentSection>
+        <Row className="mb-4 mt-2 justify-content-between"> 
+          <Col sm={12} md={9}>
+            {/* Form */}   
+            <Loader
+            render={() => (
             <Formik initialValues={initialValues} onSubmit={onSubmit}>
               {(formik) => (
                 <Form>
@@ -192,12 +195,23 @@ export default function Feeds() {
                 </Form>
               )}
             </Formik>
-          </ContentSection>
-        )}
-      />
-      <ContentSection className="mt-3 bg-dark border border-dark shadow">
-        {/*Table*/}
-        {tableNode}
+            )} />
+          </Col>
+          <Col sm={12} md={2} className="d-flex justify-content-end align-items-end">
+            <Button
+              className="mb-3"
+              color="primary"
+              outline
+              href={url}
+              target="_blank"
+            >
+              <VscJson />
+              &nbsp;Raw data
+            </Button>
+          </Col>
+        </Row>
+          {/*Table*/}
+          {tableNode}
       </ContentSection>
     </Container>
   );
