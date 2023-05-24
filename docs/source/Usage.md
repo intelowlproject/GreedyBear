@@ -14,9 +14,7 @@ In a development environment the emails that would be sent are written to the st
 
 ### Recaptcha configuration
 The Registration Page contains a Recaptcha form from Google. By default, that Recaptcha is not configured and is not shown.
-
-If your intention is to publish GreedyBear as a Service you should configure the Recaptcha Key for your site and add that value in the `RECAPTCHA_SITEKEY` in the `docker/env_template.js` file.
-In that case, you would need to [re-build](/Installation.md#update-and-rebuild) the application to have the changes properly reflected.
+If your intention is to publish GreedyBear as a Service you should [configure the Recaptcha](/Installation.md#recaptcha-configuration).
 
 ### Amazon SES
 

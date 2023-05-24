@@ -11,7 +11,7 @@ logger = logging.getLogger(__name__)
 def send_message(text):
     try:
         slack_token = settings.SLACK_TOKEN
-        channel = settings.SLACK_CHANNEL
+        channel = settings.DEFAULT_SLACK_CHANNEL
         sc = WebClient(token=slack_token)
 
         sc.chat_postMessage(channel=channel, text=text, mrkdwn=True)
