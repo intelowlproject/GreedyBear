@@ -37,6 +37,10 @@ const initialValues = {
   age: "recent",
 };
 
+const initialState = {
+  pageIndex: 0,
+};
+
 const toPassTableProps = {
   columns: feedsTableColumns,
   tableEmptyNode: (
@@ -74,7 +78,7 @@ export default function Feeds() {
       });
   });
 
-  const [feedsData, tableNode, refetch] = useDataTable(
+  const [feedsData, tableNode, , tableStateReducer] = useDataTable(
     {
       url: FEEDS_BASE_URI,
       params: {
@@ -83,7 +87,6 @@ export default function Feeds() {
         age: initialValues.age,
       },
       initialParams: {
-        page_size: "10",
         page: "1",
       },
     },
@@ -101,12 +104,17 @@ export default function Feeds() {
         initialValues.feeds_type = values.feeds_type;
         initialValues.attack_type = values.attack_type;
         initialValues.age = values.age;
-        refetch();
+
+        const resetPage = {
+          type: "gotoPage",
+          pageIndex: 0,
+        };
+        tableStateReducer(initialState, resetPage);
       } catch (e) {
         console.debug(e);
       }
     },
-    [setUrl, refetch]
+    [setUrl, tableStateReducer]
   );
 
   return (
