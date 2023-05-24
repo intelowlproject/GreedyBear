@@ -1,6 +1,8 @@
 import React from "react";
-import { Container, Button, Col, Label, FormGroup } from "reactstrap";
-import { FEEDS_BASE_URI } from "../../constants/api";
+import { Container, Button, Col, Label, FormGroup, Row } from "reactstrap";
+import { VscJson } from "react-icons/vsc";
+import { TbLicense } from "react-icons/tb";
+import { FEEDS_BASE_URI, GENERAL_HONEYPOT_URI } from "../../constants/api";
 import {
   ContentSection,
   Select,
@@ -8,9 +10,8 @@ import {
   useDataTable,
 } from "@certego/certego-ui";
 import { Form, Formik } from "formik";
-import { VscJson } from "react-icons/vsc";
-import { GENERAL_HONEYPOT_URI } from "../../constants/api";
 import { feedsTableColumns } from "./tableColumns";
+import { FEEDS_LICENSE } from "../../constants";
 
 // costants
 const feedTypeChoices = [
@@ -116,86 +117,104 @@ export default function Feeds() {
           <small className="text-muted">{feedsData?.count} total</small>
         </h1>
         <Button
-          className="mb-auto"
+          className="mb-3 mt-auto"
           color="primary"
           outline
-          href={url}
+          href={FEEDS_LICENSE}
           target="_blank"
         >
-          <VscJson />
-          &nbsp;Raw data
+          <TbLicense />
+          &nbsp;Feeds license
         </Button>
       </div>
-      <Loader
-        render={() => (
-          <ContentSection>
+      <ContentSection>
+        <Row className="mb-4 mt-2 justify-content-between">
+          <Col sm={12} md={9}>
             {/* Form */}
-            <Formik initialValues={initialValues} onSubmit={onSubmit}>
-              {(formik) => (
-                <Form>
-                  <FormGroup row>
-                    <Col sm={12} md={4}>
-                      <Label
-                        className="form-control-label"
-                        htmlFor="Feeds__feeds_type"
-                      >
-                        Feed type:
-                      </Label>
-                      <Select
-                        id="Feeds__feeds_type"
-                        name="feeds_type"
-                        value={initialValues.feeds_type}
-                        choices={feedTypeChoices.concat(honeypotFeedsType)}
-                        onChange={(e) => {
-                          formik.handleChange(e);
-                          formik.submitForm();
-                        }}
-                      />
-                    </Col>
-                    <Col sm={12} md={4}>
-                      <Label
-                        className="form-control-label"
-                        htmlFor="Feeds__attack_type"
-                      >
-                        Attack type:
-                      </Label>
-                      <Select
-                        id="Feeds__attack_type"
-                        name="attack_type"
-                        value={initialValues.attack_type}
-                        choices={attackTypeChoices}
-                        onChange={(e) => {
-                          formik.handleChange(e);
-                          formik.submitForm();
-                        }}
-                      />
-                    </Col>
-                    <Col sm={12} md={4}>
-                      <Label
-                        className="form-control-label"
-                        htmlFor="Feeds__age"
-                      >
-                        Age:
-                      </Label>
-                      <Select
-                        id="Feeds__age"
-                        name="age"
-                        value={initialValues.age}
-                        choices={ageChoices}
-                        onChange={(e) => {
-                          formik.handleChange(e);
-                          formik.submitForm();
-                        }}
-                      />
-                    </Col>
-                  </FormGroup>
-                </Form>
+            <Loader
+              render={() => (
+                <Formik initialValues={initialValues} onSubmit={onSubmit}>
+                  {(formik) => (
+                    <Form>
+                      <FormGroup row>
+                        <Col sm={12} md={4}>
+                          <Label
+                            className="form-control-label"
+                            htmlFor="Feeds__feeds_type"
+                          >
+                            Feed type:
+                          </Label>
+                          <Select
+                            id="Feeds__feeds_type"
+                            name="feeds_type"
+                            value={initialValues.feeds_type}
+                            choices={feedTypeChoices.concat(honeypotFeedsType)}
+                            onChange={(e) => {
+                              formik.handleChange(e);
+                              formik.submitForm();
+                            }}
+                          />
+                        </Col>
+                        <Col sm={12} md={4}>
+                          <Label
+                            className="form-control-label"
+                            htmlFor="Feeds__attack_type"
+                          >
+                            Attack type:
+                          </Label>
+                          <Select
+                            id="Feeds__attack_type"
+                            name="attack_type"
+                            value={initialValues.attack_type}
+                            choices={attackTypeChoices}
+                            onChange={(e) => {
+                              formik.handleChange(e);
+                              formik.submitForm();
+                            }}
+                          />
+                        </Col>
+                        <Col sm={12} md={4}>
+                          <Label
+                            className="form-control-label"
+                            htmlFor="Feeds__age"
+                          >
+                            Age:
+                          </Label>
+                          <Select
+                            id="Feeds__age"
+                            name="age"
+                            value={initialValues.age}
+                            choices={ageChoices}
+                            onChange={(e) => {
+                              formik.handleChange(e);
+                              formik.submitForm();
+                            }}
+                          />
+                        </Col>
+                      </FormGroup>
+                    </Form>
+                  )}
+                </Formik>
               )}
-            </Formik>
-          </ContentSection>
-        )}
-      />
-      <ContentSection className="mt-3 bg-dark border border-dark shadow">
+            />
+          </Col>
+          <Col
+            sm={12}
+            md={2}
+            className="d-flex justify-content-end align-items-end"
+          >
+            <Button
+              className="mb-3"
+              color="primary"
+              outline
+              href={url}
+              target="_blank"
+            >
+              <VscJson />
+              &nbsp;Raw data
+            </Button>
+          </Col>
+        </Row>
         {/*Table*/}
         {tableNode}
       </ContentSection>
