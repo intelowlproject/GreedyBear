@@ -48,7 +48,7 @@ else:
     ELASTIC_CLIENT = None
 
 SLACK_TOKEN = os.environ.get("SLACK_TOKEN", "")
-SLACK_CHANNEL = os.environ.get("SLACK_CHANNEL", "")
+DEFAULT_SLACK_CHANNEL = os.environ.get("DEFAULT_SLACK_CHANNEL", "")
 
 VERSION = os.environ.get("REACT_APP_GREEDYBEAR_VERSION", "").replace("v", "")
 # drf-spectacular
@@ -59,8 +59,12 @@ SPECTACULAR_SETTINGS = {
 
 # drf-recaptcha
 DRF_RECAPTCHA_SECRET_KEY = (
-    str(os.environ.get("RECAPTCHA_SECRET_KEY_IO_PUBLIC")) if PUBLIC_DEPLOYMENT and not DEBUG else str(os.environ.get("RECAPTCHA_SECRET_KEY_IO_LOCAL"))
+    str(os.environ.get("RECAPTCHA_SECRET_KEY_GB_PUBLIC")) if PUBLIC_DEPLOYMENT and not DEBUG else str(os.environ.get("RECAPTCHA_SECRET_KEY_GB_LOCAL"))
 )
+# this is necessary to avoid to have the related Django app to yell
+# and to have this populated also for people who upgraded from previous versions
+if not DRF_RECAPTCHA_SECRET_KEY:
+    DRF_RECAPTCHA_SECRET_KEY = "fake"
 DRF_RECAPTCHA_TESTING = STAGE_LOCAL or STAGE_CI
 DRF_RECAPTCHA_TESTING_PASS = True
 
@@ -398,6 +402,8 @@ else:
         # Use amazon SES via django-ses
         # see: https://github.com/django-ses/django-ses
         EMAIL_BACKEND = "django_ses.SESBackend"
+        AWS_ACCESS_KEY_ID = os.environ.get("AWS_ACCESS_KEY_ID")
+        AWS_SECRET_ACCESS_KEY = os.environ.get("AWS_SECRET_ACCESS_KEY")
         AWS_SES_REGION_NAME = AWS_REGION
         AWS_SES_REGION_ENDPOINT = f"email.{AWS_SES_REGION_NAME}.amazonaws.com"
     else:

@@ -8,6 +8,7 @@ from api.serializers import EnrichmentSerializer, FeedsResponseSerializer, Feeds
 from certego_saas.apps.auth.backend import CookieTokenAuthentication
 from certego_saas.ext.helpers import parse_humanized_range
 from certego_saas.ext.pagination import CustomPageNumberPagination
+from django.conf import settings
 from django.db.models import Count, Q
 from django.db.models.functions import Trunc
 from django.http import HttpResponse, HttpResponseServerError, StreamingHttpResponse
@@ -296,3 +297,37 @@ def general_honeypot_list(request):
 
     logger.info(f"General honeypots: {honeypots}")
     return Response(honeypots)
+
+
+@api_view([GET])
+def check_registration_setup(request):
+    logger.info(f"Requested checking registration setup from {request.user}.")
+    errors = {}
+
+    # email setup
+    if not settings.DEFAULT_FROM_EMAIL:
+        errors["DEFAULT_FROM_EMAIL"] = "required"
+    if not settings.DEFAULT_EMAIL:
+        errors["DEFAULT_EMAIL"] = "required"
+
+    # if you are in production environment
+    if settings.STAGE_PRODUCTION:
+        # SES backend
+        if settings.AWS_SES:
+            if not settings.AWS_ACCESS_KEY_ID or not settings.AWS_SECRET_ACCESS_KEY:
+                errors["AWS SES backend"] = "configuration required"
+        else:
+            # SMTP backend
+            required_variables = [settings.EMAIL_HOST, settings.EMAIL_HOST_USER, settings.EMAIL_HOST_PASSWORD, settings.EMAIL_PORT]
+            for variable in required_variables:
+                if not variable:
+                    errors["SMTP backend"] = "configuration required"
+
+        # recaptcha key
+        if settings.DRF_RECAPTCHA_SECRET_KEY == "fake":
+            errors["RECAPTCHA_SECRET_KEY"] = "required"
+
+    logger.info(f"Registration setup errors: {errors}")
+    if errors:
+        return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
+    return Response(status=status.HTTP_200_OK)
