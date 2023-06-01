@@ -41,8 +41,8 @@ class EnrichmentViewTestCase(CustomTestCase):
         self.assertEqual(response.json()["ioc"]["times_seen"], self.ioc.times_seen)
         self.assertEqual(response.json()["ioc"]["log4j"], self.ioc.log4j)
         self.assertEqual(response.json()["ioc"]["cowrie"], self.ioc.cowrie)
-        self.assertEqual(response.json()["ioc"]["general_honeypot"][0], self.heralding.pk)  # FEEDS
-        self.assertEqual(response.json()["ioc"]["general_honeypot"][1], self.ciscoasa.pk)  # FEEDS
+        self.assertEqual(response.json()["ioc"]["general_honeypot"][0], self.heralding.name)  # FEEDS
+        self.assertEqual(response.json()["ioc"]["general_honeypot"][1], self.ciscoasa.name)  # FEEDS
         self.assertEqual(response.json()["ioc"]["scanner"], self.ioc.scanner)
         self.assertEqual(response.json()["ioc"]["payload_request"], self.ioc.payload_request)
 
