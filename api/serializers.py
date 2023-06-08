@@ -8,7 +8,17 @@ from rest_framework import serializers
 logger = logging.getLogger(__name__)
 
 
+class GeneralHoneypotSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = GeneralHoneypot
+
+    def to_representation(self, value):
+        return value.name
+
+
 class IOCSerializer(serializers.ModelSerializer):
+    general_honeypot = GeneralHoneypotSerializer(many=True, read_only=True)
+
     class Meta:
         model = IOC
         exclude = [
