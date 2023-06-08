@@ -102,21 +102,21 @@ export function RegistrationSetUpModalAlert(props) {
       backdrop="static"
       labelledBy="Registration setup modal"
     >
-      <ModalHeader toggle={toggle}>Error</ModalHeader>
+      <ModalHeader toggle={toggle}>Warning</ModalHeader>
       <ModalBody className="px-5">
         <>
           <section>
             <Alert color="danger" className="text-center">
-              <h3>Wrong registration setup!</h3>
+              <h3>The Registration Feature has not been configured!</h3>
             </Alert>
           </section>
           <section className="mt-4">
             <p>
-              Please check the{" "}
+              If you are and admin and would like to configure the registration page, please check the{" "}
               <a href={GREEDYBEAR_DOCS_URL} target="_blank" rel="noreferrer">
                 documentation
               </a>{" "}
-              and verify that you have correctly configured all the required
+              and correctly configure all the required
               variables.
             </p>
           </section>
