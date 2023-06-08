@@ -16,16 +16,14 @@ import useTitle from "react-use/lib/useTitle";
 
 import { ContentSection, Select } from "@certego/certego-ui";
 
-import {
-  // PUBLIC_URL,
-  RECAPTCHA_SITEKEY,
-} from "../../constants/environment";
+import { RECAPTCHA_SITEKEY } from "../../constants/environment";
 import ReCAPTCHAInput from "./utils/ReCAPTCHAInput";
 import {
   AfterRegistrationModalAlert,
   InviteOnlyAlert,
+  RegistrationSetUpModalAlert,
 } from "./utils/registration-alert";
-import { registerUser } from "./api";
+import { registerUser, checkRegistrationSetup } from "./api";
 import {
   EmailValidator,
   PasswordValidator,
@@ -164,10 +162,21 @@ export default function Register() {
   useTitle("GreedyBear | Sign up", { restoreOnUnmount: true });
 
   // local state
-  const [showModal, setShowModal] = React.useState(false);
+  const [showAfterRegistrationModal, setShowAfterRegistrationModal] =
+    React.useState(false);
+  const [showRegistrationSetupModal, setShowRegistrationSetupModal] =
+    React.useState(false);
   const [passwordShown, setPasswordShown] = React.useState(false);
 
-  console.debug("ShowModal:", showModal);
+  console.debug("showAfterRegistrationModal:", showAfterRegistrationModal);
+
+  React.useEffect(() => {
+    checkRegistrationSetup().catch(() => {
+      setShowRegistrationSetupModal(true);
+    });
+  }, []);
+
+  console.debug("showRegistrationSetupModal:", showRegistrationSetupModal);
 
   // callbacks
   const onSubmit = React.useCallback(
@@ -195,31 +204,29 @@ export default function Register() {
           initialValues[key] = INITIAL_VALUES[key];
         });
 
-        setShowModal(true);
+        setShowAfterRegistrationModal(true);
       } catch (e) {
         // handled inside registerUser
       }
     },
-    [setShowModal]
+    [setShowAfterRegistrationModal]
   );
 
   return (
     <ContentSection className="bg-body">
-      {showModal && (
+      {showRegistrationSetupModal && (
+        <RegistrationSetUpModalAlert
+          isOpen={showRegistrationSetupModal}
+          setIsOpen={setShowRegistrationSetupModal}
+        />
+      )}
+      {showAfterRegistrationModal && (
         <AfterRegistrationModalAlert
-          isOpen={showModal}
-          setIsOpen={setShowModal}
+          isOpen={showAfterRegistrationModal}
+          setIsOpen={setShowAfterRegistrationModal}
         />
       )}
       <Container fluid className="col-12">
-        {/* GreedyBear Logo */}
-        <Row className="g-0 my-2 d-none d-md-flex">
-          {/* <img
-            src={`${PUBLIC_URL}/greedybear.png`}
-            alt="GreedyBear Logo"
-            className="img-fluid w-25 mx-auto"
-          /> */}
-        </Row>
         <Row className="g-0">
           <InviteOnlyAlert />
         </Row>

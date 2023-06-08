@@ -41,8 +41,8 @@ class EnrichmentViewTestCase(CustomTestCase):
         self.assertEqual(response.json()["ioc"]["times_seen"], self.ioc.times_seen)
         self.assertEqual(response.json()["ioc"]["log4j"], self.ioc.log4j)
         self.assertEqual(response.json()["ioc"]["cowrie"], self.ioc.cowrie)
-        self.assertEqual(response.json()["ioc"]["general_honeypot"][0], self.heralding.pk)  # FEEDS
-        self.assertEqual(response.json()["ioc"]["general_honeypot"][1], self.ciscoasa.pk)  # FEEDS
+        self.assertEqual(response.json()["ioc"]["general_honeypot"][0], self.heralding.name)  # FEEDS
+        self.assertEqual(response.json()["ioc"]["general_honeypot"][1], self.ciscoasa.name)  # FEEDS
         self.assertEqual(response.json()["ioc"]["scanner"], self.ioc.scanner)
         self.assertEqual(response.json()["ioc"]["payload_request"], self.ioc.payload_request)
 
@@ -150,3 +150,69 @@ class GeneralHoneypotViewTestCase(CustomTestCase):
         response = self.client.get("/api/general_honeypot?onlyActive=true")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), ["Heralding", "Ciscoasa"])
+
+
+class CheckRegistrationSetupTestCase(CustomTestCase):
+    def test_200_local_setup(self):
+        with self.settings(DEFAULT_FROM_EMAIL="fake@email.it", DEFAULT_EMAIL="fake@email.it", STAGE_LOCAL="true"):
+            response = self.client.get("/api/check_registration_setup")
+            self.assertEqual(response.status_code, 200)
+
+    def test_200_prod_smtp_setup(self):
+        with self.settings(
+            DEFAULT_FROM_EMAIL="fake@email.it",
+            DEFAULT_EMAIL="fake@email.it",
+            STAGE_PRODUCTION="true",
+            EMAIL_HOST="test",
+            EMAIL_HOST_USER="test",
+            EMAIL_HOST_PASSWORD="test",
+            EMAIL_PORT="test",
+            DRF_RECAPTCHA_SECRET_KEY="recaptchakey",
+        ):
+            response = self.client.get("/api/check_registration_setup")
+            self.assertEqual(response.status_code, 200)
+
+    def test_200_prod_ses_setup(self):
+        with self.settings(
+            DEFAULT_FROM_EMAIL="fake@email.it",
+            DEFAULT_EMAIL="fake@email.it",
+            STAGE_PRODUCTION="true",
+            AWS_SES="true",
+            AWS_ACCESS_KEY_ID="test",
+            AWS_SECRET_ACCESS_KEY="test",
+            DRF_RECAPTCHA_SECRET_KEY="recaptchakey",
+        ):
+            response = self.client.get("/api/check_registration_setup")
+            self.assertEqual(response.status_code, 200)
+
+    def test_501_local_setup(self):
+        with self.settings(DEFAULT_FROM_EMAIL="", DEFAULT_EMAIL="", STAGE_LOCAL="true"):
+            response = self.client.get("/api/check_registration_setup")
+            self.assertEqual(response.status_code, 501)
+
+    def test_501_prod_smtp_setup(self):
+        with self.settings(
+            DEFAULT_FROM_EMAIL="fake@email.it",
+            DEFAULT_EMAIL="fake@email.it",
+            STAGE_PRODUCTION="true",
+            EMAIL_HOST="",
+            EMAIL_HOST_USER="",
+            EMAIL_HOST_PASSWORD="",
+            EMAIL_PORT="",
+            DRF_RECAPTCHA_SECRET_KEY="fake",
+        ):
+            response = self.client.get("/api/check_registration_setup")
+            self.assertEqual(response.status_code, 501)
+
+    def test_501_prod_ses_setup(self):
+        with self.settings(
+            DEFAULT_FROM_EMAIL="fake@email.it",
+            DEFAULT_EMAIL="fake@email.it",
+            STAGE_PRODUCTION="true",
+            AWS_SES="true",
+            AWS_ACCESS_KEY_ID="",
+            AWS_SECRET_ACCESS_KEY="",
+            DRF_RECAPTCHA_SECRET_KEY="fake",
+        ):
+            response = self.client.get("/api/check_registration_setup")
+            self.assertEqual(response.status_code, 501)

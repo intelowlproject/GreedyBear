@@ -60,6 +60,14 @@ describe("Feeds component", () => {
       </BrowserRouter>
     );
 
+    const buttonFeedsLicense = screen.getByRole("link", {
+      name: /Feeds license/i,
+    });
+    expect(buttonFeedsLicense).toHaveAttribute(
+      "href",
+      "https://github.com/intelowlproject/GreedyBear/blob/main/FEEDS_LICENSE.md"
+    );
+
     const feedTypeSelectElement = screen.getByLabelText("Feed type:");
     expect(feedTypeSelectElement).toBeInTheDocument();
     const attackTypeSelectElement = screen.getByLabelText("Attack type:");
@@ -67,8 +75,8 @@ describe("Feeds component", () => {
     const ageSelectElement = screen.getByLabelText("Age:");
     expect(ageSelectElement).toBeInTheDocument();
 
-    const buttonElement = screen.getByRole("link", { name: /Raw data/i });
-    expect(buttonElement).toHaveAttribute(
+    const buttonRawData = screen.getByRole("link", { name: /Raw data/i });
+    expect(buttonRawData).toHaveAttribute(
       "href",
       "/api/feeds/all/all/recent.json"
     );
@@ -79,7 +87,7 @@ describe("Feeds component", () => {
 
     await waitFor(() => {
       // check link has been changed
-      expect(buttonElement).toHaveAttribute(
+      expect(buttonRawData).toHaveAttribute(
         "href",
         "/api/feeds/log4j/scanner/persistent.json"
       );

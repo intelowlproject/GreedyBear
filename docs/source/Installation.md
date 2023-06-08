@@ -12,6 +12,7 @@ cd docker/
 cp env_file_template env_file
 cp env_file_postgres_template env_file_postgres
 cd ..
+cp frontend/public/env_template.js frontend/public/env.js
 ```
 
 Now you can start by building the image using docker-compose and run the project.
@@ -47,12 +48,9 @@ If you don't have one, you can make the following changes to make GreeyBear spin
 ### Environment configuration
 In the `env_file`, configure different variables as explained below.
 
-**Strongly recommended** variable to set:
+**Required** variable to set:
 * `DEFAULT_FROM_EMAIL`: email address used for automated correspondence from the site manager (example: `noreply@mydomain.com`)
 * `DEFAULT_EMAIL`: email address used for correspondence with users (example: `info@mydomain.com`)
-* `RECAPTCHA_SECRET_KEY_IO_LOCAL`: your recaptcha secret key internal deployment
-* `RECAPTCHA_SECRET_KEY_IO_PUBLIC`: your recaptcha secret key for public deployment
-
 * `EMAIL_HOST`: the host to use for sending email with SMTP
 * `EMAIL_HOST_USER`: username to use for the SMTP server defined in EMAIL_HOST
 * `EMAIL_HOST_PASSWORD`: password to use for the SMTP server defined in EMAIL_HOST. This setting is used in conjunction with EMAIL_HOST_USER when authenticating to the SMTP server.
@@ -62,8 +60,20 @@ In the `env_file`, configure different variables as explained below.
 
 **Optional configuration**:
 * `SLACK_TOKEN`: Slack token of your Slack application that will be used to send/receive notifications
-* `SLACK_CHANNEL`: ID of the Slack channel you want to post the message to
+* `DEFAULT_SLACK_CHANNEL`: ID of the Slack channel you want to post the message to
 
+#### Recaptcha configuration
+The Registration Page contains a Recaptcha form from Google. By default, that Recaptcha is not configured and is not shown.
+If your intention is to publish GreedyBear as a Service you should configure different variables as explained below.
+
+In the `frontend/public/env.js` set the variable:
+* `RECAPTCHA_SITEKEY`: Recaptcha Key for your site
+
+In the `docker/env_file` set the variables:
+* `RECAPTCHA_SECRET_KEY_GB_LOCAL`: your recaptcha secret key internal deployment
+* `RECAPTCHA_SECRET_KEY_GB_PUBLIC`: your recaptcha secret key for public deployment
+
+In that case, you would need to [re-build](/Installation.md#update-and-rebuild) the application to have the changes properly reflected.
 
 
 ## Update and Re-build

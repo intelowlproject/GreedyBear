@@ -118,7 +118,7 @@ class EmailVerificationSerializer(rest_email_auth.serializers.EmailVerificationS
             super().save()
 
         # Send msg on slack
-        if certego_apps_settings.SLACK_TOKEN and certego_apps_settings.SLACK_CHANNEL:
+        if certego_apps_settings.SLACK_TOKEN and certego_apps_settings.DEFAULT_SLACK_CHANNEL:
             try:
                 userprofile = user.user_profile
                 user_admin_link = f"{settings.HOST_URI}/admin/certego_saas_user/user/{user.pk}"
@@ -133,7 +133,7 @@ class EmailVerificationSerializer(rest_email_auth.serializers.EmailVerificationS
                         f"{userprofile.company_role}, )"
                         f"<{userprofile_admin_link} |admin link>)"
                     ),
-                    channel=certego_apps_settings.SLACK_CHANNEL,
+                    channel=certego_apps_settings.DEFAULT_SLACK_CHANNEL,
                 )
             except SlackApiError as exc:
                 slack.log.error(f"Slack message failed for user(#{user.pk}) with error: {str(exc)}")
