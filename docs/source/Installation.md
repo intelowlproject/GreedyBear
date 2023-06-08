@@ -12,6 +12,7 @@ cd docker/
 cp env_file_template env_file
 cp env_file_postgres_template env_file_postgres
 cd ..
+cp frontend/public/env_template.js frontend/public/env.js
 ```
 
 Now you can start by building the image using docker-compose and run the project.
@@ -65,7 +66,7 @@ In the `env_file`, configure different variables as explained below.
 The Registration Page contains a Recaptcha form from Google. By default, that Recaptcha is not configured and is not shown.
 If your intention is to publish GreedyBear as a Service you should configure different variables as explained below.
 
-In the `docker/env_template.js` set the variable:
+In the `frontend/public/env.js` set the variable:
 * `RECAPTCHA_SITEKEY`: Recaptcha Key for your site
 
 In the `docker/env_file` set the variables:
