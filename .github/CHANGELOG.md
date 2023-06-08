@@ -1,4 +1,10 @@
 # Changelog
+## [v1.2.1](https://github.com/honeynet/GreedyBear/releases/tag/v1.2.1)
+* Fixes and adjusts in the "Feeds Page"
+* Added verification of Registration Setup
+* Adjusted management of frontend env variables
+* Fixed General Honeypots name extraction in the Enrichment APIs
+
 ## [v1.2.0](https://github.com/honeynet/GreedyBear/releases/tag/v1.2.0)
 **New features**
 * Added a new "Registration" page to allow people to register to the service.
