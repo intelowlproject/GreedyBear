@@ -112,12 +112,12 @@ export function RegistrationSetUpModalAlert(props) {
           </section>
           <section className="mt-4">
             <p>
-              If you are and admin and would like to configure the registration page, please check the{" "}
+              If you are and admin and would like to configure the registration
+              page, please check the{" "}
               <a href={GREEDYBEAR_DOCS_URL} target="_blank" rel="noreferrer">
                 documentation
               </a>{" "}
-              and correctly configure all the required
-              variables.
+              and correctly configure all the required variables.
             </p>
           </section>
         </>

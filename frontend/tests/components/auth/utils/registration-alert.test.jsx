@@ -56,7 +56,9 @@ describe("registration-alert", () => {
 
     const elementText = screen.getByText("Warning");
     expect(elementText).toBeInTheDocument();
-    const elementAlertText = screen.getByText("The Registration Feature has not been configured!");
+    const elementAlertText = screen.getByText(
+      "The Registration Feature has not been configured!"
+    );
     expect(elementAlertText).toBeInTheDocument();
     const buttonElement = screen.getByRole("button");
     expect(buttonElement).toBeInTheDocument();
