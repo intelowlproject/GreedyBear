@@ -54,9 +54,11 @@ describe("registration-alert", () => {
       </BrowserRouter>
     );
 
-    const elementText = screen.getByText("Error");
+    const elementText = screen.getByText("Warning");
     expect(elementText).toBeInTheDocument();
-    const elementAlertText = screen.getByText("Wrong registration setup!");
+    const elementAlertText = screen.getByText(
+      "The Registration Feature has not been configured!"
+    );
     expect(elementAlertText).toBeInTheDocument();
     const buttonElement = screen.getByRole("button");
     expect(buttonElement).toBeInTheDocument();
