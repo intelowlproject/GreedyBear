@@ -14,6 +14,7 @@ from django.db import DatabaseError, transaction
 from django.utils.translation import gettext_lazy as _
 from greedybear.consts import REGEX_PASSWORD
 from rest_framework import serializers as rfs
+from rest_framework.authtoken.serializers import AuthTokenSerializer
 from slack_sdk.errors import SlackApiError
 
 from .models import UserProfile
@@ -137,3 +138,28 @@ class EmailVerificationSerializer(rest_email_auth.serializers.EmailVerificationS
                 )
             except SlackApiError as exc:
                 slack.log.error(f"Slack message failed for user(#{user.pk}) with error: {str(exc)}")
+
+
+class LoginSerializer(AuthTokenSerializer):
+    def validate(self, attrs):
+        try:
+            return super().validate(attrs)
+        except rfs.ValidationError as exc:
+            try:
+                user = User.objects.get(username=attrs["username"])
+            except User.DoesNotExist:
+                # we do not want to leak info
+                # so just raise the original exception
+                raise exc
+            else:
+                # custom error messages
+                if not user.is_active:
+                    if user.is_email_verified is False:
+                        exc.detail = "Your account is pending email verification."
+                    elif user.approved is None:
+                        exc.detail = "Your account is pending activation by our team."
+                    elif user.approved is False:
+                        exc.detail = "Your account was declined."
+                    logger.info(f"User {user} is not active. Error message: {exc.detail}")
+            # else
+            raise exc

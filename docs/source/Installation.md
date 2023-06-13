@@ -63,7 +63,7 @@ In the `env_file`, configure different variables as explained below.
 * `DEFAULT_SLACK_CHANNEL`: ID of the Slack channel you want to post the message to
 
 #### Recaptcha configuration
-The Registration Page contains a Recaptcha form from Google. By default, that Recaptcha is not configured and is not shown.
+The Registration Page and the Login Page contain a Recaptcha form from Google. By default, that Recaptcha is not configured and is not shown.
 If your intention is to publish GreedyBear as a Service you should configure different variables as explained below.
 
 In the `frontend/public/env.js` set the variable:
