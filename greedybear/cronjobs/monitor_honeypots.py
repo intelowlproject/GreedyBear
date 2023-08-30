@@ -10,8 +10,8 @@ class MonitorHoneypots(Cronjob):
         super(MonitorHoneypots, self).__init__()
         self.honeypots_to_monitor = [Honeypot("Log4pot"), Honeypot("Cowrie")]
         # FEEDS - add monitor for all general honeypots from list
-        generalHoneypots = GeneralHoneypot.objects.all().filter(active=True)
-        for hp in generalHoneypots:
+        general_honeypots = GeneralHoneypot.objects.all().filter(active=True)
+        for hp in general_honeypots:
             self.honeypots_to_monitor.append(Honeypot(hp.name))
 
     @property
