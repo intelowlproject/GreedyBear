@@ -7,7 +7,7 @@ from certego_saas.apps.auth.backend import CookieTokenAuthentication
 from certego_saas.ext.mixins import RecaptchaV2Mixin
 from certego_saas.ext.throttling import POSTUserRateThrottle
 from django.conf import settings
-from django.contrib.auth import get_user_model
+from django.contrib.auth import get_user_model, login
 from django.core.cache import cache
 from durin import views as durin_views
 from greedybear.consts import GET
@@ -119,6 +119,15 @@ class LoginView(certego_views.LoginView, RecaptchaV2Mixin):
             # it will raise this bcz `serializer_class` is not defined
             pass
         response = super().post(request, *args, **kwargs)
+        uname = request.user.username
+        logger.info(f"LoginView: received request from '{uname}'.")
+        if request.user.is_superuser:
+            try:
+                # pass admin user's session
+                login(request, request.user)
+                logger.info(f"administrator:'{uname}' was logged in.")
+            except Exception:
+                logger.exception(f"administrator:'{uname}' login failed.")
         # just a hacky way to store the current host
         # as this is the first endpoint hit by a user.
         cache.set("current_site", request.get_host(), timeout=60 * 60 * 24)

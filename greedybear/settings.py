@@ -68,6 +68,9 @@ if not DRF_RECAPTCHA_SECRET_KEY:
 DRF_RECAPTCHA_TESTING = STAGE_LOCAL or STAGE_CI
 DRF_RECAPTCHA_TESTING_PASS = True
 
+CSRF_COOKIE_SAMESITE = "Strict"
+CSRF_COOKIE_HTTPONLY = True
+
 ALLOWED_HOSTS = ["*"]
 
 # certego_saas
@@ -201,6 +204,10 @@ BROKER_URL = os.environ.get("BROKER_URL", "amqp://guest:guest@rabbitmq:5672")
 RESULT_BACKEND = "django-db"
 
 AUTH_USER_MODEL = "certego_saas_user.User"  # custom user model
+AUTHENTICATION_BACKENDS = [
+    "django.contrib.auth.backends.ModelBackend",
+    "certego_saas.apps.auth.backend.CookieTokenAuthentication",
+]
 
 # Password validation
 
