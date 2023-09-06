@@ -2,39 +2,39 @@ version: 2
 
 updates:
   - package-ecosystem: "pip"
-    directory: "/test/python_test"
+    directory: "/requirements"
     schedule:
       interval: "weekly"
       day: "tuesday"
     target-branch: "develop"
     reviewers:
-      - x
+      - mlodic
 
   - package-ecosystem: "npm"
-    directory: "/test/node_test"
+    directory: "/frontend"
     schedule:
       interval: "weekly"
       day: "tuesday"
     target-branch: "develop"
     reviewers:
-      - x
+      - drosetti
 
 
   - package-ecosystem: "docker"
-    directory: "/test/python_test"
+    directory: "/docker"
     schedule:
       interval: "weekly"
       day: "tuesday"
     target-branch: "develop"
     reviewers:
-      - x
+      - mlodic
 
 
   - package-ecosystem: "github-actions"
-    directory: "/"
+    directory: "/.github"
     schedule:
       interval: "weekly"
       day: "tuesday"
     target-branch: "develop"
     reviewers:
-      - x
+      - mlodic
