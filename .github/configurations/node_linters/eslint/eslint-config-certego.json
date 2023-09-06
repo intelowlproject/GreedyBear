@@ -39,6 +39,7 @@
         "no-restricted-syntax": ["error", "WithStatement"],
         "no-multiple-empty-lines": ["error", {
             "max": 2, "maxBOF": 0, "maxEOF": 0
-        }]
+        }],
+        "jsdoc/require-jsdoc": 0
     }
 }

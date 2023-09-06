@@ -4,6 +4,5 @@ extend-exclude='''
 /(
   venv
   | migrations/*
-  | docs
 )/
 '''
