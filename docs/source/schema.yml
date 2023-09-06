@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: GreedyBear API specification
-  version: 1.2.1
+  version: 1.3.0
 paths:
   /api/apiaccess:
     get:

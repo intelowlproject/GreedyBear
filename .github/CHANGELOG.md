@@ -1,4 +1,6 @@
 # Changelog
+From the v1.3.0 afterwards please check the Release Pages on Github for information regarding the changelog
+
 ## [v1.2.1](https://github.com/honeynet/GreedyBear/releases/tag/v1.2.1)
 * Fixes and adjusts in the "Feeds Page"
 * Added verification of Registration Setup
