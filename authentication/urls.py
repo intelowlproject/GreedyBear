@@ -7,12 +7,14 @@ from rest_framework import routers
 from .views import (
     APIAccessTokenView,
     EmailVerificationView,
+    LoginView,
     PasswordResetRequestView,
     PasswordResetView,
     RegistrationView,
     ResendVerificationView,
     TokenSessionsViewSet,
     checkAuthentication,
+    checkConfiguration,
 )
 
 router = routers.DefaultRouter(trailing_slash=False)
@@ -41,6 +43,8 @@ urlpatterns = [
         name="auth_request-password-reset",
     ),
     path("reset-password", PasswordResetView.as_view(), name="auth_reset-password"),
+    path("login", LoginView.as_view(), name="auth_login"),
+    path("configuration", checkConfiguration),
     # auth
     path("", include("certego_saas.apps.auth.urls")),
     path("apiaccess", APIAccessTokenView.as_view(), name="auth_apiaccess"),

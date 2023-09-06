@@ -52,7 +52,7 @@ describe("Login component", () => {
       // check request has been performed
       expect(axios.post).toHaveBeenCalledWith(
         LOGIN_URI,
-        { password: "dummyPwd1", username: "test_user" },
+        { password: "dummyPwd1", username: "test_user", recaptcha: "noKey" },
         { certegoUIenableProgressBar: false }
       );
     });
