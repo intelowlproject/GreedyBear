@@ -1,5 +1,5 @@
 celery==5.3.4
-elasticsearch-dsl==7.4.1
+elasticsearch-dsl==8.9.0
 
 Django==4.1.11
 djangorestframework==3.13.1
