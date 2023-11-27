@@ -182,10 +182,15 @@ module.exports = {
   // transform: undefined,
 
   // An array of regexp pattern strings that are matched against all source file paths, matched files will skip transformation
-  // transformIgnorePatterns: [
-  //   "/node_modules/",
-  //   "\\.pnp\\.[^\\/]+$"
-  // ],
+  /* node_modules can need to be transformated in this case we have to exclude them from the regex
+    Simply add node_modules name to the list
+  */
+  transformIgnorePatterns: [
+    `/node_modules/(?!(${[
+      "axios"
+    ].join("|")})/)`,
+    "\\.pnp\\.[^\\/]+$",
+  ],
 
   // An array of regexp pattern strings that are matched against all modules before the module loader will automatically return a mock for them
   // unmockedModulePathPatterns: undefined,

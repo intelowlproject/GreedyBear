@@ -18,7 +18,7 @@ const useAuthStore = create((set, get) => ({
   isAuthenticated: AUTHENTICATION_STATUSES.FALSE,
   checkAuthentication: async () => {
     try {
-      const resp = await axios.get(CHECK_AUTHENTICATION_URI);
+      const resp = await axios.get(CHECK_AUTHENTICATION_URI, {headers: {'Content-Type': 'application/json'}});
       if (get().isSuperuser !== resp.data.is_superuser) {
         set({
           isSuperuser: resp.data.is_superuser,
@@ -38,6 +38,7 @@ const useAuthStore = create((set, get) => ({
       try {
         const resp = await axios.get(USERACCESS_URI, {
           certegoUIenableProgressBar: false,
+          headers: {'Content-Type': 'application/json'},
         });
         set({
           user: resp.data.user,
@@ -53,7 +54,7 @@ const useAuthStore = create((set, get) => ({
     loginUser: async (body) => {
       try {
         set({ isAuthenticated: AUTHENTICATION_STATUSES.PENDING });
-        const resp = await axios.post(LOGIN_URI, body, {
+        const resp = await axios.post(LOGIN_URI, body, {headers: {'Content-Type': 'application/json'}}, {
           certegoUIenableProgressBar: false,
         });
         set({ isAuthenticated: AUTHENTICATION_STATUSES.TRUE });
