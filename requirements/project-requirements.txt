@@ -13,4 +13,4 @@ slack-sdk==3.26.1
 certego-saas==0.7.0
 
 uwsgitop==0.11
-uwsgi==2.0.22
+uwsgi==2.0.24
