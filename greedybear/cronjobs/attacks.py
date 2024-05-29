@@ -7,7 +7,7 @@ from ipaddress import IPv4Address
 from greedybear.consts import DOMAIN, IP, PAYLOAD_REQUEST, SCANNER
 from greedybear.cronjobs.base import Cronjob
 from greedybear.cronjobs.sensors import ExtractSensors
-from greedybear.models import IOC, Sensors
+from greedybear.models import IOC, GeneralHoneypot, Sensors
 
 
 class ExtractAttacks(Cronjob, metaclass=ABCMeta):
@@ -69,9 +69,8 @@ class ExtractAttacks(Cronjob, metaclass=ABCMeta):
                 ioc_instance.cowrie = True
 
             # FEEDS - add general honeypot to list, if it is no already in it
-            if general != "":
-                if general not in ioc_instance.general_honeypot.all():
-                    ioc_instance.general_honeypot.create(name=general)
+            if general and general not in ioc_instance.general_honeypot.all():
+                ioc_instance.general_honeypot.add(GeneralHoneypot.objects.get(name=general))
 
             if ioc_instance:
                 ioc_instance.save()
