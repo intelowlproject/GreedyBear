@@ -94,7 +94,7 @@ class ExtractLog4Pot(ExtractAttacks):
             # once all have added, we can add the foreign keys
             self._add_fks(scanner_ip, hostname, hidden_hostname)
 
-        self.log.info(f"added {added_scanners} scanners, {added_payloads} payloads" f" and {added_hidden_payloads} hidden payloads")
+        self.log.info(f"added {added_scanners} scanners, {added_payloads}" f" payloads" f" and {added_hidden_payloads} hidden payloads")
 
     def _add_fks(self, scanner_ip, hostname, hidden_hostname):
         self.log.info(f"adding foreign keys for the following iocs: {scanner_ip}, {hostname}, {hidden_hostname}")
