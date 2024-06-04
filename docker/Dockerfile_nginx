@@ -1,4 +1,4 @@
-FROM library/nginx:1.25.4-alpine
+FROM library/nginx:1.27.0-alpine
 RUN mkdir -p /var/cache/nginx /var/cache/nginx/feeds
 RUN apk update && apk upgrade && apk add bash
 ENV NGINX_LOG_DIR /var/log/nginx
