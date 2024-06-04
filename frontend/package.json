@@ -78,6 +78,6 @@
     "eslint-plugin-react-hooks": "^4.6.0",
     "jest": "^27.5.1",
     "prettier": "2.8.4",
-    "stylelint": "^14.16.1"
+    "stylelint": "^16.6.1"
   }
 }
