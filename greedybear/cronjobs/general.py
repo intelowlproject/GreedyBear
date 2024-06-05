@@ -42,7 +42,7 @@ class ExtractGeneral(ExtractAttacks):
                 continue
             self.log.info(f"found IP {tag.key} by honeypot {name}")
             scanner_ip = str(tag.key)
-            self._add_ioc(scanner_ip, SCANNER, general=name.lower())
+            self._add_ioc(scanner_ip, SCANNER, general=name)
             self.added_scanners[idx] += 1
 
     def run(self):

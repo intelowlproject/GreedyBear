@@ -53,7 +53,7 @@ def feed_type_validation(feed_type):
     feed_choices.extend([hp.name.lower() for hp in generalHoneypots])  # FEEDS
 
     if feed_type not in feed_choices:
-        logger.info(f"Feed type {feed_type} not in feed_choises {feed_choices}")
+        logger.info(f"Feed type {feed_type} not in feed_choices {feed_choices}")
         raise serializers.ValidationError("Invalid feed_type")
     return feed_type
 

@@ -70,8 +70,8 @@ In the `frontend/public/env.js` set the variable:
 * `RECAPTCHA_SITEKEY`: Recaptcha Key for your site
 
 In the `docker/env_file` set the variables:
-* `RECAPTCHA_SECRET_KEY_GB_LOCAL`: your recaptcha secret key internal deployment
-* `RECAPTCHA_SECRET_KEY_GB_PUBLIC`: your recaptcha secret key for public deployment
+* `USE_RECAPTCHA`: if you want to use recaptcha on your login
+* `RECAPTCHA_SECRET_KEY`: your recaptcha secret key
 
 In that case, you would need to [re-build](/Installation.md#update-and-rebuild) the application to have the changes properly reflected.
 

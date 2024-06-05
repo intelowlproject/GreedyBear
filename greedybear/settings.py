@@ -57,17 +57,6 @@ SPECTACULAR_SETTINGS = {
     "VERSION": VERSION,
 }
 
-# drf-recaptcha
-DRF_RECAPTCHA_SECRET_KEY = (
-    str(os.environ.get("RECAPTCHA_SECRET_KEY_GB_PUBLIC")) if PUBLIC_DEPLOYMENT and not DEBUG else str(os.environ.get("RECAPTCHA_SECRET_KEY_GB_LOCAL"))
-)
-# this is necessary to avoid to have the related Django app to yell
-# and to have this populated also for people who upgraded from previous versions
-if not DRF_RECAPTCHA_SECRET_KEY:
-    DRF_RECAPTCHA_SECRET_KEY = "fake"
-DRF_RECAPTCHA_TESTING = STAGE_LOCAL or STAGE_CI
-DRF_RECAPTCHA_TESTING_PASS = True
-
 CSRF_COOKIE_SAMESITE = "Strict"
 CSRF_COOKIE_HTTPONLY = True
 
@@ -104,6 +93,14 @@ INSTALLED_APPS = [
     "rest_email_auth",
     "drf_recaptcha",
 ]
+
+USE_RECAPTCHA = os.environ.get("USE_RECAPTCHA", False) == "True"
+# drf-recaptcha
+DRF_RECAPTCHA_SECRET_KEY = str(os.environ.get("RECAPTCHA_SECRET_KEY", ""))
+# this is necessary to avoid to have the related Django app to yell
+# and to have this populated also for people who upgraded from previous versions
+if not DRF_RECAPTCHA_SECRET_KEY:
+    DRF_RECAPTCHA_SECRET_KEY = "fake"
 
 REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
