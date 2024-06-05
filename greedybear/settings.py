@@ -91,17 +91,16 @@ INSTALLED_APPS = [
     "authentication",
     # auth
     "rest_email_auth",
+    "drf_recaptcha",
 ]
 
 USE_RECAPTCHA = os.environ.get("USE_RECAPTCHA", False) == "True"
 # drf-recaptcha
-if USE_RECAPTCHA:
-    DRF_RECAPTCHA_SECRET_KEY = str(os.environ.get("RECAPTCHA_SECRET_KEY", ""))
-    # this is necessary to avoid to have the related Django app to yell
-    # and to have this populated also for people who upgraded from previous versions
-    if not DRF_RECAPTCHA_SECRET_KEY:
-        DRF_RECAPTCHA_SECRET_KEY = "fake"
-    INSTALLED_APPS.append("drf_recaptcha")
+DRF_RECAPTCHA_SECRET_KEY = str(os.environ.get("RECAPTCHA_SECRET_KEY", ""))
+# this is necessary to avoid to have the related Django app to yell
+# and to have this populated also for people who upgraded from previous versions
+if not DRF_RECAPTCHA_SECRET_KEY:
+    DRF_RECAPTCHA_SECRET_KEY = "fake"
 
 REST_FRAMEWORK = {
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
