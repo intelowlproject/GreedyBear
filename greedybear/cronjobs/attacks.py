@@ -68,12 +68,12 @@ class ExtractAttacks(Cronjob, metaclass=ABCMeta):
             if cowrie:
                 ioc_instance.cowrie = True
 
+            if ioc_instance:
+                ioc_instance.save()
+
             # FEEDS - add general honeypot to list, if it is no already in it
             if general and general not in ioc_instance.general_honeypot.all():
                 ioc_instance.general_honeypot.add(GeneralHoneypot.objects.get(name=general))
-
-            if ioc_instance:
-                ioc_instance.save()
 
         except self.IOCWhitelist:
             self.log.info(f"not saved {ioc} because is whitelisted")

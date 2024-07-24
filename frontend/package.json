@@ -25,9 +25,8 @@
     "react-use": "^17.4.0",
     "reactstrap": "^9.2.0",
     "recharts": "^2.6.2",
-    "sass": "^1.52.1",
-    "web-vitals": "^2.1.4",
-    "zustand": "^4.0.0"
+    "sass": "^1.72.0",
+    "zustand": "^4.5.2"
   },
   "scripts": {
     "start": "PORT=3001 react-scripts start",
@@ -72,7 +71,7 @@
     "babel-eslint": "^10.1.0",
     "babel-jest": "^29.7.0",
     "eslint-config-airbnb": "^19.0.4",
-    "eslint-config-prettier": "^8.6.0",
+    "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-import": "^2.27.5",
     "eslint-plugin-jsx-a11y": "^6.7.1",
     "eslint-plugin-react": "^7.32.2",
