@@ -90,7 +90,7 @@ INSTALLED_APPS = [
     "greedybear.apps.GreedyBearConfig",
     "authentication",
     # auth
-""    "rest_email_auth",
+    "" "rest_email_auth",
 ]
 
 # required by the certego-saas, but GreedyBear doesn't use the recaptcha, for this reason is filled with a placeholder
