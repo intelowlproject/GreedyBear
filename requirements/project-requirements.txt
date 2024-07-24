@@ -12,5 +12,5 @@ psycopg2-binary==2.9.9
 slack-sdk==3.29.0
 certego-saas==0.7.8
 
-uwsgitop==0.11
+uwsgitop==0.12
 uwsgi==2.0.24
