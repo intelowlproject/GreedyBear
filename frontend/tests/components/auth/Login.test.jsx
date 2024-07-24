@@ -23,7 +23,7 @@ describe("Login component", () => {
         username: "test_user",
       },
     },
-    headers: {'Content-Type': 'application/json'},
+    headers: { "Content-Type": "application/json" },
   });
 
   test("User login", async () => {
@@ -54,7 +54,7 @@ describe("Login component", () => {
       expect(axios.post).toHaveBeenCalledWith(
         LOGIN_URI,
         { password: "dummyPwd1", username: "test_user" },
-        {headers: {'Content-Type': 'application/json'}},
+        { headers: { "Content-Type": "application/json" } },
         { certegoUIenableProgressBar: false }
       );
     });

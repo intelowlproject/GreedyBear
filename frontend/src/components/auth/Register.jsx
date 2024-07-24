@@ -165,7 +165,7 @@ export default function Register() {
         page: "register",
       },
     }).catch((e) => {
-      console.debug(e)
+      console.debug(e);
       setShowConfigurationModal(true);
     });
   }, []);

@@ -8,10 +8,7 @@ import { ContentSection } from "@certego/certego-ui";
 
 import { UUID_REGEX } from "../../constants/index";
 import { resetPassword } from "./api";
-import {
-  PasswordValidator,
-  ComparePassword,
-} from "./utils/validator";
+import { PasswordValidator, ComparePassword } from "./utils/validator";
 
 // constants
 const reMatcher = new RegExp(UUID_REGEX);

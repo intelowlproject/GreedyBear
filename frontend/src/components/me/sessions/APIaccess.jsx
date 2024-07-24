@@ -32,7 +32,7 @@ export default function APIAccess() {
   // API
   const [respData, Loader, refetch] = useAxiosComponentLoader({
     url: APIACCESS_BASE_URI,
-    headers: {'Content-Type': 'application/json'},
+    headers: { "Content-Type": "application/json" },
   });
 
   // local state
