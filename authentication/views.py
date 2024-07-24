@@ -94,7 +94,7 @@ def checkConfiguration(request):
                         errors["SMTP backend"] = "configuration required"
 
     # if you are in production environment
-    if settings.STAGE_PRODUCTION:
+    if settings.USE_RECAPTCHA:
         # recaptcha key
         if settings.DRF_RECAPTCHA_SECRET_KEY == "fake":
             errors["RECAPTCHA_SECRET_KEY"] = "required"
