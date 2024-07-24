@@ -42,8 +42,7 @@ MOCK_CONNECTIONS=False
 # True for public deployment, False for internal deployment
 PUBLIC_DEPLOYMENT=False
 
+USE_RECAPTCHA=False
 # drf-recaptcha
 ## localhost, internal deployments
-RECAPTCHA_SECRET_KEY_GB_LOCAL=""
-## public deployment
-RECAPTCHA_SECRET_KEY_GB_PUBLIC=""
+RECAPTCHA_SECRET_KEY=""
