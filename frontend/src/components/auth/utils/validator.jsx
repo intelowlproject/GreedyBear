@@ -3,7 +3,6 @@ import {
   EMAIL_REGEX,
   HACKER_MEME_STRING,
 } from "../../../constants";
-import { RECAPTCHA_SITEKEY } from "../../../constants/environment";
 
 export function ComparePassword(password, confirmPassword) {
   const errors = {};
@@ -73,14 +72,6 @@ export function EmailValidator(email) {
     errors.email = "Required";
   } else if (!EMAIL_REGEX.test(email)) {
     errors.email = "Invalid email address";
-  }
-  return errors;
-}
-
-export function RecaptchaValidator(recaptcha) {
-  const errors = {};
-  if (recaptcha === "noKey" && RECAPTCHA_SITEKEY) {
-    errors.recaptcha = "Required";
   }
   return errors;
 }
