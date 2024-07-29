@@ -1,16 +1,16 @@
-celery==5.3.4
+celery==5.3.6
 elasticsearch-dsl==7.4.1
 
-Django==4.1.11
+Django==4.1.13
 djangorestframework==3.13.1
 django-rest-email-auth==4.0.0
 django-ses==3.5.0
 
 drf-spectacular==0.26.2
-psycopg2-binary==2.9.7
+psycopg2-binary==2.9.9
 
-slack-sdk==3.21.3
-certego-saas==0.7.0
+certego-saas==0.7.10
+slack-sdk==3.29.0
 
-uwsgitop==0.11
-uwsgi==2.0.22
+uwsgitop==0.12
+uwsgi==2.0.24

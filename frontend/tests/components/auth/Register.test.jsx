@@ -8,9 +8,6 @@ import Register from "../../../src/components/auth/Register";
 import { AUTH_BASE_URI } from "../../../src/constants/api";
 
 jest.mock("axios");
-jest.mock("../../../src/constants/environment", () => ({
-  RECAPTCHA_SITEKEY: "",
-}));
 
 describe("Registration component", () => {
   test("User registration", async () => {
@@ -67,7 +64,6 @@ describe("Registration component", () => {
         username: "test_user",
         email: "test@test.com",
         password: "GreedyBearPassword",
-        recaptcha: "noKey",
         profile: {
           company_name: "companyname",
           company_role: "companyrole",

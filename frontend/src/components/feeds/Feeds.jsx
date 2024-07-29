@@ -65,6 +65,7 @@ export default function Feeds() {
   // API to extract general honeypot
   const [honeypots, Loader] = useAxiosComponentLoader({
     url: `${GENERAL_HONEYPOT_URI}?onlyActive=true`,
+    headers: { "Content-Type": "application/json" },
   });
   console.debug("Feeds-honeypots:", honeypots);
 

@@ -1,0 +1,19 @@
+/var/lib/docker/volumes/*_nginx_logs/_data/*.log {
+    daily
+    missingok
+    rotate 8
+    compress
+    delaycompress
+    notifempty
+    create 0644 www-data www-data
+    sharedscripts
+    prerotate
+            if [ -d /etc/logrotate.d/httpd-prerotate ]; then \
+                    run-parts /etc/logrotate.d/httpd-prerotate; \
+            fi \
+    endscript
+    postrotate
+            container_id=$(docker ps -f name=greedybear_nginx --quiet)
+            docker exec $container_id killall -USR1 nginx
+    endscript
+}

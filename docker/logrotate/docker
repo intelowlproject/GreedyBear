@@ -1,0 +1,10 @@
+/var/log/docker/*.log {
+    daily
+    missingok
+    rotate 2
+    compress
+    delaycompress
+    notifempty
+    create 0655 syslog adm
+    copytruncate
+}

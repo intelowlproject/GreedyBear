@@ -12,7 +12,6 @@ cd docker/
 cp env_file_template env_file
 cp env_file_postgres_template env_file_postgres
 cd ..
-cp frontend/public/env_template.js frontend/public/env.js
 ```
 
 Now you can start by building the image using docker-compose and run the project.
@@ -61,17 +60,6 @@ In the `env_file`, configure different variables as explained below.
 **Optional configuration**:
 * `SLACK_TOKEN`: Slack token of your Slack application that will be used to send/receive notifications
 * `DEFAULT_SLACK_CHANNEL`: ID of the Slack channel you want to post the message to
-
-#### Recaptcha configuration
-The Registration Page and the Login Page contain a Recaptcha form from Google. By default, that Recaptcha is not configured and is not shown.
-If your intention is to publish GreedyBear as a Service you should configure different variables as explained below.
-
-In the `frontend/public/env.js` set the variable:
-* `RECAPTCHA_SITEKEY`: Recaptcha Key for your site
-
-In the `docker/env_file` set the variables:
-* `RECAPTCHA_SECRET_KEY_GB_LOCAL`: your recaptcha secret key internal deployment
-* `RECAPTCHA_SECRET_KEY_GB_PUBLIC`: your recaptcha secret key for public deployment
 
 In that case, you would need to [re-build](/Installation.md#update-and-rebuild) the application to have the changes properly reflected.
 

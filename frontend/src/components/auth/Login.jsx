@@ -17,17 +17,11 @@ import {
   ResendVerificationEmailButton,
   ForgotPasswordButton,
 } from "./utils/registration-buttons";
-import { ConfigurationModalAlert } from "./utils/registration-alert";
-import { RECAPTCHA_SITEKEY } from "../../constants/environment";
-import ReCAPTCHAInput from "./utils/ReCAPTCHAInput";
-import { RecaptchaValidator } from "./utils/validator";
-import { checkConfiguration } from "./api";
 
 // constants
 const initialValues = {
   username: "",
   password: "",
-  recaptcha: "noKey",
 };
 
 // methods
@@ -39,11 +33,6 @@ const onValidate = (values) => {
   if (!values.password) {
     errors.password = "Required";
   }
-  // recaptcha
-  const recaptchaErrors = RecaptchaValidator(values.recaptcha);
-  if (recaptchaErrors.recaptcha) {
-    errors.recaptcha = recaptchaErrors.recaptcha;
-  }
   return errors;
 };
 
@@ -53,20 +42,6 @@ function Login() {
 
   // local state
   const [passwordShown, setPasswordShown] = React.useState(false);
-  const [showConfigurationModal, setShowConfigurationModal] =
-    React.useState(false);
-
-  React.useEffect(() => {
-    checkConfiguration({
-      params: {
-        page: "login",
-      },
-    }).catch(() => {
-      setShowConfigurationModal(true);
-    });
-  }, []);
-
-  console.debug("showConfigurationModal:", showConfigurationModal);
 
   // auth store
   const loginUser = useAuthStore(
@@ -87,13 +62,6 @@ function Login() {
 
   return (
     <ContentSection className="bg-body">
-      {showConfigurationModal && (
-        <ConfigurationModalAlert
-          isOpen={showConfigurationModal}
-          setIsOpen={setShowConfigurationModal}
-          title="The Recaptcha has not been configured!"
-        />
-      )}
       <Container className="col-12 col-lg-8 col-xl-4">
         <ContentSection>
           <h3 className="fw-bold">Log In</h3>
@@ -139,15 +107,6 @@ function Login() {
                     onChange={() => setPasswordShown(!passwordShown)}
                   />
                   <Label check>Show password</Label>
-                </FormGroup>
-                {/* reCAPTCHA */}
-                <FormGroup className="mt-3 d-flex">
-                  {RECAPTCHA_SITEKEY && (
-                    <ReCAPTCHAInput
-                      id="LoginForm__recaptcha"
-                      className="m-3 mx-auto"
-                    />
-                  )}
                 </FormGroup>
                 {/* Submit */}
                 <FormGroup className="d-flex-center">

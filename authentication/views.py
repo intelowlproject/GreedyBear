@@ -4,7 +4,6 @@ from typing import List
 import rest_email_auth.views
 from certego_saas.apps.auth import views as certego_views
 from certego_saas.apps.auth.backend import CookieTokenAuthentication
-from certego_saas.ext.mixins import RecaptchaV2Mixin
 from certego_saas.ext.throttling import POSTUserRateThrottle
 from django.conf import settings
 from django.contrib.auth import get_user_model, login
@@ -27,13 +26,13 @@ logger = logging.getLogger(__name__)
 User: AUTH_USER_MODEL = get_user_model()
 
 
-class PasswordResetRequestView(rest_email_auth.views.PasswordResetRequestView, RecaptchaV2Mixin):
+class PasswordResetRequestView(rest_email_auth.views.PasswordResetRequestView):
     authentication_classes: List = []
     permission_classes: List = []
     throttle_classes: List = [POSTUserRateThrottle]
 
 
-class PasswordResetView(rest_email_auth.views.PasswordResetView, RecaptchaV2Mixin):
+class PasswordResetView(rest_email_auth.views.PasswordResetView):
     authentication_classes: List = []
     permission_classes: List = []
     throttle_classes: List = [POSTUserRateThrottle]
@@ -46,14 +45,14 @@ class EmailVerificationView(rest_email_auth.views.EmailVerificationView):
     serializer_class = EmailVerificationSerializer
 
 
-class RegistrationView(rest_email_auth.views.RegistrationView, RecaptchaV2Mixin):
+class RegistrationView(rest_email_auth.views.RegistrationView):
     authentication_classes: List = []
     permission_classes: List = []
     throttle_classes: List = [POSTUserRateThrottle]
     serializer_class = RegistrationSerializer
 
 
-class ResendVerificationView(rest_email_auth.views.ResendVerificationView, RecaptchaV2Mixin):
+class ResendVerificationView(rest_email_auth.views.ResendVerificationView):
     authentication_classes: List = []
     permission_classes: List = []
     throttle_classes: List = [POSTUserRateThrottle]
@@ -93,19 +92,13 @@ def checkConfiguration(request):
                     if not variable:
                         errors["SMTP backend"] = "configuration required"
 
-    # if you are in production environment
-    if settings.STAGE_PRODUCTION:
-        # recaptcha key
-        if settings.DRF_RECAPTCHA_SECRET_KEY == "fake":
-            errors["RECAPTCHA_SECRET_KEY"] = "required"
-
     logger.info(f"Configuration errors: {errors}")
     if errors:
         return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
     return Response(status=status.HTTP_200_OK)
 
 
-class LoginView(certego_views.LoginView, RecaptchaV2Mixin):
+class LoginView(certego_views.LoginView):
     @staticmethod
     def validate_and_return_user(request):
         serializer = LoginSerializer(data=request.data)
@@ -113,11 +106,6 @@ class LoginView(certego_views.LoginView, RecaptchaV2Mixin):
         return serializer.validated_data["user"]
 
     def post(self, request, *args, **kwargs):
-        try:
-            self.get_serializer()  # for RecaptchaV2Mixin
-        except AssertionError:
-            # it will raise this bcz `serializer_class` is not defined
-            pass
         response = super().post(request, *args, **kwargs)
         uname = request.user.username
         logger.info(f"LoginView: received request from '{uname}'.")
