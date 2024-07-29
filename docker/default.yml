@@ -19,7 +19,6 @@ services:
     volumes:
       - ../configuration/uwsgi/greedybear.ini:/etc/uwsgi/sites/greedybear.ini
       - generic_logs:/var/log/greedybear
-      - ../frontend/public/env.js:/var/www/reactapp/env.js # this is needed because we have to mount the file from the server to the image BEFORE staticfiles
       - static_content:/opt/deploy/greedybear/static
     entrypoint:
       - ./docker/entrypoint_uwsgi.sh

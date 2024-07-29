@@ -18,7 +18,7 @@ export default function SessionsList() {
   const [tokenSessions, Loader, refetch] = useAxiosComponentLoader(
     {
       url: SESSIONS_BASE_URI,
-      headers: {'Content-Type': 'application/json'},
+      headers: { "Content-Type": "application/json" },
     },
     (respData) =>
       respData.sort((a, b) => !a.is_current || a.created - b.created)

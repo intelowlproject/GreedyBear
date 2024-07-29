@@ -48,7 +48,6 @@ class TestUserAuth(CustomOAuthTestCase):
         self.assertEqual(AuthToken.objects.count(), 0)
         body = {
             **self.creds,
-            "recaptcha": "testkey",
         }
 
         response = self.client.post(login_uri, body)
@@ -78,13 +77,11 @@ class TestUserAuth(CustomOAuthTestCase):
     def test_register_username_taken_400(self):
         self.assertEqual(User.objects.count(), 1)
 
-        # In CI, recaptcha protection is disabled so we can pass any value
         body = {
             **self.creds,
             "first_name": "blahblah",
             "last_name": "blahblah",
             "email": self.testregisteruser["email"],
-            "recaptcha": "blahblah",
         }
 
         response = self.client.post(register_uri, body)
@@ -184,7 +181,6 @@ class TestUserAuth(CustomOAuthTestCase):
             resend_verificaton_uri,
             {
                 "email": self.testregisteruser["email"],
-                "recaptcha": "blahblah",
             },
         )
         content = response.json()
@@ -213,7 +209,6 @@ class TestUserAuth(CustomOAuthTestCase):
             request_pwd_reset_uri,
             {
                 "email": self.testregisteruser["email"],
-                "recaptcha": "blahblah",
             },
         )
         content = response.json()
@@ -231,7 +226,6 @@ class TestUserAuth(CustomOAuthTestCase):
             {
                 "key": pwd_reset_obj.key,
                 "password": new_password,
-                "recaptcha": "blahblah",
             },
         )
         content = response.json()
@@ -252,7 +246,6 @@ class TestUserAuth(CustomOAuthTestCase):
             "first_name": "blahblah",
             "last_name": "blahblah",
             "password": "greedybear",
-            "recaptcha": "blahblah",
         }
 
         response = self.client.post(register_uri, body)
@@ -279,7 +272,6 @@ class TestUserAuth(CustomOAuthTestCase):
             "first_name": "blahblah",
             "last_name": "blahblah",
             "password": "greedybeargreedybear$",
-            "recaptcha": "blahblah",
         }
 
         response = self.client.post(register_uri, body)
@@ -297,8 +289,7 @@ class TestUserAuth(CustomOAuthTestCase):
 
     # utils
     def __register_user(self, body: dict):
-        # In CI, recaptcha protection is disabled so we can pass any value
-        response = self.client.post(register_uri, {**body, "recaptcha": "blahblah"}, format="json")
+        response = self.client.post(register_uri, {**body}, format="json")
         content = response.json()
         msg = (response, content)
 
@@ -326,7 +317,6 @@ class CheckConfigurationTestCase(CustomOAuthTestCase):
             EMAIL_HOST_USER="test",
             EMAIL_HOST_PASSWORD="test",
             EMAIL_PORT="test",
-            DRF_RECAPTCHA_SECRET_KEY="recaptchakey",
         ):
             response = self.client.get("/api/auth/configuration?page=register")
             self.assertEqual(response.status_code, 200)
@@ -339,7 +329,6 @@ class CheckConfigurationTestCase(CustomOAuthTestCase):
             AWS_SES="true",
             AWS_ACCESS_KEY_ID="test",
             AWS_SECRET_ACCESS_KEY="test",
-            DRF_RECAPTCHA_SECRET_KEY="recaptchakey",
         ):
             response = self.client.get("/api/auth/configuration?page=register")
             self.assertEqual(response.status_code, 200)
@@ -358,7 +347,6 @@ class CheckConfigurationTestCase(CustomOAuthTestCase):
             EMAIL_HOST_USER="",
             EMAIL_HOST_PASSWORD="",
             EMAIL_PORT="",
-            DRF_RECAPTCHA_SECRET_KEY="fake",
         ):
             response = self.client.get("/api/auth/configuration?page=register")
             self.assertEqual(response.status_code, 501)
@@ -371,17 +359,6 @@ class CheckConfigurationTestCase(CustomOAuthTestCase):
             AWS_SES="true",
             AWS_ACCESS_KEY_ID="",
             AWS_SECRET_ACCESS_KEY="",
-            DRF_RECAPTCHA_SECRET_KEY="fake",
         ):
             response = self.client.get("/api/auth/configuration?page=register")
-            self.assertEqual(response.status_code, 501)
-
-    def test_501_prod_recaptcha(self):
-        with self.settings(
-            STAGE_PRODUCTION="true",
-            DRF_RECAPTCHA_SECRET_KEY="fake",
-        ):
-            response = self.client.get("/api/auth/configuration?page=register")
-            self.assertEqual(response.status_code, 501)
-            response = self.client.get("/api/auth/configuration?page=login")
             self.assertEqual(response.status_code, 501)

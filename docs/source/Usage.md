@@ -12,10 +12,6 @@ If you have GreedyBear deployed on an AWS instance you can use the SES service.
 
 In a development environment the emails that would be sent are written to the standard output.
 
-### Recaptcha configuration
-The Registration Page contains a Recaptcha form from Google. By default, that Recaptcha is not configured and is not shown.
-If your intention is to publish GreedyBear as a Service you should [configure the Recaptcha](/Installation.md#recaptcha-configuration).
-
 ### Amazon SES
 
 If you like, you could use Amazon SES for sending automated emails.
