@@ -10,7 +10,7 @@ drf-spectacular==0.26.2
 psycopg2-binary==2.9.9
 
 certego-saas==0.7.10
-slack-sdk==3.29.0
+slack-sdk==3.31.0
 
 uwsgitop==0.12
 uwsgi==2.0.24
