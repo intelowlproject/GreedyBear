@@ -17,9 +17,9 @@ The project goal is to extract data of the attacks detected by a [TPOT](https://
 
 [Official announcement here](https://www.honeynet.org/2021/12/27/new-project-available-greedybear/).
 
-## Documentation [![Documentation Status](https://readthedocs.org/projects/greedybear/badge/?version=latest)](https://greedybear.readthedocs.io/en/latest/?badge=latest)
+## Documentation
 
-Documentation about GreedyBear installation, usage, configuration and contribution can be found at https://greedybear.readthedocs.io/.
+Documentation about GreedyBear installation, usage, configuration and contribution can be found at [this link](https://intelowlproject.github.io/docs/GreedyBear/Introduction/)
 
 ## Public feeds
 
@@ -29,14 +29,14 @@ Please do not perform too many requests to extract feeds or you will be banned.
 
 If you want to be updated regularly, please download the feeds only once every 10 minutes (this is the time between each internal update).
 
-To check all the available feeds, Please refer to our [usage guide](https://greedybear.readthedocs.io/en/latest/Usage.html)
+To check all the available feeds, Please refer to our [usage guide](https://intelowlproject.github.io/docs/GreedyBear/Usage/)
 
 
 ## Enrichment Service
 
 GreedyBear provides an easy-to-query API to get the information available in GB regarding the queried observable (domain or IP address).
 
-To understand more, Please refer to our [usage guide](https://greedybear.readthedocs.io/en/latest/Usage.html)
+To understand more, Please refer to our [usage guide](https://intelowlproject.github.io/docs/GreedyBear/Usage/)
 
 ## Run Greedybear on your environment
 The tool has been created not only to provide the feeds from The Honeynet Project's cluster of TPOTs.
@@ -44,7 +44,7 @@ The tool has been created not only to provide the feeds from The Honeynet Projec
 If you manage one or more T-POTs of your own, you can get the code of this application and run Greedybear on your environment.
 In this way, you are able to provide new feeds of your own.
 
-To install it locally, Please refer to our [installation guide](https://greedybear.readthedocs.io/en/latest/Installation.html)
+To install it locally, Please refer to our [installation guide](https://intelowlproject.github.io/docs/GreedyBear/Installation/)
 
 ## Sponsors
 

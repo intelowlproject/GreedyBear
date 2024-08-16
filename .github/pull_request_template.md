@@ -17,10 +17,10 @@ Please delete options that are not relevant.
 
 # Checklist
 
-- [ ] I have read and understood the rules about [how to Contribute](https://greedybear.readthedocs.io/en/latest/Contribute.html) to this project.
+- [ ] I have read and understood the rules about [how to Contribute](https://intelowlproject.github.io/docs/GreedyBear/Contribute/) to this project.
 - [ ] The pull request is for the branch `develop`.
 - [ ] I have added documentation of the new features.
-- [ ] Linters (`Black`, `Flake`, `Isort`) gave 0 errors. If you have correctly installed [pre-commit](https://greedybear.readthedocs.io/en/latest/Contribute.html#how-to-start-setup-project-and-development-instance), it does these checks and adjustments on your behalf.
+- [ ] Linters (`Black`, `Flake`, `Isort`) gave 0 errors. If you have correctly installed [pre-commit](https://intelowlproject.github.io/docs/GreedyBear/Contribute/#how-to-start-setup-project-and-development-instance), it does these checks and adjustments on your behalf.
 - [ ] I have added tests for the feature/bug I solved. All the tests (new and old ones) gave 0 errors.
 - [ ] If changes were made to an existing model/serializer/view, the docs were updated and regenerated (check [CONTRIBUTE.md](./Contribute.md)).
 - [ ] If the GUI has been modified:
