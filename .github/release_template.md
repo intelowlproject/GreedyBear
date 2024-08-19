@@ -1,6 +1,6 @@
 # Checklist for creating a new release
 
-- [ ] Change version number in `docs/source/schema.yml`, `docker/.version`
+- [ ] Change version number in `docker/.version`
 - [ ] Verify CI Tests
 - [ ] Create release for the branch `develop`. Name it with the name of the version
 - [ ] Merge the PR to the `main` branch

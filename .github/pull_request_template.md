@@ -22,7 +22,7 @@ Please delete options that are not relevant.
 - [ ] I have added documentation of the new features.
 - [ ] Linters (`Black`, `Flake`, `Isort`) gave 0 errors. If you have correctly installed [pre-commit](https://intelowlproject.github.io/docs/GreedyBear/Contribute/#how-to-start-setup-project-and-development-instance), it does these checks and adjustments on your behalf.
 - [ ] I have added tests for the feature/bug I solved. All the tests (new and old ones) gave 0 errors.
-- [ ] If changes were made to an existing model/serializer/view, the docs were updated and regenerated (check [CONTRIBUTE.md](./Contribute.md)).
+- [ ] If changes were made to an existing model/serializer/view, the docs were updated and regenerated (check [CONTRIBUTE.md](https://github.com/intelowlproject/docs/blob/main/docs/GreedyBear/Contribute.md)).
 - [ ] If the GUI has been modified:
     - [ ] I have a provided a screenshot of the result in the PR.
     - [ ] I have created new frontend tests for the new component or updated existing ones.
