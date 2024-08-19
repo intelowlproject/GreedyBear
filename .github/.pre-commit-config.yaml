@@ -3,7 +3,6 @@ repos:
     rev: 5.0.4
     hooks:
     - id: flake8
-      exclude: docs/conf.py
       args: ["--config", ".github/configurations/python_linters/.flake8"]
 
 -   repo: https://github.com/pycqa/isort
