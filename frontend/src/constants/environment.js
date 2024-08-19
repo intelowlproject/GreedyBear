@@ -1,4 +1,5 @@
-export const GREEDYBEAR_DOCS_URL = "https://greedybear.readthedocs.io/";
+export const GREEDYBEAR_DOCS_URL =
+  "https://intelowlproject.github.io/docs/GreedyBear/Introduction/";
 
 // env variables
 export const VERSION = process.env.REACT_APP_GREEDYBEAR_VERSION;

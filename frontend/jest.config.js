@@ -187,7 +187,8 @@ module.exports = {
   */
   transformIgnorePatterns: [
     `/node_modules/(?!(${[
-      "axios"
+      "axios",
+      "nanoid",
     ].join("|")})/)`,
     "\\.pnp\\.[^\\/]+$",
   ],
