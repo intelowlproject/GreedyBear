@@ -1,4 +1,4 @@
-<p align="center"><img src="docs/static/greedybear.png" width=350 height=404 alt="GreedyBear"/></p>
+<p align="center"><img src="static/greedybear.png" width=350 height=404 alt="GreedyBear"/></p>
 
 # GreedyBear
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/intelowlproject/Greedybear)](https://github.com/intelowlproject/Greedybear/releases)
@@ -50,7 +50,7 @@ To install it locally, Please refer to our [installation guide](https://intelowl
 
 #### Certego
 
-<a href="https://www.certego.net/?utm_source=greedybear"> <img style="margin-right: 2px" width=250 height=71 src="docs/static/Certego.png" alt="Certego Logo"/></a>
+<a href="https://www.certego.net/?utm_source=greedybear"> <img style="margin-right: 2px" width=250 height=71 src="static/Certego.png" alt="Certego Logo"/></a>
 
 [Certego](https://www.certego.net/?utm_source=greedybear) is a MDR (Managed Detection and Response) and Threat Intelligence Provider based in Italy.
 
@@ -58,7 +58,7 @@ Started as a personal Christmas project from [Matteo Lodi](https://twitter.com/m
 
 #### The Honeynet Project
 
-<a href="https://www.honeynet.org"> <img style="border: 0.2px solid black" width=125 height=125 src="docs/static/honeynet_logo.png" alt="Honeynet.org logo"> </a>
+<a href="https://www.honeynet.org"> <img style="border: 0.2px solid black" width=125 height=125 src="static/honeynet_logo.png" alt="Honeynet.org logo"> </a>
 
 [The Honeynet Project](https://www.honeynet.org) is a non-profit organization working on creating open source cyber security tools and sharing knowledge about cyber threats.
 
