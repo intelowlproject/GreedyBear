@@ -1,0 +1,4 @@
+#!/bin/bash
+
+# Restore hard links
+cp -rfl {workflows,actions,configurations} .github/

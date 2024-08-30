@@ -41,7 +41,7 @@ jobs:
       max_timeout: 15
       ubuntu_version: 22.04
       node_versions: >-
-        ["18"]
+        ["20"]
 
 
   backend-tests:
@@ -73,6 +73,8 @@ jobs:
       postgres_version: 11
       use_memcached: false
       use_elastic_search: false
+      elasticsearch_version: 8.15.0
+      elasticsearch_port: 9200
       use_rabbitmq: true
       use_mongo: false
       use_celery: false
@@ -100,6 +102,6 @@ jobs:
         "BROKER_URL": "amqp://guest:guest@rabbitmq:5672",
         }
       python_versions: >-
-        ["3.9"]
+        ["3.10"]
       max_timeout: 15
-      ubuntu_version: 20.04
+      ubuntu_version: 22.04

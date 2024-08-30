@@ -30,7 +30,7 @@ runs:
     - name: Pylint formatter
       run: |
         if [[ ${{ inputs.use_pylint }} != 'false' ]]; then
-          pylint . --rcfile ${GITHUB_WORKSPACE}/.github/configurations/python_linters/.pylintrc
+          pylint * --rcfile ${GITHUB_WORKSPACE}/.github/configurations/python_linters/.pylintrc --ignore-patterns ".*(?<!py)$"
         else
             echo "Skipping pylint formatter"
         fi
