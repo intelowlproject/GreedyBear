@@ -1,6 +1,11 @@
 #!/bin/bash
 # Greedybear on TPot Instance Installer
 
+##### CAREFUL!
+# This installer is not officialy supported neither by Greedybear nor by TPOT maintainers.
+# It must be considered as a POC to have GB and TPOT installed in the same place.
+# Greedybear is supported to be executed only in a separate instance and to connect externally with the TPOTs.
+
 # Code based on https://github.com/telekom-security/tpotce/blob/master/iso/installer/install.sh
 
 ##################
