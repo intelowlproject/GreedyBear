@@ -1,8 +1,8 @@
-class A:
+class MyTestClass:
     def __init__(self):
-        self.a = 1
-        self.b = 2
-        self.c = 3
+        self.first_element = 1
+        self.second_element = 2
+        self.third_element = 3
 
-    def my_a(self):
-        return self.a
+    def my_first_element(self):
+        return self.first_element

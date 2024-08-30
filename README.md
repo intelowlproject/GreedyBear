@@ -56,7 +56,7 @@ See [here](configurations/)
 ## 📖 How to use
 **Add** this repository to your project using `git subtree` command:
 ```bash
-git subtree add --squash --prefix .github https://github.com/certego/.github.git main  && rm -rf .github/.github
+git subtree add --squash --prefix .github https://github.com/certego/.github.git main  && rm -rf .github/{.github,README.md}
 ```
 Customize options of [Pull request automation](workflows/pull_request_automation.yml)  
 Customize linters in [configurations folder](configurations/)  
@@ -65,7 +65,7 @@ Customize [CHANGELOG](CHANGELOG.md)
   
 **Update** the subtree every time a new release of this repository is rolled. Pay attention,be careful to not lose your changes.
 ```bash
-git subtree pull --squash --prefix .github https://github.com/certego/.github  main && rm -rf .github/.github
+git subtree pull --squash --prefix .github https://github.com/certego/.github  main && rm -rf .github/{.github,README.md}
 ```
 
 

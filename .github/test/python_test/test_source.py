@@ -3,25 +3,25 @@ import unittest
 from django.test import tag
 
 try:
-    from .source import A
+    from .source import MyTestClass
 except ImportError:
-    from source import A
+    from source import MyTestClass
 
 
-class TestA(unittest.TestCase):
-    def test_mya(self):
-        a = A()
-        self.assertEqual(a.my_a(), 1)
+class MyTestClassTestCase(unittest.TestCase):
+    def test_my_first_element(self):
+        my_class = MyTestClass()
+        self.assertEqual(my_class.my_first_element(), 1)
 
     @tag("main")
-    def test_c(self):
-        a = A()
-        self.assertEqual(a.c, 3)
+    def test_my_third_element(self):
+        my_class = MyTestClass()
+        self.assertEqual(my_class.third_element, 3)
 
     @tag("manual")
-    def test_b(self):
-        a = A()
-        self.assertEqual(a.b, 2)
+    def test_my_second_element(self):
+        my_class = MyTestClass()
+        self.assertEqual(my_class.second_element, 2)
 
 
 class TestB(unittest.TestCase):

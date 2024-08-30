@@ -1,36 +1,42 @@
 repos:
--   repo: https://github.com/PyCQA/pylint
-    rev: 2.15.4
+-   repo: local
     hooks:
+      # pylint needs to be set up as local, otherwise you won't be able to install all dependencies
       - id: pylint
+        name: pylint
+        entry: pylint
+        language: system
+        types: [python]
+        require_serial: true
         args: ["--rcfile", ".github/configurations/python_linters/.pylintrc"]
+
 -   repo: https://github.com/pycqa/bandit
-    rev: 1.7.4
+    rev: 1.7.9
     hooks:
       - id: bandit
         args: ["-c", ".github/configurations/python_linters/.bandit.yaml"]
 
 -   repo: https://github.com/pycqa/flake8
-    rev: 5.0.4
+    rev: 7.1.1
     hooks:
     - id: flake8
       exclude: docs/conf.py
       args: ["--config", ".github/configurations/python_linters/.flake8"]
 
 -   repo: https://github.com/pycqa/isort
-    rev: 5.12.0
+    rev: 5.13.2
     hooks:
       - id: isort
         args: ["--settings-path", ".github/configurations/python_linters/.isort.cfg", "--filter-files", "--skip", "venv"]
 
 -   repo: https://github.com/psf/black
-    rev: 22.3.0
+    rev: 24.8.0
     hooks:
       - id: black
         args: ["--config", ".github/configurations/python_linters/.black"]
 
 -   repo: https://github.com/PyCQA/autoflake
-    rev: v1.7.7
+    rev: v2.3.1
     hooks:
     -   id: autoflake
         args: ["-i", "--remove-all-unused-imports", "--remove-unused-variables", "--ignore-init-module-imports", "--ignore-pass-statements"]

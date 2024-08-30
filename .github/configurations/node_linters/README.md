@@ -49,10 +49,22 @@ Here are some examples:
 In `.vscode/settings.json`
 ```json
 {
+    "editor.formatOnSave": true,
     "eslint.options": {
         "overrideConfigFile": ".github/configurations/node_linters/eslint/.eslintrc.json"
     },
+    "eslint.format.enable": true,
     "stylelint.configFile": ".github/configurations/node_linters/stylelint/.stylelintrc.json",
+    "stylelint.validate": ["css", "less", "postcss", "scss"],
+    "stylelint.snippet": ["css", "less", "postcss", "scss"],
     "prettier.configPath": ".github/configurations/node_linters/prettier/.prettierrc.js",
+    "editor.semanticHighlighting.enabled": true,
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "[javascriptreact]": {
+        "editor.defaultFormatter": "dbaeumer.vscode-eslint"
+    },
+    "[javascript]": {
+        "editor.defaultFormatter": "dbaeumer.vscode-eslint"
+    }
 }
 ```

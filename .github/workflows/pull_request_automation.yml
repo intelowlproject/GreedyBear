@@ -47,7 +47,7 @@ jobs:
       max_timeout: 15
       ubuntu_version: 22.04
       node_versions: >-
-        ["18"]
+        ["20"]
 
 
   python:
@@ -76,10 +76,19 @@ jobs:
       check_dockerfile: Dockerfile
 
       use_postgres: false
+      postgres_db: db
+      postgres_user: user
+      postgres_password: password
+      postgres_version: latest
       use_memcached: false
+      memcached_version: latest
       use_elastic_search: false
+      elasticsearch_version: 8.11.1
+      elasticsearch_port: 9200
       use_rabbitmq: true
+      rabbitmq_version: 3
       use_mongo: false
+      mongo_version: latest
       use_celery: true
 
       celery_app: python_test.celery
@@ -94,6 +103,6 @@ jobs:
       env: >-
         {"KEY": "VALUE"}
       python_versions: >-
-        ["3.9"]
+        ["3.10"]
       max_timeout: 15
-      ubuntu_version: 20.04
+      ubuntu_version: 22.04

@@ -37,7 +37,9 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event.pull_request.merged == true && ( github.base_ref == 'master' || github.base_ref == 'main' )
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # otherwise, you do not retrieve the tags
 
       - name: Check Tag
         id: check-tag
@@ -59,7 +61,13 @@ jobs:
           target_commitish: ${{ github.base_ref }}
           append_body: true
 
-      - uses: actions/setup-python@v1
+      - name: Checkout created tag
+        uses: actions/checkout@v4
+        if: steps.check-tag.outputs.match == 'true' && ( inputs.publish_on_test_pypi || inputs.publish_on_pypi)
+        with:
+          fetch-depth: 0 # otherwise, you do not retrieve the tags
+
+      - uses: actions/setup-python@v4
         if: steps.check-tag.outputs.match == 'true' && (inputs.publish_on_pypi || inputs.publish_on_test_pypi)
         with:
           python-version: "3.x"
@@ -88,10 +96,10 @@ jobs:
           user: __token__
           password: ${{ secrets.PYPI_API_TOKEN }}
 
-      - uses: actions/setup-node@v3
+      - uses: actions/setup-node@v4
         if: steps.check-tag.outputs.match == 'true' && inputs.publish_on_npm
         with:
-          node-version: '18.x'
+          node-version: 20
           registry-url: 'https://registry.npmjs.org'
           scope: '@certego'
 
