@@ -4,34 +4,20 @@ import csv
 import logging
 from datetime import datetime, timedelta
 
-from api.serializers import (
-    EnrichmentSerializer,
-    FeedsResponseSerializer,
-    FeedsSerializer,
-    IOCSerializer,
-)
+from api.serializers import EnrichmentSerializer, FeedsResponseSerializer, FeedsSerializer, IOCSerializer
 from certego_saas.apps.auth.backend import CookieTokenAuthentication
 from certego_saas.ext.helpers import parse_humanized_range
 from certego_saas.ext.pagination import CustomPageNumberPagination
 from django.db.models import Count, Q
 from django.db.models.functions import Trunc
-from django.http import (
-    HttpResponse,
-    HttpResponseServerError,
-    StreamingHttpResponse,
-)
+from django.http import HttpResponse, HttpResponseServerError, StreamingHttpResponse
 from drf_spectacular.utils import extend_schema as add_docs
 from drf_spectacular.utils import inline_serializer
 from greedybear.consts import FEEDS_LICENSE, GET, PAYLOAD_REQUEST, SCANNER
 from greedybear.models import IOC, GeneralHoneypot, Statistics, viewType
 from rest_framework import serializers as rfs
 from rest_framework import status, viewsets
-from rest_framework.decorators import (
-    action,
-    api_view,
-    authentication_classes,
-    permission_classes,
-)
+from rest_framework.decorators import action, api_view, authentication_classes, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
@@ -73,10 +59,7 @@ def feeds(request, feed_type, attack_type, age, format_):
     Returns:
         Response: The HTTP response with formatted IOC data.
     """
-    logger.info(
-        f"request /api/feeds with params: feed type: {feed_type}, "
-        f"attack_type: {attack_type}, Age: {age}, format: {format_}"
-    )
+    logger.info(f"request /api/feeds with params: feed type: {feed_type}, " f"attack_type: {attack_type}, Age: {age}, format: {format_}")
 
     iocs_queryset = get_queryset(request, feed_type, attack_type, age, format_)
     return feeds_response(request, iocs_queryset, feed_type, format_)
@@ -105,9 +88,7 @@ def feeds_pagination(request):
         "json",
     )
     iocs = paginator.paginate_queryset(iocs_queryset, request)
-    resp_data = feeds_response(
-        request, iocs, params["feed_type"], "json", dict_only=True
-    )
+    resp_data = feeds_response(request, iocs, params["feed_type"], "json", dict_only=True)
     return paginator.get_paginated_response(resp_data)
 
 
@@ -126,10 +107,7 @@ def get_queryset(request, feed_type, attack_type, age, format_):
         QuerySet: The filtered queryset of IOC data.
     """
     source = str(request.user)
-    logger.info(
-        f"request from {source}. Feed type: {feed_type}, attack_type: {attack_type}, "
-        f"Age: {age}, format: {format_}"
-    )
+    logger.info(f"request from {source}. Feed type: {feed_type}, attack_type: {attack_type}, " f"Age: {age}, format: {format_}")
 
     serializer = FeedsSerializer(
         data={
@@ -166,17 +144,9 @@ def get_queryset(request, feed_type, attack_type, age, format_):
         query_dict["last_seen__gte"] = three_days_ago
         # if ordering == "feed_type" or None replace it with the default value "-last_seen"
         # ordering by "feed_type" is done in feed_response function
-        if (
-            ordering is None
-            or ordering == "feed_type"
-            or ordering == "-feed_type"
-        ):
+        if ordering is None or ordering == "feed_type" or ordering == "-feed_type":
             ordering = "-last_seen"
-        iocs = (
-            IOC.objects.exclude(general_honeypot__active=False)
-            .filter(**query_dict)
-            .order_by(ordering)[:5000]
-        )
+        iocs = IOC.objects.exclude(general_honeypot__active=False).filter(**query_dict).order_by(ordering)[:5000]
     elif age == "persistent":
         # scanners detected in the last 14 days
         fourteen_days_ago = datetime.utcnow() - timedelta(days=14)
@@ -186,17 +156,9 @@ def get_queryset(request, feed_type, attack_type, age, format_):
         query_dict["number_of_days_seen__gte"] = number_of_days_seen
         # if ordering == "feed_type" or None replace it with the default value "-times_seen"
         # ordering by "feed_type" is done in feed_response function
-        if (
-            ordering is None
-            or ordering == "feed_type"
-            or ordering == "-feed_type"
-        ):
+        if ordering is None or ordering == "feed_type" or ordering == "-feed_type":
             ordering = "-times_seen"
-        iocs = (
-            IOC.objects.exclude(general_honeypot__active=False)
-            .filter(**query_dict)
-            .order_by(ordering)[:5000]
-        )
+        iocs = IOC.objects.exclude(general_honeypot__active=False).filter(**query_dict).order_by(ordering)[:5000]
 
     # save request source for statistics
     source_ip = str(request.META["REMOTE_ADDR"])
@@ -222,9 +184,7 @@ def feeds_response(request, iocs, feed_type, format_, dict_only=False):
     """
     logger.info(f"Format feeds in: {format_}")
     license_text = (
-        f"# These feeds are generated by The Honeynet Project"
-        f" once every 10 minutes and are protected"
-        f" by the following license: {FEEDS_LICENSE}"
+        f"# These feeds are generated by The Honeynet Project" f" once every 10 minutes and are protected" f" by the following license: {FEEDS_LICENSE}"
     )
 
     if format_ == "txt":
@@ -243,9 +203,7 @@ def feeds_response(request, iocs, feed_type, format_, dict_only=False):
         return StreamingHttpResponse(
             (writer.writerow(row) for row in rows),
             content_type="text/csv",
-            headers={
-                "Content-Disposition": 'attachment; filename="feeds.csv"'
-            },
+            headers={"Content-Disposition": 'attachment; filename="feeds.csv"'},
             status=200,
         )
     elif format_ == "json":
@@ -283,9 +241,7 @@ def feeds_response(request, iocs, feed_type, format_, dict_only=False):
         if ordering == "feed_type":
             sorted_list = sorted(json_list, key=lambda k: k["feed_type"])
         elif ordering == "-feed_type":
-            sorted_list = sorted(
-                json_list, key=lambda k: k["feed_type"], reverse=True
-            )
+            sorted_list = sorted(json_list, key=lambda k: k["feed_type"], reverse=True)
 
         if sorted_list:
             logger.info("Return feeds sorted by feed_type field")
@@ -329,15 +285,11 @@ def enrichment_view(request):
     """
     observable_name = request.query_params.get("query")
     logger.info(f"Enrichment view requested for: {str(observable_name)}")
-    serializer = EnrichmentSerializer(
-        data=request.query_params, context={"request": request}
-    )
+    serializer = EnrichmentSerializer(data=request.query_params, context={"request": request})
     serializer.is_valid(raise_exception=True)
 
     source_ip = str(request.META["REMOTE_ADDR"])
-    request_source = Statistics(
-        source=source_ip, view=viewType.ENRICHMENT_VIEW.value
-    )
+    request_source = Statistics(source=source_ip, view=viewType.ENRICHMENT_VIEW.value)
     request_source.save()
 
     return Response(serializer.data, status=status.HTTP_200_OK)
@@ -372,11 +324,7 @@ class StatisticsViewSet(viewsets.ViewSet):
                 )
             }
         elif pk == "downloads":
-            annotations = {
-                "Downloads": Count(
-                    "source", filter=Q(view=viewType.FEEDS_VIEW.value)
-                )
-            }
+            annotations = {"Downloads": Count("source", filter=Q(view=viewType.FEEDS_VIEW.value))}
         else:
             logger.error("this is impossible. check the code")
             return HttpResponseServerError()
@@ -403,11 +351,7 @@ class StatisticsViewSet(viewsets.ViewSet):
                 )
             }
         elif pk == "requests":
-            annotations = {
-                "Requests": Count(
-                    "source", filter=Q(view=viewType.ENRICHMENT_VIEW.value)
-                )
-            }
+            annotations = {"Requests": Count("source", filter=Q(view=viewType.ENRICHMENT_VIEW.value))}
         else:
             logger.error("this is impossible. check the code")
             return HttpResponseServerError()
@@ -433,14 +377,10 @@ class StatisticsViewSet(viewsets.ViewSet):
         # feed_type for each general honeypot in the list
         generalHoneypots = GeneralHoneypot.objects.all().filter(active=True)
         for hp in generalHoneypots:
-            annotations[hp.name] = Count(
-                "name", Q(general_honeypot__name__iexact=hp.name.lower())
-            )
+            annotations[hp.name] = Count("name", Q(general_honeypot__name__iexact=hp.name.lower()))
         return self.__aggregation_response_static_ioc(annotations)
 
-    def __aggregation_response_static_statistics(
-        self, annotations: dict
-    ) -> Response:
+    def __aggregation_response_static_statistics(self, annotations: dict) -> Response:
         """
         Helper method to generate statistics response based on annotations.
 
@@ -451,12 +391,7 @@ class StatisticsViewSet(viewsets.ViewSet):
             Response: A JSON response containing the aggregated statistics.
         """
         delta, basis = self.__parse_range(self.request)
-        qs = (
-            Statistics.objects.filter(request_date__gte=delta)
-            .annotate(date=Trunc("request_date", basis))
-            .values("date")
-            .annotate(**annotations)
-        )
+        qs = Statistics.objects.filter(request_date__gte=delta).annotate(date=Trunc("request_date", basis)).values("date").annotate(**annotations)
         return Response(qs)
 
     def __aggregation_response_static_ioc(self, annotations: dict) -> Response:
