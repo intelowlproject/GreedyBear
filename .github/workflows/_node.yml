@@ -88,10 +88,10 @@ jobs:
         node_version: ${{ fromJson(inputs.node_versions) }}
         language: ['javascript']
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set up Node.js
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node_version }}
           cache: 'npm'
@@ -133,7 +133,7 @@ jobs:
         if: ${{ inputs.check_packages_licenses }}
         id: license_check_report
         continue-on-error: true
-        uses: pilosus/action-pip-license-checker@v0.7.1
+        uses: pilosus/action-pip-license-checker@v2
         with:
           requirements: ${{ inputs.requirements_path }}
           external: ${{ inputs.working_directory }}/licenses.csv

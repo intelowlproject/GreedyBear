@@ -37,7 +37,7 @@ else:
         print("you are in production mode: closing the application")
         exit(9)
 
-if ELASTIC_ENDPOINT:
+if ELASTIC_ENDPOINT and not STAGE_CI:
     ELASTIC_CLIENT = Elasticsearch(
         ELASTIC_ENDPOINT,
         maxsize=20,
@@ -51,11 +51,6 @@ SLACK_TOKEN = os.environ.get("SLACK_TOKEN", "")
 DEFAULT_SLACK_CHANNEL = os.environ.get("DEFAULT_SLACK_CHANNEL", "")
 
 VERSION = os.environ.get("REACT_APP_GREEDYBEAR_VERSION", "")
-# drf-spectacular
-SPECTACULAR_SETTINGS = {
-    "TITLE": "GreedyBear API specification",
-    "VERSION": VERSION,
-}
 
 CSRF_COOKIE_SAMESITE = "Strict"
 CSRF_COOKIE_HTTPONLY = True
@@ -78,7 +73,6 @@ INSTALLED_APPS = [
     "django.contrib.postgres",
     # rest framework libs
     "rest_framework",
-    "drf_spectacular",
     "api.apps.ApiConfig",
     # certego libs
     "durin",
@@ -90,7 +84,7 @@ INSTALLED_APPS = [
     "greedybear.apps.GreedyBearConfig",
     "authentication",
     # auth
-    "" "rest_email_auth",
+    "rest_email_auth",
 ]
 
 # required by the certego-saas, but GreedyBear doesn't use the recaptcha, for this reason is filled with a placeholder
@@ -102,7 +96,6 @@ REST_FRAMEWORK = {
     "EXCEPTION_HANDLER": "certego_saas.ext.exceptions.custom_exception_handler",
     # Auth
     "DEFAULT_AUTHENTICATION_CLASSES": ["certego_saas.apps.auth.backend.CookieTokenAuthentication"],
-    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
     # Pagination
     "DEFAULT_PAGINATION_CLASS": "certego_saas.ext.pagination.CustomPageNumberPagination",
     "PAGE_SIZE": 10,

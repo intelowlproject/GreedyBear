@@ -41,7 +41,7 @@ jobs:
       max_timeout: 15
       ubuntu_version: 22.04
       node_versions: >-
-        ["18"]
+        ["20"]
 
 
   backend-tests:
@@ -70,7 +70,7 @@ jobs:
       postgres_db: greedybear_db
       postgres_user: user
       postgres_password: password
-      postgres_version: 11
+      postgres_version: 13
       use_memcached: false
       use_elastic_search: false
       use_rabbitmq: true
@@ -100,6 +100,6 @@ jobs:
         "BROKER_URL": "amqp://guest:guest@rabbitmq:5672",
         }
       python_versions: >-
-        ["3.9"]
+        ["3.10"]
       max_timeout: 15
-      ubuntu_version: 20.04
+      ubuntu_version: 22.04

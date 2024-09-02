@@ -11,11 +11,8 @@ from certego_saas.ext.pagination import CustomPageNumberPagination
 from django.db.models import Count, Q
 from django.db.models.functions import Trunc
 from django.http import HttpResponse, HttpResponseServerError, StreamingHttpResponse
-from drf_spectacular.utils import extend_schema as add_docs
-from drf_spectacular.utils import inline_serializer
 from greedybear.consts import FEEDS_LICENSE, GET, PAYLOAD_REQUEST, SCANNER
 from greedybear.models import IOC, GeneralHoneypot, Statistics, viewType
-from rest_framework import serializers as rfs
 from rest_framework import status, viewsets
 from rest_framework.decorators import action, api_view, authentication_classes, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -27,39 +24,94 @@ logger = logging.getLogger(__name__)
 class Echo:
     """An object that implements just the write method of the file-like
     interface.
+    This class is used to stream data in CSV format.
     """
 
     def write(self, value):
-        """Write the value by returning it, instead of storing in a buffer."""
+        """Write the value by returning it, instead of storing in a buffer.
+
+        Args:
+            value (str): The value to be written.
+
+        Returns:
+            str: The same value that was passed.
+        """
         return value
 
 
-# The Doc does not work as intended. We should refactor this by correctly leveraging DRF
-@add_docs(description="Extract Structured IOC Feeds from GreedyBear")
 @api_view([GET])
 def feeds(request, feed_type, attack_type, age, format_):
-    logger.info(f"request /api/feeds with params: feed type: {feed_type}, attack_type: {attack_type}, Age: {age}, format: {format_}")
+    """
+    Handle requests for IOC feeds with specific parameters and format the response accordingly.
+
+    Args:
+        request: The incoming request object.
+        feed_type (str): Type of feed (e.g., log4j, cowrie, etc.).
+        attack_type (str): Type of attack (e.g., all, specific attack types).
+        age (str): Age of the data to filter (e.g., recent, persistent).
+        format_ (str): Desired format of the response (e.g., json, csv, txt).
+
+    Returns:
+        Response: The HTTP response with formatted IOC data.
+    """
+    logger.info(f"request /api/feeds with params: feed type: {feed_type}, " f"attack_type: {attack_type}, Age: {age}, format: {format_}")
+
     iocs_queryset = get_queryset(request, feed_type, attack_type, age, format_)
     return feeds_response(request, iocs_queryset, feed_type, format_)
 
 
 @api_view([GET])
 def feeds_pagination(request):
+    """
+    Handle requests for paginated IOC feeds based on query parameters.
+
+    Args:
+        request: The incoming request object.
+
+    Returns:
+        Response: The paginated HTTP response with IOC data.
+    """
     params = request.query_params
     logger.info(f"request /api/feeds with params: {params}")
 
     paginator = CustomPageNumberPagination()
-    iocs_queryset = get_queryset(request, params["feed_type"], params["attack_type"], params["age"], "json")
+    iocs_queryset = get_queryset(
+        request,
+        params["feed_type"],
+        params["attack_type"],
+        params["age"],
+        "json",
+    )
     iocs = paginator.paginate_queryset(iocs_queryset, request)
     resp_data = feeds_response(request, iocs, params["feed_type"], "json", dict_only=True)
     return paginator.get_paginated_response(resp_data)
 
 
 def get_queryset(request, feed_type, attack_type, age, format_):
-    source = str(request.user)
-    logger.info(f"request from {source}. Feed type: {feed_type}, attack_type: {attack_type}, Age: {age}, format: {format_}")
+    """
+    Build a queryset to filter IOC data based on the request parameters.
 
-    serializer = FeedsSerializer(data={"feed_type": feed_type, "attack_type": attack_type, "age": age, "format": format_})
+    Args:
+        request: The incoming request object.
+        feed_type (str): Type of feed (e.g., log4j, cowrie, etc.).
+        attack_type (str): Type of attack (e.g., all, specific attack types).
+        age (str): Age of the data to filter (e.g., recent, persistent).
+        format_ (str): Desired format of the response (e.g., json, csv, txt).
+
+    Returns:
+        QuerySet: The filtered queryset of IOC data.
+    """
+    source = str(request.user)
+    logger.info(f"request from {source}. Feed type: {feed_type}, attack_type: {attack_type}, " f"Age: {age}, format: {format_}")
+
+    serializer = FeedsSerializer(
+        data={
+            "feed_type": feed_type,
+            "attack_type": attack_type,
+            "age": age,
+            "format": format_,
+        }
+    )
     serializer.is_valid(raise_exception=True)
 
     ordering = request.query_params.get("ordering")
@@ -113,6 +165,18 @@ def get_queryset(request, feed_type, attack_type, age, format_):
 
 
 def feeds_response(request, iocs, feed_type, format_, dict_only=False):
+    """
+    Format the IOC data into the requested format (e.g., JSON, CSV, TXT).
+
+    Args:
+        request: The incoming request object.
+        iocs (QuerySet): The filtered queryset of IOC data.
+        feed_type (str): Type of feed (e.g., log4j, cowrie, etc.).
+        format_ (str): Desired format of the response (e.g., json, csv, txt).
+
+    Returns:
+        Response: The HTTP response containing formatted IOC data.
+    """
     logger.info(f"Format feeds in: {format_}")
     license_text = (
         f"# These feeds are generated by The Honeynet Project" f" once every 10 minutes and are protected" f" by the following license: {FEEDS_LICENSE}"
@@ -186,24 +250,20 @@ def feeds_response(request, iocs, feed_type, format_, dict_only=False):
             return Response(resp_data, status=status.HTTP_200_OK)
 
 
-# The Doc does not work as intended. We should refactor this by correctly leveraging DRF
-@add_docs(
-    description="Request if a specific observable (domain or IP address) has been listed by GreedyBear",
-    request=inline_serializer(
-        name="EnrichmentSerializerRequest",
-        fields={"query": rfs.CharField()},
-    ),
-    responses={
-        200: inline_serializer(
-            name="EnrichmentSerializerResponse",
-            fields={"found": rfs.BooleanField(), "ioc": IOCSerializer},
-        ),
-    },
-)
 @api_view([GET])
 @authentication_classes([CookieTokenAuthentication])
 @permission_classes([IsAuthenticated])
 def enrichment_view(request):
+    """
+    Handle enrichment requests for a specific observable (domain or IP address).
+
+    Args:
+        request: The incoming request object containing query parameters.
+
+    Returns:
+        Response: A JSON response indicating whether the observable was found,
+        and if so, the corresponding IOC.
+    """
     observable_name = request.query_params.get("query")
     logger.info(f"Enrichment view requested for: {str(observable_name)}")
     serializer = EnrichmentSerializer(data=request.query_params, context={"request": request})
@@ -217,10 +277,33 @@ def enrichment_view(request):
 
 
 class StatisticsViewSet(viewsets.ViewSet):
+    """
+    A viewset for viewing and editing statistics related to feeds and enrichment data.
+
+    Provides actions to retrieve statistics about the sources and downloads of feeds,
+    as well as statistics on enrichment data.
+    """
+
     @action(detail=True, methods=["GET"])
     def feeds(self, request, pk=None):
+        """
+        Retrieve feed statistics, including the number of sources and downloads.
+
+        Args:
+            request: The incoming request object.
+            pk (str): The type of statistics to retrieve (e.g., "sources", "downloads").
+
+        Returns:
+            Response: A JSON response containing the requested statistics.
+        """
         if pk == "sources":
-            annotations = {"Sources": Count("source", distinct=True, filter=Q(view=viewType.FEEDS_VIEW.value))}
+            annotations = {
+                "Sources": Count(
+                    "source",
+                    distinct=True,
+                    filter=Q(view=viewType.FEEDS_VIEW.value),
+                )
+            }
         elif pk == "downloads":
             annotations = {"Downloads": Count("source", filter=Q(view=viewType.FEEDS_VIEW.value))}
         else:
@@ -230,6 +313,16 @@ class StatisticsViewSet(viewsets.ViewSet):
 
     @action(detail=True, methods=["get"])
     def enrichment(self, request, pk=None):
+        """
+        Retrieve enrichment statistics, including the number of sources and requests.
+
+        Args:
+            request: The incoming request object.
+            pk (str): The type of statistics to retrieve (e.g., "sources", "requests").
+
+        Returns:
+            Response: A JSON response containing the requested statistics.
+        """
         if pk == "sources":
             annotations = {
                 "Sources": Count(
@@ -247,6 +340,16 @@ class StatisticsViewSet(viewsets.ViewSet):
 
     @action(detail=False, methods=["get"])
     def feeds_types(self, request):
+        """
+        Retrieve statistics for different types of feeds, including Log4j, Cowrie,
+        and general honeypots.
+
+        Args:
+            request: The incoming request object.
+
+        Returns:
+            Response: A JSON response containing the feed type statistics.
+        """
         # FEEDS
         annotations = {
             "Log4j": Count("name", distinct=True, filter=Q(log4j=True)),
@@ -259,11 +362,29 @@ class StatisticsViewSet(viewsets.ViewSet):
         return self.__aggregation_response_static_ioc(annotations)
 
     def __aggregation_response_static_statistics(self, annotations: dict) -> Response:
+        """
+        Helper method to generate statistics response based on annotations.
+
+        Args:
+            annotations (dict): Dictionary containing the annotations for the query.
+
+        Returns:
+            Response: A JSON response containing the aggregated statistics.
+        """
         delta, basis = self.__parse_range(self.request)
         qs = Statistics.objects.filter(request_date__gte=delta).annotate(date=Trunc("request_date", basis)).values("date").annotate(**annotations)
         return Response(qs)
 
     def __aggregation_response_static_ioc(self, annotations: dict) -> Response:
+        """
+        Helper method to generate IOC response based on annotations.
+
+        Args:
+            annotations (dict): Dictionary containing the annotations for the query.
+
+        Returns:
+            Response: A JSON response containing the aggregated IOC data.
+        """
         delta, basis = self.__parse_range(self.request)
 
         qs = (
@@ -277,6 +398,15 @@ class StatisticsViewSet(viewsets.ViewSet):
 
     @staticmethod
     def __parse_range(request):
+        """
+        Parse the range parameter from the request query string to determine the time range for the query.
+
+        Args:
+            request: The incoming request object.
+
+        Returns:
+            tuple: A tuple containing the delta time and basis for the query range.
+        """
         try:
             range_str = request.GET["range"]
         except KeyError:
@@ -288,6 +418,16 @@ class StatisticsViewSet(viewsets.ViewSet):
 
 @api_view([GET])
 def general_honeypot_list(request):
+    """
+    Retrieve a list of all general honeypots, optionally filtering by active status.
+
+    Args:
+        request: The incoming request object containing query parameters.
+
+    Returns:
+        Response: A JSON response containing the list of general honeypots.
+    """
+
     logger.info(f"Requested general honeypots list from {request.user}.")
     active = request.query_params.get("onlyActive")
     honeypots = []
