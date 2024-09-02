@@ -37,7 +37,7 @@ else:
         print("you are in production mode: closing the application")
         exit(9)
 
-if ELASTIC_ENDPOINT and STAGE != STAGE_CI:
+if ELASTIC_ENDPOINT and not STAGE_CI:
     ELASTIC_CLIENT = Elasticsearch(
         ELASTIC_ENDPOINT,
         maxsize=20,
