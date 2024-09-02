@@ -91,7 +91,7 @@ jobs:
         "DB_PORT": "5432",
         "DB_USER": "user",
         "DB_PASSWORD": "password",
-        "ELASTIC_ENDPOINT": "http://localhost:9200",
+        "ELASTIC_ENDPOINT": "http://elastic_search:9200",
         "STAGE":"ci",
         "DEBUG": "True",
         "MOCK_CONNECTIONS": "True",
