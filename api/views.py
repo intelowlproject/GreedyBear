@@ -11,11 +11,8 @@ from certego_saas.ext.pagination import CustomPageNumberPagination
 from django.db.models import Count, Q
 from django.db.models.functions import Trunc
 from django.http import HttpResponse, HttpResponseServerError, StreamingHttpResponse
-from drf_spectacular.utils import extend_schema as add_docs
-from drf_spectacular.utils import inline_serializer
 from greedybear.consts import FEEDS_LICENSE, GET, PAYLOAD_REQUEST, SCANNER
 from greedybear.models import IOC, GeneralHoneypot, Statistics, viewType
-from rest_framework import serializers as rfs
 from rest_framework import status, viewsets
 from rest_framework.decorators import action, api_view, authentication_classes, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -42,8 +39,6 @@ class Echo:
         return value
 
 
-# The Doc does not work as intended. We should refactor this by correctly leveraging DRF
-@add_docs(description="Extract Structured IOC Feeds from GreedyBear")
 @api_view([GET])
 def feeds(request, feed_type, attack_type, age, format_):
     """
@@ -255,20 +250,6 @@ def feeds_response(request, iocs, feed_type, format_, dict_only=False):
             return Response(resp_data, status=status.HTTP_200_OK)
 
 
-# The Doc does not work as intended. We should refactor this by correctly leveraging DRF
-@add_docs(
-    description="Request if a specific observable (domain or IP address) has been listed by GreedyBear",
-    request=inline_serializer(
-        name="EnrichmentSerializerRequest",
-        fields={"query": rfs.CharField()},
-    ),
-    responses={
-        200: inline_serializer(
-            name="EnrichmentSerializerResponse",
-            fields={"found": rfs.BooleanField(), "ioc": IOCSerializer},
-        ),
-    },
-)
 @api_view([GET])
 @authentication_classes([CookieTokenAuthentication])
 @permission_classes([IsAuthenticated])
