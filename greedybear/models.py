@@ -43,10 +43,28 @@ class IOC(models.Model):
     scanner = models.BooleanField(blank=False, default=False)
     payload_request = models.BooleanField(blank=False, default=False)
     related_ioc = models.ManyToManyField("self", blank=True, symmetrical=True)
-    related_urls = pg_fields.ArrayField(models.CharField(max_length=900, blank=True), blank=True, default=list)
+    related_urls = pg_fields.ArrayField(
+        models.CharField(max_length=900, blank=True), blank=True, default=list
+    )
+    ip_reputation = models.CharField(max_length=32, blank=True)
+    asn = models.IntegerField(blank=False, null=True)
+    destination_ports = pg_fields.ArrayField(
+        models.IntegerField(), blank=False, null=False, default=list
+    )
+    login_attempts = models.IntegerField(blank=False, null=False, default=0)
 
     def __str__(self):
         return self.name
+
+
+class CowrieSession(models.Model):
+    session_id = models.BigIntegerField(primary_key=True)
+    start_time = models.DateTimeField(blank=False, null=True)
+    duration = models.FloatField(blank=False, null=True)
+    login_attempt = models.BooleanField(blank=False, null=False, default=False)
+    command_execution = models.BooleanField(blank=False, null=False, default=False)
+    interaction_count = models.IntegerField(blank=False, null=False, default=0)
+    source = models.ForeignKey(IOC, on_delete=models.CASCADE, blank=False, null=False)
 
 
 class Statistics(models.Model):
