@@ -1,10 +1,10 @@
 # This file is a part of GreedyBear https://github.com/honeynet/GreedyBear
 # See the file 'LICENSE' for copying permission.
 
-from greedybear.consts import SCANNER
+from greedybear.consts import ATTACK_DATA_FIELDS, SCANNER
 from greedybear.cronjobs.attacks import ExtractAttacks
 from greedybear.cronjobs.honeypots import Honeypot
-from greedybear.models import GeneralHoneypot
+from greedybear.models import IOC, GeneralHoneypot
 
 
 class ExtractGeneral(ExtractAttacks):
@@ -18,23 +18,10 @@ class ExtractGeneral(ExtractAttacks):
         self.log.info(f"added {self.added_scanners} scanners for {self.hp.name}")
 
     def _get_scanners(self):
-        search = self._base_search(self.hp)
-        name = self.hp.name
-        # get no more than X IPs a day
-        search.aggs.bucket(
-            "attacker_ips",
-            "terms",
-            field="src_ip.keyword",
-            size=1000,
-        )
-        agg_response = search[0:0].execute()
-        for tag in agg_response.aggregations.attacker_ips.buckets:
-            if not tag.key:
-                self.log.warning(f"why tag.key is empty? tag: {tag}")
-                continue
-            self.log.info(f"found IP {tag.key} by honeypot {name}")
-            scanner_ip = str(tag.key)
-            self._add_ioc(scanner_ip, SCANNER, general=name)
+        honeypot_name = self.hp.name
+        for ioc in self._get_attacker_data(self.hp, ATTACK_DATA_FIELDS):
+            self.log.info(f"found IP {ioc.name} by honeypot {honeypot_name}")
+            self._add_ioc(ioc, attack_type=SCANNER, general=honeypot_name)
             self.added_scanners += 1
 
     def run(self):

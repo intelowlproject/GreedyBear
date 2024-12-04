@@ -46,7 +46,8 @@ class ExtractCowrie(ExtractAttacks):
                 continue
             self.log.info(f"found IP {tag.key} by honeypot cowrie")
             scanner_ip = str(tag.key)
-            self._add_ioc(scanner_ip, SCANNER, cowrie=True)
+            ioc = IOC(name=scanner_ip, type=self._get_ioc_type(scanner_ip), cowrie=True)
+            self._add_ioc(ioc, attack_type=SCANNER)
             self.added_scanners += 1
             self._extract_possible_payload_in_messages(scanner_ip)
 
@@ -64,12 +65,13 @@ class ExtractCowrie(ExtractAttacks):
                 self.log.info(f"found hidden URL {payload_url}" f" in payload from attacker {scanner_ip}")
                 payload_hostname = urlparse(payload_url).hostname
                 self.log.info(f"extracted hostname {payload_hostname} from {payload_url}")
-                self._add_ioc(
-                    payload_hostname,
-                    PAYLOAD_REQUEST,
-                    related_urls=[payload_url],
+                ioc = IOC(
+                    name=payload_hostname,
+                    type=self._get_ioc_type(payload_hostname),
                     cowrie=True,
+                    related_urls=[payload_url],
                 )
+                self._add_ioc(ioc, attack_type=PAYLOAD_REQUEST)
                 self._add_fks(scanner_ip, payload_hostname)
 
     def _get_url_downloads(self):
@@ -81,12 +83,19 @@ class ExtractCowrie(ExtractAttacks):
         for hit in hits:
             self.log.info(f"found IP {hit.src_ip} trying to execute download from {hit.url}")
             scanner_ip = str(hit.src_ip)
-            self._add_ioc(scanner_ip, SCANNER, cowrie=True)
+            ioc = IOC(name=scanner_ip, type=self._get_ioc_type(scanner_ip), cowrie=True)
+            self._add_ioc(ioc, attack_type=SCANNER)
             self.added_ip_downloads += 1
             download_url = str(hit.url)
             if download_url:
                 hostname = urlparse(download_url).hostname
-                self._add_ioc(hostname, PAYLOAD_REQUEST, related_urls=[download_url], cowrie=True)
+                ioc = IOC(
+                    name=hostname,
+                    type=self._get_ioc_type(hostname),
+                    cowrie=True,
+                    related_urls=[download_url],
+                )
+                self._add_ioc(ioc, attack_type=PAYLOAD_REQUEST)
                 self.added_url_downloads += 1
                 self._add_fks(scanner_ip, hostname)
 
