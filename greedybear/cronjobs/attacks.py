@@ -18,6 +18,7 @@ class ExtractAttacks(Cronjob, metaclass=ABCMeta):
         super().__init__()
         self.first_time_run = False
         self.minutes_back = minutes_back
+        self.whitelist = set(Sensors.objects.all())
 
     @property
     def minutes_back_to_lookup(self):
@@ -30,61 +31,36 @@ class ExtractAttacks(Cronjob, metaclass=ABCMeta):
             minutes = 11
         return minutes
 
-    def _add_ioc(self, ioc, attack_type, related_urls=None, log4j=False, cowrie=False, general=""):  # FEEDS
-        self.log.info(f"saving ioc {ioc} for attack_type {attack_type} and related_urls {related_urls}")
-        try:
-            today = datetime.today().date()
-            ioc_type = self._get_ioc_type(ioc)
-            try:
-                ioc_instance = IOC.objects.get(name=ioc)
-            except IOC.DoesNotExist:
-                self._check_if_allowed(ioc)
-                ioc_instance = IOC(
-                    name=ioc,
-                    type=ioc_type,
-                    days_seen=[today],
-                )
-                if related_urls:
-                    ioc_instance.related_urls = related_urls
-            else:
-                ioc_instance.last_seen = datetime.utcnow()
-                ioc_instance.times_seen += 1
-                if today not in ioc_instance.days_seen:
-                    ioc_instance.days_seen.append(today)
-                    ioc_instance.number_of_days_seen += 1
-                if related_urls:
-                    for related_url in related_urls:
-                        if related_url and related_url not in ioc_instance.related_urls:
-                            ioc_instance.related_urls.append(related_url)
-
-            if attack_type == SCANNER:
-                ioc_instance.scanner = True
-            if attack_type == PAYLOAD_REQUEST:
-                ioc_instance.payload_request = True
-
-            if log4j:
-                ioc_instance.log4j = True
-
-            if cowrie:
-                ioc_instance.cowrie = True
-
-            if ioc_instance:
-                ioc_instance.save()
-
-            # FEEDS - add general honeypot to list, if it is no already in it
-            if general and general not in ioc_instance.general_honeypot.all():
-                ioc_instance.general_honeypot.add(GeneralHoneypot.objects.get(name=general))
-
-        except self.IOCWhitelist:
+    def _add_ioc(self, ioc, attack_type: str, general=None) -> bool:
+        self.log.info(f"saving ioc {ioc}")
+        if ioc.name in self.whitelist:
             self.log.info(f"not saved {ioc} because is whitelisted")
+            return False
 
-    def _check_if_allowed(self, ioc):
+        today = datetime.today().date()
         try:
-            Sensors.objects.get(address=ioc)
-        except Sensors.DoesNotExist:
-            pass
+            ioc_record = IOC.objects.get(name=ioc.name)
+        except IOC.DoesNotExist:
+            ioc_record = ioc
         else:
-            raise self.IOCWhitelist()
+            ioc_record.related_urls = sorted(set(ioc_record.related_urls + ioc.related_urls))
+            ioc_record.destination_ports = sorted(set(ioc_record.destination_ports + ioc.destination_ports))
+            ioc_record.ip_reputation = ioc.ip_reputation
+            ioc_record.asn = ioc.asn
+            ioc_record.login_attempts += ioc.login_attempts
+
+        if general is not None:
+            if general not in ioc_record.general_honeypot.all():
+                ioc_record.general_honeypot.add(GeneralHoneypot.objects.get(name=general))
+
+        if len(ioc_record.days_seen) == 0 or ioc_record.days_seen[-1] != today:
+            ioc_record.days_seen.append(today)
+            ioc_record.number_of_days_seen += 1
+        ioc_record.last_seen = datetime.utcnow()
+        ioc_record.times_seen += 1
+        ioc_record.scanner = attack_type == SCANNER
+        ioc_record.payload_request = attack_type == PAYLOAD_REQUEST
+        ioc_record.save()
 
     def _get_ioc_type(self, ioc):
         try:

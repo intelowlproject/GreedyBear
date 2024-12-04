@@ -4,7 +4,7 @@
 from greedybear.consts import SCANNER
 from greedybear.cronjobs.attacks import ExtractAttacks
 from greedybear.cronjobs.honeypots import Honeypot
-from greedybear.models import GeneralHoneypot
+from greedybear.models import IOC, GeneralHoneypot
 
 # FEEDS
 # Extract only source IPs from a list of Honeypots
@@ -42,7 +42,8 @@ class ExtractGeneral(ExtractAttacks):
                 continue
             self.log.info(f"found IP {tag.key} by honeypot {name}")
             scanner_ip = str(tag.key)
-            self._add_ioc(scanner_ip, SCANNER, general=name)
+            ioc = IOC(name=scanner_ip, type=self._get_ioc_type(scanner_ip))
+            self._add_ioc(ioc, attack_type=SCANNER, general=name)
             self.added_scanners[idx] += 1
 
     def run(self):
