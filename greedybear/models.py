@@ -33,9 +33,9 @@ class IOC(models.Model):
     type = models.CharField(max_length=32, blank=False, choices=iocType.choices)
     first_seen = models.DateTimeField(blank=False, default=datetime.utcnow)
     last_seen = models.DateTimeField(blank=False, default=datetime.utcnow)
-    days_seen = pg_fields.ArrayField(models.DateField(), blank=True)
-    number_of_days_seen = models.IntegerField(default=1)
-    times_seen = models.IntegerField(default=1)
+    days_seen = pg_fields.ArrayField(models.DateField(), blank=True, default=list)
+    number_of_days_seen = models.IntegerField(default=0)
+    times_seen = models.IntegerField(default=0)
     log4j = models.BooleanField(blank=False, default=False)
     cowrie = models.BooleanField(blank=False, default=False)
     # FEEDS - list of honeypots from general list, from which the IOC was detected
@@ -43,14 +43,10 @@ class IOC(models.Model):
     scanner = models.BooleanField(blank=False, default=False)
     payload_request = models.BooleanField(blank=False, default=False)
     related_ioc = models.ManyToManyField("self", blank=True, symmetrical=True)
-    related_urls = pg_fields.ArrayField(
-        models.CharField(max_length=900, blank=True), blank=True, default=list
-    )
-    ip_reputation = models.CharField(max_length=32, blank=True)
-    asn = models.IntegerField(blank=False, null=True)
-    destination_ports = pg_fields.ArrayField(
-        models.IntegerField(), blank=False, null=False, default=list
-    )
+    related_urls = pg_fields.ArrayField(models.CharField(max_length=900, blank=True), blank=True, default=list)
+    ip_reputation = models.CharField(max_length=32, blank=True, default=str)
+    asn = models.IntegerField(blank=False, null=True, default=None)
+    destination_ports = pg_fields.ArrayField(models.IntegerField(), blank=False, null=False, default=list)
     login_attempts = models.IntegerField(blank=False, null=False, default=0)
 
     def __str__(self):
