@@ -43,6 +43,7 @@ class ExtractAttacks(Cronjob, metaclass=ABCMeta):
             ioc_record = IOC.objects.get(name=ioc.name)
         except IOC.DoesNotExist:
             ioc_record = ioc
+            ioc_record.save()
         else:
             ioc_record.related_urls = sorted(set(ioc_record.related_urls + ioc.related_urls))
             ioc_record.destination_ports = sorted(set(ioc_record.destination_ports + ioc.destination_ports))
