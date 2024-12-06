@@ -12,9 +12,6 @@ from greedybear.settings import EXTRACTION_INTERVAL, LEGACY_EXTRACTION
 
 
 class ExtractAttacks(Cronjob, metaclass=ABCMeta):
-    class IOCWhitelist(Exception):
-        pass
-
     def __init__(self, minutes_back=None):
         super().__init__()
         self.first_time_run = False
