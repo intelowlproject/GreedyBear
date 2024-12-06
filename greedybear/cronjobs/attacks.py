@@ -1,6 +1,7 @@
 # This file is a part of GreedyBear https://github.com/honeynet/GreedyBear
 # See the file 'LICENSE' for copying permission.
 from abc import ABCMeta
+from collections import defaultdict
 from datetime import datetime
 from ipaddress import IPv4Address
 
@@ -42,6 +43,7 @@ class ExtractAttacks(Cronjob, metaclass=ABCMeta):
             ioc_record = ioc
             ioc_record.save()
         else:
+            ioc_record.times_seen += ioc.times_seen
             ioc_record.related_urls = sorted(set(ioc_record.related_urls + ioc.related_urls))
             ioc_record.destination_ports = sorted(set(ioc_record.destination_ports + ioc.destination_ports))
             ioc_record.ip_reputation = ioc.ip_reputation
@@ -56,10 +58,32 @@ class ExtractAttacks(Cronjob, metaclass=ABCMeta):
             ioc_record.days_seen.append(today)
             ioc_record.number_of_days_seen += 1
         ioc_record.last_seen = datetime.utcnow()
-        ioc_record.times_seen += 1
         ioc_record.scanner = attack_type == SCANNER
         ioc_record.payload_request = attack_type == PAYLOAD_REQUEST
         ioc_record.save()
+
+    def _get_attacker_data(self, honeypot, fields: list) -> list:
+        hits_by_ip = defaultdict(list)
+        search = self._base_search(honeypot)
+        search.source(fields)
+        for hit in search.iterate():
+            if "src_ip" not in hit:
+                continue
+            hits_by_ip[hit.src_ip].append(hit.to_dict())
+        iocs = []
+        for ip, hits in hits_by_ip.items():
+            dest_ports = [hit.get("dest_port") for hit in hits]
+            ioc = IOC(
+                name=ip,
+                type=self._get_ioc_type(ip),
+                times_seen=len(hits),
+                ip_reputation=hits[0].get("ip_rep"),
+                asn=hits[0].get("geoip", {}).get("asn"),
+                destination_ports=sorted(set(port for port in dest_ports if port is not None)),
+                login_attempts=len(hits) if honeypot.name == "Heralding" else 0,
+            )
+            iocs.append(ioc)
+        return iocs
 
     def _get_ioc_type(self, ioc):
         try:
