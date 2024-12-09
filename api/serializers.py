@@ -1,7 +1,7 @@
 import logging
 import re
 
-from greedybear.consts import REGEX_DOMAIN, REGEX_IP
+from greedybear.consts import PAYLOAD_REQUEST, REGEX_DOMAIN, REGEX_IP, SCANNER
 from greedybear.models import IOC, GeneralHoneypot
 from rest_framework import serializers
 
@@ -49,33 +49,13 @@ class EnrichmentSerializer(serializers.Serializer):
         return data
 
 
-def feed_type_validation(feed_type):
-    if feed_type not in valid_feed_types:
-        logger.info(f"Feed type {feed_type} not in feed_choices {valid_feed_types}")
-        raise serializers.ValidationError(f"Invalid feed_type: {feed_type}")
-    return feed_type
-
-
-class FeedsSerializer(serializers.Serializer):
-    feed_type = serializers.CharField(max_length=120)
-    attack_type = serializers.ChoiceField(choices=["scanner", "payload_request", "all"])
-    age = serializers.ChoiceField(choices=["persistent", "recent"])
-    format = serializers.ChoiceField(choices=["csv", "json", "txt"], default="json")
-
-    def validate_feed_type(self, feed_type):
-        logger.debug(f"FeedsSerializer - Validation feed_type: '{feed_type}'")
-        return feed_type_validation(feed_type)
-
-
-class FeedsResponseSerializer(serializers.Serializer):
-    feed_type = serializers.CharField(max_length=120)
-    value = serializers.CharField(max_length=120)
-    scanner = serializers.BooleanField()
-    payload_request = serializers.BooleanField()
-    first_seen = serializers.DateField(format="%Y-%m-%d")
-    last_seen = serializers.DateField(format="%Y-%m-%d")
-    times_seen = serializers.IntegerField()
-
-    def validate_feed_type(self, feed_type):
-        logger.debug(f"FeedsResponseSerializer - validation feed_type: '{feed_type}'")
-        return feed_type_validation(feed_type)
+def serialize_ioc(ioc, feed_type: str) -> dict:
+    return {
+        "value": ioc.name,
+        SCANNER: ioc.scanner,
+        PAYLOAD_REQUEST: ioc.payload_request,
+        "first_seen": ioc.first_seen.strftime("%Y-%m-%d"),
+        "last_seen": ioc.last_seen.strftime("%Y-%m-%d"),
+        "times_seen": ioc.times_seen,
+        "feed_type": feed_type,
+    }

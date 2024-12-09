@@ -4,7 +4,7 @@ import csv
 import logging
 from datetime import datetime, timedelta
 
-from api.serializers import EnrichmentSerializer, FeedsResponseSerializer, FeedsSerializer, IOCSerializer
+from api.serializers import EnrichmentSerializer, serialize_ioc
 from certego_saas.apps.auth.backend import CookieTokenAuthentication
 from certego_saas.ext.helpers import parse_humanized_range
 from certego_saas.ext.pagination import CustomPageNumberPagination
@@ -103,16 +103,6 @@ def get_queryset(request, feed_type, attack_type, age, format_):
     """
     source = str(request.user)
     logger.info(f"request from {source}. Feed type: {feed_type}, attack_type: {attack_type}, " f"Age: {age}, format: {format_}")
-
-    serializer = FeedsSerializer(
-        data={
-            "feed_type": feed_type,
-            "attack_type": attack_type,
-            "age": age,
-            "format": format_,
-        }
-    )
-    serializer.is_valid(raise_exception=True)
 
     ordering = request.query_params.get("ordering")
     # if ordering == "value" replace it with "name" (the corresponding field in the iocs model)
@@ -215,19 +205,7 @@ def feeds_response(request, iocs, feed_type, format_, dict_only=False):
                     ioc_feed_type = "cowrie"
                 else:
                     ioc_feed_type = str(ioc.general_honeypot.all()[0]).lower()
-            data_ = {
-                "value": ioc.name,
-                SCANNER: ioc.scanner,
-                PAYLOAD_REQUEST: ioc.payload_request,
-                "first_seen": ioc.first_seen.strftime("%Y-%m-%d"),
-                "last_seen": ioc.last_seen.strftime("%Y-%m-%d"),
-                "times_seen": ioc.times_seen,
-                "feed_type": ioc_feed_type,
-            }
-
-            serializer_item = FeedsResponseSerializer(data=data_)
-            serializer_item.is_valid(raise_exception=True)
-            json_list.append(serializer_item.data)
+            json_list.append(serialize_ioc(ioc, ioc_feed_type))
 
         # check if sorting the results by feed_type
         ordering = request.query_params.get("ordering")
