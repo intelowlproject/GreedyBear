@@ -6,28 +6,20 @@ from greedybear.cronjobs.attacks import ExtractAttacks
 from greedybear.cronjobs.honeypots import Honeypot
 from greedybear.models import GeneralHoneypot
 
-# FEEDS
-# Extract only source IPs from a list of Honeypots
-
 
 class ExtractGeneral(ExtractAttacks):
-    def __init__(self, minutes_back=None):
+    def __init__(self, honeypot, minutes_back=None):
         super().__init__(minutes_back=minutes_back)
-        self.general = []
-        generalHoneypots = GeneralHoneypot.objects.all().filter(active=True)
-        self.added_scanners = [0] * generalHoneypots.count()
-        # Create Honeypot for each active Honeypot
-        for hp in generalHoneypots:
-            self.general.append(Honeypot(hp.name))
+        self.hp = honeypot
+        self.added_scanners = 0
 
     def _general_lookup(self):
-        for idx, hp in enumerate(self.general):
-            self._get_scanners(idx)
-            self.log.info(f"added {self.added_scanners[idx]} scanners for {hp.name}")
+        self._get_scanners()
+        self.log.info(f"added {self.added_scanners} scanners for {self.hp.name}")
 
-    def _get_scanners(self, idx):
-        search = self._base_search(self.general[idx])
-        name = self.general[idx].name
+    def _get_scanners(self):
+        search = self._base_search(self.hp)
+        name = self.hp.name
         # get no more than X IPs a day
         search.aggs.bucket(
             "attacker_ips",
@@ -43,10 +35,19 @@ class ExtractGeneral(ExtractAttacks):
             self.log.info(f"found IP {tag.key} by honeypot {name}")
             scanner_ip = str(tag.key)
             self._add_ioc(scanner_ip, SCANNER, general=name)
-            self.added_scanners[idx] += 1
+            self.added_scanners += 1
 
     def run(self):
         self._healthcheck()
-        for idx, hp in enumerate(self.general):
-            self._check_first_time_run(hp.name.lower(), general=True)
+        self._check_first_time_run(self.hp.name.lower(), general=True)
         self._general_lookup()
+
+
+class ExtractAllGenerals(ExtractAttacks):
+    def __init__(self, minutes_back=None):
+        super().__init__(minutes_back=minutes_back)
+        self.honeypots = [Honeypot(hp.name) for hp in GeneralHoneypot.objects.all().filter(active=True)]
+
+    def run(self):
+        for honeypot in self.honeypots:
+            ExtractGeneral(honeypot, self.minutes_back).run()

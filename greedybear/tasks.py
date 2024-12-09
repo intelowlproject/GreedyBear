@@ -24,9 +24,9 @@ def extract_cowrie():
 
 @shared_task()
 def extract_general():
-    from greedybear.cronjobs.general import ExtractGeneral
+    from greedybear.cronjobs.general import ExtractAllGenerals
 
-    ExtractGeneral().execute()
+    ExtractAllGenerals().execute()
 
 
 @shared_task()
