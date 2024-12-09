@@ -46,8 +46,8 @@ class ExtractGeneral(ExtractAttacks):
 class ExtractAllGenerals(ExtractAttacks):
     def __init__(self, minutes_back=None):
         super().__init__(minutes_back=minutes_back)
-        self.honeypots = [Honeypot(hp.name, minutes_back) for hp in GeneralHoneypot.objects.all().filter(active=True)]
+        self.honeypots = [Honeypot(hp.name) for hp in GeneralHoneypot.objects.all().filter(active=True)]
 
     def run(self):
         for honeypot in self.honeypots:
-            ExtractGeneral(honeypot).run()
+            ExtractGeneral(honeypot, self.minutes_back).run()
