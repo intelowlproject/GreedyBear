@@ -12,7 +12,7 @@ from greedybear.models import IOC
 
 class GeneralTestCase(TestCase):
     def test_sensors(self, *args, **kwargs):
-        a = general.ExtractGeneral()
+        a = general.ExtractAllGenerals()
         a.execute()
         self.assertTrue(a.success)
         iocs = []
