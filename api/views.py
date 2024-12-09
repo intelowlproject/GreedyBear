@@ -141,7 +141,7 @@ def get_queryset(request, feed_type, attack_type, age, format_):
         # ordering by "feed_type" is done in feed_response function
         if ordering is None or ordering == "feed_type" or ordering == "-feed_type":
             ordering = "-last_seen"
-        iocs = IOC.objects.exclude(general_honeypot__active=False).filter(**query_dict).order_by(ordering)[:5000]
+        iocs = IOC.objects.exclude(general_honeypot__active=False).filter(**query_dict).order_by(ordering).prefetch_related("general_honeypot")[:5000]
     elif age == "persistent":
         # scanners detected in the last 14 days
         fourteen_days_ago = datetime.utcnow() - timedelta(days=14)
@@ -153,7 +153,7 @@ def get_queryset(request, feed_type, attack_type, age, format_):
         # ordering by "feed_type" is done in feed_response function
         if ordering is None or ordering == "feed_type" or ordering == "-feed_type":
             ordering = "-times_seen"
-        iocs = IOC.objects.exclude(general_honeypot__active=False).filter(**query_dict).order_by(ordering)[:5000]
+        iocs = IOC.objects.exclude(general_honeypot__active=False).filter(**query_dict).order_by(ordering).prefetch_related("general_honeypot")[:5000]
 
     # save request source for statistics
     source_ip = str(request.META["REMOTE_ADDR"])
@@ -214,8 +214,7 @@ def feeds_response(request, iocs, feed_type, format_, dict_only=False):
                 elif ioc.cowrie:
                     ioc_feed_type = "cowrie"
                 else:
-                    ioc_feed_type = str(ioc.general_honeypot.first()).lower()
-
+                    ioc_feed_type = str(ioc.general_honeypot.all()[0]).lower()
             data_ = {
                 "value": ioc.name,
                 SCANNER: ioc.scanner,
