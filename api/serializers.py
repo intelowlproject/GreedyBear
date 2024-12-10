@@ -1,13 +1,16 @@
 import logging
 import re
+from functools import cache
 
 from greedybear.consts import PAYLOAD_REQUEST, REGEX_DOMAIN, REGEX_IP, SCANNER
 from greedybear.models import IOC, GeneralHoneypot
 from rest_framework import serializers
 
 logger = logging.getLogger(__name__)
-general_honeypots = GeneralHoneypot.objects.all().filter(active=True)
-valid_feed_types = set(["log4j", "cowrie", "all"] + [hp.name.lower() for hp in general_honeypots])
+VALID_FEED_TYPES = set()
+VALID_ATTACK_TYPES = {"scanner", "payload_request", "all"}
+VALID_AGES = {"persistent", "recent"}
+VALID_FORMATS = {"csv", "json", "txt"}
 
 
 class GeneralHoneypotSerializer(serializers.ModelSerializer):
@@ -49,8 +52,38 @@ class EnrichmentSerializer(serializers.Serializer):
         return data
 
 
+@cache
+def feed_type_validation(feed_type: str) -> bool:
+    if not VALID_FEED_TYPES:
+        general_honeypots = GeneralHoneypot.objects.all().filter(active=True)
+        VALID_FEED_TYPES.update(["log4j", "cowrie", "all"] + [hp.name.lower() for hp in general_honeypots])
+    return feed_type in VALID_FEED_TYPES
+
+
+def feed_request_validation(data: dict) -> bool:
+    if not feed_type_validation(data["feed_type"]):
+        raise serializers.ValidationError(f"Invalid feed_type: {data['feed_type']}")
+    if data["attack_type"] not in VALID_ATTACK_TYPES:
+        raise serializers.ValidationError(f"Invalid attack_type: {data['attack_type']}")
+    if data["age"] not in VALID_AGES:
+        raise serializers.ValidationError(f"Invalid age: {data['age']}")
+    if data["format"] not in VALID_FORMATS:
+        raise serializers.ValidationError(f"Invalid format: {data['format']}")
+    return True
+
+
+def ioc_validation(data: dict) -> bool:
+    if not feed_type_validation(data["feed_type"]):
+        raise serializers.ValidationError(f"Invalid feed_type: {data['feed_type']}")
+    if data["times_seen"] < 1:
+        raise serializers.ValidationError(f"Invalid value for 'times_seen'': {data['times_seen']}")
+    if not (data[SCANNER] or data[PAYLOAD_REQUEST]):
+        raise serializers.ValidationError(f"Invalid data: IOC is neither {SCANNER} nor {PAYLOAD_REQUEST}")
+    return True
+
+
 def serialize_ioc(ioc, feed_type: str) -> dict:
-    return {
+    data = {
         "value": ioc.name,
         SCANNER: ioc.scanner,
         PAYLOAD_REQUEST: ioc.payload_request,
@@ -59,3 +92,6 @@ def serialize_ioc(ioc, feed_type: str) -> dict:
         "times_seen": ioc.times_seen,
         "feed_type": feed_type,
     }
+    if not ioc_validation(data):
+        raise serializers.ValidationError(f"Unknown error while validating {data}")
+    return data

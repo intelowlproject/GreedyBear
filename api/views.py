@@ -4,7 +4,7 @@ import csv
 import logging
 from datetime import datetime, timedelta
 
-from api.serializers import EnrichmentSerializer, serialize_ioc
+from api.serializers import EnrichmentSerializer, feed_request_validation, serialize_ioc
 from certego_saas.apps.auth.backend import CookieTokenAuthentication
 from certego_saas.ext.helpers import parse_humanized_range
 from certego_saas.ext.pagination import CustomPageNumberPagination
@@ -103,6 +103,14 @@ def get_queryset(request, feed_type, attack_type, age, format_):
     """
     source = str(request.user)
     logger.info(f"request from {source}. Feed type: {feed_type}, attack_type: {attack_type}, " f"Age: {age}, format: {format_}")
+    feed_request_validation(
+        {
+            "feed_type": feed_type,
+            "attack_type": attack_type,
+            "age": age,
+            "format": format_,
+        }
+    )
 
     ordering = request.query_params.get("ordering")
     # if ordering == "value" replace it with "name" (the corresponding field in the iocs model)
