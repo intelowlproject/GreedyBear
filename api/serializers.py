@@ -7,7 +7,6 @@ from greedybear.models import IOC, GeneralHoneypot
 from rest_framework import serializers
 
 logger = logging.getLogger(__name__)
-VALID_FEED_TYPES = set()
 VALID_ATTACK_TYPES = {"scanner", "payload_request", "all"}
 VALID_AGES = {"persistent", "recent"}
 VALID_FORMATS = {"csv", "json", "txt"}
@@ -54,10 +53,9 @@ class EnrichmentSerializer(serializers.Serializer):
 
 @cache
 def feed_type_validation(feed_type: str) -> bool:
-    if not VALID_FEED_TYPES:
-        general_honeypots = GeneralHoneypot.objects.all().filter(active=True)
-        VALID_FEED_TYPES.update(["log4j", "cowrie", "all"] + [hp.name.lower() for hp in general_honeypots])
-    return feed_type in VALID_FEED_TYPES
+    general_honeypots = GeneralHoneypot.objects.all().filter(active=True)
+    valid_types = set(["log4j", "cowrie", "all"] + [hp.name.lower() for hp in general_honeypots])
+    return feed_type in valid_types
 
 
 def feed_request_validation(data: dict) -> bool:
