@@ -4,7 +4,7 @@ import csv
 import logging
 from datetime import datetime, timedelta
 
-from api.serializers import EnrichmentSerializer, FeedsResponseSerializer, FeedsSerializer, IOCSerializer
+from api.serializers import EnrichmentSerializer, FeedsResponseSerializer, FeedsSerializer
 from certego_saas.apps.auth.backend import CookieTokenAuthentication
 from certego_saas.ext.helpers import parse_humanized_range
 from certego_saas.ext.pagination import CustomPageNumberPagination
