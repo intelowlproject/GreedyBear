@@ -1,15 +1,13 @@
 import logging
 import re
-from functools import cache
 
-from greedybear.consts import PAYLOAD_REQUEST, REGEX_DOMAIN, REGEX_IP, SCANNER
+from greedybear.consts import REGEX_DOMAIN, REGEX_IP
 from greedybear.models import IOC, GeneralHoneypot
 from rest_framework import serializers
 
 logger = logging.getLogger(__name__)
-VALID_ATTACK_TYPES = {"scanner", "payload_request", "all"}
-VALID_AGES = {"persistent", "recent"}
-VALID_FORMATS = {"csv", "json", "txt"}
+general_honeypots = GeneralHoneypot.objects.all().filter(active=True)
+valid_feed_types = set(["log4j", "cowrie", "all"] + [hp.name.lower() for hp in general_honeypots])
 
 
 class GeneralHoneypotSerializer(serializers.ModelSerializer):
@@ -51,45 +49,33 @@ class EnrichmentSerializer(serializers.Serializer):
         return data
 
 
-@cache
-def feed_type_validation(feed_type: str) -> bool:
-    general_honeypots = GeneralHoneypot.objects.all().filter(active=True)
-    valid_types = set(["log4j", "cowrie", "all"] + [hp.name.lower() for hp in general_honeypots])
-    return feed_type in valid_types
+def feed_type_validation(feed_type):
+    if feed_type not in valid_feed_types:
+        logger.info(f"Feed type {feed_type} not in feed_choices {valid_feed_types}")
+        raise serializers.ValidationError(f"Invalid feed_type: {feed_type}")
+    return feed_type
 
 
-def feed_request_validation(data: dict) -> bool:
-    if not feed_type_validation(data["feed_type"]):
-        raise serializers.ValidationError(f"Invalid feed_type: {data['feed_type']}")
-    if data["attack_type"] not in VALID_ATTACK_TYPES:
-        raise serializers.ValidationError(f"Invalid attack_type: {data['attack_type']}")
-    if data["age"] not in VALID_AGES:
-        raise serializers.ValidationError(f"Invalid age: {data['age']}")
-    if data["format"] not in VALID_FORMATS:
-        raise serializers.ValidationError(f"Invalid format: {data['format']}")
-    return True
+class FeedsSerializer(serializers.Serializer):
+    feed_type = serializers.CharField(max_length=120)
+    attack_type = serializers.ChoiceField(choices=["scanner", "payload_request", "all"])
+    age = serializers.ChoiceField(choices=["persistent", "recent"])
+    format = serializers.ChoiceField(choices=["csv", "json", "txt"], default="json")
+
+    def validate_feed_type(self, feed_type):
+        logger.debug(f"FeedsSerializer - Validation feed_type: '{feed_type}'")
+        return feed_type_validation(feed_type)
 
 
-def ioc_validation(data: dict) -> bool:
-    if not feed_type_validation(data["feed_type"]):
-        raise serializers.ValidationError(f"Invalid feed_type: {data['feed_type']}")
-    if data["times_seen"] < 1:
-        raise serializers.ValidationError(f"Invalid value for 'times_seen'': {data['times_seen']}")
-    if not (data[SCANNER] or data[PAYLOAD_REQUEST]):
-        raise serializers.ValidationError(f"Invalid data: IOC is neither {SCANNER} nor {PAYLOAD_REQUEST}")
-    return True
+class FeedsResponseSerializer(serializers.Serializer):
+    feed_type = serializers.CharField(max_length=120)
+    value = serializers.CharField(max_length=120)
+    scanner = serializers.BooleanField()
+    payload_request = serializers.BooleanField()
+    first_seen = serializers.DateField(format="%Y-%m-%d")
+    last_seen = serializers.DateField(format="%Y-%m-%d")
+    times_seen = serializers.IntegerField()
 
-
-def serialize_ioc(ioc, feed_type: str) -> dict:
-    data = {
-        "value": ioc.name,
-        SCANNER: ioc.scanner,
-        PAYLOAD_REQUEST: ioc.payload_request,
-        "first_seen": ioc.first_seen.strftime("%Y-%m-%d"),
-        "last_seen": ioc.last_seen.strftime("%Y-%m-%d"),
-        "times_seen": ioc.times_seen,
-        "feed_type": feed_type,
-    }
-    if not ioc_validation(data):
-        raise serializers.ValidationError(f"Unknown error while validating {data}")
-    return data
+    def validate_feed_type(self, feed_type):
+        logger.debug(f"FeedsResponseSerializer - validation feed_type: '{feed_type}'")
+        return feed_type_validation(feed_type)
