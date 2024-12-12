@@ -11,7 +11,7 @@ from certego_saas.ext.pagination import CustomPageNumberPagination
 from django.db.models import Count, Q
 from django.db.models.functions import Trunc
 from django.http import HttpResponse, HttpResponseServerError, StreamingHttpResponse
-from greedybear.consts import FEEDS_LICENSE, GET, PAYLOAD_REQUEST, SCANNER
+from greedybear.consts import FEEDS_LICENSE, GET, PAYLOAD_REQUEST, SCANNER, SKIP_FEED_VALIDATION
 from greedybear.models import IOC, GeneralHoneypot, Statistics, viewType
 from rest_framework import status, viewsets
 from rest_framework.decorators import action, api_view, authentication_classes, permission_classes
@@ -235,6 +235,9 @@ def feeds_response(request, iocs, feed_type, valid_feed_types, format_, dict_onl
                 "feed_type": ioc_feed_type,
             }
 
+            if SKIP_FEED_VALIDATION:
+                json_list.append(data_)
+                continue
             serializer_item = FeedsResponseSerializer(data=data_)
             serializer_item.is_valid(raise_exception=True)
             feed_type_validation(feed_type, valid_feed_types)

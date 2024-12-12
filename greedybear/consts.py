@@ -7,6 +7,7 @@ GET = "GET"
 POST = "POST"
 
 FEEDS_LICENSE = "https://github.com/honeynet/GreedyBear/blob/main/FEEDS_LICENSE.md"
+SKIP_FEED_VALIDATION = False
 
 REGEX_DOMAIN = r"^[a-zA-Z\d-]{1,60}(\.[a-zA-Z\d-]{1,60})*$"
 REGEX_IP = r"^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$"
