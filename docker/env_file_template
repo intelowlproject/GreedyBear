@@ -41,3 +41,6 @@ MOCK_CONNECTIONS=False
 
 # True for public deployment, False for internal deployment
 PUBLIC_DEPLOYMENT=False
+
+# True for quicker feed generation, may lead to invalid feeds
+SKIP_FEED_VALIDATION=False

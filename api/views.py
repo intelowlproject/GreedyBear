@@ -13,6 +13,7 @@ from django.db.models.functions import Trunc
 from django.http import HttpResponse, HttpResponseServerError, StreamingHttpResponse
 from greedybear.consts import FEEDS_LICENSE, GET, PAYLOAD_REQUEST, SCANNER
 from greedybear.models import IOC, GeneralHoneypot, Statistics, viewType
+from greedybear.settings import SKIP_FEED_VALIDATION
 from rest_framework import status, viewsets
 from rest_framework.decorators import action, api_view, authentication_classes, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -56,8 +57,11 @@ def feeds(request, feed_type, attack_type, age, format_):
     """
     logger.info(f"request /api/feeds with params: feed type: {feed_type}, " f"attack_type: {attack_type}, Age: {age}, format: {format_}")
 
-    iocs_queryset = get_queryset(request, feed_type, attack_type, age, format_)
-    return feeds_response(request, iocs_queryset, feed_type, format_)
+    general_honeypots = GeneralHoneypot.objects.all().filter(active=True)
+    valid_feed_types = frozenset(["log4j", "cowrie", "all"] + [hp.name.lower() for hp in general_honeypots])
+
+    iocs_queryset = get_queryset(request, feed_type, valid_feed_types, attack_type, age, format_)
+    return feeds_response(request, iocs_queryset, feed_type, valid_feed_types, format_)
 
 
 @api_view([GET])
@@ -74,26 +78,31 @@ def feeds_pagination(request):
     params = request.query_params
     logger.info(f"request /api/feeds with params: {params}")
 
+    general_honeypots = GeneralHoneypot.objects.all().filter(active=True)
+    valid_feed_types = frozenset(["log4j", "cowrie", "all"] + [hp.name.lower() for hp in general_honeypots])
+
     paginator = CustomPageNumberPagination()
     iocs_queryset = get_queryset(
         request,
         params["feed_type"],
+        valid_feed_types,
         params["attack_type"],
         params["age"],
         "json",
     )
     iocs = paginator.paginate_queryset(iocs_queryset, request)
-    resp_data = feeds_response(request, iocs, params["feed_type"], "json", dict_only=True)
+    resp_data = feeds_response(request, iocs, params["feed_type"], valid_feed_types, "json", dict_only=True)
     return paginator.get_paginated_response(resp_data)
 
 
-def get_queryset(request, feed_type, attack_type, age, format_):
+def get_queryset(request, feed_type, valid_feed_types, attack_type, age, format_):
     """
     Build a queryset to filter IOC data based on the request parameters.
 
     Args:
         request: The incoming request object.
         feed_type (str): Type of feed (e.g., log4j, cowrie, etc.).
+        valid_feed_types (frozenset): The set of all valid feed types.
         attack_type (str): Type of attack (e.g., all, specific attack types).
         age (str): Age of the data to filter (e.g., recent, persistent).
         format_ (str): Desired format of the response (e.g., json, csv, txt).
@@ -110,7 +119,8 @@ def get_queryset(request, feed_type, attack_type, age, format_):
             "attack_type": attack_type,
             "age": age,
             "format": format_,
-        }
+        },
+        context={"valid_feed_types": valid_feed_types},
     )
     serializer.is_valid(raise_exception=True)
 
@@ -141,7 +151,7 @@ def get_queryset(request, feed_type, attack_type, age, format_):
         # ordering by "feed_type" is done in feed_response function
         if ordering is None or ordering == "feed_type" or ordering == "-feed_type":
             ordering = "-last_seen"
-        iocs = IOC.objects.exclude(general_honeypot__active=False).filter(**query_dict).order_by(ordering)[:5000]
+        iocs = IOC.objects.exclude(general_honeypot__active=False).filter(**query_dict).order_by(ordering).prefetch_related("general_honeypot")[:5000]
     elif age == "persistent":
         # scanners detected in the last 14 days
         fourteen_days_ago = datetime.utcnow() - timedelta(days=14)
@@ -153,7 +163,7 @@ def get_queryset(request, feed_type, attack_type, age, format_):
         # ordering by "feed_type" is done in feed_response function
         if ordering is None or ordering == "feed_type" or ordering == "-feed_type":
             ordering = "-times_seen"
-        iocs = IOC.objects.exclude(general_honeypot__active=False).filter(**query_dict).order_by(ordering)[:5000]
+        iocs = IOC.objects.exclude(general_honeypot__active=False).filter(**query_dict).order_by(ordering).prefetch_related("general_honeypot")[:5000]
 
     # save request source for statistics
     source_ip = str(request.META["REMOTE_ADDR"])
@@ -164,7 +174,7 @@ def get_queryset(request, feed_type, attack_type, age, format_):
     return iocs
 
 
-def feeds_response(request, iocs, feed_type, format_, dict_only=False):
+def feeds_response(request, iocs, feed_type, valid_feed_types, format_, dict_only=False):
     """
     Format the IOC data into the requested format (e.g., JSON, CSV, TXT).
 
@@ -172,6 +182,7 @@ def feeds_response(request, iocs, feed_type, format_, dict_only=False):
         request: The incoming request object.
         iocs (QuerySet): The filtered queryset of IOC data.
         feed_type (str): Type of feed (e.g., log4j, cowrie, etc.).
+        valid_feed_types (frozenset): The set of all valid feed types.
         format_ (str): Desired format of the response (e.g., json, csv, txt).
 
     Returns:
@@ -214,8 +225,8 @@ def feeds_response(request, iocs, feed_type, format_, dict_only=False):
                 elif ioc.cowrie:
                     ioc_feed_type = "cowrie"
                 else:
-                    ioc_feed_type = str(ioc.general_honeypot.first()).lower()
-
+                    # first() can not be used here because is does not work with prefetching
+                    ioc_feed_type = str(ioc.general_honeypot.all()[0]).lower()
             data_ = {
                 "value": ioc.name,
                 SCANNER: ioc.scanner,
@@ -226,7 +237,13 @@ def feeds_response(request, iocs, feed_type, format_, dict_only=False):
                 "feed_type": ioc_feed_type,
             }
 
-            serializer_item = FeedsResponseSerializer(data=data_)
+            if SKIP_FEED_VALIDATION:
+                json_list.append(data_)
+                continue
+            serializer_item = FeedsResponseSerializer(
+                data=data_,
+                context={"valid_feed_types": valid_feed_types},
+            )
             serializer_item.is_valid(raise_exception=True)
             json_list.append(serializer_item.data)
 
