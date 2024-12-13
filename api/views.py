@@ -4,7 +4,7 @@ import csv
 import logging
 from datetime import datetime, timedelta
 
-from api.serializers import EnrichmentSerializer, FeedsResponseSerializer, FeedsSerializer, feed_type_validation
+from api.serializers import EnrichmentSerializer, FeedsResponseSerializer, FeedsSerializer
 from certego_saas.apps.auth.backend import CookieTokenAuthentication
 from certego_saas.ext.helpers import parse_humanized_range
 from certego_saas.ext.pagination import CustomPageNumberPagination
@@ -119,10 +119,10 @@ def get_queryset(request, feed_type, valid_feed_types, attack_type, age, format_
             "attack_type": attack_type,
             "age": age,
             "format": format_,
-        }
+        },
+        context={"valid_feed_types": valid_feed_types},
     )
     serializer.is_valid(raise_exception=True)
-    feed_type_validation(feed_type, valid_feed_types)
 
     ordering = request.query_params.get("ordering")
     # if ordering == "value" replace it with "name" (the corresponding field in the iocs model)
@@ -240,9 +240,11 @@ def feeds_response(request, iocs, feed_type, valid_feed_types, format_, dict_onl
             if SKIP_FEED_VALIDATION:
                 json_list.append(data_)
                 continue
-            serializer_item = FeedsResponseSerializer(data=data_)
+            serializer_item = FeedsResponseSerializer(
+                data=data_,
+                context={"valid_feed_types": valid_feed_types},
+            )
             serializer_item.is_valid(raise_exception=True)
-            feed_type_validation(feed_type, valid_feed_types)
             json_list.append(serializer_item.data)
 
         # check if sorting the results by feed_type
