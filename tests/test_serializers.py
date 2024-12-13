@@ -31,13 +31,20 @@ class FeedsSerializersTestCase(TestCase):
 
         for element in valid_data_choices:
             data_ = {"feed_type": element[0], "attack_type": element[1], "age": element[2], "format": element[3]}
-            serializer = FeedsSerializer(data=data_)
+            serializer = FeedsSerializer(
+                data=data_,
+                context={"valid_feed_types": frozenset(feed_type_choices)},
+            )
             valid = serializer.is_valid(raise_exception=True)
             self.assertEqual(valid, True)
 
     def test_invalid_fields(self):
+        valid_feed_types = frozenset(["all", "log4j", "cowrie", "adbhoney"])
         data_ = {"feed_type": "invalid_feed_type", "attack_type": "invalid_attack_type", "age": "invalid_age", "format": "invalid_format"}
-        serializer = FeedsSerializer(data=data_)
+        serializer = FeedsSerializer(
+            data=data_,
+            context={"valid_feed_types": valid_feed_types},
+        )
         try:
             serializer.is_valid(raise_exception=True)
         except ValidationError:
@@ -78,11 +85,15 @@ class FeedsResponseSerializersTestCase(TestCase):
                 "times_seen": "5",
                 "feed_type": element[2],
             }
-            serializer = FeedsResponseSerializer(data=data_)
+            serializer = FeedsResponseSerializer(
+                data=data_,
+                context={"valid_feed_types": frozenset(feed_type_choices)},
+            )
             valid = serializer.is_valid(raise_exception=True)
             self.assertEqual(valid, True)
 
     def test_invalid_fields(self):
+        valid_feed_types = frozenset(["all", "log4j", "cowrie", "adbhoney"])
         data_ = {
             "value": True,
             SCANNER: "invalid_scanner",
@@ -92,7 +103,10 @@ class FeedsResponseSerializersTestCase(TestCase):
             "times_seen": "invalid_times_seen",
             "feed_type": "invalid_feed_type",
         }
-        serializer = FeedsResponseSerializer(data=data_)
+        serializer = FeedsResponseSerializer(
+            data=data_,
+            context={"valid_feed_types": valid_feed_types},
+        )
         try:
             serializer.is_valid(raise_exception=True)
         except ValidationError:
