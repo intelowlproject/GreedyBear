@@ -1,6 +1,5 @@
 import logging
 import re
-from functools import cache
 
 from greedybear.consts import REGEX_DOMAIN, REGEX_IP
 from greedybear.models import IOC, GeneralHoneypot
@@ -48,7 +47,6 @@ class EnrichmentSerializer(serializers.Serializer):
         return data
 
 
-@cache
 def feed_type_validation(feed_type: str, valid_feed_types: frozenset) -> str:
     if feed_type not in valid_feed_types:
         logger.info(f"Feed type {feed_type} not in feed_choices {valid_feed_types}")
