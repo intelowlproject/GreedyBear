@@ -43,7 +43,7 @@ class ExtractAttacks(Cronjob, metaclass=ABCMeta):
             ioc_record = ioc
             ioc_record.save()
         else:
-            ioc_record.times_seen += ioc.times_seen
+            ioc_record.attack_count += ioc.attack_count
             ioc_record.related_urls = sorted(set(ioc_record.related_urls + ioc.related_urls))
             ioc_record.destination_ports = sorted(set(ioc_record.destination_ports + ioc.destination_ports))
             ioc_record.ip_reputation = ioc.ip_reputation
@@ -76,7 +76,7 @@ class ExtractAttacks(Cronjob, metaclass=ABCMeta):
             ioc = IOC(
                 name=ip,
                 type=self._get_ioc_type(ip),
-                times_seen=len(hits),
+                attack_count=len(hits),
                 ip_reputation=hits[0].get("ip_rep"),
                 asn=hits[0].get("geoip", {}).get("asn"),
                 destination_ports=sorted(set(port for port in dest_ports if port is not None)),

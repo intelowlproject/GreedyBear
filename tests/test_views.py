@@ -38,7 +38,7 @@ class EnrichmentViewTestCase(CustomTestCase):
             self.ioc.last_seen.isoformat(sep="T", timespec="microseconds"),
         )
         self.assertEqual(response.json()["ioc"]["number_of_days_seen"], self.ioc.number_of_days_seen)
-        self.assertEqual(response.json()["ioc"]["times_seen"], self.ioc.times_seen)
+        self.assertEqual(response.json()["ioc"]["attack_count"], self.ioc.attack_count)
         self.assertEqual(response.json()["ioc"]["log4j"], self.ioc.log4j)
         self.assertEqual(response.json()["ioc"]["cowrie"], self.ioc.cowrie)
         self.assertEqual(response.json()["ioc"]["general_honeypot"][0], self.heralding.name)  # FEEDS
@@ -59,7 +59,7 @@ class FeedsViewTestCase(CustomTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["license"], FEEDS_LICENSE)
         self.assertEqual(response.json()["iocs"][0]["feed_type"], "log4j")
-        self.assertEqual(response.json()["iocs"][0]["times_seen"], 1)
+        self.assertEqual(response.json()["iocs"][0]["attack_count"], 1)
         self.assertEqual(response.json()["iocs"][0]["scanner"], True)
         self.assertEqual(response.json()["iocs"][0]["payload_request"], True)
 
@@ -68,7 +68,7 @@ class FeedsViewTestCase(CustomTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["license"], FEEDS_LICENSE)
         self.assertEqual(response.json()["iocs"][0]["feed_type"], "heralding")
-        self.assertEqual(response.json()["iocs"][0]["times_seen"], 1)
+        self.assertEqual(response.json()["iocs"][0]["attack_count"], 1)
         self.assertEqual(response.json()["iocs"][0]["scanner"], True)
         self.assertEqual(response.json()["iocs"][0]["payload_request"], True)
 

@@ -35,7 +35,7 @@ class IOC(models.Model):
     last_seen = models.DateTimeField(blank=False, default=datetime.utcnow)
     days_seen = pg_fields.ArrayField(models.DateField(), blank=True, default=list)
     number_of_days_seen = models.IntegerField(default=0)
-    times_seen = models.IntegerField(default=1)
+    attack_count = models.IntegerField(default=1)
     log4j = models.BooleanField(blank=False, default=False)
     cowrie = models.BooleanField(blank=False, default=False)
     # FEEDS - list of honeypots from general list, from which the IOC was detected

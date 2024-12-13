@@ -11,7 +11,7 @@ class ModelsTestCase(CustomTestCase):
         self.assertEqual(self.ioc.last_seen, self.current_time)
         self.assertEqual(self.ioc.days_seen, [self.current_time])
         self.assertEqual(self.ioc.number_of_days_seen, 1)
-        self.assertEqual(self.ioc.times_seen, 1)
+        self.assertEqual(self.ioc.attack_count, 1)
         self.assertEqual(self.ioc.log4j, True)
         self.assertEqual(self.ioc.cowrie, True)
         self.assertEqual(self.ioc.scanner, True)

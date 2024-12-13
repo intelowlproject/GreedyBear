@@ -72,7 +72,7 @@ class FeedsResponseSerializer(serializers.Serializer):
     payload_request = serializers.BooleanField()
     first_seen = serializers.DateField(format="%Y-%m-%d")
     last_seen = serializers.DateField(format="%Y-%m-%d")
-    times_seen = serializers.IntegerField()
+    attack_count = serializers.IntegerField()
 
     def validate_feed_type(self, feed_type):
         logger.debug(f"FeedsResponseSerializer - validation feed_type: '{feed_type}'")

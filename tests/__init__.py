@@ -21,7 +21,7 @@ class CustomTestCase(TestCase):
             last_seen=cls.current_time,
             days_seen=[cls.current_time],
             number_of_days_seen=1,
-            times_seen=1,
+            attack_count=1,
             log4j=True,
             cowrie=True,
             scanner=True,
