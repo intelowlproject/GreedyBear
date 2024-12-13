@@ -224,6 +224,7 @@ def feeds_response(request, iocs, feed_type, valid_feed_types, format_, dict_onl
                 elif ioc.cowrie:
                     ioc_feed_type = "cowrie"
                 else:
+                    # first() can not be used here because is does not work with prefetching
                     ioc_feed_type = str(ioc.general_honeypot.all()[0]).lower()
             data_ = {
                 "value": ioc.name,
