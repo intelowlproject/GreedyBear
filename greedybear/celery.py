@@ -8,6 +8,7 @@ from celery import Celery
 from celery.schedules import crontab
 from celery.signals import setup_logging
 from django.conf import settings
+from greedybear.settings import EXTRACTION_INTERVAL, LEGACY_EXTRACTION
 from kombu import Exchange, Queue
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "greedybear.settings")
@@ -55,24 +56,25 @@ def setup_loggers(*args, **kwargs):
     dictConfig(settings.LOGGING)
 
 
+hp_extraction_interval = 10 if LEGACY_EXTRACTION else EXTRACTION_INTERVAL
 app.conf.beat_schedule = {
-    # every 10 minutes
+    # every 10 minutes or according to EXTRACTION_INTERVAL
     "extract_log4pot": {
         "task": "greedybear.tasks.extract_log4pot",
-        "schedule": crontab(minute="*/10"),
+        "schedule": crontab(minute=f"*/{hp_extraction_interval}"),
         "options": {"queue": "default"},
     },
-    # every 10 minutes
+    # every 10 minutes or according to EXTRACTION_INTERVAL
     "extract_cowrie": {
         "task": "greedybear.tasks.extract_cowrie",
-        "schedule": crontab(minute="*/10"),
+        "schedule": crontab(minute=f"*/{hp_extraction_interval}"),
         "options": {"queue": "default"},
     },
     # FEEDS
-    # every 10 minutes
+    # every 10 minutes or according to EXTRACTION_INTERVAL
     "extract_general": {
         "task": "greedybear.tasks.extract_general",
-        "schedule": crontab(minute="*/10"),
+        "schedule": crontab(minute=f"*/{hp_extraction_interval}"),
         "options": {"queue": "default"},
     },
     # once a day
