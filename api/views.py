@@ -11,8 +11,9 @@ from certego_saas.ext.pagination import CustomPageNumberPagination
 from django.db.models import Count, Q
 from django.db.models.functions import Trunc
 from django.http import HttpResponse, HttpResponseServerError, StreamingHttpResponse
-from greedybear.consts import FEEDS_LICENSE, GET, PAYLOAD_REQUEST, SCANNER, SKIP_FEED_VALIDATION
+from greedybear.consts import FEEDS_LICENSE, GET, PAYLOAD_REQUEST, SCANNER
 from greedybear.models import IOC, GeneralHoneypot, Statistics, viewType
+from greedybear.settings import SKIP_FEED_VALIDATION
 from rest_framework import status, viewsets
 from rest_framework.decorators import action, api_view, authentication_classes, permission_classes
 from rest_framework.permissions import IsAuthenticated

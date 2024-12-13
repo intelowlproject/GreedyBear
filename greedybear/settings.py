@@ -405,3 +405,6 @@ else:
         EMAIL_PORT = os.environ.get("EMAIL_PORT")
         EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", False) == "True"
         EMAIL_USE_SSL = os.environ.get("EMAIL_USE_SSL", False) == "True"
+
+
+SKIP_FEED_VALIDATION = os.environ.get("SKIP_FEED_VALIDATION", False) == "True"
