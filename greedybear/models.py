@@ -34,8 +34,9 @@ class IOC(models.Model):
     first_seen = models.DateTimeField(blank=False, default=datetime.utcnow)
     last_seen = models.DateTimeField(blank=False, default=datetime.utcnow)
     days_seen = pg_fields.ArrayField(models.DateField(), blank=True, default=list)
-    number_of_days_seen = models.IntegerField(default=0)
+    number_of_days_seen = models.IntegerField(default=1)
     attack_count = models.IntegerField(default=1)
+    interaction_count = models.IntegerField(default=1)
     log4j = models.BooleanField(blank=False, default=False)
     cowrie = models.BooleanField(blank=False, default=False)
     # FEEDS - list of honeypots from general list, from which the IOC was detected
@@ -44,10 +45,10 @@ class IOC(models.Model):
     payload_request = models.BooleanField(blank=False, default=False)
     related_ioc = models.ManyToManyField("self", blank=True, symmetrical=True)
     related_urls = pg_fields.ArrayField(models.CharField(max_length=900, blank=True), blank=True, default=list)
-    ip_reputation = models.CharField(max_length=32, null=True)
-    asn = models.IntegerField(blank=False, null=True)
+    ip_reputation = models.CharField(max_length=32, blank=True)
+    asn = models.IntegerField(blank=True, null=True)
     destination_ports = pg_fields.ArrayField(models.IntegerField(), blank=False, null=False, default=list)
-    login_attempts = models.IntegerField(blank=False, null=False, default=0)
+    login_attempts = models.IntegerField(blank=False, null=False, default=1)
 
     def __str__(self):
         return self.name
@@ -55,8 +56,8 @@ class IOC(models.Model):
 
 class CowrieSession(models.Model):
     session_id = models.BigIntegerField(primary_key=True)
-    start_time = models.DateTimeField(blank=False, null=True)
-    duration = models.FloatField(blank=False, null=True)
+    start_time = models.DateTimeField(blank=True, null=True)
+    duration = models.FloatField(blank=True, null=True)
     login_attempt = models.BooleanField(blank=False, null=False, default=False)
     credentials = pg_fields.ArrayField(models.CharField(max_length=256, blank=True), blank=False, null=False, default=list)
     command_execution = models.BooleanField(blank=False, null=False, default=False)

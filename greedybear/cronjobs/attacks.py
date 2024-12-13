@@ -56,7 +56,7 @@ class ExtractAttacks(Cronjob, metaclass=ABCMeta):
 
         if len(ioc_record.days_seen) == 0 or ioc_record.days_seen[-1] != today:
             ioc_record.days_seen.append(today)
-            ioc_record.number_of_days_seen += 1
+            ioc_record.number_of_days_seen = len(ioc_record.days_seen)
         ioc_record.last_seen = datetime.utcnow()
         ioc_record.scanner = attack_type == SCANNER
         ioc_record.payload_request = attack_type == PAYLOAD_REQUEST
@@ -77,7 +77,7 @@ class ExtractAttacks(Cronjob, metaclass=ABCMeta):
                 name=ip,
                 type=self._get_ioc_type(ip),
                 attack_count=len(hits),
-                ip_reputation=hits[0].get("ip_rep"),
+                ip_reputation=hits[0].get("ip_rep", ""),
                 asn=hits[0].get("geoip", {}).get("asn"),
                 destination_ports=sorted(set(port for port in dest_ports if port is not None)),
                 login_attempts=len(hits) if honeypot.name == "Heralding" else 0,
