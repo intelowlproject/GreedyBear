@@ -408,3 +408,5 @@ else:
 
 
 SKIP_FEED_VALIDATION = os.environ.get("SKIP_FEED_VALIDATION", False) == "True"
+LEGACY_EXTRACTION = os.environ.get("LEGACY_EXTRACTION", True) == "True"
+EXTRACTION_INTERVAL = int(os.environ.get("EXTRACTION_INTERVAL", 10))

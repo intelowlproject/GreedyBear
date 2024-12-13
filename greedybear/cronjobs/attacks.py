@@ -8,6 +8,7 @@ from greedybear.consts import DOMAIN, IP, PAYLOAD_REQUEST, SCANNER
 from greedybear.cronjobs.base import Cronjob
 from greedybear.cronjobs.sensors import ExtractSensors
 from greedybear.models import IOC, GeneralHoneypot, Sensors
+from greedybear.settings import EXTRACTION_INTERVAL, LEGACY_EXTRACTION
 
 
 class ExtractAttacks(Cronjob, metaclass=ABCMeta):
@@ -27,7 +28,7 @@ class ExtractAttacks(Cronjob, metaclass=ABCMeta):
         elif self.first_time_run:
             minutes = 60 * 24 * 3  # 3 days
         else:
-            minutes = 11
+            minutes = 11 if LEGACY_EXTRACTION else EXTRACTION_INTERVAL
         return minutes
 
     def _add_ioc(self, ioc, attack_type, related_urls=None, log4j=False, cowrie=False, general=""):  # FEEDS
