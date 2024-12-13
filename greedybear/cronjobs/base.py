@@ -2,9 +2,11 @@
 # See the file 'LICENSE' for copying permission.
 import logging
 from abc import ABCMeta, abstractmethod
+from datetime import datetime, timedelta
 
 from django.conf import settings
 from elasticsearch_dsl import Q, Search
+from greedybear.settings import LEGACY_EXTRACTION
 
 
 class Cronjob(metaclass=ABCMeta):
@@ -28,19 +30,27 @@ class Cronjob(metaclass=ABCMeta):
         """
         search = Search(using=self.elastic_client, index="logstash-*")
         self.log.debug(f"minutes_back_to_lookup: {self.minutes_back_to_lookup}")
-        gte_date = f"now-{self.minutes_back_to_lookup}m/m"
-        # Some honeypots have different column for the time
-        # like 'timestamp' others 'start_time','end_time'
-        # This chooses the one that exists
-        q = Q(
-            "bool",
-            should=[
-                Q("range", timestamp={"gte": gte_date, "lte": "now/m"}),
-                Q("range", end_time={"gte": gte_date, "lte": "now/m"}),
-                Q("range", **{"@timestamp": {"gte": gte_date, "lte": "now/m"}}),
-            ],
-            minimum_should_match=1,
-        )
+        if LEGACY_EXTRACTION:
+            gte_date = f"now-{self.minutes_back_to_lookup}m/m"
+            # Some honeypots had different column for the time
+            # like 'timestamp' others 'start_time','end_time'
+            # on older TPot versions.
+            # This chooses the one that exists
+            q = Q(
+                "bool",
+                should=[
+                    Q("range", timestamp={"gte": gte_date, "lte": "now/m"}),
+                    Q("range", end_time={"gte": gte_date, "lte": "now/m"}),
+                    Q("range", **{"@timestamp": {"gte": gte_date, "lte": "now/m"}}),
+                ],
+                minimum_should_match=1,
+            )
+        else:
+            now = datetime.now()
+            window_start = now.replace(second=0, microsecond=0) - timedelta(minutes=self.minutes_back_to_lookup)
+            window_end = now.replace(second=0, microsecond=0)
+            self.log.debug(f"time window: {window_start} - {window_end}")
+            q = Q("range", **{"@timestamp": {"gte": window_start, "lt": window_end}})
         search = search.query(q)
         search = search.filter("term", **{"type.keyword": honeypot.name})
         return search
