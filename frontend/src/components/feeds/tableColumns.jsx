@@ -35,7 +35,7 @@ const feedsTableColumns = [
     maxWidth: 70,
   },
   {
-    Header: "Times Seen",
+    Header: "Attack Count",
     accessor: "attack_count",
     maxWidth: 60,
   },
