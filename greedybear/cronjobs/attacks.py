@@ -36,13 +36,15 @@ class ExtractAttacks(Cronjob, metaclass=ABCMeta):
             self.log.info(f"not saved {ioc} because is whitelisted")
             return False
 
-        today = datetime.today().date()
         try:
             ioc_record = IOC.objects.get(name=ioc.name)
         except IOC.DoesNotExist:
+            # Create
             ioc_record = ioc
             ioc_record.save()
         else:
+            # Update
+            ioc_record.last_seen = ioc.last_seen
             ioc_record.attack_count += 1
             ioc_record.interaction_count += ioc.interaction_count
             ioc_record.related_urls = sorted(set(ioc_record.related_urls + ioc.related_urls))
@@ -55,10 +57,9 @@ class ExtractAttacks(Cronjob, metaclass=ABCMeta):
             if general not in ioc_record.general_honeypot.all():
                 ioc_record.general_honeypot.add(GeneralHoneypot.objects.get(name=general))
 
-        if len(ioc_record.days_seen) == 0 or ioc_record.days_seen[-1] != today:
-            ioc_record.days_seen.append(today)
+        if len(ioc_record.days_seen) == 0 or ioc_record.days_seen[-1] != ioc_record.last_seen.date():
+            ioc_record.days_seen.append(ioc_record.last_seen.date())
             ioc_record.number_of_days_seen = len(ioc_record.days_seen)
-        ioc_record.last_seen = datetime.utcnow()
         ioc_record.scanner = attack_type == SCANNER
         ioc_record.payload_request = attack_type == PAYLOAD_REQUEST
         ioc_record.save()
@@ -83,6 +84,10 @@ class ExtractAttacks(Cronjob, metaclass=ABCMeta):
                 destination_ports=sorted(set(port for port in dest_ports if port is not None)),
                 login_attempts=len(hits) if honeypot.name == "Heralding" else 0,
             )
+            timestamps = [hit["@timestamp"] for hit in hits if "@timestamp" in hit]
+            if timestamps:
+                ioc.first_seen = datetime.fromisoformat(min(timestamps))
+                ioc.last_seen = datetime.fromisoformat(max(timestamps))
             iocs.append(ioc)
         return iocs
 
