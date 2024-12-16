@@ -48,7 +48,7 @@ class IOC(models.Model):
     ip_reputation = models.CharField(max_length=32, blank=True)
     asn = models.IntegerField(blank=True, null=True)
     destination_ports = pg_fields.ArrayField(models.IntegerField(), blank=False, null=False, default=list)
-    login_attempts = models.IntegerField(blank=False, null=False, default=1)
+    login_attempts = models.IntegerField(blank=False, null=False, default=0)
 
     def __str__(self):
         return self.name
