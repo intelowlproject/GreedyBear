@@ -31,7 +31,7 @@ class ExtractAttacks(Cronjob, metaclass=ABCMeta):
         return minutes
 
     def _add_ioc(self, ioc, attack_type: str, general=None) -> bool:
-        self.log.info(f"saving ioc {ioc}")
+        self.log.info(f"saving ioc {ioc} for attack_type {attack_type}")
         if ioc.name in self.whitelist:
             self.log.info(f"not saved {ioc} because is whitelisted")
             return False
@@ -74,14 +74,14 @@ class ExtractAttacks(Cronjob, metaclass=ABCMeta):
             hits_by_ip[hit.src_ip].append(hit.to_dict())
         iocs = []
         for ip, hits in hits_by_ip.items():
-            dest_ports = [hit.get("dest_port") for hit in hits]
+            dest_ports = [hit["dest_port"] for hit in hits if "dest_port" in hit]
             ioc = IOC(
                 name=ip,
                 type=self._get_ioc_type(ip),
                 interaction_count=len(hits),
                 ip_reputation=hits[0].get("ip_rep", ""),
                 asn=hits[0].get("geoip", {}).get("asn"),
-                destination_ports=sorted(set(port for port in dest_ports if port is not None)),
+                destination_ports=sorted(set(dest_ports)),
                 login_attempts=len(hits) if honeypot.name == "Heralding" else 0,
             )
             timestamps = [hit["@timestamp"] for hit in hits if "@timestamp" in hit]
