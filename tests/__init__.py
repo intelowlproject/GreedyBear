@@ -2,7 +2,7 @@ from datetime import datetime
 
 from certego_saas.apps.user.models import User
 from django.test import TestCase
-from greedybear.models import IOC, GeneralHoneypot, iocType
+from greedybear.models import IOC, CowrieSession, GeneralHoneypot, iocType
 
 
 class CustomTestCase(TestCase):
@@ -22,16 +22,33 @@ class CustomTestCase(TestCase):
             days_seen=[cls.current_time],
             number_of_days_seen=1,
             attack_count=1,
+            interaction_count=1,
             log4j=True,
             cowrie=True,
             scanner=True,
             payload_request=True,
             related_urls=[],
+            ip_reputation="mass scanner",
+            asn="12345",
+            destination_ports=[22, 23, 24],
+            login_attempts=1,
         )
 
         cls.ioc.general_honeypot.add(cls.heralding)  # FEEDS
         cls.ioc.general_honeypot.add(cls.ciscoasa)  # FEEDS
         cls.ioc.save()
+
+        cls.cowrie_session = CowrieSession.objects.create(
+            session_id=int("ffffffffffff", 16),
+            start_time=cls.current_time,
+            duration=1.234,
+            login_attempt=True,
+            credentials=["root | root"],
+            command_execution=False,
+            interaction_count=5,
+            source=cls.ioc,
+        )
+        cls.cowrie_session.save()
 
         try:
             cls.superuser = User.objects.get(is_superuser=True)

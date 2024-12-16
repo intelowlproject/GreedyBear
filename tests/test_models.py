@@ -12,14 +12,29 @@ class ModelsTestCase(CustomTestCase):
         self.assertEqual(self.ioc.days_seen, [self.current_time])
         self.assertEqual(self.ioc.number_of_days_seen, 1)
         self.assertEqual(self.ioc.attack_count, 1)
+        self.assertEqual(self.ioc.interaction_count, 1)
         self.assertEqual(self.ioc.log4j, True)
         self.assertEqual(self.ioc.cowrie, True)
         self.assertEqual(self.ioc.scanner, True)
         self.assertEqual(self.ioc.payload_request, True)
         self.assertEqual(self.ioc.related_urls, [])
+        self.assertEqual(self.ioc.ip_reputation, "mass scanner")
+        self.assertEqual(self.ioc.asn, "12345")
+        self.assertEqual(self.ioc.destination_ports, [22, 23, 24])
+        self.assertEqual(self.ioc.login_attempts, 1)
 
         self.assertIn(self.heralding, self.ioc.general_honeypot.all())
         self.assertIn(self.ciscoasa, self.ioc.general_honeypot.all())
+
+    def test_cowrie_session_model(self):
+        self.assertEqual(self.cowrie_session.session_id, int("ffffffffffff", 16))
+        self.assertEqual(self.cowrie_session.start_time, self.current_time)
+        self.assertEqual(self.cowrie_session.duration, 1.234)
+        self.assertEqual(self.cowrie_session.login_attempt, True)
+        self.assertEqual(self.cowrie_session.credentials, ["root | root"])
+        self.assertEqual(self.cowrie_session.command_execution, False)
+        self.assertEqual(self.cowrie_session.interaction_count, 5)
+        self.assertEqual(self.cowrie_session.source.name, "140.246.171.141")
 
     def test_statistics_model(self):
         self.statistic = Statistics.objects.create(source="140.246.171.141", view=viewType.ENRICHMENT_VIEW.value, request_date=self.current_time)
