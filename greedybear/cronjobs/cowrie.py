@@ -103,6 +103,7 @@ class ExtractCowrie(ExtractAttacks):
             except CowrieSession.DoesNotExist:
                 session_record = CowrieSession(session_id=sid)
 
+            session_record.source = IOC.objects.filter(name=scanner_ip).first()
             for hit in hits:
                 match hit.eventid:
                     case "cowrie.session.connect":
@@ -110,13 +111,14 @@ class ExtractCowrie(ExtractAttacks):
                     case "cowrie.login.failed" | "cowrie.login.success":
                         session_record.login_attempt = True
                         session_record.credentials.append(f"{hit.username} | {hit.password}")
+                        session_record.source.login_attempts += 1
                     case "cowrie.command.input":
                         session_record.command_execution = True
                     case "cowrie.session.closed":
                         session_record.duration = hit.duration
                 session_record.interaction_count += 1
 
-            session_record.source = IOC.objects.filter(name=scanner_ip).first()
+            session_record.source.save()
             session_record.save()
 
         self.log.info(f"{len(hits_per_session)} sessions added")
