@@ -1,5 +1,5 @@
 # Stage 1: Frontend 
-FROM node:lts-alpine3.18 as frontend-build
+FROM node:lts-alpine3.21 as frontend-build
 
 WORKDIR /
 # copy react source code
