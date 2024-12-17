@@ -159,10 +159,10 @@ def get_queryset(request, feed_type, valid_feed_types, attack_type, age, format_
         # ... and at least detected 10 different days
         number_of_days_seen = 10
         query_dict["number_of_days_seen__gte"] = number_of_days_seen
-        # if ordering == "feed_type" or None replace it with the default value "-times_seen"
+        # if ordering == "feed_type" or None replace it with the default value "-attack_count"
         # ordering by "feed_type" is done in feed_response function
         if ordering is None or ordering == "feed_type" or ordering == "-feed_type":
-            ordering = "-times_seen"
+            ordering = "-attack_count"
         iocs = IOC.objects.exclude(general_honeypot__active=False).filter(**query_dict).order_by(ordering).prefetch_related("general_honeypot")[:5000]
 
     # save request source for statistics
@@ -233,7 +233,7 @@ def feeds_response(request, iocs, feed_type, valid_feed_types, format_, dict_onl
                 PAYLOAD_REQUEST: ioc.payload_request,
                 "first_seen": ioc.first_seen.strftime("%Y-%m-%d"),
                 "last_seen": ioc.last_seen.strftime("%Y-%m-%d"),
-                "times_seen": ioc.times_seen,
+                "attack_count": ioc.attack_count,
                 "feed_type": ioc_feed_type,
             }
 

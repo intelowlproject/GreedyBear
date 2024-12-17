@@ -82,7 +82,7 @@ class FeedsResponseSerializersTestCase(TestCase):
                 PAYLOAD_REQUEST: element[1],
                 "first_seen": "2023-03-20",
                 "last_seen": "2023-03-21",
-                "times_seen": "5",
+                "attack_count": "5",
                 "feed_type": element[2],
             }
             serializer = FeedsResponseSerializer(
@@ -100,7 +100,7 @@ class FeedsResponseSerializersTestCase(TestCase):
             PAYLOAD_REQUEST: "invalid_payload_request",
             "first_seen": "31-2023-03",
             "last_seen": "31-2023-03",
-            "times_seen": "invalid_times_seen",
+            "attack_count": "invalid_attack_count",
             "feed_type": "invalid_feed_type",
         }
         serializer = FeedsResponseSerializer(
@@ -115,5 +115,5 @@ class FeedsResponseSerializersTestCase(TestCase):
             self.assertIn(PAYLOAD_REQUEST, serializer.errors)
             self.assertIn("first_seen", serializer.errors)
             self.assertIn("last_seen", serializer.errors)
-            self.assertIn("times_seen", serializer.errors)
+            self.assertIn("attack_count", serializer.errors)
             self.assertIn("feed_type", serializer.errors)
