@@ -9,6 +9,10 @@ logger = logging.getLogger(__name__)
 
 
 def send_message(text):
+    if not settings.SLACK_TOKEN:
+        logger.warning("Slack is not configured, message not sent")
+        return
+
     try:
         slack_token = settings.SLACK_TOKEN
         channel = settings.DEFAULT_SLACK_CHANNEL
