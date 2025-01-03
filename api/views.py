@@ -48,8 +48,8 @@ class FeedRequestParams:
     Attributes:
         feed_type (str): Type of feed to retrieve (default: "all")
         attack_type (str): Type of attack to filter (default: "all")
-        max_age (int): Maximum number of days since an IOC has been seen (default: 3)
-        min_days_seen (int): Minimum number of days an IOC must have been seen (default: 1)
+        max_age (int): Maximum number of days since last occurrence (default: 3)
+        min_days_seen (int): Minimum number of days on which an IOC must have been seen (default: 1)
         include_reputation (list): List of reputation values to include (default: [])
         exclude_reputation (list): List of reputation values to exclude (default: [])
         feed_size (int): Number of items to return in feed (default: 5000)
@@ -139,13 +139,31 @@ def feeds_pagination(request):
 @permission_classes([IsAuthenticated])
 def feeds_v2(request):
     """
-    Handle requests for IOC feeds with specific parameters and format the response accordingly.
+    Handle requests for IOC feeds based on query parameters and format the response accordingly.
 
     Args:
         request: The incoming request object.
 
+    Supported query parameters are:
+
+        - **feed_type**: Type of feed to retrieve. (supported: `cowrie`, `log4j`, etc.; default: `all`)
+        - **attack_type**: Type of attack to filter. (supported: `scanner`, `payload_request`, `all`; default: `all`)
+        - **max_age**: Maximum number of days since last occurrence. \
+            E.g. an IOC that was last seen 4 days ago is excluded by default. (default: 3)
+        - **min_days_seen**: Minimum number of days on which an IOC must have been seen. (default: 1)
+        - **include_reputation**: `;`-separated list of reputation values to include, \
+            e.g. `known attacker` or `known attacker;` to include IOCs without reputation. (default: include all)
+        - **exclude_reputation**: `;`-separated list of reputation values to exclude, \
+            e.g. `mass scanner` or `mass scanner;bot, crawler`. (default: exclude none)
+        - **feed_size**: Number of IOC items to return. (default: 5000)
+        - **ordering**: Field to order results by, with optional `-` prefix for descending. (default: `-last_seen`)
+        - **verbose**: `1` to include IOC properties that contain a lot of data, e.g. the list of days it was seen. (default: `0`)
+        - **paginate**: `1` to paginate results (default: `0`)
+        - **format_**: Response format type. Besides `json`, `txt` and `csv` are supported \
+            but the response will only contain IOC values (e.g. IP adresses) without further information. (default: `json`)
+
     Returns:
-        Response: The HTTP response with IOC data.
+        Response: The HTTP response with formatted IOC data.
     """
     logger.info(f"request /api/feeds/v2 with params: {request.query_params}")
     feed_params = FeedRequestParams(request.query_params)
