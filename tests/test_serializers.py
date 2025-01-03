@@ -87,6 +87,7 @@ class FeedsResponseSerializersTestCase(TestCase):
                 "interaction_count": "50",
                 "ip_reputation": "known attacker",
                 "asn": "8400",
+                "destination_port_count": "14",
                 "login_attempts": "0",
             }
             serializer = FeedsResponseSerializer(
@@ -109,6 +110,7 @@ class FeedsResponseSerializersTestCase(TestCase):
             "interaction_count": "0",
             "ip_reputation": "A" * 64,
             "asn": "8400ABC",
+            "destination_port_count": "-1",
             "login_attempts": "-1",
         }
         serializer = FeedsResponseSerializer(

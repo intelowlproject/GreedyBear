@@ -76,6 +76,7 @@ class FeedsResponseSerializer(serializers.Serializer):
     interaction_count = serializers.IntegerField(min_value=1)
     ip_reputation = serializers.CharField(allow_blank=True, max_length=32)
     asn = serializers.IntegerField(allow_null=True, min_value=1)
+    destination_port_count = serializers.IntegerField(min_value=0)
     login_attempts = serializers.IntegerField(min_value=0)
 
     def validate_feed_type(self, feed_type):
