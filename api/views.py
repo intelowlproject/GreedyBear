@@ -136,7 +136,8 @@ def feeds_pagination(request):
 
 
 @api_view([GET])
-@login_required
+@authentication_classes([CookieTokenAuthentication])
+@permission_classes([IsAuthenticated])
 def feeds_v2(request):
     """
     Handle requests for IOC feeds with specific parameters and format the response accordingly.
