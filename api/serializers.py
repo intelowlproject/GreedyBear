@@ -67,12 +67,16 @@ class FeedsSerializer(serializers.Serializer):
 
 class FeedsResponseSerializer(serializers.Serializer):
     feed_type = serializers.CharField(max_length=120)
-    value = serializers.CharField(max_length=120)
+    value = serializers.CharField(max_length=256)
     scanner = serializers.BooleanField()
     payload_request = serializers.BooleanField()
     first_seen = serializers.DateField(format="%Y-%m-%d")
     last_seen = serializers.DateField(format="%Y-%m-%d")
-    attack_count = serializers.IntegerField()
+    attack_count = serializers.IntegerField(min_value=1)
+    interaction_count = serializers.IntegerField(min_value=1)
+    ip_reputation = serializers.CharField(allow_blank=True, max_length=32)
+    asn = serializers.IntegerField(allow_null=True, min_value=1)
+    login_attempts = serializers.IntegerField(min_value=0)
 
     def validate_feed_type(self, feed_type):
         logger.debug(f"FeedsResponseSerializer - validation feed_type: '{feed_type}'")
