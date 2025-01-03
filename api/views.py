@@ -8,7 +8,6 @@ from api.serializers import EnrichmentSerializer, FeedsResponseSerializer, Feeds
 from certego_saas.apps.auth.backend import CookieTokenAuthentication
 from certego_saas.ext.helpers import parse_humanized_range
 from certego_saas.ext.pagination import CustomPageNumberPagination
-from django.contrib.auth.decorators import login_required
 from django.db.models import Count, Q
 from django.db.models.functions import Trunc
 from django.http import HttpResponse, HttpResponseServerError, StreamingHttpResponse
