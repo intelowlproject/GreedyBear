@@ -69,17 +69,6 @@ def ordering_validation(ordering: str) -> str:
     return ordering
 
 
-class FeedsSerializer(serializers.Serializer):
-    feed_type = serializers.CharField(max_length=120)
-    attack_type = serializers.ChoiceField(choices=["scanner", "payload_request", "all"])
-    age = serializers.ChoiceField(choices=["persistent", "recent"])
-    format = serializers.ChoiceField(choices=["csv", "json", "txt"], default="json")
-
-    def validate_feed_type(self, feed_type):
-        logger.debug(f"FeedsSerializer - Validation feed_type: '{feed_type}'")
-        return feed_type_validation(feed_type, self.context["valid_feed_types"])
-
-
 class FeedsRequestSerializer(serializers.Serializer):
     feed_type = serializers.CharField(max_length=120)
     attack_type = serializers.ChoiceField(choices=["scanner", "payload_request", "all"])

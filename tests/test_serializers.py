@@ -1,57 +1,11 @@
 import random
 from itertools import product
 
-from api.serializers import FeedsRequestSerializer, FeedsResponseSerializer, FeedsSerializer
+from api.serializers import FeedsRequestSerializer, FeedsResponseSerializer
 from django.test import TestCase
 from greedybear.consts import PAYLOAD_REQUEST, SCANNER
 from greedybear.models import IOC, GeneralHoneypot
 from rest_framework.serializers import ValidationError
-
-
-class FeedsSerializersTestCase(TestCase):
-    @classmethod
-    def setUpClass(self):
-        GeneralHoneypot.objects.create(
-            name="adbhoney",
-            active=True,
-        )
-
-    @classmethod
-    def tearDownClass(self):
-        # db clean
-        GeneralHoneypot.objects.all().delete()
-
-    def test_valid_fields(self):
-        feed_type_choices = ["all", "log4j", "cowrie", "adbhoney"]
-        attack_type_choices = ["all", "scanner", "payload_request"]
-        age_choices = ["recent", "persistent"]
-        format_choices = ["txt", "json", "csv"]
-        # genereted all the possible valid input data using cartesian product
-        valid_data_choices = product(feed_type_choices, attack_type_choices, age_choices, format_choices)
-
-        for element in valid_data_choices:
-            data_ = {"feed_type": element[0], "attack_type": element[1], "age": element[2], "format": element[3]}
-            serializer = FeedsSerializer(
-                data=data_,
-                context={"valid_feed_types": frozenset(feed_type_choices)},
-            )
-            valid = serializer.is_valid(raise_exception=True)
-            self.assertEqual(valid, True)
-
-    def test_invalid_fields(self):
-        valid_feed_types = frozenset(["all", "log4j", "cowrie", "adbhoney"])
-        data_ = {"feed_type": "invalid_feed_type", "attack_type": "invalid_attack_type", "age": "invalid_age", "format": "invalid_format"}
-        serializer = FeedsSerializer(
-            data=data_,
-            context={"valid_feed_types": valid_feed_types},
-        )
-        try:
-            serializer.is_valid(raise_exception=True)
-        except ValidationError:
-            self.assertIn("feed_type", serializer.errors)
-            self.assertIn("attack_type", serializer.errors)
-            self.assertIn("age", serializer.errors)
-            self.assertIn("format", serializer.errors)
 
 
 class FeedsRequestSerializersTestCase(TestCase):
@@ -98,14 +52,14 @@ class FeedsRequestSerializersTestCase(TestCase):
         data_ = {
             "feed_type": "invalid_feed_type",
             "attack_type": "invalid_attack_type",
-            "max_age": 0,
-            "min_days_seen": 0,
+            "max_age": "0",
+            "min_days_seen": "0",
             "include_reputation": None,
             "exclude_reputation": None,
-            "feed_size": 0,
+            "feed_size": "0",
             "ordering": "invalid_ordering",
-            "verbose": None,
-            "paginate": None,
+            "verbose": "invalid_value",
+            "paginate": "invalid_value",
             "format": "invalid_format",
         }
         serializer = FeedsRequestSerializer(

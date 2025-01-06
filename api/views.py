@@ -4,7 +4,7 @@ import csv
 import logging
 from datetime import datetime, timedelta
 
-from api.serializers import EnrichmentSerializer, FeedsRequestSerializer, FeedsResponseSerializer, FeedsSerializer
+from api.serializers import EnrichmentSerializer, FeedsRequestSerializer, FeedsResponseSerializer
 from certego_saas.apps.auth.backend import CookieTokenAuthentication
 from certego_saas.ext.helpers import parse_humanized_range
 from certego_saas.ext.pagination import CustomPageNumberPagination
@@ -77,6 +77,25 @@ class FeedRequestParams:
         self.paginate = query_params.get("paginate", "false").lower()
         self.format = query_params.get("format_", "json").lower()
 
+    def set_legacy_age(self, age: str):
+        """Translates legacy age specification into max_age and min_days_seen attributes
+        and sets ordering accordingly.
+
+        Parameters:
+            age (str): Age of the data to filter (recent or persistent).
+        """
+        match age:
+            case "recent":
+                self.max_age = "4"
+                self.min_days_seen = "1"
+                if "feed_type" in self.ordering:
+                    self.ordering = "-last_seen"
+            case "persistent":
+                self.max_age = "14"
+                self.min_days_seen: "10"
+                if "feed_type" in self.ordering:
+                    self.ordering = "-attack_count"
+
 
 def get_valid_feed_types() -> frozenset[str]:
     general_honeypots = GeneralHoneypot.objects.all().filter(active=True)
@@ -100,8 +119,10 @@ def feeds(request, feed_type, attack_type, age, format_):
     """
     logger.info(f"request /api/feeds with params: feed type: {feed_type}, " f"attack_type: {attack_type}, Age: {age}, format: {format_}")
 
+    feed_params = FeedRequestParams({"feed_type": feed_type, "attack_type": attack_type, "format_": format_})
+    feed_params.set_legacy_age(age)
     valid_feed_types = get_valid_feed_types()
-    iocs_queryset = get_queryset(request, feed_type, valid_feed_types, attack_type, age, format_)
+    iocs_queryset = get_queryset(request, feed_params, valid_feed_types)
     return feeds_response(request, iocs_queryset, feed_type, valid_feed_types, format_)
 
 
@@ -116,21 +137,16 @@ def feeds_pagination(request):
     Returns:
         Response: The paginated HTTP response with IOC data.
     """
-    params = request.query_params
-    logger.info(f"request /api/feeds with params: {params}")
 
+    logger.info(f"request /api/feeds with params: {request.query_params}")
+
+    feed_params = FeedRequestParams(request.query_params)
+    feed_params.set_legacy_age(request.query_params.get("age"))
     valid_feed_types = get_valid_feed_types()
+    iocs_queryset = get_queryset(request, feed_params, valid_feed_types)
     paginator = CustomPageNumberPagination()
-    iocs_queryset = get_queryset(
-        request,
-        params["feed_type"],
-        valid_feed_types,
-        params["attack_type"],
-        params["age"],
-        "json",
-    )
     iocs = paginator.paginate_queryset(iocs_queryset, request)
-    resp_data = feeds_response(request, iocs, params["feed_type"], valid_feed_types, "json", dict_only=True)
+    resp_data = feeds_response(request, iocs, feed_params.feed_type, valid_feed_types, "json", dict_only=True)
     return paginator.get_paginated_response(resp_data)
 
 
@@ -168,14 +184,7 @@ def feeds_v2(request):
     logger.info(f"request /api/feeds/v2 with params: {request.query_params}")
     feed_params = FeedRequestParams(request.query_params)
     valid_feed_types = get_valid_feed_types()
-
-    serializer = FeedsRequestSerializer(
-        data=vars(feed_params),
-        context={"valid_feed_types": valid_feed_types},
-    )
-    serializer.is_valid(raise_exception=True)
-
-    iocs_queryset = get_queryset_v2(request, feed_params, valid_feed_types)
+    iocs_queryset = get_queryset(request, feed_params, valid_feed_types)
     verbose = feed_params.verbose == "true"
     paginate = feed_params.paginate == "true"
     if paginate:
@@ -186,92 +195,14 @@ def feeds_v2(request):
     return feeds_response(request, iocs_queryset, feed_params.feed_type, valid_feed_types, feed_params.format, verbose=verbose)
 
 
-def get_queryset(request, feed_type, valid_feed_types, attack_type, age, format_):
-    """
-    Build a queryset to filter IOC data based on the request parameters.
-
-    Args:
-        request: The incoming request object.
-        feed_type (str): Type of feed (e.g., log4j, cowrie, etc.).
-        valid_feed_types (frozenset): The set of all valid feed types.
-        attack_type (str): Type of attack (e.g., all, specific attack types).
-        age (str): Age of the data to filter (e.g., recent, persistent).
-        format_ (str): Desired format of the response (e.g., json, csv, txt).
-
-    Returns:
-        QuerySet: The filtered queryset of IOC data.
-    """
-    source = str(request.user)
-    logger.info(f"request from {source}. Feed type: {feed_type}, attack_type: {attack_type}, " f"Age: {age}, format: {format_}")
-
-    serializer = FeedsSerializer(
-        data={
-            "feed_type": feed_type,
-            "attack_type": attack_type,
-            "age": age,
-            "format": format_,
-        },
-        context={"valid_feed_types": valid_feed_types},
-    )
-    serializer.is_valid(raise_exception=True)
-
-    ordering = request.query_params.get("ordering")
-    # if ordering == "value" replace it with "name" (the corresponding field in the iocs model)
-    if ordering == "value":
-        ordering = "name"
-    elif ordering == "-value":
-        ordering = "-name"
-
-    query_dict = {}
-
-    if feed_type != "all":
-        if feed_type == "log4j" or feed_type == "cowrie":
-            query_dict[feed_type] = True
-        else:
-            # accept feed_type if it is in the general honeypots list
-            query_dict["general_honeypot__name__iexact"] = feed_type
-
-    if attack_type != "all":
-        query_dict[attack_type] = True
-
-    if age == "recent":
-        # everything in the last 3 days
-        three_days_ago = datetime.utcnow() - timedelta(days=3)
-        query_dict["last_seen__gte"] = three_days_ago
-        # if ordering == "feed_type" or None replace it with the default value "-last_seen"
-        # ordering by "feed_type" is done in feed_response function
-        if ordering is None or ordering == "feed_type" or ordering == "-feed_type":
-            ordering = "-last_seen"
-        iocs = IOC.objects.exclude(general_honeypot__active=False).filter(**query_dict).order_by(ordering).prefetch_related("general_honeypot")[:5000]
-    elif age == "persistent":
-        # scanners detected in the last 14 days
-        fourteen_days_ago = datetime.utcnow() - timedelta(days=14)
-        query_dict["last_seen__gte"] = fourteen_days_ago
-        # ... and at least detected 10 different days
-        number_of_days_seen = 10
-        query_dict["number_of_days_seen__gte"] = number_of_days_seen
-        # if ordering == "feed_type" or None replace it with the default value "-attack_count"
-        # ordering by "feed_type" is done in feed_response function
-        if ordering is None or ordering == "feed_type" or ordering == "-feed_type":
-            ordering = "-attack_count"
-        iocs = IOC.objects.exclude(general_honeypot__active=False).filter(**query_dict).order_by(ordering).prefetch_related("general_honeypot")[:5000]
-
-    # save request source for statistics
-    source_ip = str(request.META["REMOTE_ADDR"])
-    request_source = Statistics(source=source_ip)
-    request_source.save()
-
-    logger.info(f"Number of iocs returned: {len(iocs)}")
-    return iocs
-
-
-def get_queryset_v2(request, feed_params, valid_feed_types):
+def get_queryset(request, feed_params, valid_feed_types):
     """
     Build a queryset to filter IOC data based on the request parameters.
 
     Args:
         request: The incoming request object.
         feed_params: A FeedRequestParams instance.
+        valid_feed_types (frozenset): The set of all valid feed types.
 
     Returns:
         QuerySet: The filtered queryset of IOC data.
@@ -348,7 +279,7 @@ def feeds_response(request, iocs, feed_type, valid_feed_types, format_, dict_onl
             text_lines.append(ioc.name)
         text = "\n".join(text_lines)
         return HttpResponse(text, content_type="text/plain")
-    elif format_ == "csv":
+    if format_ == "csv":
         rows = []
         rows.append([license_text])
         for ioc in iocs:
@@ -361,7 +292,7 @@ def feeds_response(request, iocs, feed_type, valid_feed_types, format_, dict_onl
             headers={"Content-Disposition": 'attachment; filename="feeds.csv"'},
             status=200,
         )
-    elif format_ == "json":
+    if format_ == "json":
         # json
         json_list = []
         ioc_feed_type = ""
