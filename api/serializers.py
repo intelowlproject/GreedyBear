@@ -1,6 +1,8 @@
 import logging
 import re
+from functools import cache
 
+from django.core.exceptions import FieldDoesNotExist
 from greedybear.consts import REGEX_DOMAIN, REGEX_IP
 from greedybear.models import IOC, GeneralHoneypot
 from rest_framework import serializers
@@ -54,6 +56,19 @@ def feed_type_validation(feed_type: str, valid_feed_types: frozenset) -> str:
     return feed_type
 
 
+@cache
+def ordering_validation(ordering: str) -> str:
+    if not ordering:
+        raise serializers.ValidationError("Invalid ordering: <empty string>")
+    if ordering[0] == "-":
+        ordering = ordering[1:]
+    try:
+        IOC._meta.get_field(ordering)
+    except FieldDoesNotExist as exc:
+        raise serializers.ValidationError(f"Invalid ordering: {ordering}") from exc
+    return ordering
+
+
 class FeedsSerializer(serializers.Serializer):
     feed_type = serializers.CharField(max_length=120)
     attack_type = serializers.ChoiceField(choices=["scanner", "payload_request", "all"])
@@ -63,6 +78,28 @@ class FeedsSerializer(serializers.Serializer):
     def validate_feed_type(self, feed_type):
         logger.debug(f"FeedsSerializer - Validation feed_type: '{feed_type}'")
         return feed_type_validation(feed_type, self.context["valid_feed_types"])
+
+
+class FeedsRequestSerializer(serializers.Serializer):
+    feed_type = serializers.CharField(max_length=120)
+    attack_type = serializers.ChoiceField(choices=["scanner", "payload_request", "all"])
+    max_age = serializers.IntegerField(min_value=1)
+    min_days_seen = serializers.IntegerField(min_value=1)
+    include_reputation = serializers.ListField(child=serializers.CharField(max_length=120))
+    exclude_reputation = serializers.ListField(child=serializers.CharField(max_length=120))
+    feed_size = serializers.IntegerField(min_value=1)
+    ordering = serializers.CharField(max_length=120)
+    verbose = serializers.BooleanField()
+    paginate = serializers.BooleanField()
+    format = serializers.ChoiceField(choices=["csv", "json", "txt"], default="json")
+
+    def validate_feed_type(self, feed_type):
+        logger.debug(f"FeedsRequestSerializer - validation feed_type: '{feed_type}'")
+        return feed_type_validation(feed_type, self.context["valid_feed_types"])
+
+    def validate_ordering(self, ordering):
+        logger.debug(f"FeedsRequestSerializer - validation ordering: '{ordering}'")
+        return
 
 
 class FeedsResponseSerializer(serializers.Serializer):

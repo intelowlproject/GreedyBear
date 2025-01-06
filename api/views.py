@@ -4,7 +4,7 @@ import csv
 import logging
 from datetime import datetime, timedelta
 
-from api.serializers import EnrichmentSerializer, FeedsResponseSerializer, FeedsSerializer
+from api.serializers import EnrichmentSerializer, FeedsRequestSerializer, FeedsResponseSerializer, FeedsSerializer
 from certego_saas.apps.auth.backend import CookieTokenAuthentication
 from certego_saas.ext.helpers import parse_humanized_range
 from certego_saas.ext.pagination import CustomPageNumberPagination
@@ -169,7 +169,7 @@ def feeds_v2(request):
     feed_params = FeedRequestParams(request.query_params)
 
     valid_feed_types = get_valid_feed_types()
-    iocs_queryset = get_queryset_v2(request, feed_params)
+    iocs_queryset = get_queryset_v2(request, feed_params, valid_feed_types)
 
     if feed_params.paginate:
         paginator = CustomPageNumberPagination()
@@ -258,7 +258,7 @@ def get_queryset(request, feed_type, valid_feed_types, attack_type, age, format_
     return iocs
 
 
-def get_queryset_v2(request, feed_params):
+def get_queryset_v2(request, feed_params, valid_feed_types):
     """
     Build a queryset to filter IOC data based on the request parameters.
 
@@ -274,6 +274,12 @@ def get_queryset_v2(request, feed_params):
         f"request from {source}. Feed type: {feed_params.feed_type}, attack_type: {feed_params.attack_type}, "
         f"Age: {feed_params.max_age}, format: {feed_params.format}"
     )
+
+    serializer = FeedsRequestSerializer(
+        data=vars(feed_params),
+        context={"valid_feed_types": valid_feed_types},
+    )
+    serializer.is_valid(raise_exception=True)
 
     query_dict = {}
     if feed_params.feed_type != "all":
