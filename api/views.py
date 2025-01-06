@@ -43,19 +43,19 @@ class Echo:
 class FeedRequestParams:
     """A class to handle and validate feed request parameters.
     It processes and stores query parameters for feed requests,
-    providing default values and type conversion.
+    providing default values.
 
     Attributes:
         feed_type (str): Type of feed to retrieve (default: "all")
         attack_type (str): Type of attack to filter (default: "all")
-        max_age (int): Maximum number of days since last occurrence (default: 3)
-        min_days_seen (int): Minimum number of days on which an IOC must have been seen (default: 1)
+        max_age (str): Maximum number of days since last occurrence (default: "3")
+        min_days_seen (str): Minimum number of days on which an IOC must have been seen (default: "1")
         include_reputation (list): List of reputation values to include (default: [])
         exclude_reputation (list): List of reputation values to exclude (default: [])
-        feed_size (int): Number of items to return in feed (default: 5000)
+        feed_size (int): Number of items to return in feed (default: "5000")
         ordering (str): Field to order results by (default: "-last_seen")
-        verbose (bool): Whether to include IOC properties that contain a lot of data (default: False)
-        paginate (bool): Whether to paginate results (default: False)
+        verbose (str): Whether to include IOC properties that contain a lot of data (default: "false")
+        paginate (str): Whether to paginate results (default: "false")
         format (str): Response format type (default: "json")
     """
 
@@ -65,17 +65,17 @@ class FeedRequestParams:
         Parameters:
             query_params (dict): Dictionary containing query parameters for feed configuration.
         """
-        self.feed_type = query_params.get("feed_type", "all")
-        self.attack_type = query_params.get("attack_type", "all")
-        self.max_age = int(query_params.get("max_age", 3))
-        self.min_days_seen = int(query_params.get("min_days_seen", 1))
+        self.feed_type = query_params.get("feed_type", "all").lower()
+        self.attack_type = query_params.get("attack_type", "all").lower()
+        self.max_age = query_params.get("max_age", "3")
+        self.min_days_seen = query_params.get("min_days_seen", "1")
         self.include_reputation = query_params["include_reputation"].split(";") if "include_reputation" in query_params else []
         self.exclude_reputation = query_params["exclude_reputation"].split(";") if "exclude_reputation" in query_params else []
-        self.feed_size = int(query_params.get("feed_size", 5000))
-        self.ordering = query_params.get("ordering", "-last_seen").replace("value", "name")
-        self.verbose = bool(query_params.get("verbose", 0))
-        self.paginate = bool(query_params.get("paginate", 0))
-        self.format = query_params.get("format_", "json")
+        self.feed_size = query_params.get("feed_size", "5000")
+        self.ordering = query_params.get("ordering", "-last_seen").lower().replace("value", "name")
+        self.verbose = query_params.get("verbose", "false").lower()
+        self.paginate = query_params.get("paginate", "false").lower()
+        self.format = query_params.get("format_", "json").lower()
 
 
 def get_valid_feed_types() -> frozenset[str]:
@@ -157,8 +157,8 @@ def feeds_v2(request):
             e.g. `mass scanner` or `mass scanner;bot, crawler`. (default: exclude none)
         - **feed_size**: Number of IOC items to return. (default: 5000)
         - **ordering**: Field to order results by, with optional `-` prefix for descending. (default: `-last_seen`)
-        - **verbose**: `1` to include IOC properties that contain a lot of data, e.g. the list of days it was seen. (default: `0`)
-        - **paginate**: `1` to paginate results (default: `0`)
+        - **verbose**: `true` to include IOC properties that contain a lot of data, e.g. the list of days it was seen. (default: `false`)
+        - **paginate**: `true` to paginate results (default: `false`)
         - **format_**: Response format type. Besides `json`, `txt` and `csv` are supported \
             but the response will only contain IOC values (e.g. IP adresses) without further information. (default: `json`)
 
@@ -167,16 +167,23 @@ def feeds_v2(request):
     """
     logger.info(f"request /api/feeds/v2 with params: {request.query_params}")
     feed_params = FeedRequestParams(request.query_params)
-
     valid_feed_types = get_valid_feed_types()
-    iocs_queryset = get_queryset_v2(request, feed_params, valid_feed_types)
 
-    if feed_params.paginate:
+    serializer = FeedsRequestSerializer(
+        data=vars(feed_params),
+        context={"valid_feed_types": valid_feed_types},
+    )
+    serializer.is_valid(raise_exception=True)
+
+    iocs_queryset = get_queryset_v2(request, feed_params, valid_feed_types)
+    verbose = feed_params.verbose == "true"
+    paginate = feed_params.paginate == "true"
+    if paginate:
         paginator = CustomPageNumberPagination()
         iocs = paginator.paginate_queryset(iocs_queryset, request)
-        resp_data = feeds_response(request, iocs, feed_params.feed_type, valid_feed_types, "json", dict_only=True, verbose=feed_params.verbose)
+        resp_data = feeds_response(request, iocs, feed_params.feed_type, valid_feed_types, "json", dict_only=True, verbose=verbose)
         return paginator.get_paginated_response(resp_data)
-    return feeds_response(request, iocs_queryset, feed_params.feed_type, valid_feed_types, feed_params.format, verbose=feed_params.verbose)
+    return feeds_response(request, iocs_queryset, feed_params.feed_type, valid_feed_types, feed_params.format, verbose=verbose)
 
 
 def get_queryset(request, feed_type, valid_feed_types, attack_type, age, format_):
@@ -292,8 +299,8 @@ def get_queryset_v2(request, feed_params, valid_feed_types):
     if feed_params.attack_type != "all":
         query_dict[feed_params.attack_type] = True
 
-    query_dict["last_seen__gte"] = datetime.utcnow() - timedelta(days=feed_params.max_age)
-    query_dict["number_of_days_seen__gte"] = feed_params.min_days_seen
+    query_dict["last_seen__gte"] = datetime.utcnow() - timedelta(days=int(feed_params.max_age))
+    query_dict["number_of_days_seen__gte"] = int(feed_params.min_days_seen)
     if feed_params.include_reputation:
         query_dict["ip_reputation__in"] = feed_params.include_reputation
 
@@ -302,7 +309,7 @@ def get_queryset_v2(request, feed_params, valid_feed_types):
         .exclude(ip_reputation__in=feed_params.exclude_reputation)
         .filter(**query_dict)
         .order_by(feed_params.ordering)
-        .prefetch_related("general_honeypot")[: feed_params.feed_size]
+        .prefetch_related("general_honeypot")[: int(feed_params.feed_size)]
     )
 
     # save request source for statistics

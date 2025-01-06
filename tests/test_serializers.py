@@ -71,14 +71,14 @@ class FeedsRequestSerializersTestCase(TestCase):
         choices = {
             "feed_type": ["all", "log4j", "cowrie", "adbhoney"],
             "attack_type": ["all", "scanner", "payload_request"],
-            "max_age": [1, 2, 4, 8, 16],
-            "min_days_seen": [1, 2, 4, 8, 16],
+            "max_age": [str(n) for n in [1, 2, 4, 8, 16]],
+            "min_days_seen": [str(n) for n in [1, 2, 4, 8, 16]],
             "include_reputation": [[], ["known attacker"], ["known attacker", "mass scanner"]],
             "exclude_reputation": [[], ["known attacker"], ["known attacker", "mass scanner"]],
-            "feed_size": [100, 200, 5000, 10_000_000],
+            "feed_size": [str(n) for n in [100, 200, 5000, 10_000_000]],
             "ordering": [field.name for field in IOC._meta.get_fields()],
-            "verbose": [True, False],
-            "paginate": [True, False],
+            "verbose": ["true", "false"],
+            "paginate": ["true", "false"],
             "format": ["txt", "json", "csv"],
         }
 

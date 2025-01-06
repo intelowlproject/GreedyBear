@@ -89,9 +89,9 @@ class FeedsRequestSerializer(serializers.Serializer):
     exclude_reputation = serializers.ListField(child=serializers.CharField(max_length=120))
     feed_size = serializers.IntegerField(min_value=1)
     ordering = serializers.CharField(max_length=120)
-    verbose = serializers.BooleanField()
-    paginate = serializers.BooleanField()
-    format = serializers.ChoiceField(choices=["csv", "json", "txt"], default="json")
+    verbose = serializers.ChoiceField(choices=["true", "false"])
+    paginate = serializers.ChoiceField(choices=["true", "false"])
+    format = serializers.ChoiceField(choices=["csv", "json", "txt"])
 
     def validate_feed_type(self, feed_type):
         logger.debug(f"FeedsRequestSerializer - validation feed_type: '{feed_type}'")
