@@ -99,7 +99,7 @@ class FeedsRequestSerializer(serializers.Serializer):
 
     def validate_ordering(self, ordering):
         logger.debug(f"FeedsRequestSerializer - validation ordering: '{ordering}'")
-        return
+        return ordering_validation(ordering)
 
 
 class FeedsResponseSerializer(serializers.Serializer):
