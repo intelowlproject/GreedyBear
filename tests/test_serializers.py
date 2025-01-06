@@ -1,10 +1,10 @@
-from datetime import datetime
+import random
 from itertools import product
 
-from api.serializers import FeedsResponseSerializer, FeedsSerializer
+from api.serializers import FeedsRequestSerializer, FeedsResponseSerializer, FeedsSerializer
 from django.test import TestCase
 from greedybear.consts import PAYLOAD_REQUEST, SCANNER
-from greedybear.models import GeneralHoneypot
+from greedybear.models import IOC, GeneralHoneypot
 from rest_framework.serializers import ValidationError
 
 
@@ -51,6 +51,80 @@ class FeedsSerializersTestCase(TestCase):
             self.assertIn("feed_type", serializer.errors)
             self.assertIn("attack_type", serializer.errors)
             self.assertIn("age", serializer.errors)
+            self.assertIn("format", serializer.errors)
+
+
+class FeedsRequestSerializersTestCase(TestCase):
+    @classmethod
+    def setUpClass(self):
+        GeneralHoneypot.objects.create(
+            name="adbhoney",
+            active=True,
+        )
+
+    @classmethod
+    def tearDownClass(self):
+        # db clean
+        GeneralHoneypot.objects.all().delete()
+
+    def test_valid_fields(self):
+        choices = {
+            "feed_type": ["all", "log4j", "cowrie", "adbhoney"],
+            "attack_type": ["all", "scanner", "payload_request"],
+            "max_age": [1, 2, 4, 8, 16],
+            "min_days_seen": [1, 2, 4, 8, 16],
+            "include_reputation": [[], ["known attacker"], ["known attacker", "mass scanner"]],
+            "exclude_reputation": [[], ["known attacker"], ["known attacker", "mass scanner"]],
+            "feed_size": [100, 200, 5000, 10_000_000],
+            "ordering": [field.name for field in IOC._meta.get_fields()],
+            "verbose": [True, False],
+            "paginate": [True, False],
+            "format": ["txt", "json", "csv"],
+        }
+
+        # generate n random sets of valid input data
+        n = 1_000
+        for _ in range(n):
+            data_ = {field: random.choice(values) for field, values in choices.items()}
+            serializer = FeedsRequestSerializer(
+                data=data_,
+                context={"valid_feed_types": frozenset(choices["feed_type"])},
+            )
+            valid = serializer.is_valid(raise_exception=True)
+            self.assertEqual(valid, True)
+
+    def test_invalid_fields(self):
+        valid_feed_types = frozenset(["all", "log4j", "cowrie", "adbhoney"])
+        data_ = {
+            "feed_type": "invalid_feed_type",
+            "attack_type": "invalid_attack_type",
+            "max_age": 0,
+            "min_days_seen": 0,
+            "include_reputation": None,
+            "exclude_reputation": None,
+            "feed_size": 0,
+            "ordering": "invalid_ordering",
+            "verbose": None,
+            "paginate": None,
+            "format": "invalid_format",
+        }
+        serializer = FeedsRequestSerializer(
+            data=data_,
+            context={"valid_feed_types": valid_feed_types},
+        )
+        try:
+            serializer.is_valid(raise_exception=True)
+        except ValidationError:
+            self.assertIn("feed_type", serializer.errors)
+            self.assertIn("attack_type", serializer.errors)
+            self.assertIn("max_age", serializer.errors)
+            self.assertIn("min_days_seen", serializer.errors)
+            self.assertIn("include_reputation", serializer.errors)
+            self.assertIn("exclude_reputation", serializer.errors)
+            self.assertIn("feed_size", serializer.errors)
+            self.assertIn("ordering", serializer.errors)
+            self.assertIn("verbose", serializer.errors)
+            self.assertIn("paginate", serializer.errors)
             self.assertIn("format", serializer.errors)
 
 
