@@ -87,6 +87,44 @@ class FeedsViewTestCase(CustomTestCase):
         self.assertEqual(response.status_code, 400)
 
 
+class FeedsV2ViewTestCase(CustomTestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.superuser)
+
+    def test_200_all_feeds(self):
+        response = self.client.get("/api/feeds/v2/")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["license"], FEEDS_LICENSE)
+        self.assertEqual(response.json()["iocs"][0]["feed_type"], "log4j")
+        self.assertEqual(response.json()["iocs"][0]["attack_count"], 1)
+        self.assertEqual(response.json()["iocs"][0]["scanner"], True)
+        self.assertEqual(response.json()["iocs"][0]["payload_request"], True)
+
+    def test_200_general_feeds(self):
+        response = self.client.get("/api/feeds/v2/?feed_type=heralding")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["license"], FEEDS_LICENSE)
+        self.assertEqual(response.json()["iocs"][0]["feed_type"], "heralding")
+        self.assertEqual(response.json()["iocs"][0]["attack_count"], 1)
+        self.assertEqual(response.json()["iocs"][0]["scanner"], True)
+        self.assertEqual(response.json()["iocs"][0]["payload_request"], True)
+
+    def test_400_feeds(self):
+        response = self.client.get("/api/feeds/v2/?attack_type=test")
+        self.assertEqual(response.status_code, 400)
+
+    def test_200_feeds_pagination(self):
+        response = self.client.get("/api/feeds/v2/?paginate=1&page_size=10&page=1")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["count"], 1)
+        self.assertEqual(response.json()["total_pages"], 1)
+
+    def test_400_feeds_pagination(self):
+        response = self.client.get("/api/feeds/v2/?paginate=1&page_size=10&page=1&attack_type=test")
+        self.assertEqual(response.status_code, 400)
+
+
 class StatisticsViewTestCase(CustomTestCase):
     @classmethod
     def setUpClass(self):
