@@ -86,7 +86,7 @@ class FeedRequestParams:
         """
         match age:
             case "recent":
-                self.max_age = "4"
+                self.max_age = "3"
                 self.min_days_seen = "1"
                 if "feed_type" in self.ordering:
                     self.ordering = "-last_seen"
