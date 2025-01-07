@@ -50,6 +50,18 @@ class EnrichmentSerializer(serializers.Serializer):
 
 
 def feed_type_validation(feed_type: str, valid_feed_types: frozenset) -> str:
+    """Validates that a given feed type exists in the set of valid feed types.
+
+    Args:
+        feed_type (str): The feed type to validate
+        valid_feed_types (frozenset): Set of allowed feed type values
+
+    Returns:
+        str: The validated feed type string, unchanged
+
+    Raises:
+        serializers.ValidationError: If feed_type is not found in valid_feed_types
+    """
     if feed_type not in valid_feed_types:
         logger.info(f"Feed type {feed_type} not in feed_choices {valid_feed_types}")
         raise serializers.ValidationError(f"Invalid feed_type: {feed_type}")
@@ -58,12 +70,23 @@ def feed_type_validation(feed_type: str, valid_feed_types: frozenset) -> str:
 
 @cache
 def ordering_validation(ordering: str) -> str:
+    """Validates that given ordering corresponds to a field in the IOC model.
+
+    Args:
+        ordering (str): The ordering to validate
+
+    Returns:
+        str: The validated ordering string, unchanged
+
+    Raises:
+        serializers.ValidationError: If ordering does not correspond to a field in the IOC model
+    """
     if not ordering:
         raise serializers.ValidationError("Invalid ordering: <empty string>")
-    if ordering[0] == "-":
-        ordering = ordering[1:]
+    # remove minus sign if present
+    field_name = ordering[1:] if ordering.startswith("-") else ordering
     try:
-        IOC._meta.get_field(ordering)
+        IOC._meta.get_field(field_name)
     except FieldDoesNotExist as exc:
         raise serializers.ValidationError(f"Invalid ordering: {ordering}") from exc
     return ordering
