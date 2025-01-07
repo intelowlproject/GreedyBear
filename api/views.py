@@ -153,7 +153,7 @@ def feeds_pagination(request):
 @api_view([GET])
 @authentication_classes([CookieTokenAuthentication])
 @permission_classes([IsAuthenticated])
-def feeds_v2(request):
+def feeds_advanced(request):
     """
     Handle requests for IOC feeds based on query parameters and format the response accordingly.
 
@@ -181,7 +181,7 @@ def feeds_v2(request):
     Returns:
         Response: The HTTP response with formatted IOC data.
     """
-    logger.info(f"request /api/feeds/v2 with params: {request.query_params}")
+    logger.info(f"request /api/feeds/advanced/ with params: {request.query_params}")
     feed_params = FeedRequestParams(request.query_params)
     valid_feed_types = get_valid_feed_types()
     iocs_queryset = get_queryset(request, feed_params, valid_feed_types)
