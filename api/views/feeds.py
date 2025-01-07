@@ -53,6 +53,7 @@ def feeds_pagination(request):
     logger.info(f"request /api/feeds with params: {request.query_params}")
 
     feed_params = FeedRequestParams(request.query_params)
+    feed_params.format = "json"
     feed_params.set_legacy_age(request.query_params.get("age"))
     valid_feed_types = get_valid_feed_types()
     iocs_queryset = get_queryset(request, feed_params, valid_feed_types)
@@ -86,7 +87,7 @@ def feeds_advanced(request):
         - **feed_size**: Number of IOC items to return. (default: 5000)
         - **ordering**: Field to order results by, with optional `-` prefix for descending. (default: `-last_seen`)
         - **verbose**: `true` to include IOC properties that contain a lot of data, e.g. the list of days it was seen. (default: `false`)
-        - **paginate**: `true` to paginate results (default: `false`)
+        - **paginate**: `true` to paginate results. This forces the json format. (default: `false`)
         - **format_**: Response format type. Besides `json`, `txt` and `csv` are supported \
             but the response will only contain IOC values (e.g. IP adresses) without further information. (default: `json`)
 
@@ -100,6 +101,7 @@ def feeds_advanced(request):
     verbose = feed_params.verbose == "true"
     paginate = feed_params.paginate == "true"
     if paginate:
+        feed_params.format = "json"
         paginator = CustomPageNumberPagination()
         iocs = paginator.paginate_queryset(iocs_queryset, request)
         resp_data = feeds_response(iocs, feed_params, valid_feed_types, dict_only=True, verbose=verbose)
