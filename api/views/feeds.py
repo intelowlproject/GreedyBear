@@ -25,6 +25,7 @@ def feeds(request, feed_type, attack_type, age, format_):
         attack_type (str): Type of attack (e.g., all, specific attack types).
         age (str): Age of the data to filter (e.g., recent, persistent).
         format_ (str): Desired format of the response (e.g., json, csv, txt).
+        exclude_mass_scanners (bool): query parameter flag to exclude IOCs that are known mass scanners.
 
     Returns:
         Response: The HTTP response with formatted IOC data.
@@ -33,6 +34,9 @@ def feeds(request, feed_type, attack_type, age, format_):
 
     feed_params = FeedRequestParams({"feed_type": feed_type, "attack_type": attack_type, "format_": format_})
     feed_params.set_legacy_age(age)
+    if request.query_params and "exclude_mass_scanners" in request.query_params:
+        feed_params.exclude_mass_scanners()
+
     valid_feed_types = get_valid_feed_types()
     iocs_queryset = get_queryset(request, feed_params, valid_feed_types)
     return feeds_response(iocs_queryset, feed_params, valid_feed_types)
@@ -55,6 +59,9 @@ def feeds_pagination(request):
     feed_params = FeedRequestParams(request.query_params)
     feed_params.format = "json"
     feed_params.set_legacy_age(request.query_params.get("age"))
+    if request.query_params and "exclude_mass_scanners" in request.query_params:
+        feed_params.exclude_mass_scanners()
+
     valid_feed_types = get_valid_feed_types()
     iocs_queryset = get_queryset(request, feed_params, valid_feed_types)
     paginator = CustomPageNumberPagination()

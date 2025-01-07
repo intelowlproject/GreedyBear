@@ -70,6 +70,9 @@ class FeedRequestParams:
         self.paginate = query_params.get("paginate", "false").lower()
         self.format = query_params.get("format_", "json").lower()
 
+    def exclude_mass_scanners(self):
+        self.exclude_reputation.append("mass scanner")
+
     def set_legacy_age(self, age: str):
         """Translates legacy age specification into max_age and min_days_seen attributes
         and sets ordering accordingly.
