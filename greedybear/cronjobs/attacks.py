@@ -63,7 +63,7 @@ class ExtractAttacks(Cronjob, metaclass=ABCMeta):
         ioc_record.scanner = attack_type == SCANNER
         ioc_record.payload_request = attack_type == PAYLOAD_REQUEST
         ioc_record.save()
-        return ioc
+        return ioc_record
 
     def _get_attacker_data(self, honeypot, fields: list) -> list:
         hits_by_ip = defaultdict(list)
