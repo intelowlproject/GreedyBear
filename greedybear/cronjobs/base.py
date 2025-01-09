@@ -80,6 +80,7 @@ def get_time_window(window_minutes: int, additonal_lookback: int = 0) -> tuple[i
 
     Args:
         window_minutes (int): Length of the time window in minutes
+        additonal_lookback (int): Additional minutes to look back before the window start (default: 0)
 
     Returns:
         tuple: A tuple containing the start and end timestamps of the time window
