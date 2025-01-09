@@ -69,6 +69,7 @@ class FeedRequestParams:
         self.verbose = query_params.get("verbose", "false").lower()
         self.paginate = query_params.get("paginate", "false").lower()
         self.format = query_params.get("format_", "json").lower()
+        self.feed_type_sorting = None
 
     def exclude_mass_scanners(self):
         self.exclude_reputation.append("mass scanner")
@@ -85,11 +86,13 @@ class FeedRequestParams:
                 self.max_age = "3"
                 self.min_days_seen = "1"
                 if "feed_type" in self.ordering:
+                    self.feed_type_sorting = self.ordering
                     self.ordering = "-last_seen"
             case "persistent":
                 self.max_age = "14"
                 self.min_days_seen: "10"
                 if "feed_type" in self.ordering:
+                    self.feed_type_sorting = self.ordering
                     self.ordering = "-attack_count"
 
 
