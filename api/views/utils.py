@@ -10,7 +10,7 @@ from django.db.models import F
 from django.http import HttpResponse, HttpResponseBadRequest, StreamingHttpResponse
 from greedybear.consts import FEEDS_LICENSE, PAYLOAD_REQUEST, SCANNER
 from greedybear.models import IOC, GeneralHoneypot, Statistics
-from greedybear.settings import EXTRACTION_INTERVAL, SKIP_FEED_VALIDATION
+from greedybear.settings import EXTRACTION_INTERVAL
 from rest_framework import status
 from rest_framework.response import Response
 
