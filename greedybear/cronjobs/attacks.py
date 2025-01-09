@@ -101,8 +101,7 @@ class ExtractAttacks(Cronjob, metaclass=ABCMeta):
         return ioc_type
 
     def _check_first_time_run(self, honeypot_flag, general=False):
-        all_ioc = IOC.objects.all()
-        if not all_ioc:
+        if not IOC.objects.exists():
             # plus, we extract the sensors addresses so we can whitelist them
             ExtractSensors().execute()
             self.first_time_run = True
@@ -114,7 +113,7 @@ class ExtractAttacks(Cronjob, metaclass=ABCMeta):
             else:
                 honeypot_ioc = IOC.objects.filter(**{"general_honeypot__name__iexact": honeypot_flag})
 
-            if not honeypot_ioc:
+            if not honeypot_ioc.exists():
                 # first time we execute this project.
                 # So we increment the time range to get the data from the last 3 days
                 self.first_time_run = True
