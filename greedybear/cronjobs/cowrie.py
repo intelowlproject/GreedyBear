@@ -34,10 +34,10 @@ class ExtractCowrie(ExtractAttacks):
         for ioc in self._get_attacker_data(self.cowrie, ATTACK_DATA_FIELDS):
             ioc.cowrie = True
             self.log.info(f"found IP {ioc.name} by honeypot cowrie")
-            self._add_ioc(ioc, attack_type=SCANNER)
+            ioc = self._add_ioc(ioc, attack_type=SCANNER)
             self.added_scanners += 1
             self._extract_possible_payload_in_messages(ioc.name)
-            self._get_sessions(ioc.name)
+            self._get_sessions(ioc)
 
     def _extract_possible_payload_in_messages(self, scanner_ip):
         # looking for URLs inside attacks payloads
@@ -87,7 +87,8 @@ class ExtractCowrie(ExtractAttacks):
                 self.added_url_downloads += 1
                 self._add_fks(scanner_ip, hostname)
 
-    def _get_sessions(self, scanner_ip: str):
+    def _get_sessions(self, ioc):
+        scanner_ip = ioc.name
         self.log.info(f"adding cowrie sessions from {scanner_ip}")
         search = self._base_search(self.cowrie)
         search = search.filter("term", src_ip=scanner_ip)
@@ -103,7 +104,7 @@ class ExtractCowrie(ExtractAttacks):
             except CowrieSession.DoesNotExist:
                 session_record = CowrieSession(session_id=sid)
 
-            session_record.source = IOC.objects.filter(name=scanner_ip).first()
+            session_record.source = ioc
             for hit in hits:
                 match hit.eventid:
                     case "cowrie.session.connect":

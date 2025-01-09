@@ -30,7 +30,7 @@ class ExtractAttacks(Cronjob, metaclass=ABCMeta):
             minutes = 11 if LEGACY_EXTRACTION else EXTRACTION_INTERVAL
         return minutes
 
-    def _add_ioc(self, ioc, attack_type: str, general=None) -> bool:
+    def _add_ioc(self, ioc, attack_type: str, general=None):
         self.log.info(f"saving ioc {ioc} for attack_type {attack_type}")
         if ioc.name in self.whitelist:
             self.log.info(f"not saved {ioc} because is whitelisted")
@@ -63,6 +63,7 @@ class ExtractAttacks(Cronjob, metaclass=ABCMeta):
         ioc_record.scanner = attack_type == SCANNER
         ioc_record.payload_request = attack_type == PAYLOAD_REQUEST
         ioc_record.save()
+        return ioc
 
     def _get_attacker_data(self, honeypot, fields: list) -> list:
         hits_by_ip = defaultdict(list)
