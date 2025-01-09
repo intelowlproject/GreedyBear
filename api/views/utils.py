@@ -94,6 +94,12 @@ class FeedRequestParams:
 
 
 def get_valid_feed_types() -> frozenset[str]:
+    """
+    Retrieve all valid feed types, combining predefined types with active general honeypot names.
+
+    Returns:
+        frozenset[str]: An immutable set of valid feed type strings
+    """
     general_honeypots = GeneralHoneypot.objects.all().filter(active=True)
     return frozenset(["log4j", "cowrie", "all"] + [hp.name.lower() for hp in general_honeypots])
 
