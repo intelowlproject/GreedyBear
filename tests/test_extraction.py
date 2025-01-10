@@ -69,7 +69,7 @@ class TimeWindowCalculationTestCase(CustomTestCase):
         self.assertEqual(end, expected_end)
 
     def test_large_window_size(self):
-        """Test with a large window size (3 days)"""
+        """Test with a large window size (60 minutes)"""
         reference = datetime(2024, 1, 10, 14, 45)  # 14:45
         start, end = get_time_window(reference, 60)
 
