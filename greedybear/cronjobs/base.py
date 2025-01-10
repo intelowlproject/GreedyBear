@@ -46,7 +46,7 @@ class Cronjob(metaclass=ABCMeta):
                 minimum_should_match=1,
             )
         else:
-            window_start, window_end = get_time_window(EXTRACTION_INTERVAL, self.minutes_back_to_lookup - EXTRACTION_INTERVAL)
+            window_start, window_end = get_time_window(datetime.now(), EXTRACTION_INTERVAL, self.minutes_back_to_lookup - EXTRACTION_INTERVAL)
             self.log.debug(f"time window: {window_start} - {window_end}")
             q = Q("range", **{"@timestamp": {"gte": window_start, "lt": window_end}})
         search = search.query(q)
@@ -74,25 +74,25 @@ class Cronjob(metaclass=ABCMeta):
             self.log.info("Finished execution")
 
 
-def get_time_window(window_minutes: int, additonal_lookback: int = 0) -> tuple[int]:
+def get_time_window(reference_time, window_minutes: int, additional_lookback: int = 0) -> tuple:
     """
     Calculates the last completed time window of a specified length.
 
     Args:
+        reference_time (datetime): Reference point in time
         window_minutes (int): Length of the time window in minutes
-        additonal_lookback (int): Additional minutes to look back before the window start (default: 0)
+        additional_lookback (int): Additional minutes to look back before the window start (default: 0)
 
     Returns:
-        tuple: A tuple containing the start and end timestamps of the time window
+        tuple: A tuple containing the start and end time of the time window as datetime objects
 
     Raises:
         ValueError: If window_minutes is less than or equal to 0
     """
     if window_minutes < 1:
-        raise ValueError("Window size must be at least 1 minute. ")
+        raise ValueError("Window size must be at least 1 minute.")
 
-    now = datetime.now()
-    rounded_minute = (now.minute // window_minutes) * window_minutes
-    window_end = now.replace(minute=rounded_minute, second=0, microsecond=0)
-    window_start = window_end - timedelta(minutes=window_minutes) - timedelta(minutes=additonal_lookback)
+    rounded_minute = (reference_time.minute // window_minutes) * window_minutes
+    window_end = reference_time.replace(minute=rounded_minute, second=0, microsecond=0)
+    window_start = window_end - timedelta(minutes=window_minutes) - timedelta(minutes=additional_lookback)
     return (window_start, window_end)
