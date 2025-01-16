@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 
 from api.serializers import FeedsRequestSerializer, FeedsResponseSerializer
 from django.contrib.postgres.aggregates import ArrayAgg
-from django.db.models import F
+from django.db.models import F, Q
 from django.http import HttpResponse, HttpResponseBadRequest, StreamingHttpResponse
 from greedybear.consts import FEEDS_LICENSE, PAYLOAD_REQUEST, SCANNER
 from greedybear.models import IOC, GeneralHoneypot, Statistics
@@ -152,8 +152,8 @@ def get_queryset(request, feed_params, valid_feed_types):
 
     iocs = (
         IOC.objects.filter(**query_dict)
+        .filter(Q(cowrie=True) | Q(log4j=True) | Q(general_honeypot__active=True))
         .exclude(ip_reputation__in=feed_params.exclude_reputation)
-        .exclude(general_honeypot__active=False)
         .annotate(value=F("name"))
         .annotate(honeypots=ArrayAgg("general_honeypot__name"))
         .order_by(feed_params.ordering)[: int(feed_params.feed_size)]
