@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 
 from django.conf import settings
 from elasticsearch_dsl import Q, Search
-from greedybear.settings import LEGACY_EXTRACTION
+from greedybear.settings import EXTRACTION_INTERVAL, LEGACY_EXTRACTION
 
 
 class Cronjob(metaclass=ABCMeta):
@@ -46,9 +46,7 @@ class Cronjob(metaclass=ABCMeta):
                 minimum_should_match=1,
             )
         else:
-            now = datetime.now()
-            window_start = now.replace(second=0, microsecond=0) - timedelta(minutes=self.minutes_back_to_lookup)
-            window_end = now.replace(second=0, microsecond=0)
+            window_start, window_end = get_time_window(datetime.now(), self.minutes_back_to_lookup)
             self.log.debug(f"time window: {window_start} - {window_end}")
             q = Q("range", **{"@timestamp": {"gte": window_start, "lt": window_end}})
         search = search.query(q)
@@ -74,3 +72,26 @@ class Cronjob(metaclass=ABCMeta):
             self.success = True
         finally:
             self.log.info("Finished execution")
+
+
+def get_time_window(reference_time: datetime, lookback_minutes: int = EXTRACTION_INTERVAL) -> tuple[datetime, datetime]:
+    """
+    Calculates a time window that ends at the last completed extraction interval and looks back a specified number of minutes.
+
+    Args:
+        reference_time (datetime): Reference point in time
+        lookback_minutes (int): Minutes to look back (default: EXTRACTION_INTERVAL)
+
+    Returns:
+        tuple: A tuple containing the start and end time of the time window as datetime objects
+
+    Raises:
+        ValueError: If lookback_minutes is less than EXTRACTION_INTERVAL
+    """
+    if lookback_minutes < EXTRACTION_INTERVAL:
+        raise ValueError(f"Argument lookback_minutes size must be at least {EXTRACTION_INTERVAL} minutes.")
+
+    rounded_minute = (reference_time.minute // EXTRACTION_INTERVAL) * EXTRACTION_INTERVAL
+    window_end = reference_time.replace(minute=rounded_minute, second=0, microsecond=0)
+    window_start = window_end - timedelta(minutes=lookback_minutes)
+    return (window_start, window_end)

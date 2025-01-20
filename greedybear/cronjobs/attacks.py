@@ -30,7 +30,7 @@ class ExtractAttacks(Cronjob, metaclass=ABCMeta):
             minutes = 11 if LEGACY_EXTRACTION else EXTRACTION_INTERVAL
         return minutes
 
-    def _add_ioc(self, ioc, attack_type: str, general=None) -> bool:
+    def _add_ioc(self, ioc, attack_type: str, general=None):
         self.log.info(f"saving ioc {ioc} for attack_type {attack_type}")
         if ioc.name in self.whitelist:
             self.log.info(f"not saved {ioc} because is whitelisted")
@@ -63,6 +63,7 @@ class ExtractAttacks(Cronjob, metaclass=ABCMeta):
         ioc_record.scanner = attack_type == SCANNER
         ioc_record.payload_request = attack_type == PAYLOAD_REQUEST
         ioc_record.save()
+        return ioc_record
 
     def _get_attacker_data(self, honeypot, fields: list) -> list:
         hits_by_ip = defaultdict(list)
@@ -101,8 +102,7 @@ class ExtractAttacks(Cronjob, metaclass=ABCMeta):
         return ioc_type
 
     def _check_first_time_run(self, honeypot_flag, general=False):
-        all_ioc = IOC.objects.all()
-        if not all_ioc:
+        if not IOC.objects.exists():
             # plus, we extract the sensors addresses so we can whitelist them
             ExtractSensors().execute()
             self.first_time_run = True
@@ -114,7 +114,7 @@ class ExtractAttacks(Cronjob, metaclass=ABCMeta):
             else:
                 honeypot_ioc = IOC.objects.filter(**{"general_honeypot__name__iexact": honeypot_flag})
 
-            if not honeypot_ioc:
+            if not honeypot_ioc.exists():
                 # first time we execute this project.
                 # So we increment the time range to get the data from the last 3 days
                 self.first_time_run = True
