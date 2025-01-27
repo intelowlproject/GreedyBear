@@ -62,3 +62,6 @@ Started as a personal Christmas project from [Matteo Lodi](https://twitter.com/m
 
 [The Honeynet Project](https://www.honeynet.org) is a non-profit organization working on creating open source cyber security tools and sharing knowledge about cyber threats.
 
+#### DigitalOcean
+
+In 2022 we joined the official [DigitalOcean Open Source Program](https://www.digitalocean.com/open-source?utm_medium=opensource&utm_source=IntelOwl).
