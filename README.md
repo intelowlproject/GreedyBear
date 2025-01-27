@@ -6,7 +6,9 @@
 [![Twitter Follow](https://img.shields.io/twitter/follow/intel_owl?style=social)](https://twitter.com/intel_owl)
 [![Linkedin](https://img.shields.io/badge/LinkedIn-0077B5?style=flat&logo=linkedin&logoColor=white)](https://www.linkedin.com/company/intelowl/)
 
-[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
+[![CodeFactor](https://www.codefactor.io/repository/github/intelowlproject/greedybear/badge)](https://www.codefactor.io/repository/github/intelowlproject/greedybear)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
+[![Imports: isort](https://img.shields.io/badge/%20imports-isort-%231674b1?style=flat&labelColor=ef8336)](https://pycqa.github.io/isort/)
 [![CodeQL](https://github.com/intelowlproject/GreedyBear/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/intelowlproject/GreedyBear/actions/workflows/codeql-analysis.yml)
 [![Dependency Review](https://github.com/intelowlproject/GreedyBear/actions/workflows/dependency_review.yml/badge.svg)](https://github.com/intelowlproject/GreedyBear/actions/workflows/dependency_review.yml)
 [![Pull request automation](https://github.com/intelowlproject/GreedyBear/actions/workflows/pull_request_automation.yml/badge.svg)](https://github.com/intelowlproject/GreedyBear/actions/workflows/pull_request_automation.yml)
@@ -21,7 +23,7 @@ Documentation about GreedyBear installation, usage, configuration and contributi
 
 ## Public feeds
 
-There are public feeds provided by [The Honeynet Project](https://www.honeynet.org) in this [site](https://greedybear.honeynet.org). [Example](https://greedybear.honeynet.org/api/feeds/cowrie/all/recent.txt)
+There are public feeds provided by [The Honeynet Project](https://www.honeynet.org) in this [site](https://greedybear.honeynet.org). [Example](https://greedybear.honeynet.org/api/feeds/log4j/all/recent.txt)
 
 Please do not perform too many requests to extract feeds or you will be banned.
 
@@ -44,7 +46,15 @@ In this way, you are able to provide new feeds of your own.
 
 To install it locally, Please refer to our [installation guide](https://intelowlproject.github.io/docs/GreedyBear/Installation/)
 
-## Sponsors and Acknowledgements
+## Sponsors
+
+#### Certego
+
+<a href="https://www.certego.net/?utm_source=greedybear"> <img style="margin-right: 2px" width=250 height=71 src="static/Certego.png" alt="Certego Logo"/></a>
+
+[Certego](https://www.certego.net/?utm_source=greedybear) is a MDR (Managed Detection and Response) and Threat Intelligence Provider based in Italy.
+
+Started as a personal Christmas project from [Matteo Lodi](https://twitter.com/matte_lodi), since then GreedyBear is being improved mainly thanks to the efforts of the Certego Threat Intelligence Team.
 
 #### The Honeynet Project
 
@@ -52,18 +62,6 @@ To install it locally, Please refer to our [installation guide](https://intelowl
 
 [The Honeynet Project](https://www.honeynet.org) is a non-profit organization working on creating open source cyber security tools and sharing knowledge about cyber threats.
 
-Thanks to [The Honeynet Project](https://www.honeynet.org) we are providing free public feeds available [here](https://greedybear.honeynet.org).
-
 #### DigitalOcean
 
 In 2022 we joined the official [DigitalOcean Open Source Program](https://www.digitalocean.com/open-source?utm_medium=opensource&utm_source=IntelOwl).
-
-
-## Maintainers and Key Contributors
-
-This project was started as a personal Christmas project by [Matteo Lodi](https://twitter.com/matte_lodi) in 2021.
-
-Special thanks to:
-* [Tim Leonhard](https://github.com/regulartim) for having greatly improved the project and added Machine Learning Models during his master thesis. He's the actual Principal Mantainer.
-* [Martina Carella](https://github.com/carellamartina) for having created the GUI during her master thesis.
-* [Daniele Rosetti](https://github.com/drosetti) for helping maintaining the Frontend.
