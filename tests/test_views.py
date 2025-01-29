@@ -72,6 +72,12 @@ class FeedsViewTestCase(CustomTestCase):
         self.assertEqual(response.json()["iocs"][0]["scanner"], True)
         self.assertEqual(response.json()["iocs"][0]["payload_request"], True)
 
+    def test_200_feeds_scanner_exclusion(self):
+        response = self.client.get("/api/feeds/heralding/all/recent.json?exclude_mass_scanners")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["license"], FEEDS_LICENSE)
+        self.assertEqual(len(response.json()["iocs"]), 0)
+
     def test_400_feeds(self):
         response = self.client.get("/api/feeds/test/all/recent.json")
         self.assertEqual(response.status_code, 400)
@@ -82,8 +88,51 @@ class FeedsViewTestCase(CustomTestCase):
         self.assertEqual(response.json()["count"], 1)
         self.assertEqual(response.json()["total_pages"], 1)
 
+    def test_200_feeds_pagination_scanner_exclusion(self):
+        response = self.client.get("/api/feeds/?page_size=10&page=1&feed_type=all&attack_type=all&age=recent&exclude_mass_scanners")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["count"], 0)
+
     def test_400_feeds_pagination(self):
         response = self.client.get("/api/feeds/?page_size=10&page=1&feed_type=all&attack_type=test&age=recent")
+        self.assertEqual(response.status_code, 400)
+
+
+class FeedsAdvancedViewTestCase(CustomTestCase):
+    def setUp(self):
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.superuser)
+
+    def test_200_all_feeds(self):
+        response = self.client.get("/api/feeds/advanced/")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["license"], FEEDS_LICENSE)
+        self.assertEqual(response.json()["iocs"][0]["feed_type"], "log4j")
+        self.assertEqual(response.json()["iocs"][0]["attack_count"], 1)
+        self.assertEqual(response.json()["iocs"][0]["scanner"], True)
+        self.assertEqual(response.json()["iocs"][0]["payload_request"], True)
+
+    def test_200_general_feeds(self):
+        response = self.client.get("/api/feeds/advanced/?feed_type=heralding")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["license"], FEEDS_LICENSE)
+        self.assertEqual(response.json()["iocs"][0]["feed_type"], "heralding")
+        self.assertEqual(response.json()["iocs"][0]["attack_count"], 1)
+        self.assertEqual(response.json()["iocs"][0]["scanner"], True)
+        self.assertEqual(response.json()["iocs"][0]["payload_request"], True)
+
+    def test_400_feeds(self):
+        response = self.client.get("/api/feeds/advanced/?attack_type=test")
+        self.assertEqual(response.status_code, 400)
+
+    def test_200_feeds_pagination(self):
+        response = self.client.get("/api/feeds/advanced/?paginate=true&page_size=10&page=1")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["count"], 1)
+        self.assertEqual(response.json()["total_pages"], 1)
+
+    def test_400_feeds_pagination(self):
+        response = self.client.get("/api/feeds/advanced/?paginate=true&page_size=10&page=1&attack_type=test")
         self.assertEqual(response.status_code, 400)
 
 
