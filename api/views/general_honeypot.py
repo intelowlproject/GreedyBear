@@ -28,8 +28,8 @@ def general_honeypot_list(request):
     generalHoneypots = GeneralHoneypot.objects.all()
     if active == "true":
         generalHoneypots = generalHoneypots.filter(active=True)
-        logger.info("Requested only active general honeypots")
+        logger.info(f"Requested only active general honeypots from {request.user}")
     honeypots.extend([hp.name for hp in generalHoneypots])
 
-    logger.info(f"General honeypots: {honeypots}")
+    logger.info(f"General honeypots: {honeypots} given back to user {request.user}")
     return Response(honeypots)
