@@ -1,7 +1,7 @@
 FROM library/nginx:1.27.3-alpine
 RUN mkdir -p /var/cache/nginx /var/cache/nginx/feeds
 RUN apk update && apk upgrade && apk add bash
-ENV NGINX_LOG_DIR /var/log/nginx
+ENV NGINX_LOG_DIR=/var/log/nginx
 # this is to avoid having these logs redirected to stdout/stderr
 RUN rm $NGINX_LOG_DIR/access.log $NGINX_LOG_DIR/error.log
 RUN touch $NGINX_LOG_DIR/access.log $NGINX_LOG_DIR/error.log
