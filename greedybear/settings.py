@@ -405,3 +405,7 @@ else:
         EMAIL_PORT = os.environ.get("EMAIL_PORT")
         EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", False) == "True"
         EMAIL_USE_SSL = os.environ.get("EMAIL_USE_SSL", False) == "True"
+
+
+LEGACY_EXTRACTION = os.environ.get("LEGACY_EXTRACTION", True) == "True"
+EXTRACTION_INTERVAL = int(os.environ.get("EXTRACTION_INTERVAL", 10))

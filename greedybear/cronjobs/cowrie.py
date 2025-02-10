@@ -1,12 +1,13 @@
 # This file is a part of GreedyBear https://github.com/honeynet/GreedyBear
 # See the file 'LICENSE' for copying permission.
 import re
+from collections import defaultdict
 from urllib.parse import urlparse
 
-from greedybear.consts import PAYLOAD_REQUEST, SCANNER
+from greedybear.consts import ATTACK_DATA_FIELDS, PAYLOAD_REQUEST, SCANNER
 from greedybear.cronjobs.attacks import ExtractAttacks
 from greedybear.cronjobs.honeypots import Honeypot
-from greedybear.models import IOC
+from greedybear.models import IOC, CowrieSession
 from greedybear.regex import REGEX_URL_PROTOCOL
 
 
@@ -30,25 +31,13 @@ class ExtractCowrie(ExtractAttacks):
         )
 
     def _get_scanners(self):
-        search = self._base_search(self.cowrie)
-        search = search.filter("terms", eventid=["cowrie.login.failed", "cowrie.session.file_upload"])
-        # get no more than X IPs a day
-        search.aggs.bucket(
-            "attacker_ips",
-            "terms",
-            field="src_ip.keyword",
-            size=1000,
-        )
-        agg_response = search[0:0].execute()
-        for tag in agg_response.aggregations.attacker_ips.buckets:
-            if not tag.key:
-                self.log.warning(f"why tag.key is empty? tag: {tag}")
-                continue
-            self.log.info(f"found IP {tag.key} by honeypot cowrie")
-            scanner_ip = str(tag.key)
-            self._add_ioc(scanner_ip, SCANNER, cowrie=True)
+        for ioc in self._get_attacker_data(self.cowrie, ATTACK_DATA_FIELDS):
+            ioc.cowrie = True
+            self.log.info(f"found IP {ioc.name} by honeypot cowrie")
+            ioc = self._add_ioc(ioc, attack_type=SCANNER)
             self.added_scanners += 1
-            self._extract_possible_payload_in_messages(scanner_ip)
+            self._extract_possible_payload_in_messages(ioc.name)
+            self._get_sessions(ioc)
 
     def _extract_possible_payload_in_messages(self, scanner_ip):
         # looking for URLs inside attacks payloads
@@ -64,12 +53,13 @@ class ExtractCowrie(ExtractAttacks):
                 self.log.info(f"found hidden URL {payload_url}" f" in payload from attacker {scanner_ip}")
                 payload_hostname = urlparse(payload_url).hostname
                 self.log.info(f"extracted hostname {payload_hostname} from {payload_url}")
-                self._add_ioc(
-                    payload_hostname,
-                    PAYLOAD_REQUEST,
-                    related_urls=[payload_url],
+                ioc = IOC(
+                    name=payload_hostname,
+                    type=self._get_ioc_type(payload_hostname),
                     cowrie=True,
+                    related_urls=[payload_url],
                 )
+                self._add_ioc(ioc, attack_type=PAYLOAD_REQUEST)
                 self._add_fks(scanner_ip, payload_hostname)
 
     def _get_url_downloads(self):
@@ -81,14 +71,58 @@ class ExtractCowrie(ExtractAttacks):
         for hit in hits:
             self.log.info(f"found IP {hit.src_ip} trying to execute download from {hit.url}")
             scanner_ip = str(hit.src_ip)
-            self._add_ioc(scanner_ip, SCANNER, cowrie=True)
+            ioc = IOC(name=scanner_ip, type=self._get_ioc_type(scanner_ip), cowrie=True)
+            self._add_ioc(ioc, attack_type=SCANNER)
             self.added_ip_downloads += 1
             download_url = str(hit.url)
             if download_url:
                 hostname = urlparse(download_url).hostname
-                self._add_ioc(hostname, PAYLOAD_REQUEST, related_urls=[download_url], cowrie=True)
+                ioc = IOC(
+                    name=hostname,
+                    type=self._get_ioc_type(hostname),
+                    cowrie=True,
+                    related_urls=[download_url],
+                )
+                self._add_ioc(ioc, attack_type=PAYLOAD_REQUEST)
                 self.added_url_downloads += 1
                 self._add_fks(scanner_ip, hostname)
+
+    def _get_sessions(self, ioc):
+        scanner_ip = ioc.name
+        self.log.info(f"adding cowrie sessions from {scanner_ip}")
+        search = self._base_search(self.cowrie)
+        search = search.filter("term", src_ip=scanner_ip)
+        search = search.source(["session", "eventid", "timestamp", "duration", "message", "username", "password"])
+        hits_per_session = defaultdict(list)
+
+        for hit in search.iterate():
+            hits_per_session[int(hit.session, 16)].append(hit)
+
+        for sid, hits in hits_per_session.items():
+            try:
+                session_record = CowrieSession.objects.get(session_id=sid)
+            except CowrieSession.DoesNotExist:
+                session_record = CowrieSession(session_id=sid)
+
+            session_record.source = ioc
+            for hit in hits:
+                match hit.eventid:
+                    case "cowrie.session.connect":
+                        session_record.start_time = hit.timestamp
+                    case "cowrie.login.failed" | "cowrie.login.success":
+                        session_record.login_attempt = True
+                        session_record.credentials.append(f"{hit.username} | {hit.password}")
+                        session_record.source.login_attempts += 1
+                    case "cowrie.command.input":
+                        session_record.command_execution = True
+                    case "cowrie.session.closed":
+                        session_record.duration = hit.duration
+                session_record.interaction_count += 1
+
+            session_record.source.save()
+            session_record.save()
+
+        self.log.info(f"{len(hits_per_session)} sessions added")
 
     def _add_fks(self, scanner_ip, hostname):
         self.log.info(f"adding foreign keys for the following iocs: {scanner_ip}, {hostname}")

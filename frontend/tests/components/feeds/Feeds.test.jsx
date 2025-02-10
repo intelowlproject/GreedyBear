@@ -20,7 +20,7 @@ jest.mock("@certego/certego-ui", () => {
           PAYLOAD_REQUEST: true,
           first_seen: "2023-03-15",
           last_seen: "2023-03-15",
-          times_seen: 1,
+          attack_count: 1,
           feed_type: "log4j",
         },
       ],

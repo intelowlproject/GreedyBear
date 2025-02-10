@@ -14,3 +14,5 @@ REGEX_PASSWORD = r"^[a-zA-Z0-9]{12,}$"
 
 DOMAIN = "domain"
 IP = "ip"
+
+ATTACK_DATA_FIELDS = ["@timestamp", "src_ip", "dest_port", "ip_rep", "geoip"]

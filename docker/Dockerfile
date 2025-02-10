@@ -1,5 +1,5 @@
 # Stage 1: Frontend 
-FROM node:lts-alpine3.18 as frontend-build
+FROM node:lts-alpine3.21 as frontend-build
 
 WORKDIR /
 # copy react source code
@@ -46,5 +46,6 @@ RUN pip3 install --no-cache-dir --compile -r $PYTHONPATH/requirements/project-re
     && /bin/bash ./docker/watchman_install.sh \
     && apk del gcc python3-dev alpine-sdk linux-headers
 
-HEALTHCHECK --interval=10s --timeout=2s --start-period=20s --retries=5 CMD nc -z localhost 8001 || exit 1
+# start period is high to allow data migration for 1.4.0
+HEALTHCHECK --interval=10s --timeout=2s --start-period=500s --retries=3 CMD nc -z localhost 8001 || exit 1
 

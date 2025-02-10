@@ -24,7 +24,7 @@ class IOCModelAdmin(admin.ModelAdmin):
         "last_seen",
         "days_seen",
         "number_of_days_seen",
-        "times_seen",
+        "attack_count",
         "related_urls",
         "scanner",
         "payload_request",

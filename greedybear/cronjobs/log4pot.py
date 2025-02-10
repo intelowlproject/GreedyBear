@@ -71,24 +71,32 @@ class ExtractLog4Pot(ExtractAttacks):
 
             # add scanner
             if scanner_ip:
-                self._add_ioc(scanner_ip, SCANNER, log4j=True)
+                ioc = IOC(name=scanner_ip, type=self._get_ioc_type(scanner_ip), log4j=True)
+                self._add_ioc(ioc, attack_type=SCANNER)
                 added_scanners += 1
 
             # add first URL
             if hostname:
-                related_urls = [url] if url else None
-                self._add_ioc(hostname, PAYLOAD_REQUEST, related_urls=related_urls, log4j=True)
+                related_urls = [url] if url else []
+                ioc = IOC(
+                    name=scanner_ip,
+                    type=self._get_ioc_type(scanner_ip),
+                    log4j=True,
+                    related_urls=related_urls,
+                )
+                self._add_ioc(ioc, attack_type=SCANNER)
                 added_payloads += 1
 
             # add hidden URL
             if hidden_hostname:
-                related_urls = [hidden_url] if hidden_url else None
-                self._add_ioc(
-                    hidden_hostname,
-                    PAYLOAD_REQUEST,
-                    related_urls=related_urls,
+                related_urls = [hidden_url] if hidden_url else []
+                ioc = IOC(
+                    name=hostname,
+                    type=self._get_ioc_type(hostname),
                     log4j=True,
+                    related_urls=related_urls,
                 )
+                self._add_ioc(ioc, attack_type=PAYLOAD_REQUEST)
                 added_hidden_payloads += 1
 
             # once all have added, we can add the foreign keys
