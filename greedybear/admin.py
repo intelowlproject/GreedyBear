@@ -19,6 +19,7 @@ logger = logging.getLogger(__name__)
 class CowrieSessionModelAdmin(admin.ModelAdmin):
     list_display = ["session_id", "start_time", "duration", "login_attempt", "credentials", "command_execution", "interaction_count", "source"]
     search_fields = ["source"]
+    raw_id_fields = ["source"]
 
 
 @admin.register(IOC)
