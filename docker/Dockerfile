@@ -1,5 +1,5 @@
 # Stage 1: Frontend 
-FROM node:lts-alpine3.21 as frontend-build
+FROM node:lts-alpine3.21 AS frontend-build
 
 WORKDIR /
 # copy react source code
@@ -15,10 +15,10 @@ RUN PUBLIC_URL=/static/reactapp/ npm run build
 # Stage 2: Backend
 FROM python:3.11.9-alpine3.20
 
-ENV PYTHONUNBUFFERED 1
-ENV DJANGO_SETTINGS_MODULE greedybear.settings
-ENV PYTHONPATH /opt/deploy/greedybear
-ENV LOG_PATH /var/log/greedybear
+ENV PYTHONUNBUFFERED=1
+ENV DJANGO_SETTINGS_MODULE=greedybear.settings
+ENV PYTHONPATH=/opt/deploy/greedybear
+ENV LOG_PATH=/var/log/greedybear
 
 ARG WATCHMAN=false
 

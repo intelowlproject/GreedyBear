@@ -69,6 +69,11 @@ class CowrieSession(models.Model):
     interaction_count = models.IntegerField(blank=False, null=False, default=0)
     source = models.ForeignKey(IOC, on_delete=models.CASCADE, blank=False, null=False)
 
+    class Meta:
+        indexes = [
+            models.Index(fields=["source"]),
+        ]
+
 
 class Statistics(models.Model):
     source = models.CharField(max_length=15, blank=False)
