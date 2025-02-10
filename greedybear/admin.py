@@ -5,7 +5,7 @@ import logging
 from django.contrib import admin, messages
 from django.db.models import Q
 from django.utils.translation import ngettext
-from greedybear.models import IOC, GeneralHoneypot
+from greedybear.models import IOC, CowrieSession, GeneralHoneypot
 
 logger = logging.getLogger(__name__)
 
@@ -13,6 +13,11 @@ logger = logging.getLogger(__name__)
 # @admin.register(Sensors)
 # class SensorsModelAdmin(admin.ModelAdmin):
 #     list_display = [field.name for field in Sensors._meta.get_fields()]
+
+
+@admin.register(CowrieSession)
+class CowrieSessionModelAdmin(admin.ModelAdmin):
+    list_display = ["session_id", "start_time", "duration", "login_attempt", "credentials", "command_execution", "interaction_count", "source"]
 
 
 @admin.register(IOC)
@@ -25,13 +30,19 @@ class IOCModelAdmin(admin.ModelAdmin):
         "days_seen",
         "number_of_days_seen",
         "attack_count",
+        "interaction_count",
         "related_urls",
         "scanner",
         "payload_request",
         "log4j",
         "cowrie",
         "general_honeypots",
+        "ip_reputation",
+        "asn",
+        "destination_ports",
+        "login_attempts",
     ]
+    search_fields = ["name"]
     filter_horizontal = ["general_honeypot", "related_ioc"]
 
     def general_honeypots(self, ioc):
