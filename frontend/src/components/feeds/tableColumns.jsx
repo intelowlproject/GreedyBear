@@ -13,13 +13,13 @@ const feedsTableColumns = [
     maxWidth: 80,
   },
   {
-    Header: "Feed type",
-    accessor: "feed_type",
+    Header: "Value",
+    accessor: "value",
     maxWidth: 60,
   },
   {
-    Header: "Value",
-    accessor: "value",
+    Header: "Feed type",
+    accessor: "feed_type",
     maxWidth: 60,
   },
   {
