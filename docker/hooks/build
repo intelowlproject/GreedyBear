@@ -1,4 +1,8 @@
 #!/bin/bash
 
+echo "display path"
+echo $PATH
+echo "display dockerfile path"
+echo $DOCKERFILE_PATH
 docker buildx create --name multiarch --use
 docker buildx build -t $IMAGE_NAME --platform linux/arm64,linux/amd64 --push .
