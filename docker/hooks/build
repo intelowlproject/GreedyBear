@@ -1,0 +1,20 @@
+#!/bin/bash
+
+echo "display path"
+echo "$(pwd)"
+echo "display dockerfile path"
+echo $DOCKERFILE_PATH
+cd ..
+echo "display path"
+echo "$(pwd)"
+echo "current branch"
+echo "$SOURCE_BRANCH"
+
+if [[ "$SOURCE_BRANCH" == "main" ]]; then
+  echo "The branch is main, proceeding with multi-arch build"
+  docker buildx create --name multiarch --use
+  docker buildx build -f "$DOCKERFILE_PATH" -t "$IMAGE_NAME" --platform linux/arm64,linux/amd64,windows-amd64 --push .
+else
+  echo "The branch is not main, proceeding with classic build"
+  docker buildx build -f "$DOCKERFILE_PATH" -t "$IMAGE_NAME" --push .
+fi
