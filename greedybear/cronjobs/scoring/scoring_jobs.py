@@ -150,8 +150,7 @@ class UpdateScores(Cronjob):
         their respective score columns to the dataframe.
         """
         if self.data is None:
-            self.log.info("no data handed over from previous task")
-            self.log.info("fetching current IoC data from DB")
+            self.log.info("no data handed over from previous task - fetching current IoC data from DB")
             self.data = get_current_data()
         current_date = max(row["last_seen"] for row in self.data)
         self.log.info("extracting features")
