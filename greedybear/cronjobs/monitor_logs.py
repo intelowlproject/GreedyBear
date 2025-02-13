@@ -3,11 +3,11 @@
 from datetime import datetime, timedelta
 from os.path import getmtime
 
-from greedybear.cronjobs.base import Cronjob
+from greedybear.cronjobs.base import ElasticJob
 from greedybear.slack import send_message
 
 
-class MonitorLogs(Cronjob):
+class MonitorLogs(ElasticJob):
     def __init__(self):
         super(MonitorLogs, self).__init__()
         self.logs_to_monitor = ["greedybear", "api", "django", "celery"]
