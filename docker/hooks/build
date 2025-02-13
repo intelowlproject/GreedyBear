@@ -10,10 +10,11 @@ echo "$(pwd)"
 echo "current branch"
 echo "$SOURCE_BRANCH"
 
-if [[ "$SOURCE_BRANCH" == "main" ]]; then
+version_regex='^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$'
+if [[ "$SOURCE_BRANCH" == "main" || "$SOURCE_BRANCH" =~ $version_regex ]]; then
   echo "The branch is main, proceeding with multi-arch build"
   docker buildx create --name multiarch --use
-  docker buildx build -f "$DOCKERFILE_PATH" -t "$IMAGE_NAME" --platform linux/arm64,linux/amd64,windows-amd64 --push .
+  docker buildx build -f "$DOCKERFILE_PATH" -t "$IMAGE_NAME" --platform linux/arm64,linux/amd64,windows/amd64 --push .
 else
   echo "The branch is not main, proceeding with classic build"
   docker buildx build -f "$DOCKERFILE_PATH" -t "$IMAGE_NAME" --push .
