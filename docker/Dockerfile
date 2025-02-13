@@ -1,5 +1,8 @@
 # Stage 1: Frontend 
-FROM node:lts-alpine3.21 AS frontend-build
+FROM --platform=$BUILDPLATFORM node:lts-alpine3.21 AS frontend-build
+ARG TARGETPLATFORM
+ARG BUILDPLATFORM
+RUN echo "I am running on $BUILDPLATFORM, building for $TARGETPLATFORM" > /log
 
 WORKDIR /
 # copy react source code
@@ -13,7 +16,10 @@ RUN npm install
 RUN PUBLIC_URL=/static/reactapp/ npm run build
 
 # Stage 2: Backend
-FROM python:3.11.9-alpine3.20
+FROM --platform=$BUILDPLATFORM python:3.11.9-alpine3.20
+ARG TARGETPLATFORM
+ARG BUILDPLATFORM
+RUN echo "I am running on $BUILDPLATFORM, building for $TARGETPLATFORM" > /log
 
 ENV PYTHONUNBUFFERED=1
 ENV DJANGO_SETTINGS_MODULE=greedybear.settings
