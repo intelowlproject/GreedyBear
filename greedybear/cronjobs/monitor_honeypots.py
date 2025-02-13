@@ -1,11 +1,11 @@
 # This file is a part of GreedyBear https://github.com/honeynet/GreedyBear
 # See the file 'LICENSE' for copying permission.
-from greedybear.cronjobs.base import Cronjob
+from greedybear.cronjobs.base import ElasticJob
 from greedybear.cronjobs.honeypots import Honeypot
 from greedybear.models import GeneralHoneypot
 
 
-class MonitorHoneypots(Cronjob):
+class MonitorHoneypots(ElasticJob):
     def __init__(self):
         super(MonitorHoneypots, self).__init__()
         self.honeypots_to_monitor = [Honeypot("Log4pot"), Honeypot("Cowrie")]

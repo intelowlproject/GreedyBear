@@ -76,6 +76,7 @@ services:
     command: /usr/local/bin/celery -A greedybear.celery worker -n worker_default --uid www-data --gid www-data --time-limit=10000 --pidfile= -Ofair -Q default -E -c 1
     volumes:
       - generic_logs:/var/log/greedybear
+      - mlmodels:/opt/deploy/greedybear/mlmodels
     env_file:
       - env_file
     depends_on:
@@ -90,3 +91,4 @@ volumes:
   nginx_logs:
   generic_logs:
   static_content:
+  mlmodels:

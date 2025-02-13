@@ -95,4 +95,12 @@ app.conf.beat_schedule = {
         "schedule": crontab(minute=33),
         "options": {"queue": "default"},
     },
+    # SCORING
+    # once a day
+    # small offset after midnight to make sure extraction is finished
+    "train_and_update": {
+        "task": "greedybear.tasks.chain_train_and_update",
+        "schedule": crontab(hour=0, minute=hp_extraction_interval // 2),
+        "options": {"queue": "default"},
+    },
 }

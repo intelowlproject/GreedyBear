@@ -49,6 +49,9 @@ class IOC(models.Model):
     asn = models.IntegerField(blank=True, null=True)
     destination_ports = pg_fields.ArrayField(models.IntegerField(), blank=False, null=False, default=list)
     login_attempts = models.IntegerField(blank=False, null=False, default=0)
+    # SCORES
+    recurrence_probability = models.FloatField(blank=False, null=True, default=0)
+    expected_interactions = models.FloatField(blank=False, null=True, default=0)
 
     class Meta:
         indexes = [

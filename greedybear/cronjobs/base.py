@@ -10,13 +10,33 @@ from greedybear.settings import EXTRACTION_INTERVAL, LEGACY_EXTRACTION
 
 
 class Cronjob(metaclass=ABCMeta):
+    def __init__(self):
+        self.log = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
+        self.success = False
+
+    @abstractmethod
+    def run(self):
+        pass
+
+    def execute(self):
+        try:
+            self.log.info("Starting execution")
+            self.run()
+        except Exception as e:
+            self.log.exception(e)
+        else:
+            self.success = True
+        finally:
+            self.log.info("Finished execution")
+
+
+class ElasticJob(Cronjob):
     class ElasticServerDownException(Exception):
         pass
 
     def __init__(self):
-        self.log = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
+        super().__init__()
         self.elastic_client = settings.ELASTIC_CLIENT
-        self.success = False
 
     def _healthcheck(self):
         if not self.elastic_client.ping():
@@ -57,21 +77,6 @@ class Cronjob(metaclass=ABCMeta):
     @abstractmethod
     def minutes_back_to_lookup(self):
         pass
-
-    @abstractmethod
-    def run(self):
-        pass
-
-    def execute(self):
-        try:
-            self.log.info("Starting execution")
-            self.run()
-        except Exception as e:
-            self.log.exception(e)
-        else:
-            self.success = True
-        finally:
-            self.log.info("Finished execution")
 
 
 def get_time_window(reference_time: datetime, lookback_minutes: int = EXTRACTION_INTERVAL) -> tuple[datetime, datetime]:
