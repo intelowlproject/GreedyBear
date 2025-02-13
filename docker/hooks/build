@@ -1,4 +1,4 @@
 #!/bin/bash
 
 docker buildx create --name multiarch --use
-docker buildx build -f $DOCKERFILE_PATH -t $IMAGE_NAME --platform linux/arm64,linux/amd64 --push .
+docker buildx build -f ./docker/Dockerfile -t $IMAGE_NAME --platform linux/arm64,linux/amd64 --push .
