@@ -8,4 +8,4 @@ cd ..
 echo "display path"
 echo "$(pwd)"
 docker buildx create --name multiarch --use --driver=docker-container
-docker buildx build -f $DOCKERFILE_PATH -t $IMAGE_NAME --platform linux/arm64,linux/amd64 --push .
+docker buildx build --driver docker-container -f $DOCKERFILE_PATH -t $IMAGE_NAME --platform linux/arm64 --push .
