@@ -6,9 +6,9 @@ RUN echo "I am running on $BUILDPLATFORM, building for $TARGETPLATFORM" > /log
 
 WORKDIR /
 # copy react source code
-COPY frontend/ .
+COPY ./frontend/ .
 # copy version file as an env file
-COPY docker/.version .env.local
+COPY ./docker/.version .env.local
 # install and build
 RUN npm install npm@latest --location=global
 RUN npm install
