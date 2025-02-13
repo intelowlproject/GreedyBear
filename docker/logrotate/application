@@ -2,6 +2,7 @@
     daily
     missingok
     rotate 2
+    size 10M
     compress
     delaycompress
     notifempty
