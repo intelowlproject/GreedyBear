@@ -16,4 +16,5 @@ if [[ "$SOURCE_BRANCH" == "main" ]]; then
   docker buildx build -f "$DOCKERFILE_PATH" -t "$IMAGE_NAME" --platform linux/arm64,linux/amd64 --push .
 else
   echo "The branch is not main, proceeding with classic build"
+  docker buildx build -f "$DOCKERFILE_PATH" -t "$IMAGE_NAME" --push .
 fi
