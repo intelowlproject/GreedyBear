@@ -4,5 +4,8 @@ echo "display path"
 echo "$(pwd)"
 echo "display dockerfile path"
 echo $DOCKERFILE_PATH
+cd ..
+echo "display path"
+echo "$(pwd)"
 docker buildx create --name multiarch --use
-docker buildx build -t $IMAGE_NAME --platform linux/arm64,linux/amd64 --push .
+docker buildx build -f $DOCKERFILE_PATH -t $IMAGE_NAME --platform linux/arm64,linux/amd64 --push .
