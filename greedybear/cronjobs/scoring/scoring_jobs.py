@@ -2,11 +2,14 @@ import json
 import logging
 from collections import defaultdict
 
+import pandas as pd
 from django.core.files.base import ContentFile
 from django.core.files.storage import FileSystemStorage
+from django.db.models import F, Q
 from greedybear.cronjobs.base import Cronjob
 from greedybear.cronjobs.scoring.random_forest import RFClassifier, RFRegressor
-from greedybear.cronjobs.scoring.utils import correlated_features, get_current_data, get_features, update_iocs
+from greedybear.cronjobs.scoring.utils import correlated_features, get_current_data, get_features
+from greedybear.models import IOC
 from greedybear.settings import ML_MODEL_DIRECTORY
 
 MODELS = [RFClassifier(), RFRegressor()]
@@ -135,6 +138,47 @@ class UpdateScores(Cronjob):
         super().__init__()
         self.data = None
 
+    def update_db(self, df: pd.DataFrame, score_names: list[str]) -> int:
+        """
+        Update IOC scores based on new data from a DataFrame.
+
+        For each scanner IOC that is either in Cowrie, Log4j, or an active general honeypot:
+        - If the IOC exists in the DataFrame: updates its scores with new values
+        - If the IOC is not in the DataFrame: resets any existing non-zero scores to 0
+
+        Args:
+            df: DataFrame containing new score data.
+                Must have a 'value' column with IOC names/IPs and columns for each score.
+            score_names: List of column names in DataFrame representing scores to update.
+                These must match the field names in the IOC model.
+
+        Returns:
+            int: The number of objects updated.
+        """
+        self.log.info("writing updated scores to DB")
+        scores_by_ip = df.set_index("value")[score_names].to_dict("index")
+        iocs = IOC.objects.filter(Q(cowrie=True) | Q(log4j=True) | Q(general_honeypot__active=True)).filter(scanner=True).distinct()
+        iocs_to_update = []
+
+        self.log.info(f"checking {iocs.count()} IoCs")
+        for ioc in iocs:
+            updated = False
+            # Update scores if IP exists in new data
+            if ioc.name in scores_by_ip:
+                for score in score_names:
+                    setattr(ioc, score, scores_by_ip[ioc.name][score])
+                updated = True
+            # Reset old scores to 0
+            else:
+                for score in score_names:
+                    if getattr(ioc, score) > 0:
+                        setattr(ioc, score, 0)
+                        updated = True
+            if updated:
+                iocs_to_update.append(ioc)
+        result = IOC.objects.bulk_update(iocs_to_update, score_names) if iocs_to_update else 0
+        self.log.info(f"{result} IoCs were updated")
+
     def run(self):
         """
         Execute the score update pipeline.
@@ -158,6 +202,4 @@ class UpdateScores(Cronjob):
         for model in MODELS:
             df = model.score(df)
         score_names = [m.score_name for m in MODELS]
-        self.log.info("writing updated scores to DB")
-        result = update_iocs(df, score_names)
-        self.log.info(f"{result} IoCs were updated")
+        self.update_db(df, score_names)

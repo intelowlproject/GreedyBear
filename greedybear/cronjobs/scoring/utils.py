@@ -78,11 +78,12 @@ def get_features(iocs: list[dict], reference_day: str) -> pd.DataFrame:
                 "last_seen": ioc["last_seen"],
                 "first_seen": ioc["first_seen"],
                 "days_seen": ioc["days_seen"],
-                # CAT FEATURES
+                # CATEGORICAL FEATURES
                 "asn": str(ioc["asn"]),
                 "ip_reputation": ioc["ip_reputation"],
+                # MULTI VALUE FEATURES
                 "honeypots": ioc["honeypots"],
-                # FEATURES
+                # NUMERICAL FEATURES
                 "honeypot_count": len(ioc["honeypots"]),
                 "destination_port_count": ioc["destination_port_count"],
                 "days_seen_count": days_seen_count,
@@ -164,45 +165,3 @@ def get_current_data(days_lookback: int = 30) -> dict:
         dict_only=True,
         verbose=True,
     )["iocs"]
-
-
-def update_iocs(df: pd.DataFrame, score_names: list[str]) -> int:
-    """
-    Update IOC scores based on new data from a DataFrame.
-
-    For each scanner IOC that is either in Cowrie, Log4j, or an active general honeypot:
-    - If the IOC exists in the DataFrame: updates its scores with new values
-    - If the IOC is not in the DataFrame: resets any existing non-zero scores to 0
-
-    Args:
-        df: DataFrame containing new score data.
-            Must have a 'value' column with IOC names/IPs and columns for each score.
-        score_names: List of column names in DataFrame representing scores to update.
-            These must match the field names in the IOC model.
-
-    Returns:
-        int: The number of objects updated.
-    """
-    scores_by_ip = df.set_index("value")[score_names].to_dict("index")
-    iocs = IOC.objects.filter(Q(cowrie=True) | Q(log4j=True) | Q(general_honeypot__active=True)).filter(scanner=True).distinct()
-    iocs_to_update = []
-
-    for ioc in iocs:
-        updated = False
-
-        # Update scores if IP exists in new data
-        if ioc.name in scores_by_ip:
-            for score in score_names:
-                setattr(ioc, score, scores_by_ip[ioc.name][score])
-            updated = True
-        # Reset old scores to 0
-        else:
-            for score in score_names:
-                if getattr(ioc, score) > 0:
-                    setattr(ioc, score, 0)
-                    updated = True
-
-        if updated:
-            iocs_to_update.append(ioc)
-
-    return IOC.objects.bulk_update(iocs_to_update, score_names) if iocs_to_update else 0
