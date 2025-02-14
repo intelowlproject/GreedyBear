@@ -64,7 +64,6 @@ def get_features(iocs: list[dict], reference_day: str) -> pd.DataFrame:
     Returns:
        DataFrame containing metadata and calculated features for each IOC
     """
-    FEATURES_OFFSET = 8
     result = []
     for ioc in iocs:
         days_seen_count = len(ioc["days_seen"])
