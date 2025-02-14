@@ -16,9 +16,6 @@ class RFModel(MLModel):
     including feature preprocessing, model training, and evaluation.
     """
 
-    def __init__(self, name: str, score_name: str):
-        super().__init__(name, score_name)
-
     @property
     def features(self) -> list[str]:
         """
