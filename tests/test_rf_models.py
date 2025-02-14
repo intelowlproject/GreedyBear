@@ -2,11 +2,8 @@ from unittest.mock import Mock
 
 import numpy as np
 import pandas as pd
-from greedybear.cronjobs.scoring.consts import MULTI_VAL_FEATURES, NUM_FEATURES
-from greedybear.cronjobs.scoring.ml_model import Classifier, MLModel, Regressor
+from greedybear.cronjobs.scoring.ml_model import Classifier, Regressor
 from greedybear.cronjobs.scoring.random_forest import RFModel
-from greedybear.cronjobs.scoring.utils import multi_label_encode
-from sklearn.base import BaseEstimator
 
 from . import CustomTestCase
 
@@ -35,7 +32,7 @@ class TestClassifier(CustomTestCase):
             super().__init__("Mock Random Forest Classifier", "mock_score")
 
         @property
-        def untrained_model(self) -> BaseEstimator:
+        def untrained_model(self):
             mock = Mock()
             mock.fit.return_value = mock
             a = np.zeros((5, 2))
@@ -73,7 +70,7 @@ class TestRegressor(CustomTestCase):
             super().__init__("Mock Random Forest Regressor", "mock_score")
 
         @property
-        def untrained_model(self) -> BaseEstimator:
+        def untrained_model(self):
             mock = Mock()
             mock.fit.return_value = mock
             mock.predict.return_value = np.array([0, 3, 1, 4, 2])
