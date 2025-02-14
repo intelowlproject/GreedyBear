@@ -155,9 +155,9 @@ class UpdateScores(Cronjob):
         Returns:
             int: The number of objects updated.
         """
-        self.log.info("writing updated scores to DB")
+        self.log.info("begin updating scores")
         scores_by_ip = df.set_index("value")[score_names].to_dict("index")
-        iocs = IOC.objects.filter(Q(cowrie=True) | Q(log4j=True) | Q(general_honeypot__active=True)).filter(scanner=True).distinct()
+        iocs = IOC.objects.filter(Q(cowrie=True) | Q(log4j=True) | Q(general_honeypot__active=True)).filter(scanner=True).distinct().only("name", *score_names)
         iocs_to_update = []
 
         self.log.info(f"checking {iocs.count()} IoCs")
@@ -176,7 +176,8 @@ class UpdateScores(Cronjob):
                         updated = True
             if updated:
                 iocs_to_update.append(ioc)
-        result = IOC.objects.bulk_update(iocs_to_update, score_names) if iocs_to_update else 0
+        self.log.info(f"writing updated scores for {len(iocs_to_update)} IoCs to DB")
+        result = IOC.objects.bulk_update(iocs_to_update, score_names, batch_size=1000) if iocs_to_update else 0
         self.log.info(f"{result} IoCs were updated")
 
     def run(self):
