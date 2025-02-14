@@ -12,7 +12,7 @@ from greedybear.cronjobs.scoring.utils import correlated_features, get_current_d
 from greedybear.models import IOC
 from greedybear.settings import ML_MODEL_DIRECTORY
 
-MODELS = [RFClassifier(), RFRegressor()]
+SCORERS = [RFClassifier(), RFRegressor()]
 TRAINING_DATA_FILENAME = "training_data.json"
 
 
@@ -22,7 +22,7 @@ class TrainingDataError(Exception):
 
 class TrainModels(Cronjob):
     """
-     Trains scoring models using historical IoC data.
+    Trains scoring models using historical IoC data.
 
     Manages training pipeline for scoring models by comparing current IoC data against
     previously stored training data. The class persists the current data after each run
@@ -117,18 +117,19 @@ class TrainModels(Cronjob):
         for f1, f2, corr in high_corr_pairs:
             self.log.debug(f"{f1} & {f2}: {corr:.2f}")
 
-        for model in MODELS:
-            model.train(training_df)
+        for s in SCORERS:
+            if s.trainable:
+                s.train(training_df)
 
         self.save_training_data()
 
 
 class UpdateScores(Cronjob):
     """
-    Updates IoC scores by applying multiple scoring models.
+    Updates IoC scores by applying multiple scorers.
 
     Retrieves current IoC data from the database, if they are not handed over by previous job,
-    extracts relevant features, applies a series of scoring models,
+    extracts relevant features, applies a series of scorers,
     and writes the updated scores back to the database.
     Designed to run as a scheduled cronjob.
     """
@@ -186,10 +187,10 @@ class UpdateScores(Cronjob):
         1. Fetch IoC data if not handed over
         2. Determine the most recent date in the dataset
         3. Extract features from IoC data
-        4. Apply each scoring model in sequence
+        4. Apply each scorer in sequence
         5. Write the updated scores back to the database
 
-        The scoring models are expected to add
+        The scorers are expected to add
         their respective score columns to the dataframe.
         """
         if self.data is None:
@@ -198,7 +199,7 @@ class UpdateScores(Cronjob):
         current_date = max(row["last_seen"] for row in self.data)
         self.log.info("extracting features")
         df = get_features(self.data, current_date)
-        for model in MODELS:
-            df = model.score(df)
-        score_names = [m.score_name for m in MODELS]
+        for s in SCORERS:
+            df = s.score(df)
+        score_names = [s.score_name for s in SCORERS]
         self.update_db(df, score_names)
