@@ -119,7 +119,6 @@ class TrainModels(Cronjob):
 
         for model in MODELS:
             model.train(training_df)
-            model.save()
 
         self.save_training_data()
 

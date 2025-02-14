@@ -1,4 +1,5 @@
 from abc import abstractmethod
+from functools import cached_property
 from io import BytesIO
 
 import joblib
@@ -10,6 +11,7 @@ from greedybear.cronjobs.scoring.consts import MULTI_VAL_FEATURES, SAMPLE_COUNT
 from greedybear.cronjobs.scoring.scorer import Scorer
 from greedybear.cronjobs.scoring.utils import multi_label_encode
 from greedybear.settings import ML_MODEL_DIRECTORY
+from sklearn.model_selection import train_test_split
 
 
 class MLModel(Scorer):
@@ -20,9 +22,8 @@ class MLModel(Scorer):
 
     def __init__(self, name: str, score_name: str):
         super().__init__(name, score_name, True)
-        self.model = None
-        self.features = []
 
+    @cached_property
     def file_name(self) -> str:
         """
         Convert model name to a filename-safe format.
@@ -32,34 +33,8 @@ class MLModel(Scorer):
         """
         return self.name.replace(" ", "_").lower()
 
-    def save(self) -> None:
-        """
-        Serialize and save the model to persistent storage.
-
-        The model is saved using joblib serialization to a file location
-        determined by the model's name. If a file already exists for this
-        model, it will be overwritten.
-
-        Raises:
-            ValueError: If no model is available to save
-        """
-        self.log.info(f"saving {self.name} model to file system")
-        if self.model is None:
-            self.log.error(f"could not find model to save for {self.name}")
-            raise ValueError(f"No model available to save for {self.name}")
-
-        storage = FileSystemStorage(location=ML_MODEL_DIRECTORY)
-        with BytesIO() as model_buffer:
-            joblib.dump(self.model, model_buffer)
-            try:
-                if storage.exists(self.file_name()):
-                    storage.delete(self.file_name())
-                storage.save(self.file_name(), ContentFile(model_buffer.getvalue()))
-            except Exception as exc:
-                self.log.error(f"failed to save model for {self.name}")
-                raise exc
-
-    def load(self) -> None:
+    @cached_property
+    def model(self):
         """
         Load the serialized model from persistent storage.
 
@@ -69,11 +44,32 @@ class MLModel(Scorer):
         self.log.info(f"loading {self.name} model from file system")
         storage = FileSystemStorage(location=ML_MODEL_DIRECTORY)
         try:
-            with storage.open(self.file_name(), "rb") as file:
-                self.model = joblib.load(file)
+            with storage.open(self.file_name, "rb") as file:
+                result = joblib.load(file)
         except Exception as exc:
             self.log.error(f"failed to load model for {self.name}")
             raise exc
+        return result
+
+    def save(self) -> None:
+        """
+        Serialize and save the model to persistent storage.
+
+        The model is saved using joblib serialization to a file location
+        determined by the model's name. If a file already exists for this
+        model, it will be overwritten.
+        """
+        self.log.info(f"saving {self.name} model to file system")
+        storage = FileSystemStorage(location=ML_MODEL_DIRECTORY)
+        with BytesIO() as model_buffer:
+            joblib.dump(self.model, model_buffer)
+            try:
+                if storage.exists(self.file_name):
+                    storage.delete(self.file_name)
+                storage.save(self.file_name, ContentFile(model_buffer.getvalue()))
+            except Exception as exc:
+                self.log.error(f"failed to save model for {self.name}")
+                raise exc
 
     def score(self, df: pd.DataFrame) -> pd.DataFrame:
         """
@@ -97,9 +93,6 @@ class MLModel(Scorer):
         missing_features = set(self.features) - set(df.columns)
         if missing_features:
             raise ValueError(f"Missing required features: {missing_features}")
-
-        if self.model is None:
-            self.load()
 
         X = df[self.features].copy()
         for feature in MULTI_VAL_FEATURES:
@@ -136,6 +129,41 @@ class MLModel(Scorer):
         area = np.trapezoid(recalls) / SAMPLE_COUNT
         return area
 
+    @property
+    @abstractmethod
+    def features(self) -> list[str]:
+        """
+        List of feature names required by the model.
+
+        Returns:
+            list[str]: Names of all features needed for prediction.
+        """
+
+    @abstractmethod
+    def training_target(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Create target variable from input data.
+
+        Args:
+            df: Input data containing target information
+
+        Returns:
+            pd.DataFrame: Target values appropriate for the model type
+        """
+
+    @abstractmethod
+    def split_train_test(self, X: pd.DataFrame, y: pd.DataFrame) -> list:
+        """
+        Split data into training and test sets.
+
+        Args:
+            X: Feature matrix
+            y: Target values
+
+        Returns:
+            list: (X_train, X_test, y_train, y_test) split datasets
+        """
+
     @abstractmethod
     def train(self, df: pd.DataFrame) -> None:
         """
@@ -166,6 +194,31 @@ class Classifier(MLModel):
     Handles models that implement predict_proba(), returning the probability of the positive class.
     """
 
+    def training_target(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Create binary classification target from interaction data.
+
+        Args:
+            df: Input data containing 'interactions_on_eval_day' column
+
+        Returns:
+            pd.DataFrame: Binary target where True indicates at least one interaction
+        """
+        return df["interactions_on_eval_day"] > 0
+
+    def split_train_test(self, X: pd.DataFrame, y: pd.DataFrame) -> list:
+        """
+        Split data into training and test sets while preserving class distribution.
+
+        Args:
+            X: Feature matrix
+            y: Binary target values
+
+        Returns:
+            list: (X_train, X_test, y_train, y_test) split datasets
+        """
+        return train_test_split(X, y, test_size=0.2, stratify=y)
+
     def predict(self, X: pd.DataFrame) -> np.ndarray:
         """
         Generate probability predictions for the positive class.
@@ -186,6 +239,31 @@ class Regressor(MLModel):
 
     Handles models that implement predict() for direct value prediction.
     """
+
+    def training_target(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Create regression target from interaction data.
+
+        Args:
+            df: Input data containing 'interactions_on_eval_day' column
+
+        Returns:
+            pd.DataFrame: Number of interactions for each instance
+        """
+        return df["interactions_on_eval_day"]
+
+    def split_train_test(self, X: pd.DataFrame, y: pd.DataFrame) -> list:
+        """
+        Split data into training and test sets.
+
+        Args:
+            X: Feature matrix
+            y: Continuous target values
+
+        Returns:
+            list: (X_train, X_test, y_train, y_test) split datasets
+        """
+        return train_test_split(X, y, test_size=0.2)
 
     def predict(self, X: pd.DataFrame) -> np.ndarray:
         """

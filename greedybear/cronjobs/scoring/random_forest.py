@@ -1,12 +1,73 @@
+from abc import abstractmethod
+
 import pandas as pd
 from greedybear.cronjobs.scoring.consts import MULTI_VAL_FEATURES, NUM_FEATURES
-from greedybear.cronjobs.scoring.ml_model import Classifier, Regressor
+from greedybear.cronjobs.scoring.ml_model import Classifier, MLModel, Regressor
 from greedybear.cronjobs.scoring.utils import multi_label_encode
+from sklearn.base import BaseEstimator
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
-from sklearn.model_selection import train_test_split
 
 
-class RFClassifier(Classifier):
+class RFModel(MLModel):
+    """
+    Abstract base class for Random Forest models.
+
+    Provides common functionality for Random Forest Classifiers and Regressors,
+    including feature preprocessing, model training, and evaluation.
+    """
+
+    def __init__(self, name: str, score_name: str):
+        super().__init__(name, score_name)
+        self.log.info(f"init {self.name}")
+
+    @property
+    def features(self) -> list[str]:
+        """
+        List of feature names required by the RandomFores models.
+
+        Returns:
+            list[str]: Names of all features needed for prediction,
+                including both standard and multi-value features
+        """
+        return NUM_FEATURES + MULTI_VAL_FEATURES
+
+    def train(self, df: pd.DataFrame) -> None:
+        """
+        Preprocesses features, splits data into train/test sets, and
+        trains a Random Forest with optimized hyperparameters.
+        Logs model performance using recall AUC score.
+
+        Args:
+            df: Training data containing features and
+                'interactions_on_eval_day' target
+        """
+        self.log.info(f"start training {self.name}")
+
+        X = df[self.features].copy()
+        y = self.training_target(df).copy()
+
+        for feature in MULTI_VAL_FEATURES:
+            X = multi_label_encode(X, feature)
+
+        X_train, X_test, y_train, y_test = self.split_train_test(X, y)
+
+        self.model = self.untrained_model.fit(X_train, y_train)
+        self.log.info(f"finished training {self.name} - recall AUC: {self.recall_auc(X_test, y_test):.4f}")
+        self.save()
+
+    @property
+    @abstractmethod
+    def untrained_model(self) -> BaseEstimator:
+        """
+        Create and configure an untrained Random Forest model.
+
+        Returns:
+            BaseEstimator: Configured but untrained scikit-learn Random Forest
+                model with all hyperparameters set
+        """
+
+
+class RFClassifier(RFModel, Classifier):
     """
     Random Forest Classifier implementation for predicting IoC recurrence.
 
@@ -16,35 +77,17 @@ class RFClassifier(Classifier):
 
     def __init__(self):
         super().__init__("Random Forest Classifier", "recurrence_probability")
-        self.model = None
-        self.features = NUM_FEATURES + MULTI_VAL_FEATURES
 
-    def train(self, df: pd.DataFrame) -> None:
+    @property
+    def untrained_model(self) -> BaseEstimator:
         """
-        Preprocesses features, splits data into train/test sets, and
-        trains a Random Forest with optimized hyperparameters.
-        Logs model performance using recall AUC score.
+        Create and configure an untrained Random Forest Classifier.
+        Hyperparameters were found by RandomSearchCV.
 
-        Args:
-            df: Training data containing features and
-                'interactions_on_eval_day' target
-
-        Raises:
-            ValueError: If required features or target are missing
+        Returns:
+            BaseEstimator: Configured but untrained scikit-learn Random Forest
+                Classifier with all hyperparameters set
         """
-        self.log.info(f"start training {self.name}")
-
-        if "interactions_on_eval_day" not in df.columns:
-            raise ValueError("Missing target column 'interactions_on_eval_day'")
-
-        X = df[self.features].copy()
-        y = df["interactions_on_eval_day"] > 0
-
-        for feature in MULTI_VAL_FEATURES:
-            X = multi_label_encode(X, feature)
-
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, stratify=y)
-
         params = {
             "class_weight": {False: 1, True: 4},
             "criterion": "entropy",
@@ -54,14 +97,10 @@ class RFClassifier(Classifier):
             "min_samples_split": 3,
             "n_estimators": 241,
         }
-        self.model = RandomForestClassifier(
-            **params,
-        )
-        self.model.fit(X_train, y_train)
-        self.log.info(f"finished training {self.name} - recall AUC: {self.recall_auc(X_test, y_test):.4f}")
+        return RandomForestClassifier(**params)
 
 
-class RFRegressor(Regressor):
+class RFRegressor(RFModel, Regressor):
     """
     Random Forest Regressor implementation for predicting IoC interactions.
 
@@ -71,35 +110,17 @@ class RFRegressor(Regressor):
 
     def __init__(self):
         super().__init__("Random Forest Regressor", "expected_interactions")
-        self.model = None
-        self.features = NUM_FEATURES + MULTI_VAL_FEATURES
 
-    def train(self, df: pd.DataFrame) -> None:
+    @property
+    def untrained_model(self) -> BaseEstimator:
         """
-        Preprocesses features, splits data into train/test sets, and
-        trains a Random Forest with optimized hyperparameters.
-        Logs model performance using recall AUC score.
+        Create and configure an untrained Random Forest Regressor.
+        Hyperparameters were found by RandomSearchCV.
 
-        Args:
-            df: Training data containing features and
-                'interactions_on_eval_day' target
-
-        Raises:
-            ValueError: If required features or target are missing
+        Returns:
+            BaseEstimator: Configured but untrained scikit-learn Random Forest
+                Regressor with all hyperparameters set
         """
-        self.log.info(f"start training {self.name}")
-
-        if "interactions_on_eval_day" not in df.columns:
-            raise ValueError("Missing target column 'interactions_on_eval_day'")
-
-        X = df[self.features].copy()
-        y = df["interactions_on_eval_day"]
-
-        for feature in MULTI_VAL_FEATURES:
-            X = multi_label_encode(X, feature)
-
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2)
-
         params = {
             "criterion": "squared_error",
             "max_depth": 11,
@@ -108,9 +129,4 @@ class RFRegressor(Regressor):
             "min_samples_split": 8,
             "n_estimators": 70,
         }
-
-        self.model = RandomForestRegressor(
-            **params,
-        )
-        self.model.fit(X_train, y_train)
-        self.log.info(f"finished training {self.name} - recall AUC: {self.recall_auc(X_test, y_test):.4f}")
+        return RandomForestRegressor(**params)
