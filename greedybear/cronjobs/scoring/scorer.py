@@ -26,6 +26,7 @@ class Scorer(metaclass=ABCMeta):
         self.name = name
         self.score_name = score_name
         self.trainable = trainable
+        self.log.debug(f"initialize {self.name} - trainable: {trainable}")
 
     @abstractmethod
     def score(self, df: pd.DataFrame) -> pd.DataFrame:

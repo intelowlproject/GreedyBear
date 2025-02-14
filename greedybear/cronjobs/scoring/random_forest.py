@@ -18,7 +18,6 @@ class RFModel(MLModel):
 
     def __init__(self, name: str, score_name: str):
         super().__init__(name, score_name)
-        self.log.info(f"init {self.name}")
 
     @property
     def features(self) -> list[str]:
