@@ -96,8 +96,11 @@ app.conf.beat_schedule = {
         "options": {"queue": "default"},
     },
     # SCORING
-    # once a day
-    # small offset after midnight to make sure extraction is finished
+    # Important:
+    # The training task must be run with a small offset after midnight (00:00)
+    # to ensure training data aligns with complete calendar days.
+    # The small offset is to make sure that the midnight extraction task is completed before training.
+    # This way models learn from complete rather than partial day patterns, which is crucial for their performance.
     "train_and_update": {
         "task": "greedybear.tasks.chain_train_and_update",
         "schedule": crontab(hour=0, minute=hp_extraction_interval // 2),
