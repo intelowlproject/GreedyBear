@@ -44,8 +44,9 @@ class IOCModelAdmin(admin.ModelAdmin):
         "destination_ports",
         "login_attempts",
     ]
-    search_fields = ["name"]
-    filter_horizontal = ["general_honeypot", "related_ioc"]
+    search_fields = ["name", "related_ioc__name"]
+    raw_id_fields = ["related_ioc"]
+    filter_horizontal = ["general_honeypot"]
 
     def general_honeypots(self, ioc):
         return ", ".join([str(element) for element in ioc.general_honeypot.all()])
