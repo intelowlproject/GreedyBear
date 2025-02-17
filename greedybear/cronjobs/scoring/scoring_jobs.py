@@ -8,11 +8,12 @@ from django.core.files.storage import FileSystemStorage
 from django.db.models import F, Q
 from greedybear.cronjobs.base import Cronjob
 from greedybear.cronjobs.scoring.random_forest import RFClassifier, RFRegressor
+from greedybear.cronjobs.scoring.threat_level import ThreatLevel
 from greedybear.cronjobs.scoring.utils import correlated_features, get_current_data, get_features
 from greedybear.models import IOC
 from greedybear.settings import ML_MODEL_DIRECTORY
 
-SCORERS = [RFClassifier(), RFRegressor()]
+SCORERS = [RFClassifier(), RFRegressor(), ThreatLevel()]
 TRAINING_DATA_FILENAME = "training_data.json"
 
 
