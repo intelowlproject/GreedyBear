@@ -111,7 +111,9 @@ class ExtractCowrie(ExtractAttacks):
                         session_record.start_time = hit.timestamp
                     case "cowrie.login.failed" | "cowrie.login.success":
                         session_record.login_attempt = True
-                        session_record.credentials.append(f"{hit.username} | {hit.password}")
+                        username = hit.username.replace("\x00", "[NUL]")
+                        password = hit.password.replace("\x00", "[NUL]")
+                        session_record.credentials.append(f"{username} | {password}")
                         session_record.source.login_attempts += 1
                     case "cowrie.command.input":
                         session_record.command_execution = True
