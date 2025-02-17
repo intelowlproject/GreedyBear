@@ -254,7 +254,10 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
 
                 if verbose and ioc_feed_type in ["log4j", "cowrie"]:
                     data_["honeypots"] = [hp for hp in data_["honeypots"] if hp is not None]
-                    data_["honeypots"].append(ioc_feed_type)
+                    if ioc["log4j"]:
+                        data_["honeypots"].append("log4j")
+                    if ioc["cowrie"]:
+                        data_["honeypots"].append("cowrie")
 
                 if verbose:
                     json_list.append(data_)

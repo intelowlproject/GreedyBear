@@ -6,13 +6,13 @@ from datetime import datetime
 from ipaddress import IPv4Address
 
 from greedybear.consts import DOMAIN, IP, PAYLOAD_REQUEST, SCANNER
-from greedybear.cronjobs.base import Cronjob
+from greedybear.cronjobs.base import ElasticJob
 from greedybear.cronjobs.sensors import ExtractSensors
 from greedybear.models import IOC, GeneralHoneypot, Sensors
 from greedybear.settings import EXTRACTION_INTERVAL, LEGACY_EXTRACTION
 
 
-class ExtractAttacks(Cronjob, metaclass=ABCMeta):
+class ExtractAttacks(ElasticJob, metaclass=ABCMeta):
     def __init__(self, minutes_back=None):
         super().__init__()
         self.first_time_run = False
