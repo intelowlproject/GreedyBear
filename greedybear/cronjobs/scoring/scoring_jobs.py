@@ -165,14 +165,16 @@ class UpdateScores(Cronjob):
             updated = False
             # Update scores if IP exists in new data
             if ioc.name in scores_by_ip:
-                for score in score_names:
-                    setattr(ioc, score, scores_by_ip[ioc.name][score])
-                updated = True
+                for score_name in score_names:
+                    score = scores_by_ip[ioc.name][score_name]
+                    if getattr(ioc, score_name) != score:
+                        setattr(ioc, score_name, score)
+                        updated = True
             # Reset old scores to 0
             else:
-                for score in score_names:
-                    if getattr(ioc, score) > 0:
-                        setattr(ioc, score, 0)
+                for score_name in score_names:
+                    if getattr(ioc, score_name) > 0:
+                        setattr(ioc, score_name, 0)
                         updated = True
             if updated:
                 iocs_to_update.append(ioc)
