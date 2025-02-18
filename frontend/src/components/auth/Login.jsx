@@ -7,14 +7,16 @@ import {
   Spinner,
   Button,
   Row,
+  Alert
 } from "reactstrap";
+import { MdInfoOutline } from "react-icons/md";
 import { Form, Formik } from "formik";
 
 import { ContentSection } from "@certego/certego-ui";
 
 import { useAuthStore } from "../../stores";
 import {
-  ResendVerificationEmailButton,
+  // ResendVerificationEmailButton,
   ForgotPasswordButton,
 } from "./utils/registration-buttons";
 
@@ -66,6 +68,20 @@ function Login() {
         <ContentSection>
           <h3 className="fw-bold">Log In</h3>
           <hr />
+          <Alert
+            color="accent-2"
+            id="access-info"
+            className="col-12 px-1 text-center"
+          >
+            <h5 className="text-info">
+              <MdInfoOutline size="1.15rem" />
+              &nbsp;New users
+            </h5>
+            <p>
+              If you do not have an account please contact a member of 
+               The Honeynet Project who will provide you with credentials to log in
+            </p>
+          </Alert>
           {/* Form */}
           <Formik
             initialValues={initialValues}
@@ -126,7 +142,8 @@ function Login() {
         {/* popover buttons */}
         <Row className="d-flex flex-column align-items-end g-0">
           <ForgotPasswordButton />
-          <ResendVerificationEmailButton />
+          {/*  Registration operations have been temporarily disabled due to not proper Terms of Service */}
+          {/* <ResendVerificationEmailButton /> */}
         </Row>
       </Container>
     </ContentSection>
