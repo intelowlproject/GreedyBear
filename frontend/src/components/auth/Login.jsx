@@ -7,7 +7,7 @@ import {
   Spinner,
   Button,
   Row,
-  Alert
+  Alert,
 } from "reactstrap";
 import { MdInfoOutline } from "react-icons/md";
 import { Form, Formik } from "formik";
@@ -78,8 +78,8 @@ function Login() {
               &nbsp;New users
             </h5>
             <p>
-              If you do not have an account please contact a member of 
-               The Honeynet Project who will provide you with credentials to log in
+              If you do not have an account please contact a member of The
+              Honeynet Project who will provide you with credentials to log in
             </p>
           </Alert>
           {/* Form */}
