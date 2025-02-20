@@ -145,6 +145,7 @@ const onValidate = (values) => {
 
 // Component
 export default function Register() {
+  /* ATTENTION! The Register page has been temporarily disabled due to not proper Terms of Service */
   console.debug("Register rendered!");
 
   // page title

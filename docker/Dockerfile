@@ -42,8 +42,9 @@ RUN touch ${LOG_PATH}/django/api.log ${LOG_PATH}/django/api_errors.log \
     && touch ${LOG_PATH}/django/celery.log ${LOG_PATH}/django/celery_errors.log \
     && touch ${LOG_PATH}/django/django_errors.log ${LOG_PATH}/django/elasticsearch.log\
     && touch ${LOG_PATH}/django/authentication.log ${LOG_PATH}/django/authentication_errors.log \
+    && mkdir -p ${PYTHONPATH}/mlmodels \
     && adduser -S -H -u 2000 -D -g www-data www-data \
-    && chown -R www-data:www-data ${LOG_PATH} /opt/deploy/ \
+    && chown -R www-data:www-data ${LOG_PATH} /opt/deploy/ ${PYTHONPATH}/mlmodels/ \
     && rm -rf docs/ frontend/ tests/ .github/ docker/hooks/ \
     && /bin/bash ./docker/watchman_install.sh \
     && apk del gcc python3-dev alpine-sdk linux-headers

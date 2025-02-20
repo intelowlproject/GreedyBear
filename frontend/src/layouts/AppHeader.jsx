@@ -30,7 +30,8 @@ const guestLinks = (
         Login
       </RRNavLink>
     </NavItem>
-    <NavItem className="ms-lg-2">
+    {/*  The register button has been temporarily disabled due to not proper Terms of Service */}
+    {/* <NavItem className="ms-lg-2">
       <RRNavLink
         id="register-btn"
         className="btn btn-sm btn-accent-2"
@@ -39,7 +40,7 @@ const guestLinks = (
       >
         Register
       </RRNavLink>
-    </NavItem>
+    </NavItem> */}
   </>
 );
 
