@@ -62,6 +62,18 @@ class IOC(models.Model):
         return self.name
 
 
+class CommandSequence(models.Model):
+    first_seen = models.DateTimeField(blank=False, default=datetime.utcnow)
+    last_seen = models.DateTimeField(blank=False, default=datetime.utcnow)
+    commands = pg_fields.ArrayField(models.CharField(max_length=1024, blank=True), blank=False, null=False, default=list)
+    commands_hash = models.CharField(max_length=64, blank=True)
+    cluster = models.IntegerField(blank=True, null=True)
+
+    def __str__(self):
+        cmd_string = "; ".join(self.commands)
+        return cmd_string[:29] + "..." if len(cmd_string) > 32 else cmd_string
+
+
 class CowrieSession(models.Model):
     session_id = models.BigIntegerField(primary_key=True)
     start_time = models.DateTimeField(blank=True, null=True)
@@ -71,6 +83,7 @@ class CowrieSession(models.Model):
     command_execution = models.BooleanField(blank=False, null=False, default=False)
     interaction_count = models.IntegerField(blank=False, null=False, default=0)
     source = models.ForeignKey(IOC, on_delete=models.CASCADE, blank=False, null=False)
+    commands = models.ForeignKey(CommandSequence, on_delete=models.SET_NULL, blank=True, null=True)
 
     class Meta:
         indexes = [
