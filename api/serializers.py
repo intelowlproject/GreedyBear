@@ -127,6 +127,8 @@ class FeedsResponseSerializer(serializers.Serializer):
     asn = serializers.IntegerField(allow_null=True, min_value=1)
     destination_port_count = serializers.IntegerField(min_value=0)
     login_attempts = serializers.IntegerField(min_value=0)
+    recurrence_probability = serializers.FloatField(min_value=0, max_value=1)
+    expected_interactions = serializers.FloatField(min_value=0)
 
     def validate_feed_type(self, feed_type):
         logger.debug(f"FeedsResponseSerializer - validation feed_type: '{feed_type}'")

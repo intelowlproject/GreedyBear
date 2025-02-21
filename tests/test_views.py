@@ -45,6 +45,8 @@ class EnrichmentViewTestCase(CustomTestCase):
         self.assertEqual(response.json()["ioc"]["general_honeypot"][1], self.ciscoasa.name)  # FEEDS
         self.assertEqual(response.json()["ioc"]["scanner"], self.ioc.scanner)
         self.assertEqual(response.json()["ioc"]["payload_request"], self.ioc.payload_request)
+        self.assertEqual(response.json()["ioc"]["recurrence_probability"], self.ioc.recurrence_probability)
+        self.assertEqual(response.json()["ioc"]["expected_interactions"], self.ioc.expected_interactions)
 
     def test_for_invalid_authentication(self):
         """Check for a invalid authentication"""
@@ -62,6 +64,8 @@ class FeedsViewTestCase(CustomTestCase):
         self.assertEqual(response.json()["iocs"][0]["attack_count"], 1)
         self.assertEqual(response.json()["iocs"][0]["scanner"], True)
         self.assertEqual(response.json()["iocs"][0]["payload_request"], True)
+        self.assertEqual(response.json()["iocs"][0]["recurrence_probability"], self.ioc.recurrence_probability)
+        self.assertEqual(response.json()["iocs"][0]["expected_interactions"], self.ioc.expected_interactions)
 
     def test_200_general_feeds(self):
         response = self.client.get("/api/feeds/heralding/all/recent.json")
@@ -71,6 +75,8 @@ class FeedsViewTestCase(CustomTestCase):
         self.assertEqual(response.json()["iocs"][0]["attack_count"], 1)
         self.assertEqual(response.json()["iocs"][0]["scanner"], True)
         self.assertEqual(response.json()["iocs"][0]["payload_request"], True)
+        self.assertEqual(response.json()["iocs"][0]["recurrence_probability"], self.ioc.recurrence_probability)
+        self.assertEqual(response.json()["iocs"][0]["expected_interactions"], self.ioc.expected_interactions)
 
     def test_200_feeds_scanner_exclusion(self):
         response = self.client.get("/api/feeds/heralding/all/recent.json?exclude_mass_scanners")
@@ -111,6 +117,8 @@ class FeedsAdvancedViewTestCase(CustomTestCase):
         self.assertEqual(response.json()["iocs"][0]["attack_count"], 1)
         self.assertEqual(response.json()["iocs"][0]["scanner"], True)
         self.assertEqual(response.json()["iocs"][0]["payload_request"], True)
+        self.assertEqual(response.json()["iocs"][0]["recurrence_probability"], self.ioc.recurrence_probability)
+        self.assertEqual(response.json()["iocs"][0]["expected_interactions"], self.ioc.expected_interactions)
 
     def test_200_general_feeds(self):
         response = self.client.get("/api/feeds/advanced/?feed_type=heralding")
@@ -120,6 +128,8 @@ class FeedsAdvancedViewTestCase(CustomTestCase):
         self.assertEqual(response.json()["iocs"][0]["attack_count"], 1)
         self.assertEqual(response.json()["iocs"][0]["scanner"], True)
         self.assertEqual(response.json()["iocs"][0]["payload_request"], True)
+        self.assertEqual(response.json()["iocs"][0]["recurrence_probability"], self.ioc.recurrence_probability)
+        self.assertEqual(response.json()["iocs"][0]["expected_interactions"], self.ioc.expected_interactions)
 
     def test_400_feeds(self):
         response = self.client.get("/api/feeds/advanced/?attack_type=test")

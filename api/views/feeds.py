@@ -79,24 +79,17 @@ def feeds_advanced(request):
 
     Args:
         request: The incoming request object.
-
-    Supported query parameters are:
-
-        - **feed_type**: Type of feed to retrieve. (supported: `cowrie`, `log4j`, etc.; default: `all`)
-        - **attack_type**: Type of attack to filter. (supported: `scanner`, `payload_request`, `all`; default: `all`)
-        - **max_age**: Maximum number of days since last occurrence. \
-            E.g. an IOC that was last seen 4 days ago is excluded by default. (default: 3)
-        - **min_days_seen**: Minimum number of days on which an IOC must have been seen. (default: 1)
-        - **include_reputation**: `;`-separated list of reputation values to include, \
-            e.g. `known attacker` or `known attacker;` to include IOCs without reputation. (default: include all)
-        - **exclude_reputation**: `;`-separated list of reputation values to exclude, \
-            e.g. `mass scanner` or `mass scanner;bot, crawler`. (default: exclude none)
-        - **feed_size**: Number of IOC items to return. (default: 5000)
-        - **ordering**: Field to order results by, with optional `-` prefix for descending. (default: `-last_seen`)
-        - **verbose**: `true` to include IOC properties that contain a lot of data, e.g. the list of days it was seen. (default: `false`)
-        - **paginate**: `true` to paginate results. This forces the json format. (default: `false`)
-        - **format_**: Response format type. Besides `json`, `txt` and `csv` are supported \
-            but the response will only contain IOC values (e.g. IP adresses) without further information. (default: `json`)
+        feed_type (str): Type of feed to retrieve. (supported: `cowrie`, `log4j`, etc.; default: `all`)
+        attack_type (str): Type of attack to filter. (supported: `scanner`, `payload_request`, `all`; default: `all`)
+        max_age (int): Maximum number of days since last occurrence. E.g. an IOC that was last seen 4 days ago is excluded by default. (default: 3)
+        min_days_seen (int): Minimum number of days on which an IOC must have been seen. (default: 1)
+        include_reputation (str): `;`-separated list of reputation values to include, e.g. `known attacker` or `known attacker;` to include IOCs without reputation. (default: include all)
+        exclude_reputation (str): `;`-separated list of reputation values to exclude, e.g. `mass scanner` or `mass scanner;bot, crawler`. (default: exclude none)
+        feed_size (int): Number of IOC items to return. (default: 5000)
+        ordering (str): Field to order results by, with optional `-` prefix for descending. (default: `-last_seen`)
+        verbose (bool): `true` to include IOC properties that contain a lot of data, e.g. the list of days it was seen. (default: `false`)
+        paginate (bool): `true` to paginate results. This forces the json format. (default: `false`)
+        format (str): Response format type. Besides `json`, `txt` and `csv` are supported but the response will only contain IOC values (e.g. IP adresses) without further information. (default: `json`)
 
     Returns:
         Response: The HTTP response with formatted IOC data.

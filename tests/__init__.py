@@ -33,6 +33,8 @@ class CustomTestCase(TestCase):
             asn="12345",
             destination_ports=[22, 23, 24],
             login_attempts=1,
+            recurrence_probability=0.1,
+            expected_interactions=11.1,
         )
 
         cls.ioc.general_honeypot.add(cls.heralding)  # FEEDS
