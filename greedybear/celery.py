@@ -106,4 +106,11 @@ app.conf.beat_schedule = {
         "schedule": crontab(hour=0, minute=hp_extraction_interval // 2),
         "options": {"queue": "default"},
     },
+    # COMMANDS
+    # once a day
+    "command_clustering": {
+        "task": "greedybear.tasks.cluster_commands",
+        "schedule": crontab(hour=1, minute=3),
+        "options": {"queue": "default"},
+    },
 }

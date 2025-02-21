@@ -3,6 +3,7 @@
 from __future__ import absolute_import, unicode_literals
 
 from celery import chain, shared_task
+from greedybear.settings import CLUSTER_COWRIE_COMMAND_SEQUENCES
 
 
 @shared_task()
@@ -78,3 +79,14 @@ def chain_train_and_update():
         train_models.s(),
         update_scores.s(),
     )()
+
+
+# COMMANDS
+
+
+@shared_task()
+def cluster_commands():
+    from greedybear.cronjobs.commands.cluster import ClusterCommandSequences
+
+    if CLUSTER_COWRIE_COMMAND_SEQUENCES:
+        ClusterCommandSequences().execute()
