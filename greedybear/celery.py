@@ -62,20 +62,20 @@ app.conf.beat_schedule = {
     "extract_log4pot": {
         "task": "greedybear.tasks.extract_log4pot",
         "schedule": crontab(minute=f"*/{hp_extraction_interval}"),
-        "options": {"queue": "default"},
+        "options": {"queue": "default", "countdown": 10},
     },
     # every 10 minutes or according to EXTRACTION_INTERVAL
     "extract_cowrie": {
         "task": "greedybear.tasks.extract_cowrie",
         "schedule": crontab(minute=f"*/{hp_extraction_interval}"),
-        "options": {"queue": "default"},
+        "options": {"queue": "default", "countdown": 10},
     },
     # FEEDS
     # every 10 minutes or according to EXTRACTION_INTERVAL
     "extract_general": {
         "task": "greedybear.tasks.extract_general",
         "schedule": crontab(minute=f"*/{hp_extraction_interval}"),
-        "options": {"queue": "default"},
+        "options": {"queue": "default", "countdown": 10},
     },
     # once a day
     "extract_sensors": {
