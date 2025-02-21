@@ -66,7 +66,7 @@ class CommandSequence(models.Model):
     first_seen = models.DateTimeField(blank=False, default=datetime.utcnow)
     last_seen = models.DateTimeField(blank=False, default=datetime.utcnow)
     commands = pg_fields.ArrayField(models.CharField(max_length=1024, blank=True), blank=False, null=False, default=list)
-    commands_hash = models.CharField(max_length=64, blank=True)
+    commands_hash = models.CharField(max_length=64, unique=True, blank=True, null=True)
     cluster = models.IntegerField(blank=True, null=True)
 
     def __str__(self):
