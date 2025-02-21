@@ -233,6 +233,8 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
                 "login_attempts",
                 "honeypots",
                 "days_seen",
+                "recurrence_probability",
+                "expected_interactions",
             }
             iocs = (ioc_as_dict(ioc, required_fields) for ioc in iocs) if isinstance(iocs, list) else iocs.values(*required_fields)
             for ioc in iocs:
