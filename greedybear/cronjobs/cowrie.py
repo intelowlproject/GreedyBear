@@ -2,12 +2,13 @@
 # See the file 'LICENSE' for copying permission.
 import re
 from collections import defaultdict
+from hashlib import sha256
 from urllib.parse import urlparse
 
 from greedybear.consts import ATTACK_DATA_FIELDS, PAYLOAD_REQUEST, SCANNER
 from greedybear.cronjobs.attacks import ExtractAttacks
 from greedybear.cronjobs.honeypots import Honeypot
-from greedybear.models import IOC, CowrieSession
+from greedybear.models import IOC, CommandSequence, CowrieSession
 from greedybear.regex import REGEX_URL_PROTOCOL
 
 
@@ -105,7 +106,7 @@ class ExtractCowrie(ExtractAttacks):
                 session_record = CowrieSession(session_id=sid)
 
             session_record.source = ioc
-            for hit in hits:
+            for hit in sorted(hits, key=lambda hit: hit.timestamp):
                 match hit.eventid:
                     case "cowrie.session.connect":
                         session_record.start_time = hit.timestamp
@@ -117,10 +118,19 @@ class ExtractCowrie(ExtractAttacks):
                         session_record.source.login_attempts += 1
                     case "cowrie.command.input":
                         session_record.command_execution = True
+                        if session_record.commands is None:
+                            session_record.commands = CommandSequence()
+                            session_record.commands.first_seen = hit.timestamp
+                        command = hit.message.removeprefix("CMD: ").replace("\x00", "[NUL]")
+                        session_record.commands.last_seen = hit.timestamp
+                        session_record.commands.commands.append(command)
                     case "cowrie.session.closed":
                         session_record.duration = hit.duration
+                        if session_record.command_execution:
+                            self._deduplicate_command_sequence(session_record)
                 session_record.interaction_count += 1
-
+            if session_record.commands is not None:
+                session_record.commands.save()
             session_record.source.save()
             session_record.save()
 
@@ -140,6 +150,35 @@ class ExtractCowrie(ExtractAttacks):
             if scanner_ip_instance and scanner_ip_instance not in hostname_instance.related_ioc.all():
                 hostname_instance.related_ioc.add(scanner_ip_instance)
             hostname_instance.save()
+
+    def _deduplicate_command_sequence(self, session: CowrieSession) -> bool:
+        """
+        Deduplicates command sequences by hashing and either linking to an existing
+        sequence or preparing for creation of a new one.
+
+        Args:
+            session: A CowrieSession instance containing command sequence data
+
+        Returns:
+            bool: True if merged with existing sequence, else False
+        """
+        commands_str = "\n".join(session.commands.commands)
+        commands_hash = sha256(commands_str.encode()).hexdigest()
+        try:
+            # Check if the recoreded sequence already exists
+            cmd_seq = CommandSequence.objects.get(commands_hash=commands_hash)
+        except CommandSequence.DoesNotExist:
+            # In case sequence does not exist:
+            # Assign hash to the the sequence
+            session.commands.commands_hash = commands_hash
+            return False
+        # In case sequence does already exist:
+        # Delete newly created sequence from DB
+        # and assign existing sequence to session
+        if session.commands.pk is not None:
+            session.commands.delete()
+        session.commands = cmd_seq
+        return True
 
     def run(self):
         self._healthcheck()
