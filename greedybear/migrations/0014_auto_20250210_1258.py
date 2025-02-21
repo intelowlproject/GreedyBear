@@ -5,12 +5,15 @@ from django.db import migrations
 
 def removeDdospot(apps, schema_editor):
     GeneralHoneypot = apps.get_model("greedybear", "GeneralHoneypot")
-    ddospot = GeneralHoneypot.objects.get(name__iexact="Ddospot")
-    IOC = apps.get_model("greedybear", "IOC")
-    # do nothing if Ddospot is in active use
-    if ddospot.active and IOC.objects.filter(general_honeypot=ddospot).exists():
-        return
-    ddospot.delete()
+    try:
+        ddospot = GeneralHoneypot.objects.get(name__iexact="Ddospot")
+        IOC = apps.get_model("greedybear", "IOC")
+        # do nothing if Ddospot is in active use
+        if ddospot.active and IOC.objects.filter(general_honeypot=ddospot).exists():
+            return
+        ddospot.delete()
+    except GeneralHoneypot.DoesNotExist as e:
+        pass
 
 
 class Migration(migrations.Migration):
