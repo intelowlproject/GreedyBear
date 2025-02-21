@@ -15,11 +15,11 @@ BASE_STATIC_PATH = os.path.join(BASE_DIR, "static/")
 SECRET_KEY = os.environ.get("DJANGO_SECRET", None) or get_random_secret_key()
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = os.environ.get("DEBUG", False) == "True"
+DEBUG = os.environ.get("DEBUG", "False") == "True"
 
 DJANGO_LOG_DIRECTORY = "/var/log/greedybear/django"
 ML_MODEL_DIRECTORY = os.path.join(BASE_DIR, "mlmodels/")  # "/opt/deploy/greedybear/mlmodels"
-MOCK_CONNECTIONS = os.environ.get("MOCK_CONNECTIONS", False) == "True"
+MOCK_CONNECTIONS = os.environ.get("MOCK_CONNECTIONS", "False") == "True"
 STAGE = os.environ.get("ENVIRONMENT", "production")
 STAGE_PRODUCTION = STAGE == "production"
 STAGE_LOCAL = STAGE == "local"
@@ -378,7 +378,7 @@ else:
 # email
 DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL")
 DEFAULT_EMAIL = os.environ.get("DEFAULT_EMAIL")
-AWS_SES = os.environ.get("AWS_SES", False) == "True"
+AWS_SES = os.environ.get("AWS_SES", "False") == "True"
 
 if STAGE_LOCAL:
     # The console backend writes the emails that would be sent to the standard output
@@ -404,10 +404,10 @@ else:
         EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER")
         EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD")
         EMAIL_PORT = os.environ.get("EMAIL_PORT")
-        EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", False) == "True"
-        EMAIL_USE_SSL = os.environ.get("EMAIL_USE_SSL", False) == "True"
+        EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "False") == "True"
+        EMAIL_USE_SSL = os.environ.get("EMAIL_USE_SSL", "False") == "True"
 
 
-LEGACY_EXTRACTION = os.environ.get("LEGACY_EXTRACTION", True) == "True"
+LEGACY_EXTRACTION = os.environ.get("LEGACY_EXTRACTION", "False") == "True"
 EXTRACTION_INTERVAL = int(os.environ.get("EXTRACTION_INTERVAL", 10))
 CLUSTER_COWRIE_COMMAND_SEQUENCES = os.environ.get("CLUSTER_COWRIE_COMMAND_SEQUENCES", "False") == "True"
