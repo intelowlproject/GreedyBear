@@ -123,7 +123,7 @@ class ExtractCowrie(ExtractAttacks):
                             session_record.commands.first_seen = hit.timestamp
                         command = hit.message.removeprefix("CMD: ").replace("\x00", "[NUL]")
                         session_record.commands.last_seen = hit.timestamp
-                        session_record.commands.commands.append(command)
+                        session_record.commands.commands.append(command[:1024])
                     case "cowrie.session.closed":
                         session_record.duration = hit.duration
                         if session_record.command_execution:
