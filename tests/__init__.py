@@ -1,8 +1,9 @@
 from datetime import datetime
+from hashlib import sha256
 
 from certego_saas.apps.user.models import User
 from django.test import TestCase
-from greedybear.models import IOC, CowrieSession, GeneralHoneypot, iocType
+from greedybear.models import IOC, CommandSequence, CowrieSession, GeneralHoneypot, iocType
 
 
 class CustomTestCase(TestCase):
@@ -38,15 +39,26 @@ class CustomTestCase(TestCase):
         cls.ioc.general_honeypot.add(cls.ciscoasa)  # FEEDS
         cls.ioc.save()
 
+        cls.cmd_seq = ["cd foo", "ls -la"]
+        cls.command_sequence = CommandSequence.objects.create(
+            first_seen=cls.current_time,
+            last_seen=cls.current_time,
+            commands=cls.cmd_seq,
+            commands_hash=sha256("\n".join(cls.cmd_seq).encode()).hexdigest(),
+            cluster=11,
+        )
+        cls.command_sequence.save()
+
         cls.cowrie_session = CowrieSession.objects.create(
             session_id=int("ffffffffffff", 16),
             start_time=cls.current_time,
             duration=1.234,
             login_attempt=True,
             credentials=["root | root"],
-            command_execution=False,
+            command_execution=True,
             interaction_count=5,
             source=cls.ioc,
+            commands=cls.command_sequence,
         )
         cls.cowrie_session.save()
 
