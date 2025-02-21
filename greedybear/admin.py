@@ -5,7 +5,7 @@ import logging
 from django.contrib import admin, messages
 from django.db.models import Q
 from django.utils.translation import ngettext
-from greedybear.models import IOC, CowrieSession, GeneralHoneypot
+from greedybear.models import IOC, CommandSequence, CowrieSession, GeneralHoneypot
 
 logger = logging.getLogger(__name__)
 
@@ -15,11 +15,26 @@ logger = logging.getLogger(__name__)
 #     list_display = [field.name for field in Sensors._meta.get_fields()]
 
 
+class SessionInline(admin.TabularInline):
+    model = CowrieSession
+    fields = ["source", "start_time", "duration", "credentials", "interaction_count", "commands"]
+    readonly_fields = fields
+    show_change_link = True
+    extra = 0
+    ordering = ["-start_time"]
+
+
 @admin.register(CowrieSession)
 class CowrieSessionModelAdmin(admin.ModelAdmin):
     list_display = ["session_id", "start_time", "duration", "login_attempt", "credentials", "command_execution", "interaction_count", "source"]
     search_fields = ["source__name"]
-    raw_id_fields = ["source"]
+    raw_id_fields = ["source", "commands"]
+
+
+@admin.register(CommandSequence)
+class CommandSequenceModelAdmin(admin.ModelAdmin):
+    list_display = ["first_seen", "last_seen", "cluster", "commands"]
+    inlines = [SessionInline]
 
 
 @admin.register(IOC)
@@ -47,6 +62,7 @@ class IOCModelAdmin(admin.ModelAdmin):
     search_fields = ["name", "related_ioc__name"]
     raw_id_fields = ["related_ioc"]
     filter_horizontal = ["general_honeypot"]
+    inlines = [SessionInline]
 
     def general_honeypots(self, ioc):
         return ", ".join([str(element) for element in ioc.general_honeypot.all()])
