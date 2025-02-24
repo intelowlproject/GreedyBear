@@ -15,7 +15,7 @@ api_view([GET])
 
 
 @api_view([GET])
-def feeds(request, feed_type, attack_type, age, format_):
+def feeds(request, feed_type, attack_type, prioritize, format_):
     """
     Handle requests for IOC feeds with specific parameters and format the response accordingly.
 
@@ -23,17 +23,17 @@ def feeds(request, feed_type, attack_type, age, format_):
         request: The incoming request object.
         feed_type (str): Type of feed (e.g., log4j, cowrie, etc.).
         attack_type (str): Type of attack (e.g., all, specific attack types).
-        age (str): Age of the data to filter (e.g., recent, persistent).
+        prioritize (str): Prioritization mechanism to use (e.g., recent, persistent).
         format_ (str): Desired format of the response (e.g., json, csv, txt).
         exclude_mass_scanners (bool): query parameter flag to exclude IOCs that are known mass scanners.
 
     Returns:
         Response: The HTTP response with formatted IOC data.
     """
-    logger.info(f"request /api/feeds with params: feed type: {feed_type}, " f"attack_type: {attack_type}, Age: {age}, format: {format_}")
+    logger.info(f"request /api/feeds with params: feed type: {feed_type}, " f"attack_type: {attack_type}, prioritization: {prioritize}, format: {format_}")
 
     feed_params = FeedRequestParams({"feed_type": feed_type, "attack_type": attack_type, "format_": format_})
-    feed_params.set_legacy_age(age)
+    feed_params.set_prioritization(prioritize)
     if request.query_params and "exclude_mass_scanners" in request.query_params:
         feed_params.exclude_mass_scanners()
 
@@ -58,7 +58,7 @@ def feeds_pagination(request):
 
     feed_params = FeedRequestParams(request.query_params)
     feed_params.format = "json"
-    feed_params.set_legacy_age(request.query_params.get("age"))
+    feed_params.set_prioritization(request.query_params.get("prioritize"))
     if request.query_params and "exclude_mass_scanners" in request.query_params:
         feed_params.exclude_mass_scanners()
 
@@ -79,24 +79,17 @@ def feeds_advanced(request):
 
     Args:
         request: The incoming request object.
-
-    Supported query parameters are:
-
-        - **feed_type**: Type of feed to retrieve. (supported: `cowrie`, `log4j`, etc.; default: `all`)
-        - **attack_type**: Type of attack to filter. (supported: `scanner`, `payload_request`, `all`; default: `all`)
-        - **max_age**: Maximum number of days since last occurrence. \
-            E.g. an IOC that was last seen 4 days ago is excluded by default. (default: 3)
-        - **min_days_seen**: Minimum number of days on which an IOC must have been seen. (default: 1)
-        - **include_reputation**: `;`-separated list of reputation values to include, \
-            e.g. `known attacker` or `known attacker;` to include IOCs without reputation. (default: include all)
-        - **exclude_reputation**: `;`-separated list of reputation values to exclude, \
-            e.g. `mass scanner` or `mass scanner;bot, crawler`. (default: exclude none)
-        - **feed_size**: Number of IOC items to return. (default: 5000)
-        - **ordering**: Field to order results by, with optional `-` prefix for descending. (default: `-last_seen`)
-        - **verbose**: `true` to include IOC properties that contain a lot of data, e.g. the list of days it was seen. (default: `false`)
-        - **paginate**: `true` to paginate results. This forces the json format. (default: `false`)
-        - **format_**: Response format type. Besides `json`, `txt` and `csv` are supported \
-            but the response will only contain IOC values (e.g. IP adresses) without further information. (default: `json`)
+        feed_type (str): Type of feed to retrieve. (supported: `cowrie`, `log4j`, etc.; default: `all`)
+        attack_type (str): Type of attack to filter. (supported: `scanner`, `payload_request`, `all`; default: `all`)
+        max_age (int): Maximum number of days since last occurrence. E.g. an IOC that was last seen 4 days ago is excluded by default. (default: 3)
+        min_days_seen (int): Minimum number of days on which an IOC must have been seen. (default: 1)
+        include_reputation (str): `;`-separated list of reputation values to include, e.g. `known attacker` or `known attacker;` to include IOCs without reputation. (default: include all)
+        exclude_reputation (str): `;`-separated list of reputation values to exclude, e.g. `mass scanner` or `mass scanner;bot, crawler`. (default: exclude none)
+        feed_size (int): Number of IOC items to return. (default: 5000)
+        ordering (str): Field to order results by, with optional `-` prefix for descending. (default: `-last_seen`)
+        verbose (bool): `true` to include IOC properties that contain a lot of data, e.g. the list of days it was seen. (default: `false`)
+        paginate (bool): `true` to paginate results. This forces the json format. (default: `false`)
+        format (str): Response format type. Besides `json`, `txt` and `csv` are supported but the response will only contain IOC values (e.g. IP adresses) without further information. (default: `json`)
 
     Returns:
         Response: The HTTP response with formatted IOC data.

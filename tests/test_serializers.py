@@ -117,6 +117,8 @@ class FeedsResponseSerializersTestCase(TestCase):
                 "asn": "8400",
                 "destination_port_count": "14",
                 "login_attempts": "0",
+                "recurrence_probability": "0.1",
+                "expected_interactions": "11.1",
             }
             serializer = FeedsResponseSerializer(
                 data=data_,
@@ -140,6 +142,8 @@ class FeedsResponseSerializersTestCase(TestCase):
             "asn": "8400ABC",
             "destination_port_count": "-1",
             "login_attempts": "-1",
+            "recurrence_probability": "1.1",
+            "expected_interactions": "-1",
         }
         serializer = FeedsResponseSerializer(
             data=data_,
@@ -159,3 +163,5 @@ class FeedsResponseSerializersTestCase(TestCase):
             self.assertIn("ip_reputation", serializer.errors)
             self.assertIn("asn", serializer.errors)
             self.assertIn("login_attempts", serializer.errors)
+            self.assertIn("recurrence_probability", serializer.errors)
+            self.assertIn("expected_interactions", serializer.errors)

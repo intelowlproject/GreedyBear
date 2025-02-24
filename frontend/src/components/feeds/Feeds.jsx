@@ -26,15 +26,17 @@ const attackTypeChoices = [
   { label: "Payload request", value: "payload_request" },
 ];
 
-const ageChoices = [
+const prioritizationChoices = [
   { label: "Recent", value: "recent" },
   { label: "Persistent", value: "persistent" },
+  { label: "Likely to recur", value: "likely_to_recur" },
+  { label: "Most expected hits", value: "most_expected_hits" },
 ];
 
 const initialValues = {
   feeds_type: "all",
   attack_type: "all",
-  age: "recent",
+  prioritize: "recent",
 };
 
 const initialState = {
@@ -59,7 +61,7 @@ export default function Feeds() {
   console.debug("Feeds-initialValues", initialValues);
 
   const [url, setUrl] = React.useState(
-    `${FEEDS_BASE_URI}/${initialValues.feeds_type}/${initialValues.attack_type}/${initialValues.age}.json`
+    `${FEEDS_BASE_URI}/${initialValues.feeds_type}/${initialValues.attack_type}/${initialValues.prioritize}.json`
   );
 
   // API to extract general honeypot
@@ -85,7 +87,7 @@ export default function Feeds() {
       params: {
         feed_type: initialValues.feeds_type,
         attack_type: initialValues.attack_type,
-        age: initialValues.age,
+        prioritize: initialValues.prioritize,
       },
       initialParams: {
         page: "1",
@@ -100,11 +102,11 @@ export default function Feeds() {
     (values) => {
       try {
         setUrl(
-          `${FEEDS_BASE_URI}/${values.feeds_type}/${values.attack_type}/${values.age}.json`
+          `${FEEDS_BASE_URI}/${values.feeds_type}/${values.attack_type}/${values.prioritize}.json`
         );
         initialValues.feeds_type = values.feeds_type;
         initialValues.attack_type = values.attack_type;
-        initialValues.age = values.age;
+        initialValues.prioritize = values.prioritize;
 
         const resetPage = {
           type: "gotoPage",
@@ -185,15 +187,15 @@ export default function Feeds() {
                         <Col sm={12} md={4}>
                           <Label
                             className="form-control-label"
-                            htmlFor="Feeds__age"
+                            htmlFor="Feeds__prioritize"
                           >
-                            Age:
+                            Prioritize:
                           </Label>
                           <Select
-                            id="Feeds__age"
-                            name="age"
-                            value={initialValues.age}
-                            choices={ageChoices}
+                            id="Feeds__prioritize"
+                            name="prioritize"
+                            value={initialValues.prioritize}
+                            choices={prioritizationChoices}
                             onChange={(e) => {
                               formik.handleChange(e);
                               formik.submitForm();

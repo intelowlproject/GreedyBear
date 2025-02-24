@@ -12,7 +12,7 @@ router.register(r"statistics", StatisticsViewSet, basename="statistics")
 urlpatterns = [
     path("feeds/", feeds_pagination),
     path("feeds/advanced/", feeds_advanced),
-    path("feeds/<str:feed_type>/<str:attack_type>/<str:age>.<str:format_>", feeds),
+    path("feeds/<str:feed_type>/<str:attack_type>/<str:prioritize>.<str:format_>", feeds),
     path("enrichment", enrichment_view),
     path("general_honeypot", general_honeypot_list),
     # router viewsets

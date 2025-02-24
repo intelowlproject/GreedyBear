@@ -76,14 +76,8 @@ class FeedRequestParams:
     def exclude_mass_scanners(self):
         self.exclude_reputation.append("mass scanner")
 
-    def set_legacy_age(self, age: str):
-        """Translates legacy age specification into max_age and min_days_seen attributes
-        and sets ordering accordingly.
-
-        Parameters:
-            age (str): Age of the data to filter (recent or persistent).
-        """
-        match age:
+    def set_prioritization(self, prioritize: str):
+        match prioritize:
             case "recent":
                 self.max_age = "3"
                 self.min_days_seen = "1"
@@ -96,6 +90,14 @@ class FeedRequestParams:
                 if "feed_type" in self.ordering:
                     self.feed_type_sorting = self.ordering
                     self.ordering = "-attack_count"
+            case "likely_to_recur":
+                self.max_age = "30"
+                self.min_days_seen = "1"
+                self.ordering = "-recurrence_probability"
+            case "most_expected_hits":
+                self.max_age = "30"
+                self.min_days_seen = "1"
+                self.ordering = "-expected_interactions"
 
 
 def get_valid_feed_types() -> frozenset[str]:
@@ -233,6 +235,8 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
                 "login_attempts",
                 "honeypots",
                 "days_seen",
+                "recurrence_probability",
+                "expected_interactions",
             }
             iocs = (ioc_as_dict(ioc, required_fields) for ioc in iocs) if isinstance(iocs, list) else iocs.values(*required_fields)
             for ioc in iocs:
