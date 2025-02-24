@@ -16,8 +16,8 @@ logger = logging.getLogger(__name__)
 
 
 @api_view([GET])
-# @authentication_classes([CookieTokenAuthentication])
-# @permission_classes([IsAuthenticated])
+@authentication_classes([CookieTokenAuthentication])
+@permission_classes([IsAuthenticated])
 def command_sequence_view(request):
     """
     View function that handles command sequence queries based on IP addresses or SHA-256 hashes.
