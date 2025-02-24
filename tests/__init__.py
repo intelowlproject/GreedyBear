@@ -74,3 +74,5 @@ class CustomTestCase(TestCase):
         # db clean
         GeneralHoneypot.objects.all().delete()
         IOC.objects.all().delete()
+        CowrieSession.objects.all().delete()
+        CommandSequence.objects.all().delete()
