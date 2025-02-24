@@ -235,15 +235,15 @@ class CommandSequenceViewTestCase(CustomTestCase):
         """Test view with a valid IP address query."""
         response = self.client.get("/api/command_sequence?query=140.246.171.141")
         self.assertEqual(response.status_code, 200)
-        self.assertIn("executed commands", response.data)
-        self.assertIn("executed by", response.data)
+        self.assertIn("executed_commands", response.data)
+        self.assertIn("executed_by", response.data)
 
     def test_ip_address_query_with_similar(self):
         """Test view with a valid IP address query including similar sequences."""
         response = self.client.get("/api/command_sequence?query=140.246.171.141&include_similar")
         self.assertEqual(response.status_code, 200)
-        self.assertIn("executed commands", response.data)
-        self.assertIn("executed by", response.data)
+        self.assertIn("executed_commands", response.data)
+        self.assertIn("executed_by", response.data)
 
     def test_nonexistent_ip_address(self):
         """Test that view returns 404 for IP with no sequences."""
