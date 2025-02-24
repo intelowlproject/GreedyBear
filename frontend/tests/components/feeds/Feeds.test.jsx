@@ -72,8 +72,8 @@ describe("Feeds component", () => {
     expect(feedTypeSelectElement).toBeInTheDocument();
     const attackTypeSelectElement = screen.getByLabelText("Attack type:");
     expect(attackTypeSelectElement).toBeInTheDocument();
-    const ageSelectElement = screen.getByLabelText("Age:");
-    expect(ageSelectElement).toBeInTheDocument();
+    const prioritizationSelectElement = screen.getByLabelText("Prioritize:");
+    expect(prioritizationSelectElement).toBeInTheDocument();
 
     const buttonRawData = screen.getByRole("link", { name: /Raw data/i });
     expect(buttonRawData).toHaveAttribute(
@@ -83,7 +83,7 @@ describe("Feeds component", () => {
 
     await user.selectOptions(feedTypeSelectElement, "log4j");
     await user.selectOptions(attackTypeSelectElement, "scanner");
-    await user.selectOptions(ageSelectElement, "persistent");
+    await user.selectOptions(prioritizationSelectElement, "persistent");
 
     await waitFor(() => {
       // check link has been changed
