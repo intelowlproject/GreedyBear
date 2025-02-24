@@ -1,3 +1,4 @@
+from api.views.utils import is_ip_address, is_sha256hash
 from greedybear.consts import FEEDS_LICENSE
 from greedybear.models import GeneralHoneypot, Statistics, viewType
 from rest_framework.test import APIClient
@@ -156,6 +157,7 @@ class StatisticsViewTestCase(CustomTestCase):
 
     @classmethod
     def tearDownClass(self):
+        super(StatisticsViewTestCase, self).tearDownClass()
         Statistics.objects.all().delete()
 
     def test_200_feeds_sources(self):
@@ -209,3 +211,96 @@ class GeneralHoneypotViewTestCase(CustomTestCase):
         response = self.client.get("/api/general_honeypot?onlyActive=true")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), ["Heralding", "Ciscoasa"])
+
+
+class CommandSequenceViewTestCase(CustomTestCase):
+    """Test cases for the command_sequence_view."""
+
+    def setUp(self):
+        # setup client
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.superuser)
+
+    def test_missing_query_parameter(self):
+        """Test that view returns BadRequest when query parameter is missing."""
+        response = self.client.get("/api/command_sequence")
+        self.assertEqual(response.status_code, 400)
+
+    def test_invalid_query_parameter(self):
+        """Test that view returns BadRequest when query parameter is invalid."""
+        response = self.client.get("/api/command_sequence?query=invalid-input}")
+        self.assertEqual(response.status_code, 400)
+
+    def test_ip_address_query(self):
+        """Test view with a valid IP address query."""
+        response = self.client.get("/api/command_sequence?query=140.246.171.141")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("executed_commands", response.data)
+        self.assertIn("executed_by", response.data)
+
+    def test_ip_address_query_with_similar(self):
+        """Test view with a valid IP address query including similar sequences."""
+        response = self.client.get("/api/command_sequence?query=140.246.171.141&include_similar")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("executed_commands", response.data)
+        self.assertIn("executed_by", response.data)
+
+    def test_nonexistent_ip_address(self):
+        """Test that view returns 404 for IP with no sequences."""
+        response = self.client.get("/api/command_sequence?query=10.0.0.1")
+        self.assertEqual(response.status_code, 404)
+
+    def test_hash_query(self):
+        """Test view with a valid hash query."""
+        response = self.client.get(f"/api/command_sequence?query={self.hash}")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("commands", response.data)
+        self.assertIn("iocs", response.data)
+
+    def test_hash_query_with_similar(self):
+        """Test view with a valid hash query including similar sequences."""
+        response = self.client.get(f"/api/command_sequence?query={self.hash}&include_similar")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("commands", response.data)
+        self.assertIn("iocs", response.data)
+
+    def test_nonexistent_hash(self):
+        """Test that view returns 404 for nonexistent hash."""
+        response = self.client.get(f"/api/command_sequence?query={'f' * 64}")
+        self.assertEqual(response.status_code, 404)
+
+
+class ValidationHelpersTestCase(CustomTestCase):
+    """Test cases for the validation helper functions."""
+
+    def test_is_ip_address_valid_ipv4(self):
+        """Test that is_ip_address returns True for valid IPv4 addresses."""
+        self.assertTrue(is_ip_address("192.168.1.1"))
+        self.assertTrue(is_ip_address("10.0.0.1"))
+        self.assertTrue(is_ip_address("127.0.0.1"))
+
+    def test_is_ip_address_valid_ipv6(self):
+        """Test that is_ip_address returns True for valid IPv6 addresses."""
+        self.assertTrue(is_ip_address("::1"))
+        self.assertTrue(is_ip_address("2001:db8::1"))
+        self.assertTrue(is_ip_address("fe80::1ff:fe23:4567:890a"))
+
+    def test_is_ip_address_invalid(self):
+        """Test that is_ip_address returns False for invalid IP addresses."""
+        self.assertFalse(is_ip_address("not-an-ip"))
+        self.assertFalse(is_ip_address("256.256.256.256"))
+        self.assertFalse(is_ip_address("192.168.0"))
+        self.assertFalse(is_ip_address("2001:xyz::1"))
+
+    def test_is_sha256hash_valid(self):
+        """Test that is_sha256hash returns True for valid SHA-256 hashes."""
+        self.assertTrue(is_sha256hash("a" * 64))
+        self.assertTrue(is_sha256hash("1234567890abcdef" * 4))
+        self.assertTrue(is_sha256hash("A" * 64))
+
+    def test_is_sha256hash_invalid(self):
+        """Test that is_sha256hash returns False for invalid SHA-256 hashes."""
+        self.assertFalse(is_sha256hash("a" * 63))  # Too short
+        self.assertFalse(is_sha256hash("a" * 65))  # Too long
+        self.assertFalse(is_sha256hash("z" * 64))  # Invalid chars
+        self.assertFalse(is_sha256hash("not-a-hash"))

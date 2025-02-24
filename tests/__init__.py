@@ -42,11 +42,12 @@ class CustomTestCase(TestCase):
         cls.ioc.save()
 
         cls.cmd_seq = ["cd foo", "ls -la"]
+        cls.hash = sha256("\n".join(cls.cmd_seq).encode()).hexdigest()
         cls.command_sequence = CommandSequence.objects.create(
             first_seen=cls.current_time,
             last_seen=cls.current_time,
             commands=cls.cmd_seq,
-            commands_hash=sha256("\n".join(cls.cmd_seq).encode()).hexdigest(),
+            commands_hash=cls.hash,
             cluster=11,
         )
         cls.command_sequence.save()
