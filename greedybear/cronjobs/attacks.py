@@ -75,6 +75,9 @@ class ExtractAttacks(ElasticJob, metaclass=ABCMeta):
             hits_by_ip[hit.src_ip].append(hit.to_dict())
         iocs = []
         for ip, hits in hits_by_ip.items():
+            # skip empty IP addresses
+            if not ip.strip():
+                continue
             dest_ports = [hit["dest_port"] for hit in hits if "dest_port" in hit]
             ioc = IOC(
                 name=ip,
