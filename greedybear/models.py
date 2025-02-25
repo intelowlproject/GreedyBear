@@ -9,6 +9,7 @@ from django.db import models
 class viewType(models.TextChoices):
     FEEDS_VIEW = "feeds"
     ENRICHMENT_VIEW = "enrichment"
+    COMMAND_SEQUENCE_VIEW = "command sequence"
 
 
 class iocType(models.TextChoices):

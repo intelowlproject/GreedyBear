@@ -1,5 +1,3 @@
-from hashlib import sha256
-
 from greedybear.models import Statistics, iocType, viewType
 
 from . import CustomTestCase
@@ -34,7 +32,7 @@ class ModelsTestCase(CustomTestCase):
         self.assertEqual(self.command_sequence.first_seen, self.current_time)
         self.assertEqual(self.command_sequence.last_seen, self.current_time)
         self.assertEqual(self.command_sequence.commands, self.cmd_seq)
-        self.assertEqual(self.command_sequence.commands_hash, sha256("\n".join(self.cmd_seq).encode()).hexdigest())
+        self.assertEqual(self.command_sequence.commands_hash, self.hash)
         self.assertEqual(self.command_sequence.cluster, 11)
 
     def test_cowrie_session_model(self):
