@@ -29,12 +29,16 @@ class CleanUp(Cronjob):
         Each deletion operation is logged with the number of affected records.
         """
         ioc_expiration_date = datetime.utcnow() - timedelta(days=IOC_RETENTION)
+        command_expiration_date = datetime.utcnow() - timedelta(days=COMMAND_SEQUENCE_RETENTION)
         session_expiration_date = datetime.utcnow() - timedelta(days=30)
         session_with_login_expiration_date = datetime.utcnow() - timedelta(days=COWRIE_SESSION_RETENTION)
-        command_expiration_date = datetime.utcnow() - timedelta(days=COMMAND_SEQUENCE_RETENTION)
 
         self.log.info(f"deleting all IOC older then {IOC_RETENTION} days")
         n = IOC.objects.filter(last_seen__lte=ioc_expiration_date).delete()[0]
+        self.log.info(f"{n} objects deleted")
+
+        self.log.info(f"deleting all command sequences older then {COMMAND_SEQUENCE_RETENTION} days")
+        n = CommandSequence.objects.filter(last_seen__lte=command_expiration_date).delete()[0]
         self.log.info(f"{n} objects deleted")
 
         self.log.info("deleting all Cowrie sessions without start time (incomplete extractions)")
@@ -45,10 +49,6 @@ class CleanUp(Cronjob):
         n = CowrieSession.objects.filter(start_time__lte=session_expiration_date, login_attempt=False).delete()[0]
         self.log.info(f"{n} objects deleted")
 
-        self.log.info(f"deleting all Cowrie sessions older then {COWRIE_SESSION_RETENTION} days")
-        n = CowrieSession.objects.filter(start_time__lte=session_with_login_expiration_date).delete()[0]
-        self.log.info(f"{n} objects deleted")
-
-        self.log.info(f"deleting all command sequences older then {COMMAND_SEQUENCE_RETENTION} days")
-        n = CommandSequence.objects.filter(last_seen__lte=command_expiration_date).delete()[0]
+        self.log.info(f"deleting all Cowrie sessions without associated commands older then {COWRIE_SESSION_RETENTION} days")
+        n = CowrieSession.objects.filter(start_time__lte=session_with_login_expiration_date, commands__isnull=True).delete()[0]
         self.log.info(f"{n} objects deleted")
