@@ -34,6 +34,7 @@ class TestClassifier(CustomTestCase):
         @property
         def untrained_model(self):
             mock = Mock()
+            mock.feature_names_in_ = FEATURES
             mock.fit.return_value = mock
             a = np.zeros((5, 2))
             a[:, 1] = [0.9, 0.8, 0.3, 0.2, 0.1]
@@ -72,6 +73,7 @@ class TestRegressor(CustomTestCase):
         @property
         def untrained_model(self):
             mock = Mock()
+            mock.feature_names_in_ = FEATURES
             mock.fit.return_value = mock
             mock.predict.return_value = np.array([0, 3, 1, 4, 2])
             return mock
