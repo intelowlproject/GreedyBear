@@ -52,7 +52,7 @@ EXTRACTION_INTERVAL=10
 CLUSTER_COWRIE_COMMAND_SEQUENCES=False
 
 # Days to keep unseen IOCs before deletion
-IOC_RETENTION = 365
+IOC_RETENTION = 3650
 
 # Days to keep Cowrie honeypot sessions with login attempts before deletion
 # Sessions without login attempts are deleted after 30 days regardless of this setting
