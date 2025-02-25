@@ -28,6 +28,7 @@ class ExtractGeneral(ExtractAttacks):
         self._healthcheck()
         self._check_first_time_run(self.hp.name.lower(), general=True)
         self._general_lookup()
+        return self.ioc_records
 
 
 class ExtractAllGenerals(ExtractAttacks):
@@ -37,4 +38,6 @@ class ExtractAllGenerals(ExtractAttacks):
 
     def run(self):
         for honeypot in self.honeypots:
-            ExtractGeneral(honeypot, self.minutes_back).run()
+            iocs = ExtractGeneral(honeypot, self.minutes_back).run()
+            self.ioc_records.extend(iocs)
+        self._update_scores()

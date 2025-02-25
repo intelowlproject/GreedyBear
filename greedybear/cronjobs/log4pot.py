@@ -155,3 +155,4 @@ class ExtractLog4Pot(ExtractAttacks):
         self._healthcheck()
         self._check_first_time_run("log4j")
         self._log4pot_lookup()
+        self._update_scores()
