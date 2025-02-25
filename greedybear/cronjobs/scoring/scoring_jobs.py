@@ -1,6 +1,7 @@
 import json
 import logging
 from collections import defaultdict
+from datetime import date
 
 import pandas as pd
 from django.core.files.base import ContentFile
@@ -8,7 +9,7 @@ from django.core.files.storage import FileSystemStorage
 from django.db.models import F, Q
 from greedybear.cronjobs.base import Cronjob
 from greedybear.cronjobs.scoring.random_forest import RFClassifier, RFRegressor
-from greedybear.cronjobs.scoring.utils import correlated_features, get_current_data, get_features
+from greedybear.cronjobs.scoring.utils import correlated_features, get_current_data, get_data_by_pks, get_features
 from greedybear.models import IOC
 from greedybear.settings import ML_MODEL_DIRECTORY
 
@@ -138,7 +139,7 @@ class UpdateScores(Cronjob):
         super().__init__()
         self.data = None
 
-    def update_db(self, df: pd.DataFrame, score_names: list[str]) -> int:
+    def update_db(self, df: pd.DataFrame) -> None:
         """
         Update IOC scores based on new data from a DataFrame.
 
@@ -149,13 +150,12 @@ class UpdateScores(Cronjob):
         Args:
             df: DataFrame containing new score data.
                 Must have a 'value' column with IOC names/IPs and columns for each score.
-            score_names: List of column names in DataFrame representing scores to update.
-                These must match the field names in the IOC model.
 
         Returns:
             int: The number of objects updated.
         """
         self.log.info("begin updating scores")
+        score_names = [s.score_name for s in SCORERS]
         scores_by_ip = df.set_index("value")[score_names].to_dict("index")
         iocs = IOC.objects.filter(Q(cowrie=True) | Q(log4j=True) | Q(general_honeypot__active=True)).filter(scanner=True).distinct().only("name", *score_names)
         iocs_to_update = []
@@ -182,6 +182,46 @@ class UpdateScores(Cronjob):
         result = IOC.objects.bulk_update(iocs_to_update, score_names, batch_size=1000) if iocs_to_update else 0
         self.log.info(f"{result} IoCs were updated")
 
+    def update_iocs(self, iocs: set[IOC], df: pd.DataFrame) -> None:
+        """
+        Update scores for a specific list of IoC objects.
+
+        Args:
+            iocs: Set of IoC objects to update
+            df: DataFrame containing new score data
+        """
+        self.log.info("begin updating scores")
+        score_names = [s.score_name for s in SCORERS]
+        scores_by_ip = df.set_index("value")[score_names].to_dict("index")
+        for ioc in iocs:
+            for score_name in score_names:
+                score = scores_by_ip[ioc.name][score_name]
+                if getattr(ioc, score_name) != score:
+                    setattr(ioc, score_name, score)
+        self.log.info(f"writing updated scores for {len(iocs)} IoCs to DB")
+        result = IOC.objects.bulk_update(iocs, score_names, batch_size=1000) if iocs else 0
+        self.log.info(f"{result} IoCs were updated")
+
+    def score_only(self, iocs: list[IOC]) -> None:
+        """
+        Update scores for only the specific IoCs provided.
+
+        Args:
+            iocs: List of IoC objects to update scores for
+
+        Returns:
+            int: Number of objects updated
+        """
+        iocs = set(iocs)
+        primary_keys = set(ioc.pk for ioc in iocs)
+        data = get_data_by_pks(primary_keys)
+        current_date = str(date.today())
+        self.log.info("extracting features")
+        df = get_features(data, current_date)
+        for s in SCORERS:
+            df = s.score(df)
+        self.update_iocs(iocs, df)
+
     def run(self):
         """
         Execute the score update pipeline.
@@ -204,5 +244,4 @@ class UpdateScores(Cronjob):
         df = get_features(self.data, current_date)
         for s in SCORERS:
             df = s.score(df)
-        score_names = [s.score_name for s in SCORERS]
-        self.update_db(df, score_names)
+        self.update_db(df)
