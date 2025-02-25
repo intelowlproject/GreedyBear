@@ -90,3 +90,13 @@ def cluster_commands():
 
     if CLUSTER_COWRIE_COMMAND_SEQUENCES:
         ClusterCommandSequences().execute()
+
+
+# CLEAN UP
+
+
+@shared_task()
+def clean_up_db():
+    from greedybear.cronjobs.cleanup import CleanUp
+
+    CleanUp().execute()

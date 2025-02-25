@@ -113,4 +113,10 @@ app.conf.beat_schedule = {
         "schedule": crontab(hour=1, minute=3),
         "options": {"queue": "default"},
     },
+    # once a day
+    "clean_up": {
+        "task": "greedybear.tasks.clean_up_db",
+        "schedule": crontab(hour=2, minute=3),
+        "options": {"queue": "default"},
+    },
 }
