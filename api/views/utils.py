@@ -6,6 +6,7 @@ import re
 from datetime import datetime, timedelta
 from ipaddress import ip_address
 
+from api.enums import Honeypots
 from api.serializers import FeedsRequestSerializer, FeedsResponseSerializer
 from django.contrib.postgres.aggregates import ArrayAgg
 from django.db.models import F, Q
@@ -110,7 +111,7 @@ def get_valid_feed_types() -> frozenset[str]:
         frozenset[str]: An immutable set of valid feed type strings
     """
     general_honeypots = GeneralHoneypot.objects.all().filter(active=True)
-    return frozenset(["log4j", "cowrie", "all"] + [hp.name.lower() for hp in general_honeypots])
+    return frozenset([Honeypots.LOG4J.value, Honeypots.COWRIE.value, "all"] + [hp.name.lower() for hp in general_honeypots])
 
 
 def get_queryset(request, feed_params, valid_feed_types):
@@ -139,7 +140,7 @@ def get_queryset(request, feed_params, valid_feed_types):
 
     query_dict = {}
     if feed_params.feed_type != "all":
-        if feed_params.feed_type in ("log4j", "cowrie"):
+        if feed_params.feed_type in (Honeypots.LOG4J.value, Honeypots.COWRIE.value):
             query_dict[feed_params.feed_type] = True
         else:
             # accept feed_type if it is in the general honeypots list
@@ -242,14 +243,13 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
             }
             iocs = (ioc_as_dict(ioc, required_fields) for ioc in iocs) if isinstance(iocs, list) else iocs.values(*required_fields)
             for ioc in iocs:
-                ioc_feed_type = feed_params.feed_type
-                if ioc_feed_type == "all":
-                    if ioc["log4j"]:
-                        ioc_feed_type = "log4j"
-                    elif ioc["cowrie"]:
-                        ioc_feed_type = "cowrie"
-                    else:
-                        ioc_feed_type = str(ioc["honeypots"][0]).lower()
+                ioc_feed_type = []
+                if ioc[Honeypots.LOG4J.value]:
+                    ioc_feed_type.append(Honeypots.LOG4J.value)
+                if ioc[Honeypots.COWRIE.value]:
+                    ioc_feed_type.append(Honeypots.COWRIE.value)
+                if len(ioc["honeypots"]):
+                    ioc_feed_type.extend([hp.lower() for hp in ioc["honeypots"] if hp is not None])
 
                 data_ = ioc | {
                     "first_seen": ioc["first_seen"].strftime("%Y-%m-%d"),
@@ -258,12 +258,12 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
                     "destination_port_count": len(ioc["destination_ports"]),
                 }
 
-                if verbose and ioc_feed_type in ["log4j", "cowrie"]:
+                if verbose and (ioc[Honeypots.LOG4J.value] or ioc[Honeypots.COWRIE.value]):
                     data_["honeypots"] = [hp for hp in data_["honeypots"] if hp is not None]
-                    if ioc["log4j"]:
-                        data_["honeypots"].append("log4j")
-                    if ioc["cowrie"]:
-                        data_["honeypots"].append("cowrie")
+                    if ioc[Honeypots.LOG4J.value]:
+                        data_["honeypots"].append(Honeypots.LOG4J.value)
+                    if ioc[Honeypots.COWRIE.value]:
+                        data_["honeypots"].append(Honeypots.COWRIE.value)
 
                 if verbose:
                     json_list.append(data_)
