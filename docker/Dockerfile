@@ -25,8 +25,9 @@ ARG WATCHMAN=false
 RUN mkdir -p ${LOG_PATH} \
     ${LOG_PATH}/django \
     ${LOG_PATH}/uwsgi \
-    # py3-psycopg2 is required to use PostgresSQL with Django
-    && apk --no-cache -U add bash py3-psycopg2 gcc python3-dev alpine-sdk linux-headers \
+    # py3-psycopg2 is required to use PostgresSQL with Django \
+    # libgomp is required to train the model
+    && apk --no-cache -U add bash py3-psycopg2 gcc python3-dev alpine-sdk linux-headers libgomp \
     && pip3 install --no-cache-dir --upgrade pip
 
 COPY requirements/project-requirements.txt $PYTHONPATH/project-requirements.txt
