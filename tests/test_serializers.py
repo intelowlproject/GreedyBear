@@ -105,7 +105,7 @@ class FeedsResponseSerializersTestCase(TestCase):
 
         for element in valid_data_choices:
             data_ = {
-                "feed_type": element[2],
+                "feed_type": [element[2]],
                 "value": "140.246.171.141",
                 SCANNER: element[0],
                 PAYLOAD_REQUEST: element[1],

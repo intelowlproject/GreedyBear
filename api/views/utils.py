@@ -242,14 +242,13 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
             }
             iocs = (ioc_as_dict(ioc, required_fields) for ioc in iocs) if isinstance(iocs, list) else iocs.values(*required_fields)
             for ioc in iocs:
-                ioc_feed_type = feed_params.feed_type
-                if ioc_feed_type == "all":
-                    if ioc["log4j"]:
-                        ioc_feed_type = "log4j"
-                    elif ioc["cowrie"]:
-                        ioc_feed_type = "cowrie"
-                    else:
-                        ioc_feed_type = str(ioc["honeypots"][0]).lower()
+                ioc_feed_type = []
+                if ioc["log4j"]:
+                    ioc_feed_type.append("log4j")
+                if ioc["cowrie"]:
+                    ioc_feed_type.append("cowrie")
+                if len(ioc["honeypots"]):
+                    ioc_feed_type.extend([hp.lower() for hp in ioc["honeypots"] if hp is not None])
 
                 data_ = ioc | {
                     "first_seen": ioc["first_seen"].strftime("%Y-%m-%d"),
@@ -258,7 +257,7 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
                     "destination_port_count": len(ioc["destination_ports"]),
                 }
 
-                if verbose and ioc_feed_type in ["log4j", "cowrie"]:
+                if verbose and (ioc["log4j"] or ioc["cowrie"]):
                     data_["honeypots"] = [hp for hp in data_["honeypots"] if hp is not None]
                     if ioc["log4j"]:
                         data_["honeypots"].append("log4j")
