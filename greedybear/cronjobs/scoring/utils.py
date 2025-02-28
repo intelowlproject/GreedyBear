@@ -81,9 +81,9 @@ def get_features(iocs: list[dict], reference_day: str) -> pd.DataFrame:
                 "asn": str(ioc["asn"]),
                 "ip_reputation": ioc["ip_reputation"],
                 # MULTI VALUE FEATURES
-                "honeypots": ioc["honeypots"],
+                "honeypots": ioc["feed_type"],
                 # NUMERICAL FEATURES
-                "honeypot_count": len(ioc["honeypots"]),
+                "honeypot_count": len(ioc["feed_type"]),
                 "destination_port_count": ioc["destination_port_count"],
                 "days_seen_count": days_seen_count,
                 "active_timespan": active_timespan,
