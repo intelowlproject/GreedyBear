@@ -139,28 +139,38 @@ class UpdateScores(Cronjob):
         super().__init__()
         self.data = None
 
-    def update_db(self, df: pd.DataFrame) -> None:
+    def update_db(self, df: pd.DataFrame, iocs: set[IOC] = None) -> int:
         """
-        Update IOC scores based on new data from a DataFrame.
+        Update IOC scores in the database based on new data from a DataFrame.
 
-        For each scanner IOC that is either in Cowrie, Log4j, or an active general honeypot:
-        - If the IOC exists in the DataFrame: updates its scores with new values
-        - If the IOC is not in the DataFrame: resets any existing non-zero scores to 0
+        This method handles two use cases:
+        1. Full update: When no iocs are provided, fetches all qualifying IoCs from the database
+           and updates their scores. IoCs missing from the new data have their scores reset to 0.
+        2. Targeted update: When specific iocs are provided, updates only those IoCs
+           without resetting scores for missing IoCs.
 
         Args:
             df: DataFrame containing new score data.
                 Must have a 'value' column with IOC names/IPs and columns for each score.
+            iocs: Optional set of specific IOC objects to update. If None, all qualifying
+                  IoCs from the database will be updated and missing ones reset.
 
         Returns:
-            int: The number of objects updated.
+            int: The number of objects updated in the database.
         """
         self.log.info("begin updating scores")
+        reset_old_scores = False
         score_names = [s.score_name for s in SCORERS]
         scores_by_ip = df.set_index("value")[score_names].to_dict("index")
-        iocs = IOC.objects.filter(Q(cowrie=True) | Q(log4j=True) | Q(general_honeypot__active=True)).filter(scanner=True).distinct().only("name", *score_names)
+        # If no IoCs were passed as an argument, fetch all IoCs
+        if iocs is None:
+            iocs = (
+                IOC.objects.filter(Q(cowrie=True) | Q(log4j=True) | Q(general_honeypot__active=True)).filter(scanner=True).distinct().only("name", *score_names)
+            )
+            reset_old_scores = True
         iocs_to_update = []
 
-        self.log.info(f"checking {iocs.count()} IoCs")
+        self.log.info(f"checking {len(iocs)} IoCs")
         for ioc in iocs:
             updated = False
             # Update scores if IP exists in new data
@@ -171,7 +181,7 @@ class UpdateScores(Cronjob):
                         setattr(ioc, score_name, score)
                         updated = True
             # Reset old scores to 0
-            else:
+            elif reset_old_scores:
                 for score_name in score_names:
                     if getattr(ioc, score_name) > 0:
                         setattr(ioc, score_name, 0)
@@ -181,26 +191,7 @@ class UpdateScores(Cronjob):
         self.log.info(f"writing updated scores for {len(iocs_to_update)} IoCs to DB")
         result = IOC.objects.bulk_update(iocs_to_update, score_names, batch_size=1000) if iocs_to_update else 0
         self.log.info(f"{result} IoCs were updated")
-
-    def update_iocs(self, iocs: set[IOC], df: pd.DataFrame) -> None:
-        """
-        Update scores for a specific list of IoC objects.
-
-        Args:
-            iocs: Set of IoC objects to update
-            df: DataFrame containing new score data
-        """
-        self.log.info("begin updating scores")
-        score_names = [s.score_name for s in SCORERS]
-        scores_by_ip = df.set_index("value")[score_names].to_dict("index")
-        for ioc in iocs:
-            for score_name in score_names:
-                score = scores_by_ip[ioc.name][score_name]
-                if getattr(ioc, score_name) != score:
-                    setattr(ioc, score_name, score)
-        self.log.info(f"writing updated scores for {len(iocs)} IoCs to DB")
-        result = IOC.objects.bulk_update(iocs, score_names, batch_size=1000) if iocs else 0
-        self.log.info(f"{result} IoCs were updated")
+        return result
 
     def score_only(self, iocs: list[IOC]) -> None:
         """
@@ -220,7 +211,7 @@ class UpdateScores(Cronjob):
         df = get_features(data, current_date)
         for s in SCORERS:
             df = s.score(df)
-        self.update_iocs(iocs, df)
+        self.update_db(df, iocs)
 
     def run(self):
         """
