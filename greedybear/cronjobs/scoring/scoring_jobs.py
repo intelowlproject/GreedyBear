@@ -193,7 +193,7 @@ class UpdateScores(Cronjob):
         self.log.info(f"{result} IoCs were updated")
         return result
 
-    def score_only(self, iocs: list[IOC]) -> None:
+    def score_only(self, iocs: list[IOC]) -> int:
         """
         Update scores for only the specific IoCs provided.
 
@@ -211,7 +211,7 @@ class UpdateScores(Cronjob):
         df = get_features(data, current_date)
         for s in SCORERS:
             df = s.score(df)
-        self.update_db(df, iocs)
+        return self.update_db(df, iocs)
 
     def run(self):
         """
