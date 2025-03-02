@@ -212,7 +212,7 @@ class UpdateScores(Cronjob):
         primary_keys = set(ioc.pk for ioc in iocs)
         data = get_data_by_pks(primary_keys)
         current_date = str(date.today())
-        self.log.info("extracting features")
+        self.log.info("extracting features: score_only")
         df = get_features(data, current_date)
         for s in SCORERS:
             df = s.score(df)
