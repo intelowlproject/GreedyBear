@@ -91,11 +91,16 @@ class TrainModels(Cronjob):
 
         training_data = self.load_training_data()
         if not training_data:
-            self.log.info("no training data found, skip training")
+            self.log.warning("no training data found, skip training")
             self.save_training_data()
             return
 
-        training_date = max(row["last_seen"] for row in training_data)
+        if not isinstance(training_data[0]["feed_type"], list):
+            self.log.warning("training data outdated, skip training")
+            self.save_training_data()
+            return
+
+        training_date = max(ioc["last_seen"] for ioc in training_data)
         training_ips = {ioc["value"]: ioc["interaction_count"] for ioc in training_data}
         self.log.info(f"training data is from {training_date}, contains {len(training_data)} IoCs")
 

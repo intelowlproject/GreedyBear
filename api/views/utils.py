@@ -258,13 +258,6 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
                     "destination_port_count": len(ioc["destination_ports"]),
                 }
 
-                if verbose and (ioc[Honeypots.LOG4J.value] or ioc[Honeypots.COWRIE.value]):
-                    data_["honeypots"] = [hp for hp in data_["honeypots"] if hp is not None]
-                    if ioc[Honeypots.LOG4J.value]:
-                        data_["honeypots"].append(Honeypots.LOG4J.value)
-                    if ioc[Honeypots.COWRIE.value]:
-                        data_["honeypots"].append(Honeypots.COWRIE.value)
-
                 if verbose:
                     json_list.append(data_)
                     continue
