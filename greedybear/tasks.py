@@ -56,10 +56,9 @@ def chain_train_and_update():
 
     trainer = TrainModels()
     trainer.execute()
-    current_data = trainer.current_data
 
     updater = UpdateScores()
-    updater.data = current_data
+    updater.data = trainer.current_data
     updater.execute()
 
 
