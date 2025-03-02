@@ -52,34 +52,17 @@ def monitor_logs():
 
 
 # SCORING
-
-
 @shared_task()
-def train_models():
-    from greedybear.cronjobs.scoring.scoring_jobs import TrainModels
+def chain_train_and_update():
+    from greedybear.cronjobs.scoring.scoring_jobs import TrainModels, UpdateScores
 
     trainer = TrainModels()
     trainer.execute()
-    return trainer.current_data
-
-
-@shared_task()
-def update_scores(current_data=None):
-    from greedybear.cronjobs.scoring.scoring_jobs import UpdateScores
+    current_data = trainer.current_data
 
     updater = UpdateScores()
     updater.data = current_data
     updater.execute()
-
-
-@shared_task()
-def chain_train_and_update():
-    """Chain the training and scoring tasks"""
-    return chain(
-        train_models.s(),
-        update_scores.s(),
-    )()
-
 
 # COMMANDS
 
