@@ -21,8 +21,6 @@ def extract_cowrie():
 
 
 # FEEDS
-
-
 @shared_task()
 def extract_general():
     from greedybear.cronjobs.general import ExtractAllGenerals
@@ -52,38 +50,19 @@ def monitor_logs():
 
 
 # SCORING
-
-
 @shared_task()
-def train_models():
-    from greedybear.cronjobs.scoring.scoring_jobs import TrainModels
+def chain_train_and_update():
+    from greedybear.cronjobs.scoring.scoring_jobs import TrainModels, UpdateScores
 
     trainer = TrainModels()
     trainer.execute()
-    return trainer.current_data
-
-
-@shared_task()
-def update_scores(current_data=None):
-    from greedybear.cronjobs.scoring.scoring_jobs import UpdateScores
 
     updater = UpdateScores()
-    updater.data = current_data
+    updater.data = trainer.current_data
     updater.execute()
 
 
-@shared_task()
-def chain_train_and_update():
-    """Chain the training and scoring tasks"""
-    return chain(
-        train_models.s(),
-        update_scores.s(),
-    )()
-
-
 # COMMANDS
-
-
 @shared_task()
 def cluster_commands():
     from greedybear.cronjobs.commands.cluster import ClusterCommandSequences
@@ -93,8 +72,6 @@ def cluster_commands():
 
 
 # CLEAN UP
-
-
 @shared_task()
 def clean_up_db():
     from greedybear.cronjobs.cleanup import CleanUp
