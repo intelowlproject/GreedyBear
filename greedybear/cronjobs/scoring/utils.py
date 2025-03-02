@@ -126,7 +126,48 @@ def multi_label_encode(df: pd.DataFrame, column_name: str) -> pd.DataFrame:
     return result_df.drop(column_name, axis=1)
 
 
-def get_current_data(days_lookback: int = 30) -> dict:
+def serialize_iocs(iocs: list[dict]) -> list[dict]:
+    """
+    Serialize IOC values using an API method.
+
+    Args:
+        iocs: List of IOC values.
+
+    Returns:
+        list: Serialized IOC data including associated honeypot names.
+              Processed through feeds_response API method.
+    """
+    return feeds_response(
+        iocs=iocs,
+        feed_params=FeedRequestParams({}),  # using defaults from FeedRequestParams
+        valid_feed_types={},  # not required as check is skipped due to the verbose argument
+        dict_only=True,
+        verbose=True,
+    )["iocs"]
+
+
+def get_data_by_pks(primary_keys: set) -> list[dict]:
+    """
+    Retrieve and serialize IOC data for a collection of primary keys.
+
+    Args:
+        primary_keys: A set of IOC primary keys to retrieve from the database.
+
+    Returns:
+        list: Serialized IOC data including associated honeypot names.
+              Processed through feeds_response API method.
+    """
+    iocs = (
+        IOC.objects.filter(pk__in=primary_keys)
+        .prefetch_related("general_honeypot")
+        .annotate(value=F("name"))
+        .annotate(honeypots=ArrayAgg("general_honeypot__name"))
+        .values()
+    )
+    return serialize_iocs(iocs)
+
+
+def get_current_data(days_lookback: int = 30) -> list[dict]:
     """
     Get current IOC data for scanners seen in the last N days.
 
@@ -140,7 +181,7 @@ def get_current_data(days_lookback: int = 30) -> dict:
             Defaults to 30 days.
 
     Returns:
-        dict: Serialized IOC data including associated honeypot names.
+        list: Serialized IOC data including associated honeypot names.
               Processed through feeds_response API method.
     """
     cutoff_date = datetime.utcnow() - timedelta(days=days_lookback)
@@ -156,11 +197,4 @@ def get_current_data(days_lookback: int = 30) -> dict:
         .annotate(honeypots=ArrayAgg("general_honeypot__name"))
         .values()
     )
-    # use API method for serialization
-    return feeds_response(
-        iocs=iocs,
-        feed_params=FeedRequestParams({}),  # using defaults from FeedRequestParams
-        valid_feed_types={},  # not required as check is skipped due to the verbose argument
-        dict_only=True,
-        verbose=True,
-    )["iocs"]
+    return serialize_iocs(iocs)

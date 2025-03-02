@@ -71,6 +71,27 @@ class MLModel(Scorer):
                 self.log.error(f"failed to save model for {self.name}")
                 raise exc
 
+    def add_missing_features(self, df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Add missing features to the input DataFrame and ensure correct column order.
+
+        Adds any features that were present during model training but missing in the
+        input DataFrame with a default value of 0. Ensures columns are in the order
+        expected by the model.
+
+        Args:
+            df: Input DataFrame that may be missing some model features
+
+        Returns:
+            DataFrame with all required features in the correct order
+        """
+        train_features = self.model.feature_names_in_
+        missing_features = set(train_features) - set(df.columns)
+        for feature in missing_features:
+            self.log.debug(f"add default value for missing feature {feature}")
+            df[feature] = 0
+        return df[train_features]
+
     def score(self, df: pd.DataFrame) -> pd.DataFrame:
         """
         Score input data using the trained model.
@@ -97,6 +118,7 @@ class MLModel(Scorer):
         X = df[self.features].copy()
         for feature in MULTI_VAL_FEATURES:
             X = multi_label_encode(X, feature)
+            X = self.add_missing_features(X)
 
         result_df = df.copy()
         result_df[self.score_name] = self.predict(X)

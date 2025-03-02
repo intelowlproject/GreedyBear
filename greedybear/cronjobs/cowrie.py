@@ -184,3 +184,4 @@ class ExtractCowrie(ExtractAttacks):
         self._healthcheck()
         self._check_first_time_run("cowrie")
         self._cowrie_lookup()
+        self._update_scores()

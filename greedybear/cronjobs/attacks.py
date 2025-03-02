@@ -7,6 +7,7 @@ from ipaddress import IPv4Address
 
 from greedybear.consts import DOMAIN, IP, PAYLOAD_REQUEST, SCANNER
 from greedybear.cronjobs.base import ElasticJob
+from greedybear.cronjobs.scoring.scoring_jobs import UpdateScores
 from greedybear.cronjobs.sensors import ExtractSensors
 from greedybear.models import IOC, GeneralHoneypot, Sensors
 from greedybear.settings import EXTRACTION_INTERVAL, LEGACY_EXTRACTION
@@ -18,6 +19,7 @@ class ExtractAttacks(ElasticJob, metaclass=ABCMeta):
         self.first_time_run = False
         self.minutes_back = minutes_back
         self.whitelist = set(Sensors.objects.all())
+        self.ioc_records = []
 
     @property
     def minutes_back_to_lookup(self):
@@ -63,6 +65,7 @@ class ExtractAttacks(ElasticJob, metaclass=ABCMeta):
         ioc_record.scanner = attack_type == SCANNER
         ioc_record.payload_request = attack_type == PAYLOAD_REQUEST
         ioc_record.save()
+        self.ioc_records.append(ioc_record)
         return ioc_record
 
     def _get_attacker_data(self, honeypot, fields: list) -> list:
@@ -94,6 +97,12 @@ class ExtractAttacks(ElasticJob, metaclass=ABCMeta):
                 ioc.last_seen = datetime.fromisoformat(max(timestamps))
             iocs.append(ioc)
         return iocs
+
+    def _update_scores(self):
+        if not self.ioc_records:
+            return
+        updater = UpdateScores()
+        updater.score_only(self.ioc_records)
 
     def _get_ioc_type(self, ioc):
         try:
