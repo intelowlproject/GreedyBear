@@ -54,7 +54,7 @@ class FeedRequestParams:
         ordering (str): Field to order results by (default: "-last_seen")
         verbose (str): Whether to include IOC properties that contain a lot of data (default: "false")
         paginate (str): Whether to paginate results (default: "false")
-        format (str): Response format type (default: "json")
+        format_ (str): Response format type (default: "json")
     """
 
     def __init__(self, query_params: dict):
