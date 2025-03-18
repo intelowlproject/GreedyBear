@@ -11,7 +11,7 @@ django-ses==4.4.0
 psycopg2-binary==2.9.10
 
 certego-saas==0.7.11
-slack-sdk==3.34.0
+slack-sdk==3.35.0
 
 uwsgitop==0.12
 uwsgi==2.0.28
