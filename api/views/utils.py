@@ -149,7 +149,7 @@ def get_queryset(request, feed_params, valid_feed_types):
     if feed_params.attack_type != "all":
         query_dict[feed_params.attack_type] = True
 
-    query_dict["last_seen__gte"] = datetime.utcnow() - timedelta(days=int(feed_params.max_age))
+    query_dict["last_seen__gte"] = datetime.now() - timedelta(days=int(feed_params.max_age))
     if int(feed_params.min_days_seen) > 1:
         query_dict["number_of_days_seen__gte"] = int(feed_params.min_days_seen)
     if feed_params.include_reputation:

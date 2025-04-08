@@ -28,10 +28,10 @@ class CleanUp(Cronjob):
 
         Each deletion operation is logged with the number of affected records.
         """
-        ioc_expiration_date = datetime.utcnow() - timedelta(days=IOC_RETENTION)
-        command_expiration_date = datetime.utcnow() - timedelta(days=COMMAND_SEQUENCE_RETENTION)
-        session_expiration_date = datetime.utcnow() - timedelta(days=30)
-        session_with_login_expiration_date = datetime.utcnow() - timedelta(days=COWRIE_SESSION_RETENTION)
+        ioc_expiration_date = datetime.now() - timedelta(days=IOC_RETENTION)
+        command_expiration_date = datetime.now() - timedelta(days=COMMAND_SEQUENCE_RETENTION)
+        session_expiration_date = datetime.now() - timedelta(days=30)
+        session_with_login_expiration_date = datetime.now() - timedelta(days=COWRIE_SESSION_RETENTION)
 
         self.log.info(f"deleting all IOC older then {IOC_RETENTION} days")
         n = IOC.objects.filter(last_seen__lte=ioc_expiration_date).delete()[0]
