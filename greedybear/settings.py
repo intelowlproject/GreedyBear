@@ -41,9 +41,9 @@ else:
 if ELASTIC_ENDPOINT and not STAGE_CI:
     ELASTIC_CLIENT = Elasticsearch(
         ELASTIC_ENDPOINT,
-        maxsize=20,
+        connections_per_node=20,
         retry_on_timeout=True,
-        timeout=30,
+        request_timeout=30,
     )
 else:
     ELASTIC_CLIENT = None
