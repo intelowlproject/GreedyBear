@@ -32,7 +32,7 @@ RUN mkdir -p ${LOG_PATH} \
 
 COPY requirements/project-requirements.txt $PYTHONPATH/project-requirements.txt
 WORKDIR $PYTHONPATH
-RUN pip3 install --no-cache-dir --compile -r $PYTHONPATH/project-requirements.txt
+RUN pip3 install --no-cache-dir -r $PYTHONPATH/project-requirements.txt
 
 COPY . $PYTHONPATH
 COPY --from=frontend-build /build /var/www/reactapp
