@@ -4,7 +4,7 @@ celery==5.4.0
 elasticsearch-dsl==8.17.1
 
 Django==4.2.20
-djangorestframework==3.15.2
+djangorestframework==3.16.0
 django-rest-email-auth==4.0.3
 django-ses==4.4.0
 
