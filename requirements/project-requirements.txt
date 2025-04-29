@@ -1,4 +1,4 @@
-celery==5.4.0
+celery==5.5.2
 
 # if you change this, update the documentation
 elasticsearch-dsl==8.17.1
