@@ -184,7 +184,7 @@ def get_current_data(days_lookback: int = 30) -> list[dict]:
         list: Serialized IOC data including associated honeypot names.
               Processed through feeds_response API method.
     """
-    cutoff_date = datetime.utcnow() - timedelta(days=days_lookback)
+    cutoff_date = datetime.now() - timedelta(days=days_lookback)
     query_dict = {
         "last_seen__gte": cutoff_date,
         "scanner": True,

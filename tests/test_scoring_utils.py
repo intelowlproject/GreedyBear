@@ -82,7 +82,7 @@ class TestFeatExtraction(CustomTestCase):
 
     def test_feature_extraction(self):
         """Test with sample IoCs"""
-        today = datetime.utcnow().strftime("%Y-%m-%d")
+        today = datetime.now().strftime("%Y-%m-%d")
         data = get_current_data()
         features = get_features(data, today).to_dict("records")
         self.assertEqual(features[0]["value"], "140.246.171.141")
@@ -112,7 +112,7 @@ class TestFeatExtraction(CustomTestCase):
 class TestMultiLabelEncode(CustomTestCase):
     def test_multi_label_encode_ioc(self):
         """Test with sample IoCs"""
-        today = datetime.utcnow().strftime("%Y-%m-%d")
+        today = datetime.now().strftime("%Y-%m-%d")
         data = get_current_data()
         features = get_features(data, today)
         features = multi_label_encode(features, "honeypots").to_dict("records")
