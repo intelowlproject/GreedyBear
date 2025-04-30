@@ -6,6 +6,7 @@ import re
 from datetime import datetime, timedelta
 from ipaddress import ip_address
 
+from api.enums import Honeypots
 from api.serializers import FeedsRequestSerializer, FeedsResponseSerializer
 from django.contrib.postgres.aggregates import ArrayAgg
 from django.db.models import F, Q
@@ -53,7 +54,7 @@ class FeedRequestParams:
         ordering (str): Field to order results by (default: "-last_seen")
         verbose (str): Whether to include IOC properties that contain a lot of data (default: "false")
         paginate (str): Whether to paginate results (default: "false")
-        format (str): Response format type (default: "json")
+        format_ (str): Response format type (default: "json")
     """
 
     def __init__(self, query_params: dict):
@@ -110,7 +111,7 @@ def get_valid_feed_types() -> frozenset[str]:
         frozenset[str]: An immutable set of valid feed type strings
     """
     general_honeypots = GeneralHoneypot.objects.all().filter(active=True)
-    return frozenset(["log4j", "cowrie", "all"] + [hp.name.lower() for hp in general_honeypots])
+    return frozenset([Honeypots.LOG4J.value, Honeypots.COWRIE.value, "all"] + [hp.name.lower() for hp in general_honeypots])
 
 
 def get_queryset(request, feed_params, valid_feed_types):
@@ -139,7 +140,7 @@ def get_queryset(request, feed_params, valid_feed_types):
 
     query_dict = {}
     if feed_params.feed_type != "all":
-        if feed_params.feed_type in ("log4j", "cowrie"):
+        if feed_params.feed_type in (Honeypots.LOG4J.value, Honeypots.COWRIE.value):
             query_dict[feed_params.feed_type] = True
         else:
             # accept feed_type if it is in the general honeypots list
@@ -148,7 +149,7 @@ def get_queryset(request, feed_params, valid_feed_types):
     if feed_params.attack_type != "all":
         query_dict[feed_params.attack_type] = True
 
-    query_dict["last_seen__gte"] = datetime.utcnow() - timedelta(days=int(feed_params.max_age))
+    query_dict["last_seen__gte"] = datetime.now() - timedelta(days=int(feed_params.max_age))
     if int(feed_params.min_days_seen) > 1:
         query_dict["number_of_days_seen__gte"] = int(feed_params.min_days_seen)
     if feed_params.include_reputation:
@@ -242,14 +243,13 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
             }
             iocs = (ioc_as_dict(ioc, required_fields) for ioc in iocs) if isinstance(iocs, list) else iocs.values(*required_fields)
             for ioc in iocs:
-                ioc_feed_type = feed_params.feed_type
-                if ioc_feed_type == "all":
-                    if ioc["log4j"]:
-                        ioc_feed_type = "log4j"
-                    elif ioc["cowrie"]:
-                        ioc_feed_type = "cowrie"
-                    else:
-                        ioc_feed_type = str(ioc["honeypots"][0]).lower()
+                ioc_feed_type = []
+                if ioc[Honeypots.LOG4J.value]:
+                    ioc_feed_type.append(Honeypots.LOG4J.value)
+                if ioc[Honeypots.COWRIE.value]:
+                    ioc_feed_type.append(Honeypots.COWRIE.value)
+                if len(ioc["honeypots"]):
+                    ioc_feed_type.extend([hp.lower() for hp in ioc["honeypots"] if hp is not None])
 
                 data_ = ioc | {
                     "first_seen": ioc["first_seen"].strftime("%Y-%m-%d"),
@@ -257,13 +257,6 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
                     "feed_type": ioc_feed_type,
                     "destination_port_count": len(ioc["destination_ports"]),
                 }
-
-                if verbose and ioc_feed_type in ["log4j", "cowrie"]:
-                    data_["honeypots"] = [hp for hp in data_["honeypots"] if hp is not None]
-                    if ioc["log4j"]:
-                        data_["honeypots"].append("log4j")
-                    if ioc["cowrie"]:
-                        data_["honeypots"].append("cowrie")
 
                 if verbose:
                     json_list.append(data_)

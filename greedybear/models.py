@@ -32,8 +32,8 @@ class GeneralHoneypot(models.Model):
 class IOC(models.Model):
     name = models.CharField(max_length=256, blank=False)
     type = models.CharField(max_length=32, blank=False, choices=iocType.choices)
-    first_seen = models.DateTimeField(blank=False, default=datetime.utcnow)
-    last_seen = models.DateTimeField(blank=False, default=datetime.utcnow)
+    first_seen = models.DateTimeField(blank=False, default=datetime.now)
+    last_seen = models.DateTimeField(blank=False, default=datetime.now)
     days_seen = pg_fields.ArrayField(models.DateField(), blank=True, default=list)
     number_of_days_seen = models.IntegerField(default=1)
     attack_count = models.IntegerField(default=1)
@@ -64,8 +64,8 @@ class IOC(models.Model):
 
 
 class CommandSequence(models.Model):
-    first_seen = models.DateTimeField(blank=False, default=datetime.utcnow)
-    last_seen = models.DateTimeField(blank=False, default=datetime.utcnow)
+    first_seen = models.DateTimeField(blank=False, default=datetime.now)
+    last_seen = models.DateTimeField(blank=False, default=datetime.now)
     commands = pg_fields.ArrayField(models.CharField(max_length=1024, blank=True), blank=False, null=False, default=list)
     commands_hash = models.CharField(max_length=64, unique=True, blank=True, null=True)
     cluster = models.IntegerField(blank=True, null=True)
@@ -100,4 +100,4 @@ class Statistics(models.Model):
         choices=viewType.choices,
         default=viewType.FEEDS_VIEW.value,
     )
-    request_date = models.DateTimeField(blank=False, default=datetime.utcnow)
+    request_date = models.DateTimeField(blank=False, default=datetime.now)

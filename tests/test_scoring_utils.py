@@ -82,7 +82,7 @@ class TestFeatExtraction(CustomTestCase):
 
     def test_feature_extraction(self):
         """Test with sample IoCs"""
-        today = datetime.utcnow().strftime("%Y-%m-%d")
+        today = datetime.now().strftime("%Y-%m-%d")
         data = get_current_data()
         features = get_features(data, today).to_dict("records")
         self.assertEqual(features[0]["value"], "140.246.171.141")
@@ -93,7 +93,7 @@ class TestFeatExtraction(CustomTestCase):
         self.assertEqual(str(features[0]["days_seen"][0]), today)
         self.assertEqual(features[0]["asn"], "12345")
         self.assertEqual(features[0]["ip_reputation"], "mass scanner")
-        self.assertEqual(set(features[0]["honeypots"]), set(["Heralding", "Ciscoasa", "log4j", "cowrie"]))
+        self.assertEqual(set(features[0]["honeypots"]), set(["heralding", "ciscoasa", "log4j", "cowrie"]))
         self.assertEqual(features[0]["honeypot_count"], 4)
         self.assertEqual(features[0]["destination_port_count"], 3)
         self.assertEqual(features[0]["days_seen_count"], 1)
@@ -112,11 +112,11 @@ class TestFeatExtraction(CustomTestCase):
 class TestMultiLabelEncode(CustomTestCase):
     def test_multi_label_encode_ioc(self):
         """Test with sample IoCs"""
-        today = datetime.utcnow().strftime("%Y-%m-%d")
+        today = datetime.now().strftime("%Y-%m-%d")
         data = get_current_data()
         features = get_features(data, today)
         features = multi_label_encode(features, "honeypots").to_dict("records")
-        for h in ["Heralding", "Ciscoasa", "log4j", "cowrie"]:
+        for h in ["heralding", "ciscoasa", "log4j", "cowrie"]:
             self.assertEqual(features[0][f"has_{h}"], 1)
 
     def test_multi_label_encode_sample(self):

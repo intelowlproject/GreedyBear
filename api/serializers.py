@@ -115,7 +115,7 @@ class FeedsRequestSerializer(serializers.Serializer):
 
 
 class FeedsResponseSerializer(serializers.Serializer):
-    feed_type = serializers.CharField(max_length=120)
+    feed_type = serializers.ListField(child=serializers.CharField(max_length=120))
     value = serializers.CharField(max_length=256)
     scanner = serializers.BooleanField()
     payload_request = serializers.BooleanField()
@@ -132,4 +132,4 @@ class FeedsResponseSerializer(serializers.Serializer):
 
     def validate_feed_type(self, feed_type):
         logger.debug(f"FeedsResponseSerializer - validation feed_type: '{feed_type}'")
-        return feed_type_validation(feed_type, self.context["valid_feed_types"])
+        return [feed_type_validation(feed, self.context["valid_feed_types"]) for feed in feed_type]

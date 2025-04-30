@@ -14,7 +14,7 @@ class CustomTestCase(TestCase):
         cls.heralding = GeneralHoneypot.objects.create(name="Heralding", active=True)
         cls.ciscoasa = GeneralHoneypot.objects.create(name="Ciscoasa", active=True)
 
-        cls.current_time = datetime.utcnow()
+        cls.current_time = datetime.now()
         cls.ioc = IOC.objects.create(
             name="140.246.171.141",
             type=iocType.IP.value,

@@ -50,3 +50,13 @@ EXTRACTION_INTERVAL=10
 # Set True to cluster command sequences recorded by Cowrie once a day
 # This might be computationaly expensive on large Databases
 CLUSTER_COWRIE_COMMAND_SEQUENCES=False
+
+# Days to keep unseen IOCs before deletion
+IOC_RETENTION = 3650
+
+# Days to keep Cowrie honeypot sessions with login attempts before deletion
+# Sessions without login attempts are deleted after 30 days regardless of this setting
+COWRIE_SESSION_RETENTION = 365
+
+# Days to keep unseen command sequences before deletion
+COMMAND_SEQUENCE_RETENTION = 365

@@ -41,9 +41,9 @@ else:
 if ELASTIC_ENDPOINT and not STAGE_CI:
     ELASTIC_CLIENT = Elasticsearch(
         ELASTIC_ENDPOINT,
-        maxsize=20,
+        connections_per_node=20,
         retry_on_timeout=True,
-        timeout=30,
+        request_timeout=30,
     )
 else:
     ELASTIC_CLIENT = None
@@ -219,8 +219,6 @@ LANGUAGE_CODE = "en-us"
 TIME_ZONE = "UTC"
 
 USE_I18N = True
-
-USE_L10N = True
 
 USE_TZ = False
 
@@ -411,3 +409,7 @@ else:
 LEGACY_EXTRACTION = os.environ.get("LEGACY_EXTRACTION", "False") == "True"
 EXTRACTION_INTERVAL = int(os.environ.get("EXTRACTION_INTERVAL", 10))
 CLUSTER_COWRIE_COMMAND_SEQUENCES = os.environ.get("CLUSTER_COWRIE_COMMAND_SEQUENCES", "False") == "True"
+
+IOC_RETENTION = int(os.environ.get("IOC_RETENTION", "3650"))
+COWRIE_SESSION_RETENTION = int(os.environ.get("COWRIE_SESSION_RETENTION", "365"))
+COMMAND_SEQUENCE_RETENTION = int(os.environ.get("COMMAND_SEQUENCE_RETENTION", "365"))

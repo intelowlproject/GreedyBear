@@ -13,7 +13,7 @@ RUN npm install
 RUN PUBLIC_URL=/static/reactapp/ npm run build
 
 # Stage 2: Backend
-FROM python:3.11.9-alpine3.20
+FROM python:3.13-alpine3.21
 
 ENV PYTHONUNBUFFERED=1
 ENV DJANGO_SETTINGS_MODULE=greedybear.settings
@@ -25,13 +25,14 @@ ARG WATCHMAN=false
 RUN mkdir -p ${LOG_PATH} \
     ${LOG_PATH}/django \
     ${LOG_PATH}/uwsgi \
-    # py3-psycopg2 is required to use PostgresSQL with Django
-    && apk --no-cache -U add bash py3-psycopg2 gcc python3-dev alpine-sdk linux-headers \
+    # py3-psycopg2 is required to use PostgresSQL with Django \
+    # libgomp is required to train the model
+    && apk --no-cache -U add bash py3-psycopg2 gcc python3-dev alpine-sdk linux-headers libgomp \
     && pip3 install --no-cache-dir --upgrade pip
 
 COPY requirements/project-requirements.txt $PYTHONPATH/project-requirements.txt
 WORKDIR $PYTHONPATH
-RUN pip3 install --no-cache-dir --compile -r $PYTHONPATH/project-requirements.txt
+RUN pip3 install --no-cache-dir -r $PYTHONPATH/project-requirements.txt
 
 COPY . $PYTHONPATH
 COPY --from=frontend-build /build /var/www/reactapp

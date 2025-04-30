@@ -44,7 +44,7 @@ services:
       - uwsgi
 
   rabbitmq:
-    image: library/rabbitmq:3.12-alpine
+    image: library/rabbitmq:4-alpine
     container_name: greedybear_rabbitmq
     volumes:
       - ../configuration/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
