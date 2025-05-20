@@ -45,7 +45,7 @@ In this way, you are able to provide new feeds of your own.
 
 To install it locally, Please refer to our [installation guide](https://intelowlproject.github.io/docs/GreedyBear/Installation/)
 
-## Sponsors
+## Sponsors and Acknowledgements
 
 #### Certego
 
@@ -53,7 +53,7 @@ To install it locally, Please refer to our [installation guide](https://intelowl
 
 [Certego](https://www.certego.net/?utm_source=greedybear) is a MDR (Managed Detection and Response) and Threat Intelligence Provider based in Italy.
 
-Started as a personal Christmas project from [Matteo Lodi](https://twitter.com/matte_lodi), since then GreedyBear is being improved mainly thanks to the efforts of the Certego Threat Intelligence Team.
+Started as a personal Christmas project from [Matteo Lodi](https://twitter.com/matte_lodi), since then GreedyBear is being maintained mainly thanks to the efforts of the Certego Threat Intelligence Team.
 
 #### The Honeynet Project
 
@@ -61,6 +61,12 @@ Started as a personal Christmas project from [Matteo Lodi](https://twitter.com/m
 
 [The Honeynet Project](https://www.honeynet.org) is a non-profit organization working on creating open source cyber security tools and sharing knowledge about cyber threats.
 
+Thanks to [The Honeynet Project](https://www.honeynet.org) we are providing free public feeds available [here](https://greedybear.honeynet.org).
+
 #### DigitalOcean
 
 In 2022 we joined the official [DigitalOcean Open Source Program](https://www.digitalocean.com/open-source?utm_medium=opensource&utm_source=IntelOwl).
+
+#### Key Contributor
+
+Special thanks to [Tim](https://github.com/regulartim) for having greatly improved the project and added Machine Learning Models during his master thesis.
