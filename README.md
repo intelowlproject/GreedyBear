@@ -47,14 +47,6 @@ To install it locally, Please refer to our [installation guide](https://intelowl
 
 ## Sponsors and Acknowledgements
 
-#### Certego
-
-<a href="https://www.certego.net/?utm_source=greedybear"> <img style="margin-right: 2px" width=250 height=71 src="static/Certego.png" alt="Certego Logo"/></a>
-
-[Certego](https://www.certego.net/?utm_source=greedybear) is a MDR (Managed Detection and Response) and Threat Intelligence Provider based in Italy.
-
-Started as a personal Christmas project from [Matteo Lodi](https://twitter.com/matte_lodi), since then GreedyBear is being maintained mainly thanks to the efforts of the Certego Threat Intelligence Team.
-
 #### The Honeynet Project
 
 <a href="https://www.honeynet.org"> <img style="border: 0.2px solid black" width=125 height=125 src="static/honeynet_logo.png" alt="Honeynet.org logo"> </a>
@@ -67,6 +59,12 @@ Thanks to [The Honeynet Project](https://www.honeynet.org) we are providing free
 
 In 2022 we joined the official [DigitalOcean Open Source Program](https://www.digitalocean.com/open-source?utm_medium=opensource&utm_source=IntelOwl).
 
-#### Key Contributor
 
-Special thanks to [Tim](https://github.com/regulartim) for having greatly improved the project and added Machine Learning Models during his master thesis.
+## Maintainers and Key Contributors
+
+This project was started as a personal Christmas project by [Matteo Lodi](https://twitter.com/matte_lodi) in 2021.
+
+Special thanks to:
+* [Tim Leonhard](https://github.com/regulartim) for having greatly improved the project and added Machine Learning Models during his master thesis.
+* [Martina Carella](https://github.com/carellamartina) for having created the GUI during her master thesis.
+* [Daniele Rosetti](https://github.com/drosetti) for helping maintaining the Frontend.
