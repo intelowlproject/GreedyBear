@@ -17,6 +17,6 @@ uwsgitop==0.12
 uwsgi==2.0.30
 
 joblib==1.5.1
-pandas==2.2.3
+pandas==2.3.0
 scikit-learn==1.6.1
 numpy==2.2.4
