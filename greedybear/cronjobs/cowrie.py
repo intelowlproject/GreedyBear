@@ -179,7 +179,6 @@ class ExtractCowrie(ExtractAttacks):
         # Delete newly created sequence from DB
         # and assign existing sequence to session
         last_seen = session.commands.last_seen
-        session.commands.delete()
         session.commands = cmd_seq
         # updated the last seen
         session.commands.last_seen = last_seen
