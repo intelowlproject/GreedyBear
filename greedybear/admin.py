@@ -18,6 +18,7 @@ class SensorsModelAdmin(admin.ModelAdmin):
 @admin.register(Statistics)
 class StatisticsModelAdmin(admin.ModelAdmin):
     list_display = ["source", "view", "request_date"]
+    list_filter = ["source"]
     search_fields = ["source"]
     search_help_text = ["search for the IP address source"]
 
