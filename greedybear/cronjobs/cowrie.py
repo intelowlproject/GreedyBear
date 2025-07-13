@@ -117,6 +117,7 @@ class ExtractCowrie(ExtractAttacks):
                         session_record.credentials.append(f"{username} | {password}")
                         session_record.source.login_attempts += 1
                     case "cowrie.command.input":
+                        self.log.info(f"found a command execution from {scanner_ip}")
                         session_record.command_execution = True
                         if session_record.commands is None:
                             session_record.commands = CommandSequence()
@@ -126,11 +127,13 @@ class ExtractCowrie(ExtractAttacks):
                         session_record.commands.commands.append(command[:1024])
                     case "cowrie.session.closed":
                         session_record.duration = hit.duration
-                        if session_record.command_execution:
-                            self._deduplicate_command_sequence(session_record)
                 session_record.interaction_count += 1
             if session_record.commands is not None:
+                # moved this check at the end to avoid forgetting about this...
+                # ...if the "closed" record is not available
+                self._deduplicate_command_sequence(session_record)
                 session_record.commands.save()
+                self.log.info(f"saved new command execute from {scanner_ip} " f"with hash {session_record.commands.commands_hash}")
             session_record.source.save()
             session_record.save()
 
@@ -165,7 +168,7 @@ class ExtractCowrie(ExtractAttacks):
         commands_str = "\n".join(session.commands.commands)
         commands_hash = sha256(commands_str.encode()).hexdigest()
         try:
-            # Check if the recoreded sequence already exists
+            # Check if the recorded sequence already exists
             cmd_seq = CommandSequence.objects.get(commands_hash=commands_hash)
         except CommandSequence.DoesNotExist:
             # In case sequence does not exist:
@@ -175,9 +178,10 @@ class ExtractCowrie(ExtractAttacks):
         # In case sequence does already exist:
         # Delete newly created sequence from DB
         # and assign existing sequence to session
-        if session.commands.pk is not None:
-            session.commands.delete()
+        last_seen = session.commands.last_seen
         session.commands = cmd_seq
+        # updated the last seen
+        session.commands.last_seen = last_seen
         return True
 
     def run(self):
