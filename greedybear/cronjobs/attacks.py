@@ -9,7 +9,7 @@ from greedybear.consts import DOMAIN, IP, PAYLOAD_REQUEST, SCANNER
 from greedybear.cronjobs.base import ElasticJob
 from greedybear.cronjobs.scoring.scoring_jobs import UpdateScores
 from greedybear.cronjobs.sensors import ExtractSensors
-from greedybear.models import IOC, GeneralHoneypot, Sensors
+from greedybear.models import IOC, GeneralHoneypot, MassScanners, Sensors
 from greedybear.settings import EXTRACTION_INTERVAL, LEGACY_EXTRACTION
 
 
@@ -82,11 +82,12 @@ class ExtractAttacks(ElasticJob, metaclass=ABCMeta):
             if not ip.strip():
                 continue
             dest_ports = [hit["dest_port"] for hit in hits if "dest_port" in hit]
+
             ioc = IOC(
                 name=ip,
                 type=self._get_ioc_type(ip),
                 interaction_count=len(hits),
-                ip_reputation=hits[0].get("ip_rep", ""),
+                ip_reputation=self._get_ip_reputation(ip, hits[0]),
                 asn=hits[0].get("geoip", {}).get("asn"),
                 destination_ports=sorted(set(dest_ports)),
                 login_attempts=len(hits) if honeypot.name == "Heralding" else 0,
@@ -97,6 +98,18 @@ class ExtractAttacks(ElasticJob, metaclass=ABCMeta):
                 ioc.last_seen = datetime.fromisoformat(max(timestamps))
             iocs.append(ioc)
         return iocs
+
+    def _get_ip_reputation(self, ip, hit):
+        ip_reputation = hit.get("ip_rep", "")
+        if not ip_reputation:
+            try:
+                MassScanners.objects.get(ip_address=ip)
+            except MassScanners.DoesNotExist:
+                pass
+            else:
+                self.log.info(f"IP {ip} is a mass scanner")
+                ip_reputation = "mass scanner"
+        return ip_reputation
 
     def _update_scores(self):
         if not self.ioc_records:

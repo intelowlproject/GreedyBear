@@ -101,3 +101,9 @@ class Statistics(models.Model):
         default=viewType.FEEDS_VIEW.value,
     )
     request_date = models.DateTimeField(blank=False, default=datetime.now)
+
+
+class MassScanners(models.Model):
+    ip_address = models.CharField(max_length=256, blank=False)
+    added = models.DateTimeField(blank=False, default=datetime.now)
+    reason = models.CharField(max_length=64, blank=True, null=True)
