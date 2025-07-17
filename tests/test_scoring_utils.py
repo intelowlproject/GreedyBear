@@ -78,7 +78,7 @@ class TestFeatExtraction(CustomTestCase):
     def test_data_retrieval(self):
         """Test with sample IoCs"""
         data = get_current_data()
-        self.assertEqual(len(data), 1)
+        self.assertEqual(len(data), 2)
 
     def test_feature_extraction(self):
         """Test with sample IoCs"""
@@ -92,7 +92,7 @@ class TestFeatExtraction(CustomTestCase):
         self.assertEqual(len(features[0]["days_seen"]), 1)
         self.assertEqual(str(features[0]["days_seen"][0]), today)
         self.assertEqual(features[0]["asn"], "12345")
-        self.assertEqual(features[0]["ip_reputation"], "mass scanner")
+        self.assertEqual(features[0]["ip_reputation"], "")
         self.assertEqual(set(features[0]["honeypots"]), set(["heralding", "ciscoasa", "log4j", "cowrie"]))
         self.assertEqual(features[0]["honeypot_count"], 4)
         self.assertEqual(features[0]["destination_port_count"], 3)
