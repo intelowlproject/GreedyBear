@@ -303,8 +303,9 @@ class TestUserAuth(CustomOAuthTestCase):
 class CheckConfigurationTestCase(CustomOAuthTestCase):
     def test_200_local_setup(self):
         with self.settings(DEFAULT_FROM_EMAIL="fake@email.it", DEFAULT_EMAIL="fake@email.it", STAGE_LOCAL="true"):
-            response = self.client.get("/api/auth/configuration?page=register")
-            self.assertEqual(response.status_code, 200)
+            # register page has been removed
+            # response = self.client.get("/api/auth/configuration?page=register")
+            # self.assertEqual(response.status_code, 200)
             response = self.client.get("/api/auth/configuration?page=login")
             self.assertEqual(response.status_code, 200)
 
