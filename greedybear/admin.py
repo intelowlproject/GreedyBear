@@ -5,14 +5,30 @@ import logging
 from django.contrib import admin, messages
 from django.db.models import Q
 from django.utils.translation import ngettext
-from greedybear.models import IOC, CommandSequence, CowrieSession, GeneralHoneypot
+from greedybear.models import IOC, CommandSequence, CowrieSession, GeneralHoneypot, MassScanners, Sensors, Statistics
 
 logger = logging.getLogger(__name__)
 
-# there is no need to view the sensors in the admin page.
-# @admin.register(Sensors)
-# class SensorsModelAdmin(admin.ModelAdmin):
-#     list_display = [field.name for field in Sensors._meta.get_fields()]
+
+@admin.register(Sensors)
+class SensorsModelAdmin(admin.ModelAdmin):
+    list_display = [field.name for field in Sensors._meta.get_fields()]
+
+
+@admin.register(Statistics)
+class StatisticsModelAdmin(admin.ModelAdmin):
+    list_display = ["source", "view", "request_date"]
+    list_filter = ["source"]
+    search_fields = ["source"]
+    search_help_text = ["search for the IP address source"]
+
+
+@admin.register(MassScanners)
+class MassScannersModelAdmin(admin.ModelAdmin):
+    list_display = ["ip_address", "added", "reason"]
+    list_filter = ["reason"]
+    search_fields = ["ip_address"]
+    search_help_text = ["search for the IP address source"]
 
 
 class SessionInline(admin.TabularInline):
@@ -28,13 +44,17 @@ class SessionInline(admin.TabularInline):
 class CowrieSessionModelAdmin(admin.ModelAdmin):
     list_display = ["session_id", "start_time", "duration", "login_attempt", "credentials", "command_execution", "interaction_count", "source"]
     search_fields = ["source__name"]
+    search_help_text = ["search for the IP address source"]
     raw_id_fields = ["source", "commands"]
+    list_filter = ["login_attempt", "command_execution"]
 
 
 @admin.register(CommandSequence)
 class CommandSequenceModelAdmin(admin.ModelAdmin):
-    list_display = ["first_seen", "last_seen", "cluster", "commands"]
+    list_display = ["first_seen", "last_seen", "cluster", "commands", "commands_hash"]
     inlines = [SessionInline]
+    search_fields = ["source__name", "commands_hash"]
+    list_filter = ["cluster", "commands_hash"]
 
 
 @admin.register(IOC)
@@ -59,7 +79,9 @@ class IOCModelAdmin(admin.ModelAdmin):
         "destination_ports",
         "login_attempts",
     ]
+    list_filter = ["type", "log4j", "cowrie", "scanner", "payload_request", "ip_reputation", "asn"]
     search_fields = ["name", "related_ioc__name"]
+    search_help_text = ["search for the IP address source"]
     raw_id_fields = ["related_ioc"]
     filter_horizontal = ["general_honeypot"]
     inlines = [SessionInline]

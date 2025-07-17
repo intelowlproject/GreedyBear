@@ -11,7 +11,7 @@ from api.serializers import FeedsRequestSerializer, FeedsResponseSerializer
 from django.contrib.postgres.aggregates import ArrayAgg
 from django.db.models import F, Q
 from django.http import HttpResponse, HttpResponseBadRequest, StreamingHttpResponse
-from greedybear.consts import FEEDS_LICENSE, PAYLOAD_REQUEST, SCANNER
+from greedybear.consts import FEEDS_LICENSE
 from greedybear.models import IOC, GeneralHoneypot, Statistics
 from greedybear.settings import EXTRACTION_INTERVAL
 from rest_framework import status
@@ -75,9 +75,10 @@ class FeedRequestParams:
         self.paginate = query_params.get("paginate", "false").lower()
         self.format = query_params.get("format_", "json").lower()
         self.feed_type_sorting = None
-
-    def exclude_mass_scanners(self):
         self.exclude_reputation.append("mass scanner")
+
+    def include_mass_scanners(self):
+        self.exclude_reputation.remove("mass scanner")
 
     def set_prioritization(self, prioritize: str):
         match prioritize:
@@ -154,11 +155,14 @@ def get_queryset(request, feed_params, valid_feed_types):
         query_dict["number_of_days_seen__gte"] = int(feed_params.min_days_seen)
     if feed_params.include_reputation:
         query_dict["ip_reputation__in"] = feed_params.include_reputation
+        for reputation_type in feed_params.include_reputation:
+            if reputation_type in feed_params.exclude_reputation:
+                feed_params.exclude_reputation.remove(reputation_type)
 
     iocs = (
         IOC.objects.filter(**query_dict)
         .filter(Q(cowrie=True) | Q(log4j=True) | Q(general_honeypot__active=True))
-        .exclude(ip_reputation__in=feed_params.exclude_reputation)
+        .exclude(Q() if "nothing" in feed_params.exclude_reputation else Q(ip_reputation__in=feed_params.exclude_reputation))
         .annotate(value=F("name"))
         .annotate(honeypots=ArrayAgg("general_honeypot__name"))
         .order_by(feed_params.ordering)[: int(feed_params.feed_size)]

@@ -103,7 +103,9 @@ app.conf.beat_schedule = {
     # This way models learn from complete rather than partial day patterns, which is crucial for their performance.
     "train_and_update": {
         "task": "greedybear.tasks.chain_train_and_update",
-        "schedule": crontab(hour=0, minute=hp_extraction_interval // 2),
+        # Sometimes this could start when the midnight extraction is not ended yet.
+        # Let's increment this a little.
+        "schedule": crontab(hour=0, minute=int(hp_extraction_interval / 3 * 2)),
         "options": {"queue": "default"},
     },
     # COMMANDS
@@ -117,6 +119,11 @@ app.conf.beat_schedule = {
     "clean_up": {
         "task": "greedybear.tasks.clean_up_db",
         "schedule": crontab(hour=2, minute=3),
+        "options": {"queue": "default"},
+    },
+    "get_mass_scanners": {
+        "task": "greedybear.tasks.get_mass_scanners",
+        "schedule": crontab(hour=4, minute=3, day_of_week=0),
         "options": {"queue": "default"},
     },
 }
