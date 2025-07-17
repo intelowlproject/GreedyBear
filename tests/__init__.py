@@ -29,6 +29,28 @@ class CustomTestCase(TestCase):
             scanner=True,
             payload_request=True,
             related_urls=[],
+            ip_reputation="",
+            asn="12345",
+            destination_ports=[22, 23, 24],
+            login_attempts=1,
+            recurrence_probability=0.1,
+            expected_interactions=11.1,
+        )
+
+        cls.ioc_2 = IOC.objects.create(
+            name="99.99.99.99",
+            type=iocType.IP.value,
+            first_seen=cls.current_time,
+            last_seen=cls.current_time,
+            days_seen=[cls.current_time],
+            number_of_days_seen=1,
+            attack_count=1,
+            interaction_count=1,
+            log4j=True,
+            cowrie=True,
+            scanner=True,
+            payload_request=True,
+            related_urls=[],
             ip_reputation="mass scanner",
             asn="12345",
             destination_ports=[22, 23, 24],
@@ -40,6 +62,9 @@ class CustomTestCase(TestCase):
         cls.ioc.general_honeypot.add(cls.heralding)  # FEEDS
         cls.ioc.general_honeypot.add(cls.ciscoasa)  # FEEDS
         cls.ioc.save()
+        cls.ioc_2.general_honeypot.add(cls.heralding)  # FEEDS
+        cls.ioc_2.general_honeypot.add(cls.ciscoasa)  # FEEDS
+        cls.ioc_2.save()
 
         cls.cmd_seq = ["cd foo", "ls -la"]
         cls.hash = sha256("\n".join(cls.cmd_seq).encode()).hexdigest()
