@@ -121,4 +121,9 @@ app.conf.beat_schedule = {
         "schedule": crontab(hour=2, minute=3),
         "options": {"queue": "default"},
     },
+    "get_mass_scanners": {
+        "task": "greedybear.tasks.get_mass_scanners",
+        "schedule": crontab(hour=4, minute=3, day_of_week=0),
+        "options": {"queue": "default"},
+    },
 }

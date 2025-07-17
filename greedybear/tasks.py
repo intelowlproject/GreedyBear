@@ -77,3 +77,10 @@ def clean_up_db():
     from greedybear.cronjobs.cleanup import CleanUp
 
     CleanUp().execute()
+
+
+@shared_task()
+def get_mass_scanners():
+    from greedybear.cronjobs.mass_scanners import MassScannersCron
+
+    MassScannersCron().execute()
