@@ -13,7 +13,7 @@ from greedybear.consts import DOMAIN, IP, PAYLOAD_REQUEST, SCANNER
 from greedybear.cronjobs.base import ElasticJob
 from greedybear.cronjobs.scoring.scoring_jobs import UpdateScores
 from greedybear.cronjobs.sensors import ExtractSensors
-from greedybear.models import IOC, GeneralHoneypot, MassScanners, Sensors
+from greedybear.models import IOC, GeneralHoneypot, MassScanners, Sensors, WhatsMyIP, iocType
 from greedybear.settings import EXTRACTION_INTERVAL, LEGACY_EXTRACTION
 
 
@@ -68,10 +68,27 @@ class ExtractAttacks(ElasticJob, metaclass=ABCMeta):
             ioc_record.number_of_days_seen = len(ioc_record.days_seen)
         ioc_record.scanner = attack_type == SCANNER
         ioc_record.payload_request = attack_type == PAYLOAD_REQUEST
-        ioc_record.save()
-        self.ioc_records.append(ioc_record)
-        self._threatfox_submission(ioc_record, ioc.related_urls)
-        return ioc_record
+
+        filtered = False
+        if ioc_record.type == iocType.DOMAIN:
+            filtered = self._filter_whatsmyip(ioc_record.name)
+
+        if filtered:
+            return None
+        else:
+            ioc_record.save()
+            self.ioc_records.append(ioc_record)
+            self._threatfox_submission(ioc_record, ioc.related_urls)
+            return ioc_record
+
+    def _filter_whatsmyip(self, domain):
+        try:
+            WhatsMyIP.objects.get(domain=domain)
+        except WhatsMyIP.DoesNotExist:
+            return False
+        else:
+            self.log.info(f"{domain=} is a whats-my-ip domain. Filtering it.")
+            return True
 
     def _threatfox_submission(self, ioc_record: "IOC", related_urls: list):
         # we submit only payload request IOCs for now because they are more reliable
