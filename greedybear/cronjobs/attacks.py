@@ -1,10 +1,14 @@
 # This file is a part of GreedyBear https://github.com/honeynet/GreedyBear
 # See the file 'LICENSE' for copying permission.
+import json
 from abc import ABCMeta
 from collections import defaultdict
 from datetime import datetime
-from ipaddress import IPv4Address
+from ipaddress import IPv4Address, ip_address
+from urllib.parse import urlparse
 
+import requests
+from django.conf import settings
 from greedybear.consts import DOMAIN, IP, PAYLOAD_REQUEST, SCANNER
 from greedybear.cronjobs.base import ElasticJob
 from greedybear.cronjobs.scoring.scoring_jobs import UpdateScores
@@ -66,7 +70,58 @@ class ExtractAttacks(ElasticJob, metaclass=ABCMeta):
         ioc_record.payload_request = attack_type == PAYLOAD_REQUEST
         ioc_record.save()
         self.ioc_records.append(ioc_record)
+        self._threatfox_submission(ioc_record, ioc.related_urls)
         return ioc_record
+
+    def _threatfox_submission(self, ioc_record: "IOC", related_urls: list):
+        # we submit only payload request IOCs for now because they are more reliable
+        if not ioc_record.payload_request:
+            return
+
+        if not settings.THREATFOX_API_KEY:
+            self.log.warning("Threatfox API Key not available")
+            return
+
+        urls_to_submit = []
+        # submit only URLs with paths to avoid false positives
+        for related_url in related_urls:
+            parsed_url = urlparse(related_url)
+            if parsed_url.path not in ["", "/"]:
+                urls_to_submit.append(related_url)
+            else:
+                self.log.info(f"skipping export of {related_url} cause has not path")
+
+        headers = {"Auth-Key": settings.THREATFOX_API_KEY}
+
+        self.log.info(f"submitting IOC {related_urls} to Threatfox")
+
+        seen_honeypots = []
+        if ioc_record.cowrie:
+            seen_honeypots.append("cowrie")
+        if ioc_record.log4j:
+            seen_honeypots.append("log4pot")
+        for honeypot in ioc_record.general_honeypot.all():
+            seen_honeypots.append(honeypot)
+        seen_honeypots_str = ", ".join(seen_honeypots)
+
+        json_data = {
+            "query": "submit_ioc",
+            "threat_type": "payload_delivery",
+            "ioc_type": "url",
+            "malware": "unknown",
+            "confidence_level": "75",
+            "reference": "https://greedybear.honeynet.org",
+            "comment": f"Seen requesting a payload from {seen_honeypots_str} honeypot and collected in Greedybear, the Threat Intel Platform for T-POTs.",
+            "anonymous": 0,
+            "tags": ["honeypot"],
+            "iocs": urls_to_submit,
+        }
+        try:
+            r = requests.post("https://threatfox-api.abuse.ch/api/v1/", headers=headers, json=json_data, timeout=5)
+        except requests.RequestException as e:
+            self.log.exception(f"Threatfox push error: {e}")
+        else:
+            self.log.info(f"Threatfox submission successful. Received response: {r.text}")
 
     def _get_attacker_data(self, honeypot, fields: list) -> list:
         hits_by_ip = defaultdict(list)
@@ -82,6 +137,9 @@ class ExtractAttacks(ElasticJob, metaclass=ABCMeta):
             if not ip.strip():
                 continue
             dest_ports = [hit["dest_port"] for hit in hits if "dest_port" in hit]
+            extracted_ip = ip_address(ip)
+            if extracted_ip.is_loopback or extracted_ip.is_private or extracted_ip.is_multicast or extracted_ip.is_link_local or extracted_ip.is_reserved:
+                continue
 
             ioc = IOC(
                 name=ip,
@@ -101,7 +159,8 @@ class ExtractAttacks(ElasticJob, metaclass=ABCMeta):
 
     def _get_ip_reputation(self, ip, hit):
         ip_reputation = hit.get("ip_rep", "")
-        if not ip_reputation:
+        # we have seen "mass scanners" incorrectly flagged as "known attacker"
+        if not ip_reputation or ip_reputation == "known attacker":
             try:
                 MassScanners.objects.get(ip_address=ip)
             except MassScanners.DoesNotExist:
