@@ -1,10 +1,13 @@
 # This file is a part of GreedyBear https://github.com/honeynet/GreedyBear
 # See the file 'LICENSE' for copying permission.
+import json
 from abc import ABCMeta
 from collections import defaultdict
 from datetime import datetime
 from ipaddress import IPv4Address, ip_address
 
+import requests
+from django.conf import settings
 from greedybear.consts import DOMAIN, IP, PAYLOAD_REQUEST, SCANNER
 from greedybear.cronjobs.base import ElasticJob
 from greedybear.cronjobs.scoring.scoring_jobs import UpdateScores
@@ -66,7 +69,44 @@ class ExtractAttacks(ElasticJob, metaclass=ABCMeta):
         ioc_record.payload_request = attack_type == PAYLOAD_REQUEST
         ioc_record.save()
         self.ioc_records.append(ioc_record)
+        self._threatfox_submission(ioc_record)
         return ioc_record
+
+    def _threatfox_submission(self, ioc_record: "IOC"):
+        if not settings.THREATFOX_API_KEY:
+            self.log.warning("Threatfox API Key not available")
+            return
+
+        # we submit only payload request IOCs for now cause they are more reliable
+        if not ioc_record.payload_request:
+            return
+
+        headers = {"Auth-Key": settings.THREATFOX_API_KEY}
+        ioc_type = ioc_record.type
+        # IP are represented differently
+        if ioc_type == "ip":
+            ioc_type = "ip:port"
+
+        self.log.info(f"submitting IOC {ioc_record.name} to Threatfox")
+
+        json_data = {
+            "query": "submit_ioc",
+            "threat_type": "payload_delivery",
+            "ioc_type": ioc_type,
+            "malware": "unknown",
+            "confidence_level": "75",
+            "reference": "https://greedybear.honeynet.org",
+            "comment": "Extracted from a honeypot and collected in Greedybear, the Threat Intel Platform for T-POTs.",
+            "anonymous": 0,
+            "tags": ["honeypot"],
+            "iocs": [ioc_record.name],
+        }
+        try:
+            r = requests.post("https://threatfox-api.abuse.ch/api/v1/", headers=headers, json=json_data, timeout=5)
+        except requests.RequestException as e:
+            self.log.exception(f"Threatfox push error: {e}")
+        else:
+            self.log.info(f"Threatfox submission successful. Received response: {r.text}")
 
     def _get_attacker_data(self, honeypot, fields: list) -> list:
         hits_by_ip = defaultdict(list)

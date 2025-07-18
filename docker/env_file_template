@@ -60,3 +60,7 @@ COWRIE_SESSION_RETENTION = 365
 
 # Days to keep unseen command sequences before deletion
 COMMAND_SEQUENCE_RETENTION = 365
+
+# ThreatFox API key.
+# Once added, your payload request domains will be submitted to ThreatFox
+THREATFOX_API_KEY =

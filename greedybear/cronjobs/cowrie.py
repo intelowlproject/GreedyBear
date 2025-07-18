@@ -51,7 +51,7 @@ class ExtractCowrie(ExtractAttacks):
             match_url = re.search(REGEX_URL_PROTOCOL, hit.message)
             if match_url:
                 payload_url = match_url.group()
-                self.log.info(f"found hidden URL {payload_url}" f" in payload from attacker {scanner_ip}")
+                self.log.info(f"found hidden URL {payload_url} in payload from attacker {scanner_ip}")
                 payload_hostname = urlparse(payload_url).hostname
                 self.log.info(f"extracted hostname {payload_hostname} from {payload_url}")
                 ioc = IOC(
