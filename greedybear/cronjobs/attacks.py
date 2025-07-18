@@ -74,12 +74,12 @@ class ExtractAttacks(ElasticJob, metaclass=ABCMeta):
         return ioc_record
 
     def _threatfox_submission(self, ioc_record: "IOC", related_urls: list):
-        if not settings.THREATFOX_API_KEY:
-            self.log.warning("Threatfox API Key not available")
-            return
-
         # we submit only payload request IOCs for now because they are more reliable
         if not ioc_record.payload_request:
+            return
+
+        if not settings.THREATFOX_API_KEY:
+            self.log.warning("Threatfox API Key not available")
             return
 
         urls_to_submit = []
