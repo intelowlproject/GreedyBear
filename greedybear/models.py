@@ -112,3 +112,13 @@ class MassScanners(models.Model):
         indexes = [
             models.Index(fields=["ip_address"]),
         ]
+
+
+class WhatsMyIP(models.Model):
+    domain = models.CharField(max_length=256, blank=False)
+    added = models.DateTimeField(blank=False, default=datetime.now)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["domain"]),
+        ]

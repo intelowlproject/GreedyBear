@@ -36,9 +36,10 @@ class ExtractCowrie(ExtractAttacks):
             ioc.cowrie = True
             self.log.info(f"found IP {ioc.name} by honeypot cowrie")
             ioc = self._add_ioc(ioc, attack_type=SCANNER)
-            self.added_scanners += 1
-            self._extract_possible_payload_in_messages(ioc.name)
-            self._get_sessions(ioc)
+            if ioc:
+                self.added_scanners += 1
+                self._extract_possible_payload_in_messages(ioc.name)
+                self._get_sessions(ioc)
 
     def _extract_possible_payload_in_messages(self, scanner_ip):
         # looking for URLs inside attacks payloads

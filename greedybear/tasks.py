@@ -84,3 +84,10 @@ def get_mass_scanners():
     from greedybear.cronjobs.mass_scanners import MassScannersCron
 
     MassScannersCron().execute()
+
+
+@shared_task()
+def get_whatsmyip():
+    from greedybear.cronjobs.whatsmyip import WhatsMyIPCron
+
+    WhatsMyIPCron().execute()
