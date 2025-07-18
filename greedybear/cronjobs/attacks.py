@@ -89,7 +89,7 @@ class ExtractAttacks(ElasticJob, metaclass=ABCMeta):
 
         self.log.info(f"submitting IOC {ioc_record.name} to Threatfox")
 
-        data = {
+        json_data = {
             "query": "submit_ioc",
             "threat_type": "payload_delivery",
             "ioc_type": ioc_type,
@@ -101,7 +101,6 @@ class ExtractAttacks(ElasticJob, metaclass=ABCMeta):
             "tags": ["honeypot"],
             "iocs": [ioc_record.name],
         }
-        json_data = json.dumps(data)
         try:
             r = requests.post("https://threatfox-api.abuse.ch/api/v1/", headers=headers, json=json_data, timeout=5)
         except requests.RequestException as e:
