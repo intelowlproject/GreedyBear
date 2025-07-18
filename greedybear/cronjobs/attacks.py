@@ -3,7 +3,7 @@
 from abc import ABCMeta
 from collections import defaultdict
 from datetime import datetime
-from ipaddress import IPv4Address
+from ipaddress import IPv4Address, ip_address
 
 from greedybear.consts import DOMAIN, IP, PAYLOAD_REQUEST, SCANNER
 from greedybear.cronjobs.base import ElasticJob
@@ -82,6 +82,9 @@ class ExtractAttacks(ElasticJob, metaclass=ABCMeta):
             if not ip.strip():
                 continue
             dest_ports = [hit["dest_port"] for hit in hits if "dest_port" in hit]
+            extracted_ip = ip_address(ip)
+            if extracted_ip.is_loopback or extracted_ip.is_private or extracted_ip.is_multicast or extracted_ip.is_link_local or extracted_ip.is_reserved:
+                continue
 
             ioc = IOC(
                 name=ip,
@@ -101,7 +104,8 @@ class ExtractAttacks(ElasticJob, metaclass=ABCMeta):
 
     def _get_ip_reputation(self, ip, hit):
         ip_reputation = hit.get("ip_rep", "")
-        if not ip_reputation:
+        # we have seen "mass scanners" incorrectly flagged as "known attacker"
+        if not ip_reputation or ip_reputation == "known attacker":
             try:
                 MassScanners.objects.get(ip_address=ip)
             except MassScanners.DoesNotExist:
