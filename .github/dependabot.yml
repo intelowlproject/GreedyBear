@@ -7,8 +7,6 @@ updates:
       interval: "weekly"
       day: "tuesday"
     target-branch: "develop"
-    reviewers:
-      - mlodic
 
   - package-ecosystem: "npm"
     directory: "/frontend"
@@ -16,8 +14,6 @@ updates:
       interval: "weekly"
       day: "tuesday"
     target-branch: "develop"
-    reviewers:
-      - drosetti
 
 
   - package-ecosystem: "docker"
@@ -26,8 +22,6 @@ updates:
       interval: "weekly"
       day: "tuesday"
     target-branch: "develop"
-    reviewers:
-      - mlodic
 
 
   - package-ecosystem: "github-actions"
@@ -36,5 +30,3 @@ updates:
       interval: "weekly"
       day: "tuesday"
     target-branch: "develop"
-    reviewers:
-      - mlodic
