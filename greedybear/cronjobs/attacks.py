@@ -118,7 +118,7 @@ class ExtractAttacks(ElasticJob, metaclass=ABCMeta):
         if ioc_record.log4j:
             seen_honeypots.append("log4pot")
         for honeypot in ioc_record.general_honeypot.all():
-            seen_honeypots.append(honeypot)
+            seen_honeypots.append(honeypot.name)
         seen_honeypots_str = ", ".join(seen_honeypots)
 
         json_data = {
