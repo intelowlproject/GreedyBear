@@ -5,7 +5,7 @@ import logging
 from django.contrib import admin, messages
 from django.db.models import Q
 from django.utils.translation import ngettext
-from greedybear.models import IOC, CommandSequence, CowrieSession, GeneralHoneypot, MassScanners, Sensors, Statistics
+from greedybear.models import IOC, CommandSequence, CowrieSession, GeneralHoneypot, MassScanners, Sensors, Statistics, WhatsMyIP
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +21,13 @@ class StatisticsModelAdmin(admin.ModelAdmin):
     list_filter = ["source"]
     search_fields = ["source"]
     search_help_text = ["search for the IP address source"]
+
+
+@admin.register(WhatsMyIP)
+class WhatsMyIPModelAdmin(admin.ModelAdmin):
+    list_display = ["domain", "added"]
+    search_fields = ["domain"]
+    search_help_text = ["search for the domain"]
 
 
 @admin.register(MassScanners)
