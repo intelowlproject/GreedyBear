@@ -5,7 +5,7 @@ elasticsearch-dsl==8.18.0
 
 Django==4.2.24
 djangorestframework==3.16.1
-django-rest-email-auth==4.0.3
+django-rest-email-auth==5.0.0
 django-ses==4.4.0
 
 psycopg2-binary==2.9.10
