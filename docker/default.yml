@@ -4,7 +4,7 @@ x-no-healthcheck: &no-healthcheck
 
 services:
   postgres:
-    image: library/postgres:13-alpine
+    image: library/postgres:18-alpine
     container_name: greedybear_postgres
     volumes:
       - postgres_data:/var/lib/postgresql/data/
