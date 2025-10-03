@@ -94,7 +94,7 @@ class FeedRequestParams:
                     self.ordering = "-last_seen"
             case "persistent":
                 self.max_age = "14"
-                self.min_days_seen: "10"
+                self.min_days_seen = "10"
                 if "feed_type" in self.ordering:
                     self.feed_type_sorting = self.ordering
                     self.ordering = "-attack_count"
