@@ -59,6 +59,28 @@ class CustomTestCase(TestCase):
             expected_interactions=11.1,
         )
 
+        cls.ioc_3 = IOC.objects.create(
+            name="100.100.100.100",
+            type=iocType.IP.value,
+            first_seen=cls.current_time,
+            last_seen=cls.current_time,
+            days_seen=[cls.current_time],
+            number_of_days_seen=1,
+            attack_count=1,
+            interaction_count=1,
+            log4j=False,
+            cowrie=True,
+            scanner=True,
+            payload_request=True,
+            related_urls=[],
+            ip_reputation="tor exit node",
+            asn="12345",
+            destination_ports=[22, 23, 24],
+            login_attempts=1,
+            recurrence_probability=0.1,
+            expected_interactions=11.1,
+        )
+
         cls.ioc.general_honeypot.add(cls.heralding)  # FEEDS
         cls.ioc.general_honeypot.add(cls.ciscoasa)  # FEEDS
         cls.ioc.save()
