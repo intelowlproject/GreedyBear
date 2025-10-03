@@ -75,10 +75,14 @@ class FeedRequestParams:
         self.paginate = query_params.get("paginate", "false").lower()
         self.format = query_params.get("format_", "json").lower()
         self.feed_type_sorting = None
-        self.exclude_reputation.append("mass scanner")
 
-    def include_mass_scanners(self):
-        self.exclude_reputation.remove("mass scanner")
+    def apply_default_filters(self, query_params):
+        if not query_params:
+            query_params = dict()
+        if "include_mass_scanners" not in query_params:
+            self.exclude_reputation.append("mass scanner")
+        if "include_tor_exit_nodes" not in query_params:
+            self.exclude_reputation.append("tor exit node")
 
     def set_prioritization(self, prioritize: str):
         match prioritize:
@@ -90,7 +94,7 @@ class FeedRequestParams:
                     self.ordering = "-last_seen"
             case "persistent":
                 self.max_age = "14"
-                self.min_days_seen: "10"
+                self.min_days_seen = "10"
                 if "feed_type" in self.ordering:
                     self.feed_type_sorting = self.ordering
                     self.ordering = "-attack_count"
@@ -155,14 +159,11 @@ def get_queryset(request, feed_params, valid_feed_types):
         query_dict["number_of_days_seen__gte"] = int(feed_params.min_days_seen)
     if feed_params.include_reputation:
         query_dict["ip_reputation__in"] = feed_params.include_reputation
-        for reputation_type in feed_params.include_reputation:
-            if reputation_type in feed_params.exclude_reputation:
-                feed_params.exclude_reputation.remove(reputation_type)
 
     iocs = (
         IOC.objects.filter(**query_dict)
         .filter(Q(cowrie=True) | Q(log4j=True) | Q(general_honeypot__active=True))
-        .exclude(Q() if "nothing" in feed_params.exclude_reputation else Q(ip_reputation__in=feed_params.exclude_reputation))
+        .exclude(ip_reputation__in=feed_params.exclude_reputation)
         .annotate(value=F("name"))
         .annotate(honeypots=ArrayAgg("general_honeypot__name"))
         .order_by(feed_params.ordering)[: int(feed_params.feed_size)]

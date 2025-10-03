@@ -95,10 +95,20 @@ class FeedsViewTestCase(CustomTestCase):
         self.assertEqual(response.json()["count"], 1)
         self.assertEqual(response.json()["total_pages"], 1)
 
-    def test_200_feeds_pagination_inclusion(self):
+    def test_200_feeds_pagination_inclusion_mass(self):
         response = self.client.get("/api/feeds/?page_size=10&page=1&feed_type=all&attack_type=all&age=recent&include_mass_scanners")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["count"], 2)
+
+    def test_200_feeds_pagination_inclusion_tor(self):
+        response = self.client.get("/api/feeds/?page_size=10&page=1&feed_type=all&attack_type=all&age=recent&include_tor_exit_nodes")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["count"], 2)
+
+    def test_200_feeds_pagination_inclusion_mass_and_tor(self):
+        response = self.client.get("/api/feeds/?page_size=10&page=1&feed_type=all&attack_type=all&age=recent&include_mass_scanners&include_tor_exit_nodes")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["count"], 3)
 
     def test_400_feeds_pagination(self):
         response = self.client.get("/api/feeds/?page_size=10&page=1&feed_type=all&attack_type=test&age=recent")
@@ -139,7 +149,7 @@ class FeedsAdvancedViewTestCase(CustomTestCase):
     def test_200_feeds_pagination(self):
         response = self.client.get("/api/feeds/advanced/?paginate=true&page_size=10&page=1")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["count"], 1)
+        self.assertEqual(response.json()["count"], 3)
         self.assertEqual(response.json()["total_pages"], 1)
 
     def test_200_feeds_pagination_include(self):
@@ -148,8 +158,14 @@ class FeedsAdvancedViewTestCase(CustomTestCase):
         self.assertEqual(response.json()["count"], 1)
         self.assertEqual(response.json()["total_pages"], 1)
 
-    def test_200_feeds_pagination_exclude_nothing(self):
-        response = self.client.get("/api/feeds/advanced/?paginate=true&page_size=10&page=1&exclude_reputation=nothing")
+    def test_200_feeds_pagination_exclude_mass(self):
+        response = self.client.get("/api/feeds/advanced/?paginate=true&page_size=10&page=1&exclude_reputation=mass%20scanner")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["count"], 2)
+        self.assertEqual(response.json()["total_pages"], 1)
+
+    def test_200_feeds_pagination_exclude_tor(self):
+        response = self.client.get("/api/feeds/advanced/?paginate=true&page_size=10&page=1&exclude_reputation=tor%20exit%20node")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["count"], 2)
         self.assertEqual(response.json()["total_pages"], 1)
@@ -203,7 +219,7 @@ class StatisticsViewTestCase(CustomTestCase):
         self.assertEqual(response.json()[0]["Heralding"], 2)
         self.assertEqual(response.json()[0]["Ciscoasa"], 2)
         self.assertEqual(response.json()[0]["Log4j"], 2)
-        self.assertEqual(response.json()[0]["Cowrie"], 2)
+        self.assertEqual(response.json()[0]["Cowrie"], 3)
         self.assertEqual(response.json()[0]["Tanner"], 0)
 
 
