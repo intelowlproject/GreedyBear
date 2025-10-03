@@ -33,9 +33,8 @@ def feeds(request, feed_type, attack_type, prioritize, format_):
     logger.info(f"request /api/feeds with params: feed type: {feed_type}, " f"attack_type: {attack_type}, prioritization: {prioritize}, format: {format_}")
 
     feed_params = FeedRequestParams({"feed_type": feed_type, "attack_type": attack_type, "format_": format_})
+    feed_params.default_excludes(request.query_params)
     feed_params.set_prioritization(prioritize)
-    if request.query_params and "include_mass_scanners" in request.query_params:
-        feed_params.include_mass_scanners()
 
     valid_feed_types = get_valid_feed_types()
     iocs_queryset = get_queryset(request, feed_params, valid_feed_types)
@@ -58,9 +57,8 @@ def feeds_pagination(request):
 
     feed_params = FeedRequestParams(request.query_params)
     feed_params.format = "json"
+    feed_params.default_excludes(request.query_params)
     feed_params.set_prioritization(request.query_params.get("prioritize"))
-    if request.query_params and "include_mass_scanners" in request.query_params:
-        feed_params.include_mass_scanners()
 
     valid_feed_types = get_valid_feed_types()
     iocs_queryset = get_queryset(request, feed_params, valid_feed_types)
@@ -83,8 +81,8 @@ def feeds_advanced(request):
         attack_type (str): Type of attack to filter. (supported: `scanner`, `payload_request`, `all`; default: `all`)
         max_age (int): Maximum number of days since last occurrence. E.g. an IOC that was last seen 4 days ago is excluded by default. (default: 3)
         min_days_seen (int): Minimum number of days on which an IOC must have been seen. (default: 1)
-        include_reputation (str): `;`-separated list of reputation values to include, e.g. `known attacker` or `known attacker;` to include IOCs without reputation. (default: include all) this has precedence over exclusion
-        exclude_reputation (str): `;`-separated list of reputation values to exclude, e.g. `mass scanner` or `mass scanner;bot, crawler`. (default: exclude mass scanners)
+        include_reputation (str): `;`-separated list of reputation values to include, e.g. `known attacker` or `known attacker;` to include IOCs without reputation. (default: include all)
+        exclude_reputation (str): `;`-separated list of reputation values to exclude, e.g. `mass scanner` or `mass scanner;bot, crawler`. (default: exclude none)
         feed_size (int): Number of IOC items to return. (default: 5000)
         ordering (str): Field to order results by, with optional `-` prefix for descending. (default: `-last_seen`)
         verbose (bool): `true` to include IOC properties that contain a lot of data, e.g. the list of days it was seen. (default: `false`)
