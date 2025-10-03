@@ -76,7 +76,7 @@ class FeedRequestParams:
         self.format = query_params.get("format_", "json").lower()
         self.feed_type_sorting = None
 
-    def default_excludes(self, query_params):
+    def apply_default_filters(self, query_params):
         if not query_params:
             query_params = dict()
         if "include_mass_scanners" not in query_params:

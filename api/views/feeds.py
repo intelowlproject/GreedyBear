@@ -34,7 +34,7 @@ def feeds(request, feed_type, attack_type, prioritize, format_):
     logger.info(f"request /api/feeds with params: feed type: {feed_type}, " f"attack_type: {attack_type}, prioritization: {prioritize}, format: {format_}")
 
     feed_params = FeedRequestParams({"feed_type": feed_type, "attack_type": attack_type, "format_": format_})
-    feed_params.default_excludes(request.query_params)
+    feed_params.apply_default_filters(request.query_params)
     feed_params.set_prioritization(prioritize)
 
     valid_feed_types = get_valid_feed_types()
@@ -58,7 +58,7 @@ def feeds_pagination(request):
 
     feed_params = FeedRequestParams(request.query_params)
     feed_params.format = "json"
-    feed_params.default_excludes(request.query_params)
+    feed_params.apply_default_filters(request.query_params)
     feed_params.set_prioritization(request.query_params.get("prioritize"))
 
     valid_feed_types = get_valid_feed_types()
