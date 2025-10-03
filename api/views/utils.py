@@ -6,19 +6,16 @@ import re
 from datetime import datetime, timedelta
 from ipaddress import ip_address
 
-import feedparser
-import requests
-from django.conf import settings
+from api.enums import Honeypots
+from api.serializers import FeedsRequestSerializer, FeedsResponseSerializer
 from django.contrib.postgres.aggregates import ArrayAgg
-from django.core.cache import cache
-from django.db.models import Count, F, Max, Min, Sum
+from django.db.models import F, Q
 from django.http import HttpResponse, HttpResponseBadRequest, StreamingHttpResponse
+from greedybear.consts import FEEDS_LICENSE
+from greedybear.models import IOC, GeneralHoneypot, Statistics
+from greedybear.settings import EXTRACTION_INTERVAL
 from rest_framework import status
 from rest_framework.response import Response
-
-from api.serializers import FeedsRequestSerializer
-from greedybear.consts import CACHE_KEY_GREEDYBEAR_NEWS, CACHE_TIMEOUT_SECONDS, RSS_FEED_URL
-from greedybear.models import IOC, GeneralHoneypot, Statistics
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +46,6 @@ class FeedRequestParams:
     Attributes:
         feed_type (str): Type of feed to retrieve (default: "all")
         attack_type (str): Type of attack to filter (default: "all")
-        ioc_type (str): Type of IOC to filter - 'ip', 'domain', or 'all' (default: "all")
         max_age (str): Maximum number of days since last occurrence (default: "3")
         min_days_seen (str): Minimum number of days on which an IOC must have been seen (default: "1")
         include_reputation (list): List of reputation values to include (default: [])
@@ -69,7 +65,6 @@ class FeedRequestParams:
         """
         self.feed_type = query_params.get("feed_type", "all").lower()
         self.attack_type = query_params.get("attack_type", "all").lower()
-        self.ioc_type = query_params.get("ioc_type", "all").lower()
         self.max_age = query_params.get("max_age", "3")
         self.min_days_seen = query_params.get("min_days_seen", "1")
         self.include_reputation = query_params["include_reputation"].split(";") if "include_reputation" in query_params else []
@@ -83,7 +78,7 @@ class FeedRequestParams:
 
     def apply_default_filters(self, query_params):
         if not query_params:
-            query_params = {}
+            query_params = dict()
         if "include_mass_scanners" not in query_params:
             self.exclude_reputation.append("mass scanner")
         if "include_tor_exit_nodes" not in query_params:
@@ -120,12 +115,11 @@ def get_valid_feed_types() -> frozenset[str]:
     Returns:
         frozenset[str]: An immutable set of valid feed type strings
     """
-    general_honeypots = GeneralHoneypot.objects.filter(active=True)
-    feed_types = ["all"] + [hp.name.lower() for hp in general_honeypots]
-    return frozenset(feed_types)
+    general_honeypots = GeneralHoneypot.objects.all().filter(active=True)
+    return frozenset([Honeypots.LOG4J.value, Honeypots.COWRIE.value, "all"] + [hp.name.lower() for hp in general_honeypots])
 
 
-def get_queryset(request, feed_params, valid_feed_types, is_aggregated=False, serializer_class=FeedsRequestSerializer):
+def get_queryset(request, feed_params, valid_feed_types):
     """
     Build a queryset to filter IOC data based on the request parameters.
 
@@ -133,15 +127,6 @@ def get_queryset(request, feed_params, valid_feed_types, is_aggregated=False, se
         request: The incoming request object.
         feed_params: A FeedRequestParams instance.
         valid_feed_types (frozenset): The set of all valid feed types.
-        is_aggregated (bool, optional):
-            - If True, disables slicing (`feed_size`) and model-level ordering.
-            - Ensures full dataset is available for aggregation or specialized computation.
-            - Default: False.
-        serializer_class (class, optional):
-            - Serializer class used to validate request parameters.
-            - Allows injecting a custom serializer to enforce rules for specific feed types
-              (e.g., to restrict ordering fields or validation for specialized feeds).
-            - Default: `FeedsRequestSerializer`.
 
     Returns:
         QuerySet: The filtered queryset of IOC data.
@@ -152,7 +137,7 @@ def get_queryset(request, feed_params, valid_feed_types, is_aggregated=False, se
         f"Age: {feed_params.max_age}, format: {feed_params.format}"
     )
 
-    serializer = serializer_class(
+    serializer = FeedsRequestSerializer(
         data=vars(feed_params),
         context={"valid_feed_types": valid_feed_types},
     )
@@ -160,13 +145,14 @@ def get_queryset(request, feed_params, valid_feed_types, is_aggregated=False, se
 
     query_dict = {}
     if feed_params.feed_type != "all":
-        query_dict["general_honeypot__name__iexact"] = feed_params.feed_type
+        if feed_params.feed_type in (Honeypots.LOG4J.value, Honeypots.COWRIE.value):
+            query_dict[feed_params.feed_type] = True
+        else:
+            # accept feed_type if it is in the general honeypots list
+            query_dict["general_honeypot__name__iexact"] = feed_params.feed_type
 
     if feed_params.attack_type != "all":
         query_dict[feed_params.attack_type] = True
-
-    if feed_params.ioc_type != "all":
-        query_dict["type"] = feed_params.ioc_type
 
     query_dict["last_seen__gte"] = datetime.now() - timedelta(days=int(feed_params.max_age))
     if int(feed_params.min_days_seen) > 1:
@@ -174,14 +160,14 @@ def get_queryset(request, feed_params, valid_feed_types, is_aggregated=False, se
     if feed_params.include_reputation:
         query_dict["ip_reputation__in"] = feed_params.include_reputation
 
-    iocs = IOC.objects.filter(**query_dict).exclude(ip_reputation__in=feed_params.exclude_reputation).annotate(value=F("name")).distinct()
-
-    # aggregated feeds calculate metrics differently and need all rows to be accurate.
-    if not is_aggregated:
-        iocs = iocs.filter(general_honeypot__active=True)
-        iocs = iocs.annotate(honeypots=ArrayAgg("general_honeypot__name"))
-        iocs = iocs.order_by(feed_params.ordering)
-        iocs = iocs[: int(feed_params.feed_size)]
+    iocs = (
+        IOC.objects.filter(**query_dict)
+        .filter(Q(cowrie=True) | Q(log4j=True) | Q(general_honeypot__active=True))
+        .exclude(ip_reputation__in=feed_params.exclude_reputation)
+        .annotate(value=F("name"))
+        .annotate(honeypots=ArrayAgg("general_honeypot__name"))
+        .order_by(feed_params.ordering)[: int(feed_params.feed_size)]
+    )
 
     # save request source for statistics
     source_ip = str(request.META["REMOTE_ADDR"])
@@ -209,24 +195,28 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
     Format the IOC data into the requested format (e.g., JSON, CSV, TXT).
 
     Args:
+        request: The incoming request object.
         iocs (QuerySet): The filtered queryset of IOC data.
-        feed_params (FeedRequestParams): Request parameters including format.
+        feed_type (str): Type of feed (e.g., log4j, cowrie, etc.).
         valid_feed_types (frozenset): The set of all valid feed types.
+        format_ (str): Desired format of the response (e.g., json, csv, txt).
         dict_only (bool): Return IOC dictionary instead of Response object.
-        verbose (bool): Include verbose fields (days_seen, destination_ports, honeypots, firehol_categories).
+        verbose (bool): Include IOC properties that may contain a lot of data.
 
     Returns:
         Response: The HTTP response containing formatted IOC data.
     """
     logger.info(f"Format feeds in: {feed_params.format}")
+    license_text = (
+        f"# These feeds are generated by The Honeynet Project once every {EXTRACTION_INTERVAL} minutes "
+        f"and are protected by the following license: {FEEDS_LICENSE}"
+    )
     match feed_params.format:
         case "txt":
-            text_lines = [f"# {settings.FEEDS_LICENSE}"] if settings.FEEDS_LICENSE else []
-            text_lines += [ioc[0] for ioc in iocs.values_list("name")]
+            text_lines = [license_text] + [ioc[0] for ioc in iocs.values_list("name")]
             return HttpResponse("\n".join(text_lines), content_type="text/plain")
         case "csv":
-            rows = [[f"# {settings.FEEDS_LICENSE}"]] if settings.FEEDS_LICENSE else []
-            rows += [list(ioc) for ioc in iocs.values_list("name")]
+            rows = [[license_text]] + [list(ioc) for ioc in iocs.values_list("name")]
             pseudo_buffer = Echo()
             writer = csv.writer(pseudo_buffer, quoting=csv.QUOTE_NONE)
             return StreamingHttpResponse(
@@ -237,70 +227,60 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
             )
         case "json":
             json_list = []
-
-            # Base fields always returned
-            base_fields = {
+            required_fields = {
                 "value",
                 "first_seen",
                 "last_seen",
                 "attack_count",
                 "interaction_count",
+                "log4j",
+                "cowrie",
                 "scanner",
                 "payload_request",
                 "ip_reputation",
                 "asn",
+                "destination_ports",
                 "login_attempts",
+                "honeypots",
+                "days_seen",
                 "recurrence_probability",
                 "expected_interactions",
-                "honeypots",  # Always needed to calculate feed_type
-                "destination_ports",  # Always needed to calculate destination_port_count
             }
-
-            # Additional verbose fields
-            verbose_only_fields = {
-                "days_seen",
-                "firehol_categories",
-            }
-
-            # Fetch fields from database (always include honeypots and destination_ports)
-            required_fields = base_fields | verbose_only_fields if verbose else base_fields
-
-            # Collect values; `honeypots` will contain the list of associated honeypot names
             iocs = (ioc_as_dict(ioc, required_fields) for ioc in iocs) if isinstance(iocs, list) else iocs.values(*required_fields)
             for ioc in iocs:
-                ioc_feed_type = [hp.lower() for hp in ioc.get("honeypots", []) if hp]
+                ioc_feed_type = []
+                if ioc[Honeypots.LOG4J.value]:
+                    ioc_feed_type.append(Honeypots.LOG4J.value)
+                if ioc[Honeypots.COWRIE.value]:
+                    ioc_feed_type.append(Honeypots.COWRIE.value)
+                if len(ioc["honeypots"]):
+                    ioc_feed_type.extend([hp.lower() for hp in ioc["honeypots"] if hp is not None])
 
                 data_ = ioc | {
                     "first_seen": ioc["first_seen"].strftime("%Y-%m-%d"),
                     "last_seen": ioc["last_seen"].strftime("%Y-%m-%d"),
                     "feed_type": ioc_feed_type,
-                    "destination_port_count": len(ioc.get("destination_ports", [])),
+                    "destination_port_count": len(ioc["destination_ports"]),
                 }
 
-                # Remove verbose-only fields from response when not in verbose mode
-                if not verbose:
-                    # Remove destination_ports array from response
-                    data_.pop("destination_ports", None)
+                if verbose:
+                    json_list.append(data_)
+                    continue
 
-                # Always remove honeypots field as it's redundant with feed_type
-                data_.pop("honeypots", None)
-
-                # Skip validation - data_ is constructed internally and matches the API contract
-                json_list.append(data_)
+                serializer_item = FeedsResponseSerializer(
+                    data=data_,
+                    context={"valid_feed_types": valid_feed_types},
+                )
+                serializer_item.is_valid(raise_exception=True)
+                json_list.append(serializer_item.data)
 
             # check if sorting the results by feed_type
             if feed_params.feed_type_sorting is not None:
                 logger.info("Return feeds sorted by feed_type field")
-                json_list = sorted(
-                    json_list,
-                    key=lambda k: k["feed_type"],
-                    reverse=feed_params.feed_type_sorting == "-feed_type",
-                )
+                json_list = sorted(json_list, key=lambda k: k["feed_type"], reverse=feed_params.feed_type_sorting == "-feed_type")
 
             logger.info(f"Number of feeds returned: {len(json_list)}")
-            resp_data = {"iocs": json_list}
-            if settings.FEEDS_LICENSE:
-                resp_data["license"] = settings.FEEDS_LICENSE
+            resp_data = {"license": FEEDS_LICENSE, "iocs": json_list}
             if dict_only:
                 return resp_data
             else:
@@ -344,118 +324,3 @@ def is_sha256hash(string: str) -> bool:
         bool: True if the string is a valid SHA-256 hash, False otherwise
     """
     return bool(re.fullmatch(r"^[A-Fa-f0-9]{64}$", string))
-
-
-def asn_aggregated_queryset(iocs_qs, request, feed_params):
-    """
-    Perform DB-level aggregation grouped by ASN.
-
-    Args
-        iocs_qs (QuerySet): Filtered IOC queryset from get_queryset;
-        request (Request): The API request object;
-        feed_params (FeedRequestParams): Validated parameter object
-
-    Returns: A values-grouped queryset with annotated  metrics and honeypot arrays.
-    """
-    asn_filter = request.query_params.get("asn")
-    if asn_filter:
-        iocs_qs = iocs_qs.filter(asn=asn_filter)
-
-    # default ordering is overridden here because of serializer default(-last-seen) behaviour
-    ordering = feed_params.ordering
-    if not ordering or ordering.strip() in {"", "-last_seen", "last_seen"}:
-        ordering = "-ioc_count"
-
-    numeric_agg = (
-        iocs_qs.exclude(asn__isnull=True)
-        .values("asn")
-        .annotate(
-            ioc_count=Count("id"),
-            total_attack_count=Sum("attack_count"),
-            total_interaction_count=Sum("interaction_count"),
-            total_login_attempts=Sum("login_attempts"),
-            expected_ioc_count=Sum("recurrence_probability"),
-            expected_interactions=Sum("expected_interactions"),
-            first_seen=Min("first_seen"),
-            last_seen=Max("last_seen"),
-        )
-        .order_by(ordering)
-    )
-
-    honeypot_agg = (
-        iocs_qs.exclude(asn__isnull=True)
-        .filter(general_honeypot__active=True)
-        .values("asn")
-        .annotate(
-            honeypots=ArrayAgg(
-                "general_honeypot__name",
-                distinct=True,
-            )
-        )
-    )
-
-    hp_lookup = {row["asn"]: row["honeypots"] or [] for row in honeypot_agg}
-
-    # merging numeric aggregate with honeypot names for each asn
-    result = []
-    for row in numeric_agg:
-        asn = row["asn"]
-        row_dict = dict(row)
-        row_dict["honeypots"] = sorted(hp_lookup.get(asn, []))
-        result.append(row_dict)
-
-    return result
-
-
-def get_greedybear_news() -> list[dict]:
-    """
-    Fetch GreedyBear-related blog posts from the IntelOwl RSS feed.
-
-    Returns:
-        List of dicts with keys: title, date, link, subtext
-        Sorted newest first, or empty list on failure.
-    """
-    cached = cache.get(CACHE_KEY_GREEDYBEAR_NEWS)
-    if cached is not None:
-        return cached
-
-    try:
-        response = requests.get(RSS_FEED_URL, timeout=5)
-        response.raise_for_status()
-        feed = feedparser.parse(response.content)
-
-        filtered_entries = sorted(
-            [entry for entry in feed.entries if "greedybear" in entry.get("title", "").lower() and entry.get("published_parsed")],
-            key=lambda e: e.published_parsed,
-            reverse=True,
-        )
-
-        news_items: list[dict] = []
-        for entry in filtered_entries:
-            summary = entry.get("summary", "").strip().replace("\n", " ")
-
-            subtext = summary[:180].rsplit(" ", 1)[0] + "..." if len(summary) > 180 else summary
-
-            news_items.append(
-                {
-                    "title": entry.get("title"),
-                    "date": entry.get("published"),
-                    "link": entry.get("link"),
-                    "subtext": subtext,
-                }
-            )
-
-        cache.set(
-            CACHE_KEY_GREEDYBEAR_NEWS,
-            news_items,
-            CACHE_TIMEOUT_SECONDS,
-        )
-
-        return news_items
-
-    except Exception as exc:
-        logger.error(
-            "Failed to fetch GreedyBear news from RSS feed",
-            exc_info=exc,
-        )
-        return []
