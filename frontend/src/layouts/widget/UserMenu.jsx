@@ -29,9 +29,9 @@ function UserMenu(props) {
         </DropdownItem>
         <DropdownItem divider />
         {/* Django Admin Interface */}
-          <DropdownNavLink to="/admin/" target="_blank">
-            <IoMdSettings className="me-2" /> Django Admin Interface
-          </DropdownNavLink>
+        <DropdownNavLink to="/admin/" target="_blank">
+          <IoMdSettings className="me-2" /> Django Admin Interface
+        </DropdownNavLink>
         {/* API Access/Sessions */}
         <DropdownNavLink to="/me/sessions">
           <IoMdKey className="me-2" /> API Access / Sessions
