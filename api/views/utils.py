@@ -81,6 +81,8 @@ class FeedRequestParams:
             query_params = dict()
         if "include_mass_scanners" not in query_params:
             self.exclude_reputation.append("mass scanner")
+        if "include_tor_exit_nodes" not in query_params:
+            self.exclude_reputation.append("tor exit node")
 
     def set_prioritization(self, prioritize: str):
         match prioritize:

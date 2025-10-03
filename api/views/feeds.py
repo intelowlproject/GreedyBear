@@ -26,6 +26,7 @@ def feeds(request, feed_type, attack_type, prioritize, format_):
         prioritize (str): Prioritization mechanism to use (e.g., recent, persistent).
         format_ (str): Desired format of the response (e.g., json, csv, txt).
         include_mass_scanners (bool): query parameter flag to include IOCs that are known mass scanners.
+        include_tor_exit_nodes (bool): query parameter flag to include IOCs that are known tor exit nodes.
 
     Returns:
         Response: The HTTP response with formatted IOC data.
