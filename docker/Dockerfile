@@ -1,5 +1,5 @@
 # Stage 1: Frontend 
-FROM node:lts-alpine3.21 AS frontend-build
+FROM node:lts-alpine3.22 AS frontend-build
 
 WORKDIR /
 # copy react source code
@@ -13,7 +13,7 @@ RUN npm install
 RUN PUBLIC_URL=/static/reactapp/ npm run build
 
 # Stage 2: Backend
-FROM python:3.13-alpine3.21
+FROM python:3.13-alpine3.22
 
 ENV PYTHONUNBUFFERED=1
 ENV DJANGO_SETTINGS_MODULE=greedybear.settings
