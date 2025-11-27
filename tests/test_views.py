@@ -299,14 +299,14 @@ class CommandSequenceViewTestCase(CustomTestCase):
 
 
 class CowrieSessionViewTestCase(CustomTestCase):
-    """Test cases for the command_sequence_view."""
+    """Test cases for the cowrie_session_view."""
 
     def setUp(self):
         # setup client
         self.client = APIClient()
         self.client.force_authenticate(user=self.superuser)
 
-    ########## Basic IP Query Test ##########
+    # # # # # Basic IP Query Test # # # # #
     def test_ip_address_query(self):
         """Test view with a valid IP address query."""
         response = self.client.get("/api/cowrie_session?query=140.246.171.141")
@@ -367,7 +367,7 @@ class CowrieSessionViewTestCase(CustomTestCase):
         self.assertIn("credentials", response.data)
         self.assertIn("sessions", response.data)
 
-    ########## Basic Hash Query Test ##########
+    # # # # # Basic Hash Query Test # # # # #
     def test_hash_query(self):
         """Test view with a valid hash query."""
         response = self.client.get(f"/api/cowrie_session?query={self.hash}")
@@ -389,7 +389,7 @@ class CowrieSessionViewTestCase(CustomTestCase):
         self.assertIn("sessions", response.data)
         self.assertEqual(len(response.data["sources"]), 2)
 
-    ########## IP Address Validation Tests ##########
+    # # # # # IP Address Validation Tests # # # # #
     def test_nonexistent_ip_address(self):
         """Test that view returns 404 for IP with no sequences."""
         response = self.client.get("/api/cowrie_session?query=10.0.0.1")
@@ -410,7 +410,7 @@ class CowrieSessionViewTestCase(CustomTestCase):
         response = self.client.get("/api/cowrie_session?query=192.168.1.0/24")
         self.assertEqual(response.status_code, 400)
 
-    ########## Parameter Validation Tests ##########
+    # # # # # Parameter Validation Tests # # # # #
     def test_missing_query_parameter(self):
         """Test that view returns BadRequest when query parameter is missing."""
         response = self.client.get("/api/cowrie_session")
@@ -437,7 +437,7 @@ class CowrieSessionViewTestCase(CustomTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("credentials", response.data)
 
-    ########## Hash Validation Tests ##########
+    # # # # # Hash Validation Tests # # # # #
     def test_nonexistent_hash(self):
         """Test that view returns 404 for nonexistent hash."""
         response = self.client.get(f"/api/cowrie_session?query={'f' * 64}")
@@ -460,7 +460,7 @@ class CowrieSessionViewTestCase(CustomTestCase):
         response_upper = self.client.get(f"/api/cowrie_session?query={self.hash.upper()}")
         self.assertEqual(response_lower.status_code, response_upper.status_code)
 
-    ########## Special Characters & Encoding Tests ##########
+    # # # # # Special Characters & Encoding Tests # # # # #
     def test_query_with_url_encoding(self):
         """Test that URL-encoded queries work correctly."""
         response = self.client.get("/api/cowrie_session?query=140.246.171.141%20")
@@ -472,7 +472,7 @@ class CowrieSessionViewTestCase(CustomTestCase):
         response = self.client.get("/api/cowrie_session?query=<script>alert('xss')</script>")
         self.assertEqual(response.status_code, 400)
 
-    ########## Authentication & Authorization Tests ##########
+    # # # # # Authentication & Authorization Tests # # # # #
     def test_unauthenticated_request(self):
         """Test that unauthenticated requests are rejected."""
         client = APIClient()  # No authentication
