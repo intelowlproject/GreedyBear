@@ -141,7 +141,7 @@ class CustomTestCase(TestCase):
             cls.superuser = User.objects.create_superuser(username="test", email="test@greedybear.com", password="test")
         try:
             cls.regular_user = User.objects.get(is_superuser=False)
-        except:
+        except User.DoesNotExist:
             cls.regular_user = User.objects.create_user(username="regular", email="regular@greedybear.com", password="regular")
 
     @classmethod
