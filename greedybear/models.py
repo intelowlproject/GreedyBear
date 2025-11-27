@@ -10,6 +10,7 @@ class viewType(models.TextChoices):
     FEEDS_VIEW = "feeds"
     ENRICHMENT_VIEW = "enrichment"
     COMMAND_SEQUENCE_VIEW = "command sequence"
+    COWRIE_SESSION_VIEW = "cowrie session"
 
 
 class iocType(models.TextChoices):
