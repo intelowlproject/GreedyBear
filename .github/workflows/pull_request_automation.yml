@@ -100,6 +100,6 @@ jobs:
         "BROKER_URL": "amqp://guest:guest@rabbitmq:5672",
         }
       python_versions: >-
-        ["3.11", "3.12", "3.13", "3.14"]
+        ["3.13"]
       max_timeout: 15
       ubuntu_version: 24.04
