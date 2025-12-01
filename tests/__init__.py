@@ -112,10 +112,37 @@ class CustomTestCase(TestCase):
         )
         cls.cowrie_session.save()
 
+        cls.cmd_seq_2 = ["cd bar", "ls -la"]
+        cls.command_sequence_2 = CommandSequence.objects.create(
+            first_seen=cls.current_time,
+            last_seen=cls.current_time,
+            commands=cls.cmd_seq_2,
+            commands_hash=sha256("\n".join(cls.cmd_seq_2).encode()).hexdigest(),
+            cluster=11,
+        )
+        cls.command_sequence_2.save()
+
+        cls.cowrie_session_2 = CowrieSession.objects.create(
+            session_id=int("eeeeeeeeeeee", 16),
+            start_time=cls.current_time,
+            duration=2.234,
+            login_attempt=True,
+            credentials=["user | user"],
+            command_execution=True,
+            interaction_count=5,
+            source=cls.ioc_2,
+            commands=cls.command_sequence_2,
+        )
+        cls.cowrie_session_2.save()
+
         try:
             cls.superuser = User.objects.get(is_superuser=True)
         except User.DoesNotExist:
             cls.superuser = User.objects.create_superuser(username="test", email="test@greedybear.com", password="test")
+        try:
+            cls.regular_user = User.objects.get(is_superuser=False)
+        except User.DoesNotExist:
+            cls.regular_user = User.objects.create_user(username="regular", email="regular@greedybear.com", password="regular")
 
     @classmethod
     def tearDownClass(self):
