@@ -1,23 +1,23 @@
 celery==5.5.3
 
 # if you change this, update the documentation
-elasticsearch-dsl==8.18.0
+elasticsearch8==8.19.2
 
 Django==5.2.8
 djangorestframework==3.16.1
 django-rest-email-auth==5.0.0
 django-ses==4.4.0
 
-psycopg2-binary==2.9.10
+psycopg2-binary==2.9.11
 
 certego-saas==0.7.11
-slack-sdk==3.36.0
+slack-sdk==3.37.0
 
 uwsgitop==0.12
-uwsgi==2.0.30
+uwsgi==2.0.31
 
 joblib==1.5.2
 pandas==2.3.3
-scikit-learn==1.6.1
-numpy==2.2.4
-datasketch==1.6.5
+scikit-learn==1.7.2
+numpy==2.3.5
+datasketch==1.7.0

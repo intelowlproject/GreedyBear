@@ -5,7 +5,7 @@ from abc import ABCMeta, abstractmethod
 from datetime import datetime, timedelta
 
 from django.conf import settings
-from elasticsearch_dsl import Q, Search
+from elasticsearch8.dsl import Q, Search
 from greedybear.settings import EXTRACTION_INTERVAL, LEGACY_EXTRACTION
 
 
