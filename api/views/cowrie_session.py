@@ -46,7 +46,7 @@ def cowrie_session_view(request):
             - credentials (list[str], optional): Unique credentials if include_credentials=true
             - sessions (list[dict], optional): Session details if include_session_data=true
                 - time (datetime): Session start time
-                - duration (int): Session duration in seconds
+                - duration (float): Session duration in seconds
                 - source (str): Source IP address
                 - interactions (int): Number of interactions in session
                 - credentials (list[str]): Credentials used in this session
@@ -56,9 +56,9 @@ def cowrie_session_view(request):
         Response (500): Internal Server Error - Unexpected error occurred
 
     Example Queries:
-        /api/cowrie?query=1.2.3.4
-        /api/cowrie?query=5120e94e366ec83a79ee80454e4d1c76c06499ab19032bcdc7f0b4523bdb37a6
-        /api/cowrie?query=1.2.3.4&include_credentials=true&include_session_data=true&include_similar=true
+        /api/cowrie_session?query=1.2.3.4
+        /api/cowrie_session?query=5120e94e366ec83a79ee80454e4d1c76c06499ab19032bcdc7f0b4523bdb37a6
+        /api/cowrie_session?query=1.2.3.4&include_credentials=true&include_session_data=true&include_similar=true
     """
     observable = request.query_params.get("query")
     include_similar = request.query_params.get("include_similar", "false").lower() == "true"
