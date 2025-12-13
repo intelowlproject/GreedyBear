@@ -95,6 +95,7 @@ def ordering_validation(ordering: str) -> str:
 class FeedsRequestSerializer(serializers.Serializer):
     feed_type = serializers.CharField(max_length=120)
     attack_type = serializers.ChoiceField(choices=["scanner", "payload_request", "all"])
+    ioc_type = serializers.ChoiceField(choices=["ip", "domain", "all"])
     max_age = serializers.IntegerField(min_value=1)
     min_days_seen = serializers.IntegerField(min_value=1)
     include_reputation = serializers.ListField(child=serializers.CharField(max_length=120))

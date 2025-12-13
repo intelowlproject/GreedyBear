@@ -46,6 +46,7 @@ class FeedRequestParams:
     Attributes:
         feed_type (str): Type of feed to retrieve (default: "all")
         attack_type (str): Type of attack to filter (default: "all")
+        ioc_type (str): Type of IOC to filter - 'ip', 'domain', or 'all' (default: "all")
         max_age (str): Maximum number of days since last occurrence (default: "3")
         min_days_seen (str): Minimum number of days on which an IOC must have been seen (default: "1")
         include_reputation (list): List of reputation values to include (default: [])
@@ -65,6 +66,7 @@ class FeedRequestParams:
         """
         self.feed_type = query_params.get("feed_type", "all").lower()
         self.attack_type = query_params.get("attack_type", "all").lower()
+        self.ioc_type = query_params.get("ioc_type", "all").lower()
         self.max_age = query_params.get("max_age", "3")
         self.min_days_seen = query_params.get("min_days_seen", "1")
         self.include_reputation = query_params["include_reputation"].split(";") if "include_reputation" in query_params else []
@@ -153,6 +155,9 @@ def get_queryset(request, feed_params, valid_feed_types):
 
     if feed_params.attack_type != "all":
         query_dict[feed_params.attack_type] = True
+
+    if feed_params.ioc_type != "all":
+        query_dict["type"] = feed_params.ioc_type
 
     query_dict["last_seen__gte"] = datetime.now() - timedelta(days=int(feed_params.max_age))
     if int(feed_params.min_days_seen) > 1:
