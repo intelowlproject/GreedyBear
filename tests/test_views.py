@@ -110,6 +110,37 @@ class FeedsViewTestCase(CustomTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["count"], 3)
 
+    def test_200_feeds_filter_ip_only(self):
+        response = self.client.get("/api/feeds/all/all/recent.json?ioc_type=ip")
+        self.assertEqual(response.status_code, 200)
+        # Should only return IP addresses, not domains
+        for ioc in response.json()["iocs"]:
+            # Verify all returned values are IPs (contain dots and numbers pattern)
+            self.assertRegex(ioc["value"], r"^\d+\.\d+\.\d+\.\d+$")
+
+    def test_200_feeds_filter_domain_only(self):
+        response = self.client.get("/api/feeds/all/all/recent.json?ioc_type=domain")
+        self.assertEqual(response.status_code, 200)
+        # Should only return domains, not IPs
+        self.assertGreater(len(response.json()["iocs"]), 0)
+        for ioc in response.json()["iocs"]:
+            # Verify all returned values are domains (contain alphabetic characters)
+            self.assertRegex(ioc["value"], r"[a-zA-Z]")
+
+    def test_200_feeds_pagination_filter_ip(self):
+        response = self.client.get(
+            "/api/feeds/?page_size=10&page=1&feed_type=all&attack_type=all&age=recent&ioc_type=ip&include_mass_scanners&include_tor_exit_nodes"
+        )
+        self.assertEqual(response.status_code, 200)
+        # Should return only IPs (3 in test data)
+        self.assertEqual(response.json()["count"], 3)
+
+    def test_200_feeds_pagination_filter_domain(self):
+        response = self.client.get("/api/feeds/?page_size=10&page=1&feed_type=all&attack_type=all&age=recent&ioc_type=domain")
+        self.assertEqual(response.status_code, 200)
+        # Should return only domains (1 in test data)
+        self.assertEqual(response.json()["count"], 1)
+
     def test_400_feeds_pagination(self):
         response = self.client.get("/api/feeds/?page_size=10&page=1&feed_type=all&attack_type=test&age=recent")
         self.assertEqual(response.status_code, 400)
