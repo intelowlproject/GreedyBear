@@ -66,10 +66,11 @@ def command_sequence_view(request):
         if not seqs:
             raise Http404(f"No command sequences found for IP: {observable}")
         data = {
-            "license": FEEDS_LICENSE,
             "executed_commands": seqs,
             "executed_by": sorted([ioc.name for ioc in related_iocs]),
         }
+        if FEEDS_LICENSE:
+            data["license"] = FEEDS_LICENSE
         return Response(data, status=status.HTTP_200_OK)
 
     if is_sha256hash(observable):
@@ -86,10 +87,11 @@ def command_sequence_view(request):
                 for s in sessions
             ]
             data = {
-                "license": FEEDS_LICENSE,
                 "commands": commands,
                 "iocs": sorted(iocs, key=lambda d: d["time"], reverse=True),
             }
+            if FEEDS_LICENSE:
+                data["license"] = FEEDS_LICENSE
             return Response(data, status=status.HTTP_200_OK)
         except CommandSequence.DoesNotExist as exc:
             raise Http404(f"No command sequences found with hash: {observable}") from exc
