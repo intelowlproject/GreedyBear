@@ -94,9 +94,10 @@ def cowrie_session_view(request):
         sessions = sessions.union(related_sessions)
 
     response_data = {
-        "license": FEEDS_LICENSE,
         "query": observable,
     }
+    if FEEDS_LICENSE:
+        response_data["license"] = FEEDS_LICENSE
 
     unique_commands = set(s.commands for s in sessions if s.commands)
     response_data["commands"] = sorted("\n".join(cmd.commands) for cmd in unique_commands)

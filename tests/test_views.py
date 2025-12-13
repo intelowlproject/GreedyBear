@@ -1,6 +1,6 @@
 from api.views.utils import is_ip_address, is_sha256hash
-from greedybear.consts import FEEDS_LICENSE
 from greedybear.models import GeneralHoneypot, Statistics, viewType
+from greedybear.settings import FEEDS_LICENSE
 from rest_framework.test import APIClient
 
 from . import CustomTestCase
@@ -60,7 +60,10 @@ class FeedsViewTestCase(CustomTestCase):
     def test_200_all_feeds(self):
         response = self.client.get("/api/feeds/all/all/recent.json")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["license"], FEEDS_LICENSE)
+        if FEEDS_LICENSE:
+            self.assertEqual(response.json()["license"], FEEDS_LICENSE)
+        else:
+            self.assertNotIn("license", response.json())
         self.assertEqual(response.json()["iocs"][0]["feed_type"], ["log4j", "cowrie", "heralding", "ciscoasa"])
         self.assertEqual(response.json()["iocs"][0]["attack_count"], 1)
         self.assertEqual(response.json()["iocs"][0]["scanner"], True)
@@ -71,7 +74,10 @@ class FeedsViewTestCase(CustomTestCase):
     def test_200_general_feeds(self):
         response = self.client.get("/api/feeds/heralding/all/recent.json")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["license"], FEEDS_LICENSE)
+        if FEEDS_LICENSE:
+            self.assertEqual(response.json()["license"], FEEDS_LICENSE)
+        else:
+            self.assertNotIn("license", response.json())
         self.assertEqual(response.json()["iocs"][0]["feed_type"], ["log4j", "cowrie", "heralding", "ciscoasa"])
         self.assertEqual(response.json()["iocs"][0]["attack_count"], 1)
         self.assertEqual(response.json()["iocs"][0]["scanner"], True)
@@ -82,7 +88,10 @@ class FeedsViewTestCase(CustomTestCase):
     def test_200_feeds_scanner_inclusion(self):
         response = self.client.get("/api/feeds/heralding/all/recent.json?include_mass_scanners")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["license"], FEEDS_LICENSE)
+        if FEEDS_LICENSE:
+            self.assertEqual(response.json()["license"], FEEDS_LICENSE)
+        else:
+            self.assertNotIn("license", response.json())
         self.assertEqual(len(response.json()["iocs"]), 2)
 
     def test_400_feeds(self):
@@ -123,7 +132,10 @@ class FeedsAdvancedViewTestCase(CustomTestCase):
     def test_200_all_feeds(self):
         response = self.client.get("/api/feeds/advanced/")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["license"], FEEDS_LICENSE)
+        if FEEDS_LICENSE:
+            self.assertEqual(response.json()["license"], FEEDS_LICENSE)
+        else:
+            self.assertNotIn("license", response.json())
         self.assertEqual(response.json()["iocs"][0]["feed_type"], ["log4j", "cowrie", "heralding", "ciscoasa"])
         self.assertEqual(response.json()["iocs"][0]["attack_count"], 1)
         self.assertEqual(response.json()["iocs"][0]["scanner"], True)
@@ -134,7 +146,10 @@ class FeedsAdvancedViewTestCase(CustomTestCase):
     def test_200_general_feeds(self):
         response = self.client.get("/api/feeds/advanced/?feed_type=heralding")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["license"], FEEDS_LICENSE)
+        if FEEDS_LICENSE:
+            self.assertEqual(response.json()["license"], FEEDS_LICENSE)
+        else:
+            self.assertNotIn("license", response.json())
         self.assertEqual(response.json()["iocs"][0]["feed_type"], ["log4j", "cowrie", "heralding", "ciscoasa"])
         self.assertEqual(response.json()["iocs"][0]["attack_count"], 1)
         self.assertEqual(response.json()["iocs"][0]["scanner"], True)
