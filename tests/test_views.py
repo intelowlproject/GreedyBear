@@ -437,6 +437,30 @@ class CowrieSessionViewTestCase(CustomTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertIn("credentials", response.data)
 
+    # # # # # Password Query Tests # # # # #
+    def test_password_query(self):
+        """Test view with a valid password query."""
+        response = self.client.get("/api/cowrie_session?query=root&include_credentials=true")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("query", response.data)
+        self.assertEqual(response.data["query"], "root")
+        self.assertIn("credentials", response.data)
+        self.assertEqual(len(response.data["credentials"]), 1)
+        self.assertEqual(response.data["credentials"][0], "root | root")
+
+    def test_password_query_not_found(self):
+        """Test view with a password that doesn't exist."""
+        response = self.client.get("/api/cowrie_session?query=nonexistentpassword")
+        self.assertEqual(response.status_code, 404)
+
+    def test_password_query_with_session_data(self):
+        """Test password query with session data included."""
+        response = self.client.get("/api/cowrie_session?query=user&include_session_data=true")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("sessions", response.data)
+        self.assertEqual(len(response.data["sessions"]), 1)
+        self.assertEqual(response.data["sessions"][0]["credentials"][0], "user | user")
+
     # # # # # Hash Validation Tests # # # # #
     def test_nonexistent_hash(self):
         """Test that view returns 404 for nonexistent hash."""
@@ -444,9 +468,9 @@ class CowrieSessionViewTestCase(CustomTestCase):
         self.assertEqual(response.status_code, 404)
 
     def test_hash_wrong_length(self):
-        """Test that hashes with incorrect length are rejected."""
+        """Test that hashes with incorrect length are treated as password queries."""
         response = self.client.get("/api/cowrie_session?query=" + "a" * 32)  # 32 chars instead of 64
-        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.status_code, 404)
 
     def test_hash_invalid_characters(self):
         """Test that hashes with invalid characters are rejected."""

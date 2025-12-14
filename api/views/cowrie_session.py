@@ -6,6 +6,7 @@ import socket
 
 from api.views.utils import is_ip_address, is_sha256hash
 from certego_saas.apps.auth.backend import CookieTokenAuthentication
+from django.db import connection
 from django.http import Http404, HttpResponseBadRequest
 from greedybear.consts import FEEDS_LICENSE, GET
 from greedybear.models import IOC, CommandSequence, CowrieSession, Statistics, viewType
@@ -23,13 +24,14 @@ logger = logging.getLogger(__name__)
 def cowrie_session_view(request):
     """
     Retrieve Cowrie honeypot session data including command sequences, credentials, and session details.
-    Queries can be performed using either an IP address to find all sessions from that source,
-    or a SHA-256 hash to find sessions containing a specific command sequence.
+    Queries can be performed using an IP address, SHA-256 hash or password.
 
     Args:
         request: The HTTP request object containing query parameters
-        query (str, required): The search term, can be either an IP address or the SHA-256 hash of a command sequence.
-            SHA-256 hashes should match command sequences generated using Python's "\\n".join(sequence) format.
+        query (str, required): The search term, can be:
+            - An IP address to find all sessions from that source
+            - A SHA-256 hash of a command sequence (generated using Python's "\\n".join(sequence) format)
+            - A password string to find all sessions where that password was used
         include_similar (bool, optional): When "true", expands the result to include all sessions that executed
             command sequences belonging to the same cluster(s) as command sequences found in the initial query result.
             Requires CLUSTER_COWRIE_COMMAND_SEQUENCES enabled in configuration. Default: false
@@ -85,8 +87,38 @@ def cowrie_session_view(request):
             raise Http404(f"No command sequences found with hash: {observable}") from exc
         sessions = CowrieSession.objects.filter(commands=commands, duration__gt=0).prefetch_related("source", "commands")
     else:
-        return HttpResponseBadRequest("Query must be a valid IP address or SHA-256 hash")
+        if len(observable) == 64:
+            if not is_sha256hash(observable):
+                return HttpResponseBadRequest("Query must be a valid IP address or SHA-256 hash")
+        
+        if "." in observable:
+            if not is_ip_address(observable):
+                return HttpResponseBadRequest("Query must be a valid IP address or SHA-256 hash")
+        
+        if any(char in observable for char in ["<", ">", "}", "{"]):
+            return HttpResponseBadRequest("Query contains invalid characters")
+        
+        password_pattern = f"% | {observable}"
+        with connection.cursor() as cursor:
+            cursor.execute(
+                """
+                SELECT session_id
+                FROM greedybear_cowriesession
+                WHERE duration > 0
+                  AND EXISTS (
+                      SELECT 1
+                      FROM unnest(credentials) AS cred
+                      WHERE cred LIKE %s
+                  )
+                """,
+                [password_pattern],
+            )
+            session_ids = [row[0] for row in cursor.fetchall()]
 
+        if not session_ids:
+            raise Http404(f"No sessions found with password: {observable}")
+
+        sessions = CowrieSession.objects.filter(session_id__in=session_ids).prefetch_related("source", "commands")    
     if include_similar:
         commands = set(s.commands for s in sessions if s.commands)
         clusters = set(cmd.cluster for cmd in commands if cmd.cluster is not None)
