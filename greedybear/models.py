@@ -115,6 +115,30 @@ class MassScanners(models.Model):
         ]
 
 
+class TorExitNodes(models.Model):
+    ip_address = models.CharField(max_length=256, blank=False)
+    added = models.DateTimeField(blank=False, default=datetime.now)
+    reason = models.CharField(max_length=128, blank=True, null=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["ip_address"]),
+        ]
+
+
+class EnrichmentTag(models.Model):
+    ip_address = models.CharField(max_length=256, blank=False)
+    ioc = models.ForeignKey(IOC, on_delete=models.CASCADE, blank=True, null=True)
+    source = models.CharField(max_length=128, blank=False)
+    tag = models.CharField(max_length=256, blank=False)
+    added = models.DateTimeField(blank=False, default=datetime.now)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["ip_address"]),
+        ]
+
+
 class WhatsMyIP(models.Model):
     domain = models.CharField(max_length=256, blank=False)
     added = models.DateTimeField(blank=False, default=datetime.now)
