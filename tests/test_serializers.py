@@ -25,6 +25,7 @@ class FeedsRequestSerializersTestCase(TestCase):
         choices = {
             "feed_type": ["all", "log4j", "cowrie", "adbhoney"],
             "attack_type": ["all", "scanner", "payload_request"],
+            "ioc_type": ["ip", "domain", "all"],
             "max_age": [str(n) for n in [1, 2, 4, 8, 16]],
             "min_days_seen": [str(n) for n in [1, 2, 4, 8, 16]],
             "include_reputation": [[], ["known attacker"], ["known attacker", "mass scanner"]],
