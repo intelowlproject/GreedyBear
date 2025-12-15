@@ -38,7 +38,9 @@ class EnrichmentSerializer(serializers.Serializer):
         Check a given observable against regex expression
         """
         observable = data["query"]
-        if not re.match(REGEX_IP, observable) or not re.match(REGEX_DOMAIN, observable):
+        if re.match(r"^[\d\.]+$", observable) and not re.match(REGEX_IP, observable):
+            raise serializers.ValidationError("Observable is not a valid IP")
+        if not re.match(REGEX_IP, observable) and not re.match(REGEX_DOMAIN, observable):
             raise serializers.ValidationError("Observable is not a valid IP or domain")
         try:
             required_object = IOC.objects.get(name=observable)
