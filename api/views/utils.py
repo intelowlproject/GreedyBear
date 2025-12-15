@@ -8,11 +8,11 @@ from ipaddress import ip_address
 
 from api.enums import Honeypots
 from api.serializers import FeedsRequestSerializer, FeedsResponseSerializer
+from django.conf import settings
 from django.contrib.postgres.aggregates import ArrayAgg
 from django.db.models import F, Q
 from django.http import HttpResponse, HttpResponseBadRequest, StreamingHttpResponse
 from greedybear.models import IOC, GeneralHoneypot, Statistics
-from greedybear.settings import FEEDS_LICENSE
 from rest_framework import status
 from rest_framework.response import Response
 
@@ -208,11 +208,11 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
     logger.info(f"Format feeds in: {feed_params.format}")
     match feed_params.format:
         case "txt":
-            text_lines = [f"# {FEEDS_LICENSE}"] if FEEDS_LICENSE else []
+            text_lines = [f"# {settings.FEEDS_LICENSE}"] if settings.FEEDS_LICENSE else []
             text_lines += [ioc[0] for ioc in iocs.values_list("name")]
             return HttpResponse("\n".join(text_lines), content_type="text/plain")
         case "csv":
-            rows = [[f"# {FEEDS_LICENSE}"]] if FEEDS_LICENSE else []
+            rows = [[f"# {settings.FEEDS_LICENSE}"]] if settings.FEEDS_LICENSE else []
             rows += [list(ioc) for ioc in iocs.values_list("name")]
             pseudo_buffer = Echo()
             writer = csv.writer(pseudo_buffer, quoting=csv.QUOTE_NONE)
@@ -278,8 +278,8 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
 
             logger.info(f"Number of feeds returned: {len(json_list)}")
             resp_data = {"iocs": json_list}
-            if FEEDS_LICENSE:
-                resp_data["license"] = FEEDS_LICENSE
+            if settings.FEEDS_LICENSE:
+                resp_data["license"] = settings.FEEDS_LICENSE
             if dict_only:
                 return resp_data
             else:
