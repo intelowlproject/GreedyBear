@@ -7,8 +7,9 @@ import socket
 from api.views.utils import is_ip_address, is_sha256hash
 from certego_saas.apps.auth.backend import CookieTokenAuthentication
 from django.http import Http404, HttpResponseBadRequest
-from greedybear.consts import FEEDS_LICENSE, GET
+from greedybear.consts import GET
 from greedybear.models import IOC, CommandSequence, CowrieSession, Statistics, viewType
+from greedybear.settings import FEEDS_LICENSE
 from rest_framework import status
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.permissions import IsAuthenticated
