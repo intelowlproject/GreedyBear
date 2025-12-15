@@ -213,6 +213,7 @@ export default function Feeds() {
                         </Col>
                       </FormGroup>
                       <FormGroup row>
+                        <Col sm={12} md={4}>
                           <Label
                             className="form-control-label"
                             htmlFor="Feeds__prioritize"
