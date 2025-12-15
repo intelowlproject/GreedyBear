@@ -4,7 +4,7 @@ from functools import cache
 
 from django.core.exceptions import FieldDoesNotExist
 from greedybear.consts import REGEX_DOMAIN, REGEX_IP
-from greedybear.models import IOC, GeneralHoneypot
+from greedybear.models import IOC, GeneralHoneypot, EnrichmentTag
 from rest_framework import serializers
 
 logger = logging.getLogger(__name__)
@@ -31,6 +31,7 @@ class IOCSerializer(serializers.ModelSerializer):
 class EnrichmentSerializer(serializers.Serializer):
     found = serializers.BooleanField(read_only=True, default=False)
     ioc = IOCSerializer(read_only=True, default=None)
+    tags = serializers.ListField(child=serializers.CharField(), read_only=True, default=list)
     query = serializers.CharField(max_length=250)
 
     def validate(self, data):
@@ -46,6 +47,9 @@ class EnrichmentSerializer(serializers.Serializer):
             data["ioc"] = required_object
         except IOC.DoesNotExist:
             data["found"] = False
+        # fetch enrichment tags (if any)
+        tags_qs = EnrichmentTag.objects.filter(ip_address=observable)
+        data["tags"] = [f"{t.source}:{t.tag}" for t in tags_qs]
         return data
 
 
