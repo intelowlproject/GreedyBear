@@ -30,6 +30,11 @@ If you want to be updated regularly, please download the feeds only once every 1
 
 To check all the available feeds, Please refer to our [usage guide](https://intelowlproject.github.io/docs/GreedyBear/Usage/)
 
+### Tor Exit Nodes extraction
+
+GreedyBear now automatically fetches Tor exit addresses and marks matching IOCs with the `ip_reputation` value `tor exit node`.
+The cronjob `get_tor_exit_nodes` (available as a Celery task) downloads the official Tor exit-addresses feed and updates the database; Tor exit nodes are excluded from feeds by default (use the `include_tor_exit_nodes` query parameter to include them).
+
 
 ## Enrichment Service
 
