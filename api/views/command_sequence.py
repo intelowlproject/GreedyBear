@@ -4,10 +4,10 @@ import logging
 
 from api.views.utils import is_ip_address, is_sha256hash
 from certego_saas.apps.auth.backend import CookieTokenAuthentication
+from django.conf import settings
 from django.http import Http404, HttpResponseBadRequest
 from greedybear.consts import GET
 from greedybear.models import IOC, CommandSequence, CowrieSession, Statistics, viewType
-from greedybear.settings import FEEDS_LICENSE
 from rest_framework import status
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.permissions import IsAuthenticated
@@ -70,8 +70,8 @@ def command_sequence_view(request):
             "executed_commands": seqs,
             "executed_by": sorted([ioc.name for ioc in related_iocs]),
         }
-        if FEEDS_LICENSE:
-            data["license"] = FEEDS_LICENSE
+        if settings.FEEDS_LICENSE:
+            data["license"] = settings.FEEDS_LICENSE
         return Response(data, status=status.HTTP_200_OK)
 
     if is_sha256hash(observable):
@@ -91,8 +91,8 @@ def command_sequence_view(request):
                 "commands": commands,
                 "iocs": sorted(iocs, key=lambda d: d["time"], reverse=True),
             }
-            if FEEDS_LICENSE:
-                data["license"] = FEEDS_LICENSE
+            if settings.FEEDS_LICENSE:
+                data["license"] = settings.FEEDS_LICENSE
             return Response(data, status=status.HTTP_200_OK)
         except CommandSequence.DoesNotExist as exc:
             raise Http404(f"No command sequences found with hash: {observable}") from exc
