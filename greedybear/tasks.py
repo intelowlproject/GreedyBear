@@ -91,3 +91,10 @@ def get_whatsmyip():
     from greedybear.cronjobs.whatsmyip import WhatsMyIPCron
 
     WhatsMyIPCron().execute()
+
+
+@shared_task()
+def get_tor_exit_nodes():
+    from greedybear.cronjobs.tor_exit_nodes import TorExitNodesCron
+
+    TorExitNodesCron().execute()
