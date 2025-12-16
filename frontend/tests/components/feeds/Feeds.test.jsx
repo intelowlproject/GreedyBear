@@ -72,8 +72,6 @@ describe("Feeds component", () => {
     expect(feedTypeSelectElement).toBeInTheDocument();
     const attackTypeSelectElement = screen.getByLabelText("Attack type:");
     expect(attackTypeSelectElement).toBeInTheDocument();
-    const iocTypeSelectElement = screen.getByLabelText("IOC type:");
-    expect(iocTypeSelectElement).toBeInTheDocument();
     const prioritizationSelectElement = screen.getByLabelText("Prioritize:");
     expect(prioritizationSelectElement).toBeInTheDocument();
 
@@ -85,23 +83,13 @@ describe("Feeds component", () => {
 
     await user.selectOptions(feedTypeSelectElement, "log4j");
     await user.selectOptions(attackTypeSelectElement, "scanner");
-    await user.selectOptions(iocTypeSelectElement, "ip");
     await user.selectOptions(prioritizationSelectElement, "persistent");
 
     await waitFor(() => {
-      // check link has been changed including ioc_type parameter
+      // check link has been changed
       expect(buttonRawData).toHaveAttribute(
         "href",
-        "/api/feeds/log4j/scanner/persistent.json?ioc_type=ip"
-      );
-    });
-
-    // Test selecting domain IOC type
-    await user.selectOptions(iocTypeSelectElement, "domain");
-    await waitFor(() => {
-      expect(buttonRawData).toHaveAttribute(
-        "href",
-        "/api/feeds/log4j/scanner/persistent.json?ioc_type=domain"
+        "/api/feeds/log4j/scanner/persistent.json"
       );
     });
   });

@@ -81,36 +81,12 @@ class CustomTestCase(TestCase):
             expected_interactions=11.1,
         )
 
-        cls.ioc_domain = IOC.objects.create(
-            name="malicious.example.com",
-            type=iocType.DOMAIN.value,
-            first_seen=cls.current_time,
-            last_seen=cls.current_time,
-            days_seen=[cls.current_time],
-            number_of_days_seen=1,
-            attack_count=1,
-            interaction_count=1,
-            log4j=True,
-            cowrie=False,
-            scanner=False,
-            payload_request=True,
-            related_urls=[],
-            ip_reputation="",
-            asn=None,
-            destination_ports=[],
-            login_attempts=0,
-            recurrence_probability=0.2,
-            expected_interactions=5.5,
-        )
-
         cls.ioc.general_honeypot.add(cls.heralding)  # FEEDS
         cls.ioc.general_honeypot.add(cls.ciscoasa)  # FEEDS
         cls.ioc.save()
         cls.ioc_2.general_honeypot.add(cls.heralding)  # FEEDS
         cls.ioc_2.general_honeypot.add(cls.ciscoasa)  # FEEDS
         cls.ioc_2.save()
-        cls.ioc_domain.general_honeypot.add(cls.heralding)  # FEEDS
-        cls.ioc_domain.save()
 
         cls.cmd_seq = ["cd foo", "ls -la"]
         cls.hash = sha256("\n".join(cls.cmd_seq).encode()).hexdigest()
