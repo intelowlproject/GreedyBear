@@ -33,9 +33,7 @@ def feeds(request, feed_type, attack_type, prioritize, format_):
     """
     logger.info(f"request /api/feeds with params: feed type: {feed_type}, " f"attack_type: {attack_type}, prioritization: {prioritize}, format: {format_}")
 
-    feed_params_data = request.query_params.dict()
-    feed_params_data.update({"feed_type": feed_type, "attack_type": attack_type, "format_": format_})
-    feed_params = FeedRequestParams(feed_params_data)
+    feed_params = FeedRequestParams({"feed_type": feed_type, "attack_type": attack_type, "format_": format_})
     feed_params.apply_default_filters(request.query_params)
     feed_params.set_prioritization(prioritize)
 

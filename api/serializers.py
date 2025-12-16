@@ -38,9 +38,7 @@ class EnrichmentSerializer(serializers.Serializer):
         Check a given observable against regex expression
         """
         observable = data["query"]
-        if re.match(r"^[\d\.]+$", observable) and not re.match(REGEX_IP, observable):
-            raise serializers.ValidationError("Observable is not a valid IP")
-        if not re.match(REGEX_IP, observable) and not re.match(REGEX_DOMAIN, observable):
+        if not re.match(REGEX_IP, observable) or not re.match(REGEX_DOMAIN, observable):
             raise serializers.ValidationError("Observable is not a valid IP or domain")
         try:
             required_object = IOC.objects.get(name=observable)
@@ -97,7 +95,6 @@ def ordering_validation(ordering: str) -> str:
 class FeedsRequestSerializer(serializers.Serializer):
     feed_type = serializers.CharField(max_length=120)
     attack_type = serializers.ChoiceField(choices=["scanner", "payload_request", "all"])
-    ioc_type = serializers.ChoiceField(choices=["ip", "domain", "all"])
     max_age = serializers.IntegerField(min_value=1)
     min_days_seen = serializers.IntegerField(min_value=1)
     include_reputation = serializers.ListField(child=serializers.CharField(max_length=120))
