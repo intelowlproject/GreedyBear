@@ -157,7 +157,7 @@ export default function Feeds() {
                   {(formik) => (
                     <Form>
                       <FormGroup row>
-                        <Col sm={12} md={4}>
+                        <Col sm={12} md={3}>
                           <Label
                             className="form-control-label"
                             htmlFor="Feeds__feeds_type"
@@ -175,7 +175,7 @@ export default function Feeds() {
                             }}
                           />
                         </Col>
-                        <Col sm={12} md={4}>
+                        <Col sm={12} md={3}>
                           <Label
                             className="form-control-label"
                             htmlFor="Feeds__attack_type"
@@ -193,7 +193,7 @@ export default function Feeds() {
                             }}
                           />
                         </Col>
-                        <Col sm={12} md={4}>
+                        <Col sm={12} md={3}>
                           <Label
                             className="form-control-label"
                             htmlFor="Feeds__ioc_type"
@@ -211,9 +211,7 @@ export default function Feeds() {
                             }}
                           />
                         </Col>
-                      </FormGroup>
-                      <FormGroup row>
-                        <Col sm={12} md={4}>
+                        <Col sm={12} md={3}>
                           <Label
                             className="form-control-label"
                             htmlFor="Feeds__prioritize"
