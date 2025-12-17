@@ -6,8 +6,9 @@ import socket
 
 from api.views.utils import is_ip_address, is_sha256hash
 from certego_saas.apps.auth.backend import CookieTokenAuthentication
+from django.conf import settings
 from django.http import Http404, HttpResponseBadRequest
-from greedybear.consts import FEEDS_LICENSE, GET
+from greedybear.consts import GET
 from greedybear.models import IOC, CommandSequence, CowrieSession, Statistics, viewType
 from rest_framework import status
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
@@ -94,9 +95,10 @@ def cowrie_session_view(request):
         sessions = sessions.union(related_sessions)
 
     response_data = {
-        "license": FEEDS_LICENSE,
         "query": observable,
     }
+    if settings.FEEDS_LICENSE:
+        response_data["license"] = settings.FEEDS_LICENSE
 
     unique_commands = set(s.commands for s in sessions if s.commands)
     response_data["commands"] = sorted("\n".join(cmd.commands) for cmd in unique_commands)
