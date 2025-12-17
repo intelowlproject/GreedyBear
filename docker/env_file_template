@@ -64,3 +64,8 @@ COMMAND_SEQUENCE_RETENTION = 365
 # ThreatFox API key.
 # Once added, your payload request domains will be submitted to ThreatFox
 THREATFOX_API_KEY =
+
+# Optional feed license URL to include in API responses
+# If not set, no license information will be included in feeds
+# Example: https://github.com/honeynet/GreedyBear/blob/main/FEEDS_LICENSE.md
+FEEDS_LICENSE=

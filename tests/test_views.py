@@ -1,5 +1,6 @@
 from api.views.utils import is_ip_address, is_sha256hash
-from greedybear.consts import FEEDS_LICENSE
+from django.conf import settings
+from django.test import override_settings
 from greedybear.models import GeneralHoneypot, Statistics, viewType
 from rest_framework.test import APIClient
 
@@ -57,10 +58,13 @@ class EnrichmentViewTestCase(CustomTestCase):
 
 
 class FeedsViewTestCase(CustomTestCase):
-    def test_200_all_feeds(self):
-        response = self.client.get("/api/feeds/all/all/recent.json")
+    def test_200_log4j_feeds(self):
+        response = self.client.get("/api/feeds/log4j/all/recent.json")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["license"], FEEDS_LICENSE)
+        if settings.FEEDS_LICENSE:
+            self.assertEqual(response.json()["license"], settings.FEEDS_LICENSE)
+        else:
+            self.assertNotIn("license", response.json())
         self.assertEqual(response.json()["iocs"][0]["feed_type"], ["log4j", "cowrie", "heralding", "ciscoasa"])
         self.assertEqual(response.json()["iocs"][0]["attack_count"], 1)
         self.assertEqual(response.json()["iocs"][0]["scanner"], True)
@@ -68,10 +72,28 @@ class FeedsViewTestCase(CustomTestCase):
         self.assertEqual(response.json()["iocs"][0]["recurrence_probability"], self.ioc.recurrence_probability)
         self.assertEqual(response.json()["iocs"][0]["expected_interactions"], self.ioc.expected_interactions)
 
+    @override_settings(FEEDS_LICENSE="https://example.com/license")
+    def test_200_all_feeds_with_license(self):
+        """Test feeds endpoint when FEEDS_LICENSE is populated"""
+        response = self.client.get("/api/feeds/all/all/recent.json")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("license", response.json())
+        self.assertEqual(response.json()["license"], "https://example.com/license")
+
+    @override_settings(FEEDS_LICENSE="")
+    def test_200_all_feeds_without_license(self):
+        """Test feeds endpoint when FEEDS_LICENSE is empty"""
+        response = self.client.get("/api/feeds/all/all/recent.json")
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn("license", response.json())
+
     def test_200_general_feeds(self):
         response = self.client.get("/api/feeds/heralding/all/recent.json")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["license"], FEEDS_LICENSE)
+        if settings.FEEDS_LICENSE:
+            self.assertEqual(response.json()["license"], settings.FEEDS_LICENSE)
+        else:
+            self.assertNotIn("license", response.json())
         self.assertEqual(response.json()["iocs"][0]["feed_type"], ["log4j", "cowrie", "heralding", "ciscoasa"])
         self.assertEqual(response.json()["iocs"][0]["attack_count"], 1)
         self.assertEqual(response.json()["iocs"][0]["scanner"], True)
@@ -82,7 +104,10 @@ class FeedsViewTestCase(CustomTestCase):
     def test_200_feeds_scanner_inclusion(self):
         response = self.client.get("/api/feeds/heralding/all/recent.json?include_mass_scanners")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["license"], FEEDS_LICENSE)
+        if settings.FEEDS_LICENSE:
+            self.assertEqual(response.json()["license"], settings.FEEDS_LICENSE)
+        else:
+            self.assertNotIn("license", response.json())
         self.assertEqual(len(response.json()["iocs"]), 2)
 
     def test_400_feeds(self):
@@ -123,7 +148,10 @@ class FeedsAdvancedViewTestCase(CustomTestCase):
     def test_200_all_feeds(self):
         response = self.client.get("/api/feeds/advanced/")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["license"], FEEDS_LICENSE)
+        if settings.FEEDS_LICENSE:
+            self.assertEqual(response.json()["license"], settings.FEEDS_LICENSE)
+        else:
+            self.assertNotIn("license", response.json())
         self.assertEqual(response.json()["iocs"][0]["feed_type"], ["log4j", "cowrie", "heralding", "ciscoasa"])
         self.assertEqual(response.json()["iocs"][0]["attack_count"], 1)
         self.assertEqual(response.json()["iocs"][0]["scanner"], True)
@@ -134,7 +162,10 @@ class FeedsAdvancedViewTestCase(CustomTestCase):
     def test_200_general_feeds(self):
         response = self.client.get("/api/feeds/advanced/?feed_type=heralding")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["license"], FEEDS_LICENSE)
+        if settings.FEEDS_LICENSE:
+            self.assertEqual(response.json()["license"], settings.FEEDS_LICENSE)
+        else:
+            self.assertNotIn("license", response.json())
         self.assertEqual(response.json()["iocs"][0]["feed_type"], ["log4j", "cowrie", "heralding", "ciscoasa"])
         self.assertEqual(response.json()["iocs"][0]["attack_count"], 1)
         self.assertEqual(response.json()["iocs"][0]["scanner"], True)
@@ -296,6 +327,36 @@ class CommandSequenceViewTestCase(CustomTestCase):
         """Test that view returns 404 for nonexistent hash."""
         response = self.client.get(f"/api/command_sequence?query={'f' * 64}")
         self.assertEqual(response.status_code, 404)
+
+    @override_settings(FEEDS_LICENSE="https://example.com/license")
+    def test_ip_address_query_with_license(self):
+        """Test that license is included when FEEDS_LICENSE is populated."""
+        response = self.client.get("/api/command_sequence?query=140.246.171.141")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("license", response.data)
+        self.assertEqual(response.data["license"], "https://example.com/license")
+
+    @override_settings(FEEDS_LICENSE="")
+    def test_ip_address_query_without_license(self):
+        """Test that license is not included when FEEDS_LICENSE is empty."""
+        response = self.client.get("/api/command_sequence?query=140.246.171.141")
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn("license", response.data)
+
+    @override_settings(FEEDS_LICENSE="https://example.com/license")
+    def test_hash_query_with_license(self):
+        """Test that license is included when FEEDS_LICENSE is populated."""
+        response = self.client.get(f"/api/command_sequence?query={self.hash}")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("license", response.data)
+        self.assertEqual(response.data["license"], "https://example.com/license")
+
+    @override_settings(FEEDS_LICENSE="")
+    def test_hash_query_without_license(self):
+        """Test that license is not included when FEEDS_LICENSE is empty."""
+        response = self.client.get(f"/api/command_sequence?query={self.hash}")
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn("license", response.data)
 
 
 class CowrieSessionViewTestCase(CustomTestCase):
@@ -466,6 +527,37 @@ class CowrieSessionViewTestCase(CustomTestCase):
         response = self.client.get("/api/cowrie_session?query=140.246.171.141%20")
         # Should either work or return 400, not crash
         self.assertIn(response.status_code, [200, 400, 404])
+
+    # # # # # License Tests # # # # #
+    @override_settings(FEEDS_LICENSE="https://example.com/license")
+    def test_ip_query_with_license(self):
+        """Test that license is included when FEEDS_LICENSE is populated."""
+        response = self.client.get("/api/cowrie_session?query=140.246.171.141")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("license", response.data)
+        self.assertEqual(response.data["license"], "https://example.com/license")
+
+    @override_settings(FEEDS_LICENSE="")
+    def test_ip_query_without_license(self):
+        """Test that license is not included when FEEDS_LICENSE is empty."""
+        response = self.client.get("/api/cowrie_session?query=140.246.171.141")
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn("license", response.data)
+
+    @override_settings(FEEDS_LICENSE="https://example.com/license")
+    def test_hash_query_with_license(self):
+        """Test that license is included when FEEDS_LICENSE is populated."""
+        response = self.client.get(f"/api/cowrie_session?query={self.hash}")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("license", response.data)
+        self.assertEqual(response.data["license"], "https://example.com/license")
+
+    @override_settings(FEEDS_LICENSE="")
+    def test_hash_query_without_license(self):
+        """Test that license is not included when FEEDS_LICENSE is empty."""
+        response = self.client.get(f"/api/cowrie_session?query={self.hash}")
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn("license", response.data)
 
     def test_query_with_special_characters(self):
         """Test handling of queries with special characters."""
