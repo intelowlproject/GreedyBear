@@ -1,9 +1,11 @@
+import json
 from abc import abstractmethod
 
 import pandas as pd
 from greedybear.cronjobs.scoring.consts import MULTI_VAL_FEATURES, NUM_FEATURES
 from greedybear.cronjobs.scoring.ml_model import Classifier, MLModel, Regressor
 from greedybear.cronjobs.scoring.utils import multi_label_encode
+from greedybear.settings import ML_CONFIG_FILE
 from sklearn.base import BaseEstimator
 from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 
@@ -84,15 +86,14 @@ class RFClassifier(RFModel, Classifier):
             BaseEstimator: Configured but untrained scikit-learn Random Forest
                 Classifier with all hyperparameters set
         """
-        params = {
-            "class_weight": {False: 1, True: 4},
-            "criterion": "entropy",
-            "max_depth": 10,
-            "max_features": "log2",
-            "min_samples_leaf": 6,
-            "min_samples_split": 3,
-            "n_estimators": 241,
-        }
+        with open(ML_CONFIG_FILE, "r") as f:
+            config = json.load(f)
+
+        params = config["RFClassifier"]
+        # Convert class_weight keys from string to boolean
+        if "class_weight" in params:
+            params["class_weight"] = {(k.lower() == "true"): v for k, v in params["class_weight"].items() if k.lower() in ["true", "false"]}
+
         return RandomForestClassifier(**params)
 
 
@@ -117,12 +118,8 @@ class RFRegressor(RFModel, Regressor):
             BaseEstimator: Configured but untrained scikit-learn Random Forest
                 Regressor with all hyperparameters set
         """
-        params = {
-            "criterion": "squared_error",
-            "max_depth": 11,
-            "max_features": "sqrt",
-            "min_samples_leaf": 3,
-            "min_samples_split": 8,
-            "n_estimators": 70,
-        }
+        with open(ML_CONFIG_FILE, "r") as f:
+            config = json.load(f)
+
+        params = config["RFRegressor"]
         return RandomForestRegressor(**params)
