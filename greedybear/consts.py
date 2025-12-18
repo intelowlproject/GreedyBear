@@ -15,4 +15,23 @@ REGEX_PASSWORD = r"^[a-zA-Z0-9]{12,}$"
 DOMAIN = "domain"
 IP = "ip"
 
-ATTACK_DATA_FIELDS = ["@timestamp", "src_ip", "dest_port", "ip_rep", "geoip"]
+REQUIRED_FIELDS = [
+    "@timestamp",
+    "src_ip",
+    "dest_port",
+    "ip_rep",
+    "geoip",
+    "deobfuscated_payload",
+    "correlation_id",
+    "url",
+    "message",
+    "reason",
+    "correlation_id",
+    "eventid",
+    "session",
+    "timestamp",
+    "duration",
+    "username",
+    "password",
+    "t-pot_ip_ext",
+]
