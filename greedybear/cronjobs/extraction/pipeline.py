@@ -48,10 +48,12 @@ class ExtractionPipeline:
             Number of IOC records processed.
         """
         # 1. Search
+        self.log.info("Getting honeypot hits from Elasticsearch")
         search_result = self.elastic_repo.search(self._minutes_back_to_lookup)
         hits_by_honeypot = defaultdict(list)
 
         # 2. Group by honeypot
+        self.log.info("Grouping hits by honeypot type")
         for hit in search_result:
             # skip hits with non-existing or empty sources
             if "src_ip" not in hit or not hit["src_ip"].strip():
@@ -69,7 +71,9 @@ class ExtractionPipeline:
         factory = ExtractionStrategyFactory(self.ioc_repo, self.sensor_repo)
         for honeypot, hits in sorted(hits_by_honeypot.items()):
             if not self.ioc_repo.is_ready_for_extraction(honeypot):
+                self.log.info(f"Skipping honeypot {honeypot}")
                 continue
+            self.log.info(f"Extracting hits from honeypot {honeypot}")
             strategy = factory.get_strategy(honeypot)
             try:
                 strategy.extract_from_hits(hits)
@@ -78,6 +82,7 @@ class ExtractionPipeline:
                 self.log.error(f"Extraction failed for honeypot {honeypot}: {exc}")
 
         # 4. Update scores
+        self.log.info("Updating scores")
         if ioc_records:
             UpdateScores().score_only(ioc_records)
         return len(ioc_records)
