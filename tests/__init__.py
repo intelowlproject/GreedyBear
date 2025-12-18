@@ -178,6 +178,8 @@ class ExtractionTestCase(CustomTestCase):
         mock = Mock(spec=IOC)
         mock.name = name
         mock.type = ioc_type
+        mock.scanner = False
+        mock.payload_request = False
         mock.attack_count = attack_count
         mock.interaction_count = interaction_count
         mock.related_urls = related_urls
