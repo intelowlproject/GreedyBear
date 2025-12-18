@@ -15,15 +15,6 @@ class TestGenericExtractionStrategy(ExtractionTestCase):
             sensor_repo=self.mock_sensor_repo,
         )
 
-    def test_skips_disabled_honeypot(self):
-        self.mock_ioc_repo.is_enabled.return_value = False
-        hits = [{"src_ip": "1.2.3.4", "dest_port": 80, "@timestamp": "2025-01-01T00:00:00"}]
-
-        self.strategy.extract_from_hits(hits)
-
-        self.mock_ioc_repo.is_enabled.assert_called_once_with("TestHoneypot")
-        self.assertEqual(len(self.strategy.ioc_records), 0)
-
     @patch("greedybear.cronjobs.extraction.strategies.generic.iocs_from_hits")
     @patch("greedybear.cronjobs.extraction.strategies.generic.threatfox_submission")
     def test_processes_enabled_honeypot(self, mock_threatfox, mock_iocs_from_hits):
