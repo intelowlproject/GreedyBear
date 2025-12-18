@@ -2,37 +2,15 @@
 # See the file 'LICENSE' for copying permission.
 from __future__ import absolute_import, unicode_literals
 
-from celery import chain, shared_task
+from celery import shared_task
 from greedybear.settings import CLUSTER_COWRIE_COMMAND_SEQUENCES
 
 
 @shared_task()
-def extract_log4pot():
-    from greedybear.cronjobs.log4pot import ExtractLog4Pot
+def extract_all():
+    from greedybear.cronjobs.extract import ExtractionJob
 
-    ExtractLog4Pot().execute()
-
-
-@shared_task()
-def extract_cowrie():
-    from greedybear.cronjobs.cowrie import ExtractCowrie
-
-    ExtractCowrie().execute()
-
-
-# FEEDS
-@shared_task()
-def extract_general():
-    from greedybear.cronjobs.general import ExtractAllGenerals
-
-    ExtractAllGenerals().execute()
-
-
-@shared_task()
-def extract_sensors():
-    from greedybear.cronjobs.sensors import ExtractSensors
-
-    ExtractSensors().execute()
+    ExtractionJob().execute()
 
 
 @shared_task()
