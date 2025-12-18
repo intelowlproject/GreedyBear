@@ -87,7 +87,7 @@ class TestAddIoc(ExtractionTestCase):
         self.mock_ioc_repo.save.return_value = ioc
         self.mock_ioc_repo.add_honeypot_to_ioc.return_value = ioc
 
-        self.processor.add_ioc(ioc, attack_type=SCANNER, general="TestHoneypot")
+        self.processor.add_ioc(ioc, attack_type=SCANNER, general_honeypot_name="TestHoneypot")
 
         self.mock_ioc_repo.add_honeypot_to_ioc.assert_called_once_with("TestHoneypot", ioc)
 
@@ -97,7 +97,7 @@ class TestAddIoc(ExtractionTestCase):
         ioc = self._create_mock_ioc()
         self.mock_ioc_repo.save.return_value = ioc
 
-        self.processor.add_ioc(ioc, attack_type=SCANNER, general=None)
+        self.processor.add_ioc(ioc, attack_type=SCANNER, general_honeypot_name=None)
 
         self.mock_ioc_repo.add_honeypot_to_ioc.assert_not_called()
 
