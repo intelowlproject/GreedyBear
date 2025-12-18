@@ -408,6 +408,7 @@ else:
 
 LEGACY_EXTRACTION = os.environ.get("LEGACY_EXTRACTION", "False") == "True"
 EXTRACTION_INTERVAL = int(os.environ.get("EXTRACTION_INTERVAL", 10))
+INITIAL_EXTRACTION_TIMESPAN = int(os.environ.get("INITIAL_EXTRACTION_TIMESPAN", 60 * 24 * 3))  # 3 days
 CLUSTER_COWRIE_COMMAND_SEQUENCES = os.environ.get("CLUSTER_COWRIE_COMMAND_SEQUENCES", "False") == "True"
 
 IOC_RETENTION = int(os.environ.get("IOC_RETENTION", "3650"))
