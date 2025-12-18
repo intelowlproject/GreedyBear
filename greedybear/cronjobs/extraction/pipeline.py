@@ -1,3 +1,4 @@
+import logging
 from collections import defaultdict
 
 from greedybear.cronjobs.extraction.strategies.factory import ExtractionStrategyFactory
@@ -14,6 +15,7 @@ class ExtractionPipeline:
 
     def __init__(self):
         """Initialize the pipeline with required repositories."""
+        self.log = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
         self.elastic_repo = ElasticRepository()
         self.ioc_repo = IocRepository()
         self.sensor_repo = SensorRepository()
@@ -69,8 +71,11 @@ class ExtractionPipeline:
             if not self.ioc_repo.is_ready_for_extraction(honeypot):
                 continue
             strategy = factory.get_strategy(honeypot)
-            strategy.extract_from_hits(hits)
-            ioc_records += strategy.ioc_records
+            try:
+                strategy.extract_from_hits(hits)
+                ioc_records += strategy.ioc_records
+            except Exception as exc:
+                self.log.error(f"Extraction failed for honeypot {honeypot}: {exc}")
 
         # 4. Update scores
         if ioc_records:
