@@ -7,10 +7,8 @@ from urllib.parse import urlparse
 
 from greedybear.consts import PAYLOAD_REQUEST, SCANNER
 from greedybear.cronjobs.extraction.strategies import BaseExtractionStrategy
-from greedybear.cronjobs.extraction.utils import (get_ioc_type, iocs_from_hits,
-                                                  threatfox_submission)
-from greedybear.cronjobs.repositories import (CowrieSessionRepository,
-                                              IocRepository, SensorRepository)
+from greedybear.cronjobs.extraction.utils import get_ioc_type, iocs_from_hits, threatfox_submission
+from greedybear.cronjobs.repositories import CowrieSessionRepository, IocRepository, SensorRepository
 from greedybear.models import IOC, CommandSequence, CowrieSession
 from greedybear.regex import REGEX_URL_PROTOCOL
 
@@ -86,7 +84,7 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
                 continue
             if hit.get("eventid", "") != "cowrie.session.file_download":
                 continue
-            self.log.info(f"found IP {hit["src_ip"]} trying to execute download from {hit["url"]}")
+            self.log.info(f"found IP {hit['src_ip']} trying to execute download from {hit['url']}")
             scanner_ip = str(hit["src_ip"])
             ioc = IOC(name=scanner_ip, type=get_ioc_type(scanner_ip), cowrie=True)
             ioc_record = self.ioc_processor.add_ioc(ioc, attack_type=SCANNER)
