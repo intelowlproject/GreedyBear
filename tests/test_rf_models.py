@@ -101,3 +101,16 @@ class TestRegressor(CustomTestCase):
 
         auc = regressor.recall_auc(df, training_target)
         self.assertEqual(0 <= auc <= 1, True)
+
+    def test_negative_predictions(self):
+        """Test that negative predictions are clipped to 0"""
+        regressor = self.MockRFRegressor()
+        regressor.model = regressor.untrained_model
+
+        # Set return value with negative numbers
+        regressor.model.predict.return_value = np.array([-10, 5, 0, -1, 2])
+
+        predictions = regressor.predict(SAMPLE_DATA)
+
+        expected = np.array([0, 5, 0, 0, 2])
+        np.testing.assert_array_equal(predictions, expected)
