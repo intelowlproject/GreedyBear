@@ -297,4 +297,5 @@ class Regressor(MLModel):
         Returns:
             np.ndarray: Array of predicted values with shape (n_samples,)
         """
-        return self.model.predict(X)
+        predictions = self.model.predict(X)
+        return np.maximum(predictions, 0)
