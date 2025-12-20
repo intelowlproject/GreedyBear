@@ -116,8 +116,9 @@ class TestMultiLabelEncode(CustomTestCase):
         data = get_current_data()
         features = get_features(data, today)
         features = multi_label_encode(features, "honeypots").to_dict("records")
+        features.sort(key=lambda d: d["value"], reverse=True)
         for h in ["heralding", "ciscoasa", "log4j", "cowrie"]:
-            self.assertEqual(features[0][f"has_{h}"], 1)
+            self.assertEqual(features[1][f"has_{h}"], 1)
 
     def test_multi_label_encode_sample(self):
         """Test with sample data"""

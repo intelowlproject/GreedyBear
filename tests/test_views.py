@@ -292,10 +292,10 @@ class StatisticsViewTestCase(CustomTestCase):
         self.assertEqual(response.json()[0]["Requests"], 1)
 
     def test_200_feed_types(self):
-        self.assertEqual(GeneralHoneypot.objects.count(), 2)
+        self.assertEqual(GeneralHoneypot.objects.count(), 3)
         # add a general honeypot without associated ioc
         GeneralHoneypot(name="Tanner", active=True).save()
-        self.assertEqual(GeneralHoneypot.objects.count(), 3)
+        self.assertEqual(GeneralHoneypot.objects.count(), 4)
 
         response = self.client.get("/api/statistics/feeds_types")
         self.assertEqual(response.status_code, 200)
@@ -309,17 +309,17 @@ class StatisticsViewTestCase(CustomTestCase):
 
 class GeneralHoneypotViewTestCase(CustomTestCase):
     def test_200_all_general_honeypots(self):
-        self.assertEqual(GeneralHoneypot.objects.count(), 2)
+        self.assertEqual(GeneralHoneypot.objects.count(), 3)
         # add a general honeypot not active
         GeneralHoneypot(name="Adbhoney", active=False).save()
-        self.assertEqual(GeneralHoneypot.objects.count(), 3)
+        self.assertEqual(GeneralHoneypot.objects.count(), 4)
 
         response = self.client.get("/api/general_honeypot")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json(), ["Heralding", "Ciscoasa", "Adbhoney"])
+        self.assertEqual(response.json(), ["Heralding", "Ciscoasa", "Ddospot", "Adbhoney"])
 
     def test_200_active_general_honeypots(self):
-        self.assertEqual(GeneralHoneypot.objects.count(), 2)
+        self.assertEqual(GeneralHoneypot.objects.count(), 3)
         response = self.client.get("/api/general_honeypot?onlyActive=true")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), ["Heralding", "Ciscoasa"])

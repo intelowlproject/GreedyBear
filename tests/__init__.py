@@ -1,5 +1,6 @@
 from datetime import datetime
 from hashlib import sha256
+from unittest.mock import Mock
 
 from certego_saas.apps.user.models import User
 from django.test import TestCase
@@ -13,6 +14,7 @@ class CustomTestCase(TestCase):
 
         cls.heralding = GeneralHoneypot.objects.create(name="Heralding", active=True)
         cls.ciscoasa = GeneralHoneypot.objects.create(name="Ciscoasa", active=True)
+        cls.ddospot = GeneralHoneypot.objects.create(name="Ddospot", active=False)
 
         cls.current_time = datetime.now()
         cls.ioc = IOC.objects.create(
@@ -175,3 +177,41 @@ class CustomTestCase(TestCase):
         IOC.objects.all().delete()
         CowrieSession.objects.all().delete()
         CommandSequence.objects.all().delete()
+
+
+class ExtractionTestCase(CustomTestCase):
+    def setUp(self):
+        self.mock_ioc_repo = Mock()
+        self.mock_sensor_repo = Mock()
+        self.mock_session_repo = Mock()
+
+    def _create_mock_ioc(
+        self,
+        name="1.2.3.4",
+        ioc_type="ip",
+        attack_count=1,
+        interaction_count=1,
+        related_urls=[],
+        destination_ports=[],
+        login_attempts=0,
+        days_seen=[],
+        last_seen=datetime.now(),
+        ip_reputation="",
+        asn=1234,
+    ):
+        mock = Mock(spec=IOC)
+        mock.name = name
+        mock.type = ioc_type
+        mock.scanner = False
+        mock.payload_request = False
+        mock.attack_count = attack_count
+        mock.interaction_count = interaction_count
+        mock.related_urls = related_urls
+        mock.destination_ports = destination_ports
+        mock.days_seen = days_seen
+        mock.login_attempts = login_attempts
+        mock.last_seen = last_seen
+        mock.ip_reputation = ip_reputation
+        mock.asn = asn
+        mock.number_of_days_seen = len(mock.days_seen)
+        return mock

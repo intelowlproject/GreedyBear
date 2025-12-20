@@ -2,26 +2,36 @@
 # See the file 'LICENSE' for copying permission.
 import base64
 import re
+from typing import Optional
 from urllib.parse import urlparse
 
 from greedybear.consts import PAYLOAD_REQUEST, SCANNER
-from greedybear.cronjobs.attacks import ExtractAttacks
-from greedybear.cronjobs.honeypots import Honeypot
+from greedybear.cronjobs.extraction.strategies import BaseExtractionStrategy
+from greedybear.cronjobs.extraction.utils import get_ioc_type
+from greedybear.cronjobs.repositories import IocRepository, SensorRepository
 from greedybear.models import IOC
 from greedybear.regex import REGEX_CVE_BASE64COMMAND, REGEX_CVE_URL, REGEX_URL
 
 
-class ExtractLog4Pot(ExtractAttacks):
-    def __init__(self, minutes_back=None):
-        super().__init__(minutes_back=minutes_back)
-        self.log4pot = Honeypot("Log4pot")
+class Log4potExtractionStrategy(BaseExtractionStrategy):
+    """
+    Extraction strategy for Log4pot honeypot (CVE-2021-44228).
+    Extracts scanner IPs, payload URLs from JNDI/LDAP exploit attempts,
+    and hidden URLs from base64-encoded commands. Links related IOCs
+    (scanners to payload hosts) via foreign key relationships.
+    """
 
-    def _log4pot_lookup(self):
-        search = self._base_search(self.log4pot)
+    def __init__(
+        self,
+        honeypot: str,
+        ioc_repo: IocRepository,
+        sensor_repo: SensorRepository,
+    ):
+        super().__init__(honeypot, ioc_repo, sensor_repo)
+
+    def extract_from_hits(self, hits: list[dict]) -> None:
         # we want to get only probes that tried to exploit the specific log4j CVE
-        search = search.filter("term", reason="exploit")
-        search = search.source(["deobfuscated_payload", "correlation_id"])
-        hits = search[:10000].execute()
+        hits = [hit for hit in hits if hit.get("reason", "") == "exploit"]
 
         url = None
         hostname = None
@@ -32,9 +42,9 @@ class ExtractLog4Pot(ExtractAttacks):
         added_hidden_payloads = 0
 
         for hit in hits:
-            scanner_ip = self._get_scanner_ip(hit.correlation_id)
+            scanner_ip = self._get_scanner_ip(hit["correlation_id"], hits)
 
-            match = re.search(REGEX_CVE_URL, hit.deobfuscated_payload)
+            match = re.search(REGEX_CVE_URL, hit["deobfuscated_payload"])
             if match:
                 # we are losing the protocol but that's ok for now
                 url = match.group()
@@ -48,7 +58,7 @@ class ExtractLog4Pot(ExtractAttacks):
 
             # it is possible to extract another payload from base64 encoded string.
             # this is a behavior related to the attack that leverages LDAP
-            match_command = re.search(REGEX_CVE_BASE64COMMAND, hit.deobfuscated_payload)
+            match_command = re.search(REGEX_CVE_BASE64COMMAND, hit["deobfuscated_payload"])
             if match_command:
                 # we are losing the protocol but that's ok for now
                 base64_encoded = match_command.group(1)
@@ -71,8 +81,8 @@ class ExtractLog4Pot(ExtractAttacks):
 
             # add scanner
             if scanner_ip:
-                ioc = IOC(name=scanner_ip, type=self._get_ioc_type(scanner_ip), log4j=True)
-                self._add_ioc(ioc, attack_type=SCANNER)
+                ioc = IOC(name=scanner_ip, type=get_ioc_type(scanner_ip), log4j=True)
+                self.ioc_processor.add_ioc(ioc, attack_type=SCANNER)
                 added_scanners += 1
 
             # add first URL
@@ -80,11 +90,11 @@ class ExtractLog4Pot(ExtractAttacks):
                 related_urls = [url] if url else []
                 ioc = IOC(
                     name=scanner_ip,
-                    type=self._get_ioc_type(scanner_ip),
+                    type=get_ioc_type(scanner_ip),
                     log4j=True,
                     related_urls=related_urls,
                 )
-                self._add_ioc(ioc, attack_type=SCANNER)
+                self.ioc_processor.add_ioc(ioc, attack_type=SCANNER)
                 added_payloads += 1
 
             # add hidden URL
@@ -92,11 +102,11 @@ class ExtractLog4Pot(ExtractAttacks):
                 related_urls = [hidden_url] if hidden_url else []
                 ioc = IOC(
                     name=hostname,
-                    type=self._get_ioc_type(hostname),
+                    type=get_ioc_type(hostname),
                     log4j=True,
                     related_urls=related_urls,
                 )
-                self._add_ioc(ioc, attack_type=PAYLOAD_REQUEST)
+                self.ioc_processor.add_ioc(ioc, attack_type=PAYLOAD_REQUEST)
                 added_hidden_payloads += 1
 
             # once all have added, we can add the foreign keys
@@ -104,55 +114,40 @@ class ExtractLog4Pot(ExtractAttacks):
 
         self.log.info(f"added {added_scanners} scanners, {added_payloads}" f" payloads" f" and {added_hidden_payloads} hidden payloads")
 
-    def _add_fks(self, scanner_ip, hostname, hidden_hostname):
+    def _add_fks(self, scanner_ip: str, hostname: str, hidden_hostname: str) -> None:
         self.log.info(f"adding foreign keys for the following iocs: {scanner_ip}, {hostname}, {hidden_hostname}")
-        scanner_ip_instance = IOC.objects.filter(name=scanner_ip).first()
-        hostname_instance = IOC.objects.filter(name=hostname).first()
-        hidden_hostname_instance = IOC.objects.filter(name=hidden_hostname).first()
+        scanner_ip_instance = self.ioc_repo.get_ioc_by_name(scanner_ip)
+        hostname_instance = self.ioc_repo.get_ioc_by_name(hostname)
+        hidden_hostname_instance = self.ioc_repo.get_ioc_by_name(hidden_hostname)
 
-        if scanner_ip_instance:
+        if scanner_ip_instance is not None:
             if hostname_instance and hostname_instance not in scanner_ip_instance.related_ioc.all():
                 scanner_ip_instance.related_ioc.add(hostname_instance)
             if hidden_hostname_instance and hidden_hostname_instance not in scanner_ip_instance.related_ioc.all():
                 scanner_ip_instance.related_ioc.add(hidden_hostname_instance)
-            scanner_ip_instance.save()
+            self.ioc_repo.save(scanner_ip_instance)
 
-        if hostname_instance:
+        if hostname_instance is not None:
             if scanner_ip_instance and scanner_ip_instance not in hostname_instance.related_ioc.all():
                 hostname_instance.related_ioc.add(scanner_ip_instance)
             if hidden_hostname_instance and hidden_hostname_instance not in hostname_instance.related_ioc.all():
                 hostname_instance.related_ioc.add(hidden_hostname_instance)
-            hostname_instance.save()
+            self.ioc_repo.save(hostname_instance)
 
-        if hidden_hostname_instance:
+        if hidden_hostname_instance is not None:
             if hostname_instance and hostname_instance not in hidden_hostname_instance.related_ioc.all():
                 hidden_hostname_instance.related_ioc.add(hostname_instance)
             if scanner_ip_instance and scanner_ip_instance not in hidden_hostname_instance.related_ioc.all():
                 hidden_hostname_instance.related_ioc.add(scanner_ip_instance)
-            hidden_hostname_instance.save()
+            self.ioc_repo.save(hidden_hostname_instance)
 
-    def _get_scanner_ip(self, correlation_id):
+    def _get_scanner_ip(self, correlation_id: str, hits: list[dict]) -> Optional[str]:
         self.log.info(f"extracting scanner IP from correlation_id {correlation_id}")
-        scanner_ip = None
-        search = self._base_search(self.log4pot)
-        search = search.filter("term", **{"correlation_id.keyword": str(correlation_id)})
-        search = search.filter("term", reason="request")
-        search = search.source(["src_ip"])
-        # only one should be available
-        hits = search[:10].execute()
-        for hit in hits:
-            scanner_ip = hit.src_ip
-            break
+        filtered_hits = [hit for hit in hits if str(hit.get("correlation_id", "")) == str(correlation_id) and hit.get("reason", "") == "request"]
 
-        if scanner_ip:
-            self.log.info(f"extracted scanner IP {scanner_ip} from correlation_id {correlation_id}")
-        else:
+        if not filtered_hits:
             self.log.warning(f"scanner IP was not extracted from correlation_id {correlation_id}")
-
+            return None
+        scanner_ip = filtered_hits[0]["src_ip"]
+        self.log.info(f"extracted scanner IP {scanner_ip} from correlation_id {correlation_id}")
         return scanner_ip
-
-    def run(self):
-        self._healthcheck()
-        self._check_first_time_run("log4j")
-        self._log4pot_lookup()
-        self._update_scores()
