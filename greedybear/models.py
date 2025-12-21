@@ -3,6 +3,7 @@
 from datetime import datetime
 
 from django.contrib.postgres import fields as pg_fields
+from django.contrib.postgres.indexes import GinIndex
 from django.db import models
 
 
@@ -90,6 +91,7 @@ class CowrieSession(models.Model):
     class Meta:
         indexes = [
             models.Index(fields=["source"]),
+            GinIndex(fields=["credentials"], name="greedybear_credentials_gin_idx"),
         ]
 
 
