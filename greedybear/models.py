@@ -18,7 +18,7 @@ class iocType(models.TextChoices):
     DOMAIN = "domain"
 
 
-class Sensors(models.Model):
+class Sensor(models.Model):
     address = models.CharField(max_length=15, blank=False)
 
 
@@ -104,7 +104,7 @@ class Statistics(models.Model):
     request_date = models.DateTimeField(blank=False, default=datetime.now)
 
 
-class MassScanners(models.Model):
+class MassScanner(models.Model):
     ip_address = models.CharField(max_length=256, blank=False)
     added = models.DateTimeField(blank=False, default=datetime.now)
     reason = models.CharField(max_length=64, blank=True, null=True)
@@ -115,7 +115,7 @@ class MassScanners(models.Model):
         ]
 
 
-class WhatsMyIP(models.Model):
+class WhatsMyIPDomain(models.Model):
     domain = models.CharField(max_length=256, blank=False)
     added = models.DateTimeField(blank=False, default=datetime.now)
 

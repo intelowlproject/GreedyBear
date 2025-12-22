@@ -1,6 +1,6 @@
 import requests
 from greedybear.cronjobs.base import Cronjob
-from greedybear.models import IOC, WhatsMyIP
+from greedybear.models import IOC, WhatsMyIPDomain
 
 
 class WhatsMyIPCron(Cronjob):
@@ -9,10 +9,10 @@ class WhatsMyIPCron(Cronjob):
         json_file = r.json()
         for domain in json_file["list"]:
             try:
-                WhatsMyIP.objects.get(domain=domain)
-            except WhatsMyIP.DoesNotExist:
+                WhatsMyIPDomain.objects.get(domain=domain)
+            except WhatsMyIPDomain.DoesNotExist:
                 self.log.info(f"added new whatsmyip domain {domain=}")
-                WhatsMyIP(domain=domain).save()
+                WhatsMyIPDomain(domain=domain).save()
                 self._remove_old_ioc(domain)
 
     def _remove_old_ioc(self, domain):
