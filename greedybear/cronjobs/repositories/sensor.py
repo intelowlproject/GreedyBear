@@ -8,7 +8,7 @@ from greedybear.models import Sensor
 class SensorRepository:
     """
     Repository for data access to the set of T-Pot sensors with in-memory caching.
-    
+
     The cache is populated once from the database at initialization and updated
     on successful additions.
     """
