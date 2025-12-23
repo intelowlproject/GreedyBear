@@ -2,7 +2,7 @@ from datetime import datetime
 from unittest.mock import Mock, patch
 
 from greedybear.cronjobs.repositories import CowrieSessionRepository, ElasticRepository, IocRepository, SensorRepository, get_time_window
-from greedybear.models import IOC, CommandSequence, CowrieSession, GeneralHoneypot, Sensors
+from greedybear.models import IOC, CommandSequence, CowrieSession, GeneralHoneypot, Sensor
 
 from . import CustomTestCase
 
@@ -129,28 +129,28 @@ class TestSensorRepository(CustomTestCase):
     def test_add_sensor_creates_new_sensor(self):
         result = self.repo.add_sensor("192.168.1.3")
         self.assertTrue(result)
-        self.assertTrue(Sensors.objects.filter(address="192.168.1.3").exists())
+        self.assertTrue(Sensor.objects.filter(address="192.168.1.3").exists())
         self.assertIn("192.168.1.3", self.repo.cache)
 
     def test_add_sensor_returns_false_for_existing_sensor(self):
         self.repo.add_sensor("192.168.1.1")
         result = self.repo.add_sensor("192.168.1.1")
         self.assertFalse(result)
-        self.assertEqual(Sensors.objects.filter(address="192.168.1.1").count(), 1)
+        self.assertEqual(Sensor.objects.filter(address="192.168.1.1").count(), 1)
 
     def test_add_sensor_rejects_non_ip(self):
         result = self.repo.add_sensor("not-an-ip")
         self.assertFalse(result)
-        self.assertFalse(Sensors.objects.filter(address="not-an-ip").exists())
+        self.assertFalse(Sensor.objects.filter(address="not-an-ip").exists())
 
     def test_add_sensor_rejects_domain(self):
         result = self.repo.add_sensor("example.com")
         self.assertFalse(result)
-        self.assertFalse(Sensors.objects.filter(address="example.com").exists())
+        self.assertFalse(Sensor.objects.filter(address="example.com").exists())
 
     def test_cache_populated_on_init(self):
-        Sensors.objects.create(address="192.168.1.1")
-        Sensors.objects.create(address="192.168.1.2")
+        Sensor.objects.create(address="192.168.1.1")
+        Sensor.objects.create(address="192.168.1.2")
         repo = SensorRepository()
         self.assertEqual(len(repo.cache), 2)
         self.assertIn("192.168.1.1", repo.cache)

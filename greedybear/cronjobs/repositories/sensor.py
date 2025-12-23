@@ -2,7 +2,7 @@ import logging
 
 from greedybear.consts import IP
 from greedybear.cronjobs.extraction.utils import get_ioc_type
-from greedybear.models import Sensors
+from greedybear.models import Sensor
 
 
 class SensorRepository:
@@ -46,7 +46,7 @@ class SensorRepository:
         if get_ioc_type(ip) != IP:
             self.log.debug(f"{ip} is not an IP address - won't add as a sensor")
             return False
-        sensor = Sensors(address=ip)
+        sensor = Sensor(address=ip)
         sensor.save()
         self.cache.add(ip)
         self.log.info(f"added sensor {ip} to the database")
@@ -55,4 +55,4 @@ class SensorRepository:
     def _fill_cache(self) -> None:
         """Load sensor addresses from the database into the cache."""
         self.log.debug("populating sensor cache")
-        self.cache = {s.address for s in Sensors.objects.all()}
+        self.cache = {s.address for s in Sensor.objects.all()}

@@ -2,7 +2,7 @@ import re
 
 import requests
 from greedybear.cronjobs.base import Cronjob
-from greedybear.models import IOC, MassScanners
+from greedybear.models import IOC, MassScanner
 
 
 class MassScannersCron(Cronjob):
@@ -18,10 +18,10 @@ class MassScannersCron(Cronjob):
                     ip_address = match.group(1)
                     reason = match.group(2)
                     try:
-                        MassScanners.objects.get(ip_address=ip_address)
-                    except MassScanners.DoesNotExist:
+                        MassScanner.objects.get(ip_address=ip_address)
+                    except MassScanner.DoesNotExist:
                         self.log.info(f"added new mass scanner {ip_address}")
-                        MassScanners(ip_address=ip_address, reason=reason).save()
+                        MassScanner(ip_address=ip_address, reason=reason).save()
                         self._update_old_ioc(ip_address)
                 else:
                     self.log.warning(f"unexpected line: {line}")
