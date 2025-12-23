@@ -26,15 +26,8 @@ class FireHolCron(Cronjob):
                     if not line or line.startswith("#"):
                         continue
 
-                    # FireHol lists might contain comments or extra info in lines?
-                    # ipsets usually are just IP or CIDR per line after comments.
-                    # Some might have 'add setname ip' format?
-                    # The files I viewed (raw content) look like IPs/CIDRs.
-                    # mass_scanners used regex: r"(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s*#\s*(.+)*"
-                    # But FireHol raw files from firehol/blocklist-ipsets are usually clean lists.
-                    # dshield.netset lines were just CIDRs.
-                    # blocklist_de.ipset lines are IPs.
-                    # We will treat the line as the value.
+                    # FireHol .ipset and .netset files contain IPs or CIDRs, one per line
+                    # Comments (lines starting with #) are filtered out above
 
                     try:
                         FireHolList.objects.get(ip_address=line, source=source)
@@ -42,8 +35,10 @@ class FireHolCron(Cronjob):
                         FireHolList(ip_address=line, source=source).save()
                         self._update_ioc(line, source)
 
+            except requests.RequestException as e:
+                self.log.error(f"Network error fetching {source}: {e}")
             except Exception as e:
-                self.log.exception(f"Error processing {source}: {e}")
+                self.log.exception(f"Unexpected error processing {source}: {e}")
 
     def _update_ioc(self, ip_address, source):
         try:
