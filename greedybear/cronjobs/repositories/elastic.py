@@ -28,7 +28,26 @@ class ElasticRepository:
         self.elastic_client = settings.ELASTIC_CLIENT
         self.search_cache = dict()
 
-    def search(self, minutes_back_to_lookup: int):
+    def has_honeypot_been_hit(self, minutes_back_to_lookup: int, honeypot_name: str) -> bool:
+        """
+        Check if a specific honeypot has been hit within a given time window.
+
+        Args:
+            minutes_back_to_lookup: Number of minutes to look back from the current
+                time when searching for honeypot hits.
+            honeypot_name: The  name/type of the honeypot to check for hits.
+
+        Returns:
+            True if at least one hit was recorded for the specified honeypot within
+            the time window, False otherwise.
+        """
+        search = Search(using=self.elastic_client, index="logstash-*")
+        q = self._standard_query(minutes_back_to_lookup)
+        search = search.query(q)
+        search = search.filter("term", **{"type.keyword": honeypot_name})
+        return search.count() > 0
+
+    def search(self, minutes_back_to_lookup: int) -> list:
         """
         Search for log entries within a specified time window.
 
