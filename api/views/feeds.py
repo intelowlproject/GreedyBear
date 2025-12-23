@@ -11,8 +11,6 @@ from rest_framework.permissions import IsAuthenticated
 
 logger = logging.getLogger(__name__)
 
-api_view([GET])
-
 
 @api_view([GET])
 def feeds(request, feed_type, attack_type, prioritize, format_):
