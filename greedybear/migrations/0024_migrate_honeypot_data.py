@@ -29,7 +29,7 @@ def reverse_migrate_honeypots(apps, schema_editor):
         cowrie_gh = GeneralHoneypot.objects.get(name="Cowrie")
         # Initialize queryset to update
         # We need to verify if the 'cowrie' field still exists when this reverse runs
-        # If this runs before the field removal migration is reversed, the field might not be there? 
+        # If this runs before the field removal migration is reversed, the field might not be there?
         # No, reverse order ensures field is added back before this runs if we order migrations correctly.
         # But here we are ONLY doing data migration. The field removal is NEXT migration.
         # So fields exist.
