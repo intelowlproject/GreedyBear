@@ -12,6 +12,9 @@ class CustomTestCase(TestCase):
     def setUpTestData(cls):
         super(CustomTestCase, cls).setUpTestData()
 
+        # Create GeneralHoneypot entries for Cowrie and Log4Pot (required for unified model)
+        cls.cowrie = GeneralHoneypot.objects.create(name="Cowrie", active=True)
+        cls.log4pot = GeneralHoneypot.objects.create(name="Log4Pot", active=True)
         cls.heralding = GeneralHoneypot.objects.create(name="Heralding", active=True)
         cls.ciscoasa = GeneralHoneypot.objects.create(name="Ciscoasa", active=True)
         cls.ddospot = GeneralHoneypot.objects.create(name="Ddospot", active=False)
@@ -26,8 +29,6 @@ class CustomTestCase(TestCase):
             number_of_days_seen=1,
             attack_count=1,
             interaction_count=1,
-            log4j=True,
-            cowrie=True,
             scanner=True,
             payload_request=True,
             related_urls=[],
@@ -48,8 +49,6 @@ class CustomTestCase(TestCase):
             number_of_days_seen=1,
             attack_count=1,
             interaction_count=1,
-            log4j=True,
-            cowrie=True,
             scanner=True,
             payload_request=True,
             related_urls=[],
@@ -70,8 +69,6 @@ class CustomTestCase(TestCase):
             number_of_days_seen=1,
             attack_count=1,
             interaction_count=1,
-            log4j=False,
-            cowrie=True,
             scanner=True,
             payload_request=True,
             related_urls=[],
@@ -92,8 +89,6 @@ class CustomTestCase(TestCase):
             number_of_days_seen=1,
             attack_count=1,
             interaction_count=1,
-            log4j=True,
-            cowrie=False,
             scanner=False,
             payload_request=True,
             related_urls=[],
@@ -105,13 +100,21 @@ class CustomTestCase(TestCase):
             expected_interactions=5.5,
         )
 
-        cls.ioc.general_honeypot.add(cls.heralding)  # FEEDS
-        cls.ioc.general_honeypot.add(cls.ciscoasa)  # FEEDS
+        # Associate IOCs with honeypots (replacing boolean fields)
+        cls.ioc.general_honeypot.add(cls.cowrie)
+        cls.ioc.general_honeypot.add(cls.log4pot)
+        cls.ioc.general_honeypot.add(cls.heralding)
+        cls.ioc.general_honeypot.add(cls.ciscoasa)
         cls.ioc.save()
-        cls.ioc_2.general_honeypot.add(cls.heralding)  # FEEDS
-        cls.ioc_2.general_honeypot.add(cls.ciscoasa)  # FEEDS
+        cls.ioc_2.general_honeypot.add(cls.cowrie)
+        cls.ioc_2.general_honeypot.add(cls.log4pot)
+        cls.ioc_2.general_honeypot.add(cls.heralding)
+        cls.ioc_2.general_honeypot.add(cls.ciscoasa)
         cls.ioc_2.save()
-        cls.ioc_domain.general_honeypot.add(cls.heralding)  # FEEDS
+        cls.ioc_3.general_honeypot.add(cls.cowrie)
+        cls.ioc_3.save()
+        cls.ioc_domain.general_honeypot.add(cls.log4pot)
+        cls.ioc_domain.general_honeypot.add(cls.heralding)
         cls.ioc_domain.save()
 
         cls.cmd_seq = ["cd foo", "ls -la"]

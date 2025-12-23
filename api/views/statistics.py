@@ -79,8 +79,7 @@ class StatisticsViewSet(viewsets.ViewSet):
     @action(detail=False, methods=["get"])
     def feeds_types(self, request):
         """
-        Retrieve statistics for different types of feeds, including Log4j, Cowrie,
-        and general honeypots.
+        Retrieve statistics for different types of feeds based on general honeypots.
 
         Args:
             request: The incoming request object.
@@ -88,15 +87,11 @@ class StatisticsViewSet(viewsets.ViewSet):
         Returns:
             Response: A JSON response containing the feed type statistics.
         """
-        # FEEDS
-        annotations = {
-            "Log4j": Count("name", distinct=True, filter=Q(log4j=True)),
-            "Cowrie": Count("name", distinct=True, filter=Q(cowrie=True)),
-        }
-        # feed_type for each general honeypot in the list
+        # Build annotations for each active general honeypot
+        annotations = {}
         generalHoneypots = GeneralHoneypot.objects.all().filter(active=True)
         for hp in generalHoneypots:
-            annotations[hp.name] = Count("name", Q(general_honeypot__name__iexact=hp.name.lower()))
+            annotations[hp.name] = Count("name", distinct=True, filter=Q(general_honeypot__name__iexact=hp.name.lower()))
         return self.__aggregation_response_static_ioc(annotations)
 
     def __aggregation_response_static_statistics(self, annotations: dict) -> Response:

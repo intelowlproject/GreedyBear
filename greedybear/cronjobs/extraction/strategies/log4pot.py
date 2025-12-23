@@ -81,8 +81,8 @@ class Log4potExtractionStrategy(BaseExtractionStrategy):
 
             # add scanner
             if scanner_ip:
-                ioc = IOC(name=scanner_ip, type=get_ioc_type(scanner_ip), log4j=True)
-                self.ioc_processor.add_ioc(ioc, attack_type=SCANNER)
+                ioc = IOC(name=scanner_ip, type=get_ioc_type(scanner_ip))
+                self.ioc_processor.add_ioc(ioc, attack_type=SCANNER, general_honeypot_name="Log4Pot")
                 added_scanners += 1
 
             # add first URL
@@ -91,10 +91,9 @@ class Log4potExtractionStrategy(BaseExtractionStrategy):
                 ioc = IOC(
                     name=scanner_ip,
                     type=get_ioc_type(scanner_ip),
-                    log4j=True,
                     related_urls=related_urls,
                 )
-                self.ioc_processor.add_ioc(ioc, attack_type=SCANNER)
+                self.ioc_processor.add_ioc(ioc, attack_type=SCANNER, general_honeypot_name="Log4Pot")
                 added_payloads += 1
 
             # add hidden URL
@@ -103,10 +102,9 @@ class Log4potExtractionStrategy(BaseExtractionStrategy):
                 ioc = IOC(
                     name=hostname,
                     type=get_ioc_type(hostname),
-                    log4j=True,
                     related_urls=related_urls,
                 )
-                self.ioc_processor.add_ioc(ioc, attack_type=PAYLOAD_REQUEST)
+                self.ioc_processor.add_ioc(ioc, attack_type=PAYLOAD_REQUEST, general_honeypot_name="Log4Pot")
                 added_hidden_payloads += 1
 
             # once all have added, we can add the foreign keys

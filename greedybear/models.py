@@ -39,9 +39,7 @@ class IOC(models.Model):
     number_of_days_seen = models.IntegerField(default=1)
     attack_count = models.IntegerField(default=1)
     interaction_count = models.IntegerField(default=1)
-    log4j = models.BooleanField(blank=False, default=False)
-    cowrie = models.BooleanField(blank=False, default=False)
-    # FEEDS - list of honeypots from general list, from which the IOC was detected
+    # FEEDS - list of honeypots from which the IOC was detected
     general_honeypot = models.ManyToManyField(GeneralHoneypot, blank=True)
     scanner = models.BooleanField(blank=False, default=False)
     payload_request = models.BooleanField(blank=False, default=False)

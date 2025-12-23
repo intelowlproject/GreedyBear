@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 from api.views.utils import FeedRequestParams, feeds_response
 from django.contrib.postgres.aggregates import ArrayAgg
-from django.db.models import F, Q
+from django.db.models import F
 from greedybear.models import IOC
 
 
@@ -190,11 +190,12 @@ def get_current_data(days_lookback: int = 30) -> list[dict]:
         "scanner": True,
     }
     iocs = (
-        IOC.objects.filter(Q(cowrie=True) | Q(log4j=True) | Q(general_honeypot__active=True))
+        IOC.objects.filter(general_honeypot__active=True)
         .filter(**query_dict)
         .prefetch_related("general_honeypot")
         .annotate(value=F("name"))
         .annotate(honeypots=ArrayAgg("general_honeypot__name"))
+        .distinct()
         .values()
     )
     return serialize_iocs(iocs)

@@ -78,15 +78,13 @@ class IOCModelAdmin(admin.ModelAdmin):
         "related_urls",
         "scanner",
         "payload_request",
-        "log4j",
-        "cowrie",
         "general_honeypots",
         "ip_reputation",
         "asn",
         "destination_ports",
         "login_attempts",
     ]
-    list_filter = ["type", "log4j", "cowrie", "scanner", "payload_request", "ip_reputation", "asn"]
+    list_filter = ["type", "general_honeypot", "scanner", "payload_request", "ip_reputation", "asn"]
     search_fields = ["name", "related_ioc__name"]
     search_help_text = ["search for the IP address source"]
     raw_id_fields = ["related_ioc"]

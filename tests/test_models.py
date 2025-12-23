@@ -13,8 +13,6 @@ class ModelsTestCase(CustomTestCase):
         self.assertEqual(self.ioc.number_of_days_seen, 1)
         self.assertEqual(self.ioc.attack_count, 1)
         self.assertEqual(self.ioc.interaction_count, 1)
-        self.assertEqual(self.ioc.log4j, True)
-        self.assertEqual(self.ioc.cowrie, True)
         self.assertEqual(self.ioc.scanner, True)
         self.assertEqual(self.ioc.payload_request, True)
         self.assertEqual(self.ioc.related_urls, [])
@@ -27,6 +25,9 @@ class ModelsTestCase(CustomTestCase):
 
         self.assertEqual(self.ioc_2.ip_reputation, "mass scanner")
 
+        # Test general_honeypot M2M relationship (unified model)
+        self.assertIn(self.cowrie, self.ioc.general_honeypot.all())
+        self.assertIn(self.log4pot, self.ioc.general_honeypot.all())
         self.assertIn(self.heralding, self.ioc.general_honeypot.all())
         self.assertIn(self.ciscoasa, self.ioc.general_honeypot.all())
 

@@ -6,7 +6,7 @@ from datetime import date
 import pandas as pd
 from django.core.files.base import ContentFile
 from django.core.files.storage import FileSystemStorage
-from django.db.models import F, Q
+from django.db.models import F
 from greedybear.cronjobs.base import Cronjob
 from greedybear.cronjobs.scoring.random_forest import RFClassifier, RFRegressor
 from greedybear.cronjobs.scoring.utils import correlated_features, get_current_data, get_data_by_pks, get_features
@@ -169,9 +169,7 @@ class UpdateScores(Cronjob):
         scores_by_ip = df.set_index("value")[score_names].to_dict("index")
         # If no IoCs were passed as an argument, fetch all IoCs
         if iocs is None:
-            iocs = (
-                IOC.objects.filter(Q(cowrie=True) | Q(log4j=True) | Q(general_honeypot__active=True)).filter(scanner=True).distinct().only("name", *score_names)
-            )
+            iocs = IOC.objects.filter(general_honeypot__active=True).filter(scanner=True).distinct().only("name", *score_names)
             reset_old_scores = True
         iocs_to_update = []
 
