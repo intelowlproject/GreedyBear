@@ -1,22 +1,70 @@
 # This file is a part of GreedyBear https://github.com/honeynet/GreedyBear
 # See the file 'LICENSE' for copying permission.
+import re
+from collections import defaultdict
 from hashlib import sha256
-from typing import Dict, List
+from typing import Optional
+from urllib.parse import urlparse
 
 from greedybear.consts import PAYLOAD_REQUEST, SCANNER
 from greedybear.cronjobs.extraction.strategies import BaseExtractionStrategy
-from greedybear.cronjobs.extraction.strategies.cowrie_parser import CowrieLogParser, CowrieSessionData
 from greedybear.cronjobs.extraction.utils import get_ioc_type, iocs_from_hits, threatfox_submission
 from greedybear.cronjobs.repositories import CowrieSessionRepository, IocRepository, SensorRepository
 from greedybear.models import IOC, CommandSequence, CowrieSession
+from greedybear.regex import REGEX_URL_PROTOCOL
+
+
+def parse_url_hostname(url: str) -> Optional[str]:
+    """
+    Extract hostname from URL safely.
+
+    Args:
+        url: URL string to parse
+
+    Returns:
+        Hostname if parsing succeeds, None otherwise
+    """
+    try:
+        parsed = urlparse(url)
+        return parsed.hostname
+    except (ValueError, AttributeError):
+        return None
+
+
+def normalize_command(message: str) -> str:
+    """
+    Normalize command string by removing CMD prefix and null characters.
+
+    Args:
+        message: Raw command message string
+
+    Returns:
+        Normalized command string, truncated to 1024 characters
+    """
+    return message.removeprefix("CMD: ").replace("\x00", "[NUL]")[:1024]
+
+
+def normalize_credential_field(field: str) -> str:
+    """
+    Normalize credential fields by replacing null characters.
+
+    Args:
+        field: Credential field string
+
+    Returns:
+        Normalized credential field
+    """
+    return field.replace("\x00", "[NUL]")
 
 
 class CowrieExtractionStrategy(BaseExtractionStrategy):
     """
     Extraction strategy for Cowrie SSH/Telnet honeypot.
-    Extracts scanner IPs, payload URLs from login attempts and file downloads,
-    and session data including credentials and command sequences. Links related
-    IOCs (scanners to download URLs) and deduplicates command sequences by hash.
+
+    Extracts scanner IPs, payload URLs from login attempts and file
+    downloads, and session data including credentials and command
+    sequences. Links related IOCs (scanners to download URLs) and
+    deduplicates command sequences by hash.
     """
 
     def __init__(
@@ -28,36 +76,29 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
     ):
         super().__init__(honeypot, ioc_repo, sensor_repo)
         self.session_repo = session_repo or CowrieSessionRepository()
-        self.parser = CowrieLogParser(self.log)
         self.payloads_in_message = 0
         self.added_ip_downloads = 0
         self.added_url_downloads = 0
 
     def extract_from_hits(self, hits: list[dict]) -> None:
-        # 1. Process Scanners (using util that aggregates distinct IPs)
+        """
+        Main extraction entry point. Processes hits and extracts scanners,
+        payloads, downloads, and sessions.
+
+        Args:
+            hits: List of Elasticsearch hit documents
+        """
         self._get_scanners(hits)
-
-        # 2. Process Payloads
-        payloads = self.parser.extract_payloads(hits)
-        self._save_payloads(payloads)
-
-        # 3. Process Downloads
-        downloads = self.parser.extract_downloads(hits)
-        self._save_downloads(downloads)
-
-        # 4. Process Sessions
-        sessions = self.parser.extract_sessions(hits)
-        self._save_sessions(sessions)
-
+        self._get_url_downloads(hits)
         self.log.info(
             f"added {len(self.ioc_records)} scanners, "
             f"{self.payloads_in_message} payload found in messages, "
             f"{self.added_ip_downloads} IP that tried to download, "
             f"{self.added_url_downloads} URL to download"
         )
-        self.log.info(f"{len(sessions)} sessions processed")
 
     def _get_scanners(self, hits: list[dict]) -> None:
+        """Extract scanner IPs and associated payloads and sessions."""
         for ioc in iocs_from_hits(hits):
             ioc.cowrie = True
             self.log.info(f"found IP {ioc.name} by honeypot cowrie")
@@ -65,14 +106,36 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
             if ioc_record:
                 self.ioc_records.append(ioc_record)
                 threatfox_submission(ioc_record, ioc.related_urls, self.log)
-                # Note: Previous code called payload/session extraction here
-                # We now do it separately in extract_from_hits
+                self._extract_possible_payload_in_messages(ioc_record.name, hits)
+                self._get_sessions(ioc_record, hits)
 
-    def _save_payloads(self, payloads: List[Dict]) -> None:
-        for payload in payloads:
-            scanner_ip = payload["source_ip"]
-            payload_url = payload["payload_url"]
-            payload_hostname = payload["payload_hostname"]
+    def _extract_possible_payload_in_messages(self, scanner_ip: str, hits: list[dict]) -> None:
+        """
+        Extract URLs hidden in attack payloads (login messages, file uploads).
+
+        Args:
+            scanner_ip: Source IP address of the scanner
+            hits: List of hits to search for payloads
+        """
+        for hit in hits:
+            if hit["src_ip"] != scanner_ip:
+                continue
+            if hit.get("eventid", "") not in [
+                "cowrie.login.failed",
+                "cowrie.session.file_upload",
+            ]:
+                continue
+
+            match_url = re.search(REGEX_URL_PROTOCOL, hit.get("message", ""))
+            if not match_url:
+                continue
+
+            payload_url = match_url.group()
+            payload_hostname = parse_url_hostname(payload_url)
+
+            if not payload_hostname:
+                self.log.warning(f"Failed to parse hostname from URL: {payload_url}")
+                continue
 
             self.log.info(f"found hidden URL {payload_url} in payload from attacker {scanner_ip}")
             self.log.info(f"extracted hostname {payload_hostname} from {payload_url}")
@@ -87,29 +150,38 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
             self._add_fks(scanner_ip, payload_hostname)
             self.payloads_in_message += 1
 
-    def _save_downloads(self, downloads: List[Dict]) -> None:
-        for download in downloads:
-            scanner_ip = download["source_ip"]
-            download_url = download["download_url"]
-            hostname = download["hostname"]
+    def _get_url_downloads(self, hits: list[dict]) -> None:
+        """
+        Extract file download attempts and associate scanners with download URLs.
+
+        Args:
+            hits: List of hits to search for download events
+        """
+        for hit in hits:
+            if "url" not in hit:
+                continue
+            if hit.get("eventid", "") != "cowrie.session.file_download":
+                continue
+
+            scanner_ip = str(hit["src_ip"])
+            download_url = str(hit["url"])
 
             self.log.info(f"found IP {scanner_ip} trying to execute download from {download_url}")
 
-            # Ensure scanner IP is tracked as scanner (redundant if _get_scanners ran first,
-            # but original code did this explicitly)
+            # Track scanner IP
             scanner_ioc = IOC(name=scanner_ip, type=get_ioc_type(scanner_ip), cowrie=True)
-            scanner_record = self.ioc_processor.add_ioc(scanner_ioc, attack_type=SCANNER)
-
-            # The original code counters incremented only if add_ioc returned record?
-            # Original:
-            # ioc_record = self.ioc_processor.add_ioc(scanner_ioc, attack_type=SCANNER)
-            # if ioc_record: self.added_ip_downloads += 1 ...
-
-            if scanner_record:
+            ioc_record = self.ioc_processor.add_ioc(scanner_ioc, attack_type=SCANNER)
+            if ioc_record:
                 self.added_ip_downloads += 1
-                threatfox_submission(scanner_record, scanner_ioc.related_urls, self.log)
+                threatfox_submission(ioc_record, scanner_ioc.related_urls, self.log)
 
+            # Track download URL
             if download_url:
+                hostname = parse_url_hostname(download_url)
+                if not hostname:
+                    self.log.warning(f"Failed to parse hostname from download URL: {download_url}")
+                    continue
+
                 ioc = IOC(
                     name=hostname,
                     type=get_ioc_type(hostname),
@@ -122,135 +194,121 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
                     threatfox_submission(ioc_record, ioc.related_urls, self.log)
                 self._add_fks(scanner_ip, hostname)
 
-    def _save_sessions(self, sessions: Dict[str, CowrieSessionData]) -> None:
-        for sid, session_data in sessions.items():
-            source_ip = session_data.source_ip
-            # We need the IOC object for the source IP
-            # It should have been created by _get_scanners
-            scanner_ioc = self.ioc_repo.get_ioc_by_name(source_ip)
-            if not scanner_ioc:
-                # Should not happen if data consistency holds, but fallback:
-                self.log.warning(f"Session {sid} has unknown source IP {source_ip}, creating IOC.")
-                scanner_ioc = IOC(name=source_ip, type=get_ioc_type(source_ip), cowrie=True)
-                scanner_ioc = self.ioc_processor.add_ioc(scanner_ioc, attack_type=SCANNER)
-                if not scanner_ioc:
-                    # Could be None if whitelisted?
-                    self.log.warning(f"Could not create IOC for {source_ip}, skipping session {sid}")
-                    continue
+    def _get_sessions(self, ioc: IOC, hits: list[dict]) -> None:
+        """
+        Extract and save session data for a given scanner IOC.
 
-            self.log.info(f"adding cowrie sessions from {source_ip}")
+        Args:
+            ioc: Scanner IOC object
+            hits: List of hits to process
+        """
+        self.log.info(f"adding cowrie sessions from {ioc.name}")
+        hits_per_session = defaultdict(list)
 
-            session_record = self.session_repo.get_or_create_session(session_id=sid, source=scanner_ioc)
+        for hit in hits:
+            if hit["src_ip"] != ioc.name:
+                continue
+            hits_per_session[hit["session"]].append(hit)
 
-            # Update fields from simple data mapping
-            session_record.start_time = session_data.start_time
-            session_record.duration = session_data.duration
-            session_record.login_attempt = session_data.login_attempt
-            session_record.credentials.extend(session_data.credentials)  # extend or overwrite? Original used append inside loop
-            # session_data.credentials is a list accumulated from hits.
-            # If session_record already exists, we might append duplicate credentials if hits are re-processed?
-            # Original: session_record.credentials.append(f"{username} | {password}")
+        for sid, session_hits in hits_per_session.items():
+            session_record = self.session_repo.get_or_create_session(session_id=sid, source=ioc)
 
-            # If session exists, we are updating it.
-            # But normally we process new hits.
-            # For correctness matching original: we should probably be careful about duplication if running multiple times?
-            # The original code: for hit in sorted(hits): ... append ...
-            # If we just assign, we replace.
-            # But the original code was: check DoesNotExist, create, THEN iterating hits and updating fields.
-            # If session existed, it would append MORE credentials.
-            # So I should also append?
-            # However, session_data.credentials contains ALL credentials from the hits provided.
-            # If these hits were already processed, we are duplicating.
-            # But extraction usually runs on recent hits.
-
-            # Let's assume appending is correct behavior or replacing if we trust fresh aggregation.
-            # But since we use get_or_create, session might have old data.
-            # Actually, `get_or_create_session` usually returns instance.
-            # If I append session_data.credentials to session_record.credentials, fine.
-            # Wait, `session_record.credentials` is ArrayField (list).
-            # I should probably just set it if I assume I have the full view of the session?
-            # No, maybe only partial hits.
-            # Safety: append.
-
-            # Wait, `session_record.credentials` default is list.
-            if session_data.credentials:
-                # Original used append one by one.
-                session_record.credentials.extend(session_data.credentials)
-
-            if session_data.login_attempt:
-                # Need to increment login_attempts on source IOC?
-                # Original: session_record.source.login_attempts += 1 (inside loop for each hit)
-                # So calculate total attempts from session_data
-                count = len(session_data.credentials)
-                # Or based on hits? Original: for hit in hits: if connect/failed: login_attempts += 1.
-                # session_data.credentials corresponds to failed/success hits.
-                session_record.source.login_attempts += count
-
-            if session_data.command_execution:
-                self.log.info(f"found a command execution from {source_ip}")
-                session_record.command_execution = True
-
-                if session_record.commands is None:
-                    session_record.commands = CommandSequence()
-                    # Ensure first_seen is set if new
-                    if session_data.commands_first_seen:
-                        session_record.commands.first_seen = session_data.commands_first_seen
-
-                if session_data.commands_last_seen:
-                    session_record.commands.last_seen = session_data.commands_last_seen
-
-                session_record.commands.commands.extend(session_data.commands)
-
-            session_record.interaction_count += session_data.interaction_count
+            for hit in sorted(session_hits, key=lambda hit: hit["timestamp"]):
+                self._process_session_hit(session_record, hit, ioc)
 
             if session_record.commands is not None:
                 self._deduplicate_command_sequence(session_record)
                 self.session_repo.save_command_sequence(session_record.commands)
-                self.log.info(f"saved new command execute from {source_ip} " f"with hash {session_record.commands.commands_hash}")
+                self.log.info(f"saved new command execute from {ioc.name} " f"with hash {session_record.commands.commands_hash}")
 
             self.ioc_repo.save(session_record.source)
             self.session_repo.save_session(session_record)
 
-    def _add_fks(self, scanner_ip, hostname):
-        self.log.info(f"adding foreign keys for the following iocs: {scanner_ip}, {hostname}")
+        self.log.info(f"{len(hits_per_session)} sessions added")
+
+    def _process_session_hit(self, session_record: CowrieSession, hit: dict, ioc: IOC) -> None:
+        """
+        Process a single hit and update the session record.
+
+        Args:
+            session_record: CowrieSession instance to update
+            hit: Hit document to process
+            ioc: Associated IOC for logging
+        """
+        eventid = hit.get("eventid")
+
+        match eventid:
+            case "cowrie.session.connect":
+                session_record.start_time = hit["timestamp"]
+
+            case "cowrie.login.failed" | "cowrie.login.success":
+                session_record.login_attempt = True
+                username = normalize_credential_field(hit["username"])
+                password = normalize_credential_field(hit["password"])
+                session_record.credentials.append(f"{username} | {password}")
+                session_record.source.login_attempts += 1
+
+            case "cowrie.command.input":
+                self.log.info(f"found a command execution from {ioc.name}")
+                session_record.command_execution = True
+
+                if session_record.commands is None:
+                    session_record.commands = CommandSequence()
+                    session_record.commands.first_seen = hit["timestamp"]
+
+                command = normalize_command(hit["message"])
+                session_record.commands.last_seen = hit["timestamp"]
+                session_record.commands.commands.append(command)
+
+            case "cowrie.session.closed":
+                session_record.duration = hit["duration"]
+
+        session_record.interaction_count += 1
+
+    def _add_fks(self, scanner_ip: str, hostname: str) -> None:
+        """
+        Link related IOCs bidirectionally (scanner IP <-> hostname).
+
+        Args:
+            scanner_ip: Scanner IP address
+            hostname: Hostname to link with scanner
+        """
         scanner_ip_instance = self.ioc_repo.get_ioc_by_name(scanner_ip)
         hostname_instance = self.ioc_repo.get_ioc_by_name(hostname)
 
-        if scanner_ip_instance is not None:
-            if hostname_instance and hostname_instance not in scanner_ip_instance.related_ioc.all():
-                scanner_ip_instance.related_ioc.add(hostname_instance)
+        # Early return if either IOC doesn't exist
+        if not scanner_ip_instance or not hostname_instance:
+            return
+
+        # Link scanner -> hostname
+        if hostname_instance not in scanner_ip_instance.related_ioc.all():
+            scanner_ip_instance.related_ioc.add(hostname_instance)
             self.ioc_repo.save(scanner_ip_instance)
 
-        if hostname_instance is not None:
-            if scanner_ip_instance and scanner_ip_instance not in hostname_instance.related_ioc.all():
-                hostname_instance.related_ioc.add(scanner_ip_instance)
+        # Link hostname -> scanner
+        if scanner_ip_instance not in hostname_instance.related_ioc.all():
+            hostname_instance.related_ioc.add(scanner_ip_instance)
             self.ioc_repo.save(hostname_instance)
 
     def _deduplicate_command_sequence(self, session: CowrieSession) -> bool:
         """
-        Deduplicates command sequences by hashing and either linking to an existing
-        sequence or preparing for creation of a new one.
+        Deduplicate command sequences by hashing and merging with existing sequences.
 
         Args:
-            session: A CowrieSession instance containing command sequence data
+            session: CowrieSession instance containing command sequence data
 
         Returns:
-            bool: True if merged with existing sequence, else False
+            True if merged with existing sequence, False if new sequence
         """
         commands_str = "\n".join(session.commands.commands)
         commands_hash = sha256(commands_str.encode()).hexdigest()
-        # Check if the recorded sequence already exists
+
         cmd_seq = self.session_repo.get_command_sequence_by_hash(commands_hash=commands_hash)
         if cmd_seq is None:
-            # In case sequence does not exist:
-            # Assign hash to the the sequence
             session.commands.commands_hash = commands_hash
             return False
-        # In case sequence does already exist:
-        # Delete newly created sequence from DB
-        # and assign existing sequence to session
+
         last_seen = session.commands.last_seen
         session.commands = cmd_seq
-        # updated the last seen
         session.commands.last_seen = last_seen
         return True
