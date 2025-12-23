@@ -54,6 +54,15 @@ class IocRepository:
         self._honeypot_cache[honeypot_name] = True
         return honeypot
 
+    def get_active_honeypots(self) -> list[GeneralHoneypot]:
+        """
+        Retrieve a list of all active honeypots.
+
+        Returns:
+            A list of all active honeypots in the database.
+        """
+        return list(GeneralHoneypot.objects.filter(active=True))
+
     def get_ioc_by_name(self, name: str) -> Optional[IOC]:
         """
         Retrieve an IOC by its name.
