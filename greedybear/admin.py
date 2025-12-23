@@ -5,14 +5,14 @@ import logging
 from django.contrib import admin, messages
 from django.db.models import Q
 from django.utils.translation import ngettext
-from greedybear.models import IOC, CommandSequence, CowrieSession, GeneralHoneypot, MassScanners, Sensors, Statistics, WhatsMyIP
+from greedybear.models import IOC, CommandSequence, CowrieSession, GeneralHoneypot, MassScanner, Sensor, Statistics, WhatsMyIPDomain
 
 logger = logging.getLogger(__name__)
 
 
-@admin.register(Sensors)
+@admin.register(Sensor)
 class SensorsModelAdmin(admin.ModelAdmin):
-    list_display = [field.name for field in Sensors._meta.get_fields()]
+    list_display = [field.name for field in Sensor._meta.get_fields()]
 
 
 @admin.register(Statistics)
@@ -23,14 +23,14 @@ class StatisticsModelAdmin(admin.ModelAdmin):
     search_help_text = ["search for the IP address source"]
 
 
-@admin.register(WhatsMyIP)
+@admin.register(WhatsMyIPDomain)
 class WhatsMyIPModelAdmin(admin.ModelAdmin):
     list_display = ["domain", "added"]
     search_fields = ["domain"]
     search_help_text = ["search for the domain"]
 
 
-@admin.register(MassScanners)
+@admin.register(MassScanner)
 class MassScannersModelAdmin(admin.ModelAdmin):
     list_display = ["ip_address", "added", "reason"]
     list_filter = ["reason"]

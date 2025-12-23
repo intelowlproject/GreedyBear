@@ -7,7 +7,7 @@ from urllib.parse import urlparse
 import requests
 from django.conf import settings
 from greedybear.consts import DOMAIN, IP
-from greedybear.models import IOC, MassScanners, WhatsMyIP
+from greedybear.models import IOC, MassScanner, WhatsMyIPDomain
 
 
 def is_whatsmyip_domain(domain: str) -> bool:
@@ -21,8 +21,8 @@ def is_whatsmyip_domain(domain: str) -> bool:
         True if the domain is in the WhatsMyIP list, False otherwise.
     """
     try:
-        WhatsMyIP.objects.get(domain=domain)
-    except WhatsMyIP.DoesNotExist:
+        WhatsMyIPDomain.objects.get(domain=domain)
+    except WhatsMyIPDomain.DoesNotExist:
         return False
     return True
 
@@ -42,8 +42,8 @@ def correct_ip_reputation(ip: str, ip_reputation: str) -> str:
     """
     if not ip_reputation or ip_reputation == "known attacker":
         try:
-            MassScanners.objects.get(ip_address=ip)
-        except MassScanners.DoesNotExist:
+            MassScanner.objects.get(ip_address=ip)
+        except MassScanner.DoesNotExist:
             pass
         else:
             ip_reputation = "mass scanner"
