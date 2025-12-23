@@ -64,10 +64,7 @@ class ElasticRepository:
                 minimum_should_match=1,
             )
         else:
-            self.log.debug("querying elastic using standard method")
-            window_start, window_end = get_time_window(datetime.now(), minutes_back_to_lookup)
-            self.log.debug(f"time window: {window_start} - {window_end}")
-            q = Q("range", **{"@timestamp": {"gte": window_start, "lt": window_end}})
+            q = self._standard_query(minutes_back_to_lookup)
 
         search = search.query(q)
         search.source(REQUIRED_FIELDS)
@@ -77,6 +74,26 @@ class ElasticRepository:
         result.sort(key=lambda hit: hit["@timestamp"])
         self.search_cache[minutes_back_to_lookup] = result
         return result
+
+    def _standard_query(self, minutes_back_to_lookup: int) -> Q:
+        """
+        Builds an Elasticsearch query that filters documents based on their
+        @timestamp field, searching backwards from the current time for the
+        specified number of minutes.
+
+        Args:
+            minutes_back_to_lookup: Number of minutes to look back from the
+                current time. Defines the size of the time window to search.
+
+        Returns:
+            Q: An elasticsearch-dsl Query object with a range filter on the
+            @timestamp field. The range spans from (now - minutes_back_to_lookup)
+            to now.
+        """
+        self.log.debug("querying elastic using standard method")
+        window_start, window_end = get_time_window(datetime.now(), minutes_back_to_lookup)
+        self.log.debug(f"time window: {window_start} - {window_end}")
+        return Q("range", **{"@timestamp": {"gte": window_start, "lt": window_end}})
 
     def _healthcheck(self):
         """
