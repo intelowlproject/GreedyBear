@@ -28,7 +28,26 @@ class ElasticRepository:
         self.elastic_client = settings.ELASTIC_CLIENT
         self.search_cache = dict()
 
-    def search(self, minutes_back_to_lookup: int):
+    def has_honeypot_been_hit(self, minutes_back_to_lookup: int, honeypot_name: str) -> bool:
+        """
+        Check if a specific honeypot has been hit within a given time window.
+
+        Args:
+            minutes_back_to_lookup: Number of minutes to look back from the current
+                time when searching for honeypot hits.
+            honeypot_name: The  name/type of the honeypot to check for hits.
+
+        Returns:
+            True if at least one hit was recorded for the specified honeypot within
+            the time window, False otherwise.
+        """
+        search = Search(using=self.elastic_client, index="logstash-*")
+        q = self._standard_query(minutes_back_to_lookup)
+        search = search.query(q)
+        search = search.filter("term", **{"type.keyword": honeypot_name})
+        return search.count() > 0
+
+    def search(self, minutes_back_to_lookup: int) -> list:
         """
         Search for log entries within a specified time window.
 
@@ -64,10 +83,7 @@ class ElasticRepository:
                 minimum_should_match=1,
             )
         else:
-            self.log.debug("querying elastic using standard method")
-            window_start, window_end = get_time_window(datetime.now(), minutes_back_to_lookup)
-            self.log.debug(f"time window: {window_start} - {window_end}")
-            q = Q("range", **{"@timestamp": {"gte": window_start, "lt": window_end}})
+            q = self._standard_query(minutes_back_to_lookup)
 
         search = search.query(q)
         search.source(REQUIRED_FIELDS)
@@ -77,6 +93,26 @@ class ElasticRepository:
         result.sort(key=lambda hit: hit["@timestamp"])
         self.search_cache[minutes_back_to_lookup] = result
         return result
+
+    def _standard_query(self, minutes_back_to_lookup: int) -> Q:
+        """
+        Builds an Elasticsearch query that filters documents based on their
+        @timestamp field, searching backwards from the current time for the
+        specified number of minutes.
+
+        Args:
+            minutes_back_to_lookup: Number of minutes to look back from the
+                current time. Defines the size of the time window to search.
+
+        Returns:
+            Q: An elasticsearch-dsl Query object with a range filter on the
+            @timestamp field. The range spans from (now - minutes_back_to_lookup)
+            to now.
+        """
+        self.log.debug("querying elastic using standard method")
+        window_start, window_end = get_time_window(datetime.now(), minutes_back_to_lookup)
+        self.log.debug(f"time window: {window_start} - {window_end}")
+        return Q("range", **{"@timestamp": {"gte": window_start, "lt": window_end}})
 
     def _healthcheck(self):
         """
