@@ -41,6 +41,7 @@ def normalize_command(message: str) -> str:
     Returns:
         Normalized command string, truncated to 1024 characters
     """
+    # Truncate to 1024 chars to match CommandSequence.commands field max_length
     return message.removeprefix("CMD: ").replace("\x00", "[NUL]")[:1024]
 
 
@@ -77,7 +78,6 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
         super().__init__(honeypot, ioc_repo, sensor_repo)
         self.session_repo = session_repo or CowrieSessionRepository()
         self.payloads_in_message = 0
-        self.added_ip_downloads = 0
         self.added_url_downloads = 0
 
     def extract_from_hits(self, hits: list[dict]) -> None:
@@ -89,16 +89,14 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
             hits: List of Elasticsearch hit documents
         """
         self._get_scanners(hits)
+        self._extract_possible_payload_in_messages(hits)
         self._get_url_downloads(hits)
         self.log.info(
-            f"added {len(self.ioc_records)} scanners, "
-            f"{self.payloads_in_message} payload found in messages, "
-            f"{self.added_ip_downloads} IP that tried to download, "
-            f"{self.added_url_downloads} URL to download"
+            f"added {len(self.ioc_records)} scanners, " f"{self.payloads_in_message} payloads found in messages, " f"{self.added_url_downloads} download URLs"
         )
 
     def _get_scanners(self, hits: list[dict]) -> None:
-        """Extract scanner IPs and associated payloads and sessions."""
+        """Extract scanner IPs and sessions."""
         for ioc in iocs_from_hits(hits):
             ioc.cowrie = True
             self.log.info(f"found IP {ioc.name} by honeypot cowrie")
@@ -106,20 +104,17 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
             if ioc_record:
                 self.ioc_records.append(ioc_record)
                 threatfox_submission(ioc_record, ioc.related_urls, self.log)
-                self._extract_possible_payload_in_messages(ioc_record.name, hits)
                 self._get_sessions(ioc_record, hits)
 
-    def _extract_possible_payload_in_messages(self, scanner_ip: str, hits: list[dict]) -> None:
+    def _extract_possible_payload_in_messages(self, hits: list[dict]) -> None:
         """
         Extract URLs hidden in attack payloads (login messages, file uploads).
+        Processes all hits once for efficiency (O(M) instead of O(N*M)).
 
         Args:
-            scanner_ip: Source IP address of the scanner
             hits: List of hits to search for payloads
         """
         for hit in hits:
-            if hit["src_ip"] != scanner_ip:
-                continue
             if hit.get("eventid", "") not in [
                 "cowrie.login.failed",
                 "cowrie.session.file_upload",
@@ -130,6 +125,7 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
             if not match_url:
                 continue
 
+            scanner_ip = hit["src_ip"]
             payload_url = match_url.group()
             payload_hostname = parse_url_hostname(payload_url)
 
@@ -166,16 +162,9 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
             scanner_ip = str(hit["src_ip"])
             download_url = str(hit["url"])
 
-            self.log.info(f"found IP {scanner_ip} trying to execute download from {download_url}")
+            self.log.info(f"found IP {scanner_ip} downloading from {download_url}")
 
-            # Track scanner IP
-            scanner_ioc = IOC(name=scanner_ip, type=get_ioc_type(scanner_ip), cowrie=True)
-            ioc_record = self.ioc_processor.add_ioc(scanner_ioc, attack_type=SCANNER)
-            if ioc_record:
-                self.added_ip_downloads += 1
-                threatfox_submission(ioc_record, scanner_ioc.related_urls, self.log)
-
-            # Track download URL
+            # Extract and track download URL
             if download_url:
                 hostname = parse_url_hostname(download_url)
                 if not hostname:
@@ -276,19 +265,19 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
         scanner_ip_instance = self.ioc_repo.get_ioc_by_name(scanner_ip)
         hostname_instance = self.ioc_repo.get_ioc_by_name(hostname)
 
-        # Early return if either IOC doesn't exist
+        # Log warning if IOCs are missing - shouldn't happen in normal operation
         if not scanner_ip_instance or not hostname_instance:
+            self.log.warning(
+                f"Cannot link IOCs - missing from database: " f"scanner_ip={scanner_ip_instance is not None}, " f"hostname={hostname_instance is not None}"
+            )
             return
 
-        # Link scanner -> hostname
-        if hostname_instance not in scanner_ip_instance.related_ioc.all():
-            scanner_ip_instance.related_ioc.add(hostname_instance)
-            self.ioc_repo.save(scanner_ip_instance)
+        # Link bidirectionally - Django's .add() handles deduplication automatically
+        scanner_ip_instance.related_ioc.add(hostname_instance)
+        self.ioc_repo.save(scanner_ip_instance)
 
-        # Link hostname -> scanner
-        if scanner_ip_instance not in hostname_instance.related_ioc.all():
-            hostname_instance.related_ioc.add(scanner_ip_instance)
-            self.ioc_repo.save(hostname_instance)
+        hostname_instance.related_ioc.add(scanner_ip_instance)
+        self.ioc_repo.save(hostname_instance)
 
     def _deduplicate_command_sequence(self, session: CowrieSession) -> bool:
         """

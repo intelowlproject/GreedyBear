@@ -89,7 +89,6 @@ class TestCowrieExtractionStrategy(TestCase):
 
     def test_extract_payload_in_messages_with_url(self):
         """Test extraction of URLs from login failure messages."""
-        scanner_ip = "1.2.3.4"
         hits = [
             {
                 "src_ip": "1.2.3.4",
@@ -105,7 +104,7 @@ class TestCowrieExtractionStrategy(TestCase):
 
         self.mock_ioc_repo.get_ioc_by_name.side_effect = [scanner_mock, payload_mock]
 
-        self.strategy._extract_possible_payload_in_messages(scanner_ip, hits)
+        self.strategy._extract_possible_payload_in_messages(hits)
 
         # Should have called add_ioc for the payload
         self.assertEqual(self.strategy.ioc_processor.add_ioc.call_count, 1)
@@ -118,7 +117,6 @@ class TestCowrieExtractionStrategy(TestCase):
 
     def test_extract_payload_in_messages_no_url(self):
         """Test extraction when message has no URL."""
-        scanner_ip = "1.2.3.4"
         hits = [
             {
                 "src_ip": "1.2.3.4",
@@ -127,14 +125,13 @@ class TestCowrieExtractionStrategy(TestCase):
             }
         ]
 
-        self.strategy._extract_possible_payload_in_messages(scanner_ip, hits)
+        self.strategy._extract_possible_payload_in_messages(hits)
 
         # Should not add any IOC
         self.strategy.ioc_processor.add_ioc.assert_not_called()
 
-    def test_extract_payload_wrong_ip(self):
-        """Test that payloads from different IPs are ignored."""
-        scanner_ip = "1.2.3.4"
+    def test_extract_payload_different_ips(self):
+        """Test that payloads from different IPs are all processed."""
         hits = [
             {
                 "src_ip": "5.6.7.8",
@@ -143,8 +140,22 @@ class TestCowrieExtractionStrategy(TestCase):
             }
         ]
 
-        self.strategy._extract_possible_payload_in_messages(scanner_ip, hits)
+        scanner_mock = Mock()
+        payload_mock = Mock()
+        self.mock_ioc_repo.get_ioc_by_name.side_effect = [scanner_mock, payload_mock]
 
+        self.strategy._extract_possible_payload_in_messages(hits)
+
+        # Should process the payload from any IP
+        self.strategy.ioc_processor.add_ioc.assert_called_once()
+
+    def test_extract_payload_in_messages_empty_hits(self):
+        """Test extraction with empty hits list."""
+        hits = []
+
+        self.strategy._extract_possible_payload_in_messages(hits)
+
+        # Should not call add_ioc when there are no hits
         self.strategy.ioc_processor.add_ioc.assert_not_called()
 
     def test_get_url_downloads(self):
@@ -157,24 +168,17 @@ class TestCowrieExtractionStrategy(TestCase):
             }
         ]
 
-        mock_scanner_record = Mock()
-        mock_payload_record = Mock()
         scanner_mock = Mock()
-        scanner_mock.related_ioc.all.return_value = []
         payload_mock = Mock()
-        payload_mock.related_ioc.all.return_value = []
 
         self.mock_ioc_repo.get_ioc_by_name.side_effect = [scanner_mock, payload_mock]
-        self.strategy.ioc_processor.add_ioc.side_effect = [
-            mock_scanner_record,
-            mock_payload_record,
-        ]
+        mock_payload_record = Mock()
+        self.strategy.ioc_processor.add_ioc.return_value = mock_payload_record
 
         self.strategy._get_url_downloads(hits)
 
-        # Should create 2 IOCs: scanner IP and payload hostname
-        self.assertEqual(self.strategy.ioc_processor.add_ioc.call_count, 2)
-        self.assertEqual(self.strategy.added_ip_downloads, 1)
+        # Should only create 1 IOC: payload hostname (scanner already added in _get_scanners)
+        self.assertEqual(self.strategy.ioc_processor.add_ioc.call_count, 1)
         self.assertEqual(self.strategy.added_url_downloads, 1)
 
     def test_get_url_downloads_invalid_url(self):
@@ -191,8 +195,8 @@ class TestCowrieExtractionStrategy(TestCase):
 
         self.strategy._get_url_downloads(hits)
 
-        # Should only create scanner IOC, not payload
-        self.assertEqual(self.strategy.ioc_processor.add_ioc.call_count, 1)
+        # Should not create any IOC (invalid URL, and scanner already added in _get_scanners)
+        self.strategy.ioc_processor.add_ioc.assert_not_called()
 
     def test_process_session_hit_connect(self):
         """Test processing of session connect event."""
@@ -270,9 +274,6 @@ class TestCowrieExtractionStrategy(TestCase):
         scanner_mock = MagicMock()
         hostname_mock = MagicMock()
 
-        scanner_mock.related_ioc.all.return_value = []
-        hostname_mock.related_ioc.all.return_value = []
-
         self.mock_ioc_repo.get_ioc_by_name.side_effect = [scanner_mock, hostname_mock]
 
         self.strategy._add_fks("1.2.3.4", "evil.com")
@@ -284,7 +285,6 @@ class TestCowrieExtractionStrategy(TestCase):
     def test_add_fks_scanner_none(self):
         """Test linking when scanner IOC doesn't exist."""
         hostname_mock = MagicMock()
-        hostname_mock.related_ioc.all.return_value = []
 
         self.mock_ioc_repo.get_ioc_by_name.side_effect = [None, hostname_mock]
 
