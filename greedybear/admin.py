@@ -5,7 +5,16 @@ import logging
 from django.contrib import admin, messages
 from django.db.models import Q
 from django.utils.translation import ngettext
-from greedybear.models import IOC, CommandSequence, CowrieSession, GeneralHoneypot, MassScanners, Sensors, Statistics, WhatsMyIP
+from greedybear.models import (
+    IOC,
+    CommandSequence,
+    CowrieSession,
+    GeneralHoneypot,
+    MassScanners,
+    Sensors,
+    Statistics,
+    WhatsMyIP,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -40,7 +49,14 @@ class MassScannersModelAdmin(admin.ModelAdmin):
 
 class SessionInline(admin.TabularInline):
     model = CowrieSession
-    fields = ["source", "start_time", "duration", "credentials", "interaction_count", "commands"]
+    fields = [
+        "source",
+        "start_time",
+        "duration",
+        "credentials",
+        "interaction_count",
+        "commands",
+    ]
     readonly_fields = fields
     show_change_link = True
     extra = 0
@@ -49,7 +65,16 @@ class SessionInline(admin.TabularInline):
 
 @admin.register(CowrieSession)
 class CowrieSessionModelAdmin(admin.ModelAdmin):
-    list_display = ["session_id", "start_time", "duration", "login_attempt", "credentials", "command_execution", "interaction_count", "source"]
+    list_display = [
+        "session_id",
+        "start_time",
+        "duration",
+        "login_attempt",
+        "credentials",
+        "command_execution",
+        "interaction_count",
+        "source",
+    ]
     search_fields = ["source__name"]
     search_help_text = ["search for the IP address source"]
     raw_id_fields = ["source", "commands"]
@@ -78,7 +103,6 @@ class IOCModelAdmin(admin.ModelAdmin):
         "related_urls",
         "scanner",
         "payload_request",
-
         "general_honeypots",
         "ip_reputation",
         "asn",
