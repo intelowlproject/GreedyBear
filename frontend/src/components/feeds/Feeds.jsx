@@ -14,10 +14,7 @@ import { feedsTableColumns } from "./tableColumns";
 import { FEEDS_LICENSE } from "../../constants";
 
 // costants
-const feedTypeChoices = [
-  { label: "All", value: "all" },
-];
-
+const feedTypeChoices = [{ label: "All", value: "all" }];
 
 const attackTypeChoices = [
   { label: "All", value: "all" },
@@ -67,7 +64,7 @@ export default function Feeds() {
   console.debug("Feeds-initialValues", initialValues);
 
   const [url, setUrl] = React.useState(
-    `${FEEDS_BASE_URI}/${initialValues.feeds_type}/${initialValues.attack_type}/${initialValues.prioritize}.json`
+    `${FEEDS_BASE_URI}/${initialValues.feeds_type}/${initialValues.attack_type}/${initialValues.prioritize}.json`,
   );
 
   // API to extract general honeypot
@@ -101,7 +98,7 @@ export default function Feeds() {
       },
     },
     toPassTableProps,
-    (data) => data.results.iocs
+    (data) => data.results.iocs,
   );
 
   // callbacks
@@ -109,7 +106,7 @@ export default function Feeds() {
     (values) => {
       try {
         setUrl(
-          `${FEEDS_BASE_URI}/${values.feeds_type}/${values.attack_type}/${values.prioritize}.json?ioc_type=${values.ioc_type}`
+          `${FEEDS_BASE_URI}/${values.feeds_type}/${values.attack_type}/${values.prioritize}.json?ioc_type=${values.ioc_type}`,
         );
         initialValues.feeds_type = values.feeds_type;
         initialValues.attack_type = values.attack_type;
@@ -125,7 +122,7 @@ export default function Feeds() {
         console.debug(e);
       }
     },
-    [setUrl, tableStateReducer]
+    [setUrl, tableStateReducer],
   );
 
   return (
