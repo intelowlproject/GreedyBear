@@ -1,35 +1,51 @@
 # This file is a part of GreedyBear https://github.com/honeynet/GreedyBear
 # See the file 'LICENSE' for copying permission.
 from datetime import datetime, timedelta
-from os.path import getmtime
+from pathlib import Path
 
-from greedybear.cronjobs.base import ElasticJob
+from greedybear.cronjobs.base import Cronjob
 from greedybear.slack import send_message
 
 
-class MonitorLogs(ElasticJob):
-    def __init__(self):
-        super(MonitorLogs, self).__init__()
-        self.logs_to_monitor = ["greedybear", "api", "django", "celery"]
-        self.log_directory = "/var/log/greedybear/django/"
+class MonitorLogs(Cronjob):
+    """Monitor error log files for recent activity indicating errors."""
 
-    @property
-    def minutes_back_to_lookup(self):
-        return 61
+    def __init__(
+        self,
+        log_directory: str = "/var/log/greedybear/django/",
+        check_window_minutes: int = 60,
+    ):
+        """Initialize the log monitoring.
+
+        Args:
+            log_directory: Directory containing error log files.
+            check_window_minutes: Time window in minutes to check for log modifications.
+        """
+        super().__init__()
+        self.log_directory = Path(log_directory)
+        self.check_window_minutes = check_window_minutes
+        self.logs_to_monitor = ["greedybear", "api", "django", "celery"]
 
     def run(self):
-        for log_to_monitor in self.logs_to_monitor:
-            log_file = log_to_monitor + "_errors.log"
+        """Check error logs for recent modifications and alert via Slack."""
+        cutoff_time = datetime.now() - timedelta(minutes=self.check_window_minutes)
+        self.log.info(f"checking {len(self.logs_to_monitor)} error logs for activity since {cutoff_time}")
+
+        for log_name in self.logs_to_monitor:
+            log_file = f"{log_name}_errors.log"
+            log_path = self.log_directory / log_file
+
+            if not log_path.exists():
+                self.log.warning(f"log file not found: {log_path}")
+                continue
+
             self.log.info(f"checking if the log {log_file} was populated in the last hour")
-            last_modification_time = getmtime(self.log_directory + log_file)
-            last_modification_datetime = datetime.fromtimestamp(last_modification_time)
-            one_hour_ago = datetime.today() - timedelta(minutes=self.minutes_back_to_lookup)
-            self.log.info(
-                f"modification time {last_modification_time}"
-                f" ({last_modification_datetime}) for {log_file}."
-                f" Checking if it is greater than {one_hour_ago}"
-            )
-            if last_modification_datetime > one_hour_ago:
+            last_modified = datetime.fromtimestamp(log_path.stat().st_mtime)
+            self.log.info(f"file {log_file} was modified at {last_modified}")
+
+            if last_modified > cutoff_time:
                 message = f"found errors in log file {log_file}"
-                self.log.info(message)
+                self.log.warning(message)
                 send_message(message)
+            else:
+                self.log.debug(f"no recent activity in {log_file}")
