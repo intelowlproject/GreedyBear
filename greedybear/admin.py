@@ -5,16 +5,7 @@ import logging
 from django.contrib import admin, messages
 from django.db.models import Q
 from django.utils.translation import ngettext
-from greedybear.models import (
-    IOC,
-    CommandSequence,
-    CowrieSession,
-    GeneralHoneypot,
-    MassScanner,
-    Sensor,
-    Statistics,
-    WhatsMyIPDomain,
-)
+from greedybear.models import IOC, CommandSequence, CowrieSession, GeneralHoneypot, MassScanner, Sensor, Statistics, WhatsMyIPDomain
 
 logger = logging.getLogger(__name__)
 
