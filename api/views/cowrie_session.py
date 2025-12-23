@@ -11,7 +11,11 @@ from django.http import Http404, HttpResponseBadRequest
 from greedybear.consts import GET
 from greedybear.models import IOC, CommandSequence, CowrieSession, Statistics, viewType
 from rest_framework import status
-from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.decorators import (
+    api_view,
+    authentication_classes,
+    permission_classes,
+)
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
@@ -66,20 +70,30 @@ def cowrie_session_view(request):
         /api/cowrie_session?query=1.2.3.4&include_credentials=true&include_session_data=true&include_similar=true
     """
     observable = request.query_params.get("query")
-    include_similar = request.query_params.get("include_similar", "false").lower() == "true"
-    include_credentials = request.query_params.get("include_credentials", "false").lower() == "true"
-    include_session_data = request.query_params.get("include_session_data", "false").lower() == "true"
+    include_similar = (
+        request.query_params.get("include_similar", "false").lower() == "true"
+    )
+    include_credentials = (
+        request.query_params.get("include_credentials", "false").lower() == "true"
+    )
+    include_session_data = (
+        request.query_params.get("include_session_data", "false").lower() == "true"
+    )
 
     logger.info(f"Cowrie view requested by {request.user} for {observable}")
     source_ip = str(request.META["REMOTE_ADDR"])
-    request_source = Statistics(source=source_ip, view=viewType.COWRIE_SESSION_VIEW.value)
+    request_source = Statistics(
+        source=source_ip, view=viewType.COWRIE_SESSION_VIEW.value
+    )
     request_source.save()
 
     if not observable:
         return HttpResponseBadRequest("Missing required 'query' parameter")
 
     if is_ip_address(observable):
-        sessions = CowrieSession.objects.filter(source__name=observable, duration__gt=0).prefetch_related("source", "commands")
+        sessions = CowrieSession.objects.filter(
+            source__name=observable, duration__gt=0
+        ).prefetch_related("source", "commands")
         if not sessions.exists():
             raise Http404(f"No information found for IP: {observable}")
 
@@ -87,22 +101,27 @@ def cowrie_session_view(request):
         try:
             commands = CommandSequence.objects.get(commands_hash=observable.lower())
         except CommandSequence.DoesNotExist as exc:
-            raise Http404(f"No command sequences found with hash: {observable}") from exc
-        sessions = CowrieSession.objects.filter(commands=commands, duration__gt=0).prefetch_related("source", "commands")
+            raise Http404(
+                f"No command sequences found with hash: {observable}"
+            ) from exc
+        sessions = CowrieSession.objects.filter(
+            commands=commands, duration__gt=0
+        ).prefetch_related("source", "commands")
     else:
         password_pattern = f" | {observable}"
         sessions = CowrieSession.objects.filter(
-            duration__gt=0,
-            credentials__contains=password_pattern
+            duration__gt=0, credentials__contains=password_pattern
         ).prefetch_related("source", "commands")
-        
+
         if not sessions.exists():
             raise Http404(f"No sessions found with password: {observable}")
 
     if include_similar:
         commands = set(s.commands for s in sessions if s.commands)
         clusters = set(cmd.cluster for cmd in commands if cmd.cluster is not None)
-        related_sessions = CowrieSession.objects.filter(commands__cluster__in=clusters).prefetch_related("source", "commands")
+        related_sessions = CowrieSession.objects.filter(
+            commands__cluster__in=clusters
+        ).prefetch_related("source", "commands")
         sessions = sessions.union(related_sessions)
 
     response_data = {
@@ -112,10 +131,16 @@ def cowrie_session_view(request):
         response_data["license"] = settings.FEEDS_LICENSE
 
     unique_commands = set(s.commands for s in sessions if s.commands)
-    response_data["commands"] = sorted("\n".join(cmd.commands) for cmd in unique_commands)
-    response_data["sources"] = sorted(set(s.source.name for s in sessions), key=socket.inet_aton)
+    response_data["commands"] = sorted(
+        "\n".join(cmd.commands) for cmd in unique_commands
+    )
+    response_data["sources"] = sorted(
+        set(s.source.name for s in sessions), key=socket.inet_aton
+    )
     if include_credentials:
-        response_data["credentials"] = sorted(set(itertools.chain(*[s.credentials for s in sessions])))
+        response_data["credentials"] = sorted(
+            set(itertools.chain(*[s.credentials for s in sessions]))
+        )
     if include_session_data:
         response_data["sessions"] = [
             {

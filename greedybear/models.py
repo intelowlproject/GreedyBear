@@ -47,10 +47,14 @@ class IOC(models.Model):
     scanner = models.BooleanField(blank=False, default=False)
     payload_request = models.BooleanField(blank=False, default=False)
     related_ioc = models.ManyToManyField("self", blank=True, symmetrical=True)
-    related_urls = pg_fields.ArrayField(models.CharField(max_length=900, blank=True), blank=True, default=list)
+    related_urls = pg_fields.ArrayField(
+        models.CharField(max_length=900, blank=True), blank=True, default=list
+    )
     ip_reputation = models.CharField(max_length=32, blank=True)
     asn = models.IntegerField(blank=True, null=True)
-    destination_ports = pg_fields.ArrayField(models.IntegerField(), blank=False, null=False, default=list)
+    destination_ports = pg_fields.ArrayField(
+        models.IntegerField(), blank=False, null=False, default=list
+    )
     login_attempts = models.IntegerField(blank=False, null=False, default=0)
     # SCORES
     recurrence_probability = models.FloatField(blank=False, null=True, default=0)
@@ -68,7 +72,12 @@ class IOC(models.Model):
 class CommandSequence(models.Model):
     first_seen = models.DateTimeField(blank=False, default=datetime.now)
     last_seen = models.DateTimeField(blank=False, default=datetime.now)
-    commands = pg_fields.ArrayField(models.CharField(max_length=1024, blank=True), blank=False, null=False, default=list)
+    commands = pg_fields.ArrayField(
+        models.CharField(max_length=1024, blank=True),
+        blank=False,
+        null=False,
+        default=list,
+    )
     commands_hash = models.CharField(max_length=64, unique=True, blank=True, null=True)
     cluster = models.IntegerField(blank=True, null=True)
 
@@ -82,11 +91,18 @@ class CowrieSession(models.Model):
     start_time = models.DateTimeField(blank=True, null=True)
     duration = models.FloatField(blank=True, null=True)
     login_attempt = models.BooleanField(blank=False, null=False, default=False)
-    credentials = pg_fields.ArrayField(models.CharField(max_length=256, blank=True), blank=False, null=False, default=list)
+    credentials = pg_fields.ArrayField(
+        models.CharField(max_length=256, blank=True),
+        blank=False,
+        null=False,
+        default=list,
+    )
     command_execution = models.BooleanField(blank=False, null=False, default=False)
     interaction_count = models.IntegerField(blank=False, null=False, default=0)
     source = models.ForeignKey(IOC, on_delete=models.CASCADE, blank=False, null=False)
-    commands = models.ForeignKey(CommandSequence, on_delete=models.SET_NULL, blank=True, null=True)
+    commands = models.ForeignKey(
+        CommandSequence, on_delete=models.SET_NULL, blank=True, null=True
+    )
 
     class Meta:
         indexes = [
