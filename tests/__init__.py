@@ -15,6 +15,8 @@ class CustomTestCase(TestCase):
         cls.heralding = GeneralHoneypot.objects.create(name="Heralding", active=True)
         cls.ciscoasa = GeneralHoneypot.objects.create(name="Ciscoasa", active=True)
         cls.ddospot = GeneralHoneypot.objects.create(name="Ddospot", active=False)
+        cls.log4pot = GeneralHoneypot.objects.create(name="Log4Pot", active=True)
+        cls.cowrie = GeneralHoneypot.objects.create(name="Cowrie", active=True)
 
         cls.current_time = datetime.now()
         cls.ioc = IOC.objects.create(
@@ -26,8 +28,6 @@ class CustomTestCase(TestCase):
             number_of_days_seen=1,
             attack_count=1,
             interaction_count=1,
-            log4j=True,
-            cowrie=True,
             scanner=True,
             payload_request=True,
             related_urls=[],
@@ -48,8 +48,6 @@ class CustomTestCase(TestCase):
             number_of_days_seen=1,
             attack_count=1,
             interaction_count=1,
-            log4j=True,
-            cowrie=True,
             scanner=True,
             payload_request=True,
             related_urls=[],
@@ -70,8 +68,6 @@ class CustomTestCase(TestCase):
             number_of_days_seen=1,
             attack_count=1,
             interaction_count=1,
-            log4j=False,
-            cowrie=True,
             scanner=True,
             payload_request=True,
             related_urls=[],
@@ -92,8 +88,6 @@ class CustomTestCase(TestCase):
             number_of_days_seen=1,
             attack_count=1,
             interaction_count=1,
-            log4j=True,
-            cowrie=False,
             scanner=False,
             payload_request=True,
             related_urls=[],
@@ -107,11 +101,18 @@ class CustomTestCase(TestCase):
 
         cls.ioc.general_honeypot.add(cls.heralding)  # FEEDS
         cls.ioc.general_honeypot.add(cls.ciscoasa)  # FEEDS
+        cls.ioc.general_honeypot.add(cls.log4pot)
+        cls.ioc.general_honeypot.add(cls.cowrie)
         cls.ioc.save()
         cls.ioc_2.general_honeypot.add(cls.heralding)  # FEEDS
         cls.ioc_2.general_honeypot.add(cls.ciscoasa)  # FEEDS
+        cls.ioc_2.general_honeypot.add(cls.log4pot)
+        cls.ioc_2.general_honeypot.add(cls.cowrie)
         cls.ioc_2.save()
+        cls.ioc_3.general_honeypot.add(cls.cowrie)
+        cls.ioc_3.general_honeypot.add(cls.log4pot)
         cls.ioc_domain.general_honeypot.add(cls.heralding)  # FEEDS
+        cls.ioc_domain.general_honeypot.add(cls.log4pot)
         cls.ioc_domain.save()
 
         cls.cmd_seq = ["cd foo", "ls -la"]

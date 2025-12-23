@@ -190,7 +190,7 @@ def get_current_data(days_lookback: int = 30) -> list[dict]:
         "scanner": True,
     }
     iocs = (
-        IOC.objects.filter(Q(cowrie=True) | Q(log4j=True) | Q(general_honeypot__active=True))
+        IOC.objects.filter(Q(general_honeypot__active=True))
         .filter(**query_dict)
         .prefetch_related("general_honeypot")
         .annotate(value=F("name"))

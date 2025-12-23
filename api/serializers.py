@@ -20,6 +20,14 @@ class GeneralHoneypotSerializer(serializers.ModelSerializer):
 
 class IOCSerializer(serializers.ModelSerializer):
     general_honeypot = GeneralHoneypotSerializer(many=True, read_only=True)
+    log4j = serializers.SerializerMethodField()
+    cowrie = serializers.SerializerMethodField()
+
+    def get_log4j(self, obj):
+        return any(gh.name.lower() == "log4pot" for gh in obj.general_honeypot.all())
+
+    def get_cowrie(self, obj):
+        return any(gh.name.lower() == "cowrie" for gh in obj.general_honeypot.all())
 
     class Meta:
         model = IOC

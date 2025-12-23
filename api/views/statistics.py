@@ -89,10 +89,8 @@ class StatisticsViewSet(viewsets.ViewSet):
             Response: A JSON response containing the feed type statistics.
         """
         # FEEDS
-        annotations = {
-            "Log4j": Count("name", distinct=True, filter=Q(log4j=True)),
-            "Cowrie": Count("name", distinct=True, filter=Q(cowrie=True)),
-        }
+        annotations = {}
+
         # feed_type for each general honeypot in the list
         generalHoneypots = GeneralHoneypot.objects.all().filter(active=True)
         for hp in generalHoneypots:

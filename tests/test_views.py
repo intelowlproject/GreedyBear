@@ -41,8 +41,8 @@ class EnrichmentViewTestCase(CustomTestCase):
         )
         self.assertEqual(response.json()["ioc"]["number_of_days_seen"], self.ioc.number_of_days_seen)
         self.assertEqual(response.json()["ioc"]["attack_count"], self.ioc.attack_count)
-        self.assertEqual(response.json()["ioc"]["log4j"], self.ioc.log4j)
-        self.assertEqual(response.json()["ioc"]["cowrie"], self.ioc.cowrie)
+        self.assertEqual(response.json()["ioc"]["log4j"], True)
+        self.assertEqual(response.json()["ioc"]["cowrie"], True)
         self.assertEqual(response.json()["ioc"]["general_honeypot"][0], self.heralding.name)  # FEEDS
         self.assertEqual(response.json()["ioc"]["general_honeypot"][1], self.ciscoasa.name)  # FEEDS
         self.assertEqual(response.json()["ioc"]["scanner"], self.ioc.scanner)
@@ -70,7 +70,7 @@ class FeedsViewTestCase(CustomTestCase):
         target_ioc = next((i for i in iocs if i["value"] == self.ioc.name), None)
         self.assertIsNotNone(target_ioc)
 
-        self.assertEqual(target_ioc["feed_type"], ["log4j", "cowrie", "heralding", "ciscoasa"])
+        self.assertCountEqual(target_ioc["feed_type"], ["log4pot", "cowrie", "heralding", "ciscoasa"])
         self.assertEqual(target_ioc["attack_count"], 1)
         self.assertEqual(target_ioc["scanner"], True)
         self.assertEqual(target_ioc["payload_request"], True)
@@ -104,7 +104,7 @@ class FeedsViewTestCase(CustomTestCase):
         target_ioc = next((i for i in iocs if i["value"] == self.ioc.name), None)
         self.assertIsNotNone(target_ioc)
 
-        self.assertEqual(target_ioc["feed_type"], ["log4j", "cowrie", "heralding", "ciscoasa"])
+        self.assertCountEqual(target_ioc["feed_type"], ["log4pot", "cowrie", "heralding", "ciscoasa"])
         self.assertEqual(target_ioc["attack_count"], 1)
         self.assertEqual(target_ioc["scanner"], True)
         self.assertEqual(target_ioc["payload_request"], True)
@@ -199,7 +199,7 @@ class FeedsAdvancedViewTestCase(CustomTestCase):
         target_ioc = next((i for i in iocs if i["value"] == self.ioc.name), None)
         self.assertIsNotNone(target_ioc)
 
-        self.assertEqual(target_ioc["feed_type"], ["log4j", "cowrie", "heralding", "ciscoasa"])
+        self.assertCountEqual(target_ioc["feed_type"], ["log4pot", "cowrie", "heralding", "ciscoasa"])
         self.assertEqual(target_ioc["attack_count"], 1)
         self.assertEqual(target_ioc["scanner"], True)
         self.assertEqual(target_ioc["payload_request"], True)
@@ -218,7 +218,7 @@ class FeedsAdvancedViewTestCase(CustomTestCase):
         target_ioc = next((i for i in iocs if i["value"] == self.ioc.name), None)
         self.assertIsNotNone(target_ioc)
 
-        self.assertEqual(target_ioc["feed_type"], ["log4j", "cowrie", "heralding", "ciscoasa"])
+        self.assertCountEqual(target_ioc["feed_type"], ["log4pot", "cowrie", "heralding", "ciscoasa"])
         self.assertEqual(target_ioc["attack_count"], 1)
         self.assertEqual(target_ioc["scanner"], True)
         self.assertEqual(target_ioc["payload_request"], True)
@@ -292,37 +292,38 @@ class StatisticsViewTestCase(CustomTestCase):
         self.assertEqual(response.json()[0]["Requests"], 1)
 
     def test_200_feed_types(self):
-        self.assertEqual(GeneralHoneypot.objects.count(), 3)
+        self.assertEqual(GeneralHoneypot.objects.count(), 5)
         # add a general honeypot without associated ioc
         GeneralHoneypot(name="Tanner", active=True).save()
-        self.assertEqual(GeneralHoneypot.objects.count(), 4)
+        self.assertEqual(GeneralHoneypot.objects.count(), 6)
 
         response = self.client.get("/api/statistics/feeds_types")
         self.assertEqual(response.status_code, 200)
         # Expecting 3 because setupTestData creates 3 IOCs (ioc, ioc_2, ioc_domain) associated with Heralding
         self.assertEqual(response.json()[0]["Heralding"], 3)
         self.assertEqual(response.json()[0]["Ciscoasa"], 2)
-        self.assertEqual(response.json()[0]["Log4j"], 3)
+        self.assertEqual(response.json()[0]["Log4Pot"], 4)
         self.assertEqual(response.json()[0]["Cowrie"], 3)
         self.assertEqual(response.json()[0]["Tanner"], 0)
 
 
 class GeneralHoneypotViewTestCase(CustomTestCase):
     def test_200_all_general_honeypots(self):
-        self.assertEqual(GeneralHoneypot.objects.count(), 3)
+        self.assertEqual(GeneralHoneypot.objects.count(), 5)
         # add a general honeypot not active
         GeneralHoneypot(name="Adbhoney", active=False).save()
-        self.assertEqual(GeneralHoneypot.objects.count(), 4)
+        self.assertEqual(GeneralHoneypot.objects.count(), 6)
 
         response = self.client.get("/api/general_honeypot")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json(), ["Heralding", "Ciscoasa", "Ddospot", "Adbhoney"])
+        # Order depends on DB insertion, using set for comparison
+        self.assertCountEqual(response.json(), ["Heralding", "Ciscoasa", "Ddospot", "Log4Pot", "Cowrie", "Adbhoney"])
 
     def test_200_active_general_honeypots(self):
-        self.assertEqual(GeneralHoneypot.objects.count(), 3)
+        self.assertEqual(GeneralHoneypot.objects.count(), 5)
         response = self.client.get("/api/general_honeypot?onlyActive=true")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json(), ["Heralding", "Ciscoasa"])
+        self.assertCountEqual(response.json(), ["Heralding", "Ciscoasa", "Log4Pot", "Cowrie"])
 
 
 class CommandSequenceViewTestCase(CustomTestCase):
