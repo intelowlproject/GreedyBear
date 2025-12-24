@@ -79,6 +79,67 @@ class FeedsViewTestCase(CustomTestCase):
         self.assertEqual(target_ioc["recurrence_probability"], self.ioc.recurrence_probability)
         self.assertEqual(target_ioc["expected_interactions"], self.ioc.expected_interactions)
 
+    def test_log4j_alias_maps_to_log4pot(self):
+        """
+        Test that the legacy 'log4j' feed type alias correctly maps to 'log4pot'.
+        This ensures backward compatibility for existing API consumers.
+        """
+        # Request using legacy 'log4j' alias
+        response_log4j = self.client.get("/api/feeds/log4j/all/recent.json")
+        # Request using new 'log4pot' name
+        response_log4pot = self.client.get("/api/feeds/log4pot/all/recent.json")
+
+        self.assertEqual(response_log4j.status_code, 200)
+        self.assertEqual(response_log4pot.status_code, 200)
+
+        # Both endpoints should return the same IOCs
+        iocs_log4j = response_log4j.json()["iocs"]
+        iocs_log4pot = response_log4pot.json()["iocs"]
+
+        self.assertEqual(len(iocs_log4j), len(iocs_log4pot))
+
+        # Verify the IOC values match
+        log4j_values = {ioc["value"] for ioc in iocs_log4j}
+        log4pot_values = {ioc["value"] for ioc in iocs_log4pot}
+        self.assertEqual(log4j_values, log4pot_values)
+
+    def test_log4j_feeds_returns_log4pot_honeypot_iocs(self):
+        """
+        Test that /api/feeds/log4j/ returns IOCs associated with the Log4Pot honeypot.
+        """
+        response = self.client.get("/api/feeds/log4j/all/recent.json")
+        self.assertEqual(response.status_code, 200)
+
+        iocs = response.json()["iocs"]
+        # All returned IOCs should have 'log4pot' in their feed_type
+        for ioc in iocs:
+            self.assertIn("log4pot", ioc["feed_type"],
+                          f"IOC {ioc['value']} should have 'log4pot' in feed_type")
+
+    def test_log4j_feeds_csv_format(self):
+        """Test legacy log4j endpoint with CSV format."""
+        response = self.client.get("/api/feeds/log4j/all/recent.csv")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "text/csv")
+
+    def test_log4j_feeds_txt_format(self):
+        """Test legacy log4j endpoint with TXT format."""
+        response = self.client.get("/api/feeds/log4j/all/recent.txt")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "text/plain")
+        # Verify IOCs are in the response
+        content = response.content.decode("utf-8")
+        self.assertIn(self.ioc.name, content)
+
+    def test_log4j_in_valid_feed_types(self):
+        """Test that 'log4j' is included in valid feed types for backward compatibility."""
+        from api.views.utils import get_valid_feed_types
+
+        valid_types = get_valid_feed_types()
+        self.assertIn("log4j", valid_types)
+        self.assertIn("log4pot", valid_types)
+        self.assertIn("all", valid_types)
+
     @override_settings(FEEDS_LICENSE="https://example.com/license")
     def test_200_all_feeds_with_license(self):
         """Test feeds endpoint when FEEDS_LICENSE is populated"""
