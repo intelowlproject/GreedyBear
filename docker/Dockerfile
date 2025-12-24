@@ -50,6 +50,6 @@ RUN touch ${LOG_PATH}/django/api.log ${LOG_PATH}/django/api_errors.log \
     && /bin/bash ./docker/watchman_install.sh \
     && apk del gcc python3-dev alpine-sdk linux-headers
 
-# start period is high to allow data migration for 1.4.0
-HEALTHCHECK --interval=10s --timeout=2s --start-period=500s --retries=3 CMD nc -z localhost 8001 || exit 1
+# start period is high to allow data migration for honeypot unification
+HEALTHCHECK --interval=10s --timeout=2s --start-period=900s --retries=3 CMD nc -z localhost 8001 || exit 1
 
