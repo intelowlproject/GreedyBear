@@ -112,7 +112,8 @@ class TestCowrieExtractionStrategy(TestCase):
         ioc_arg = call_args[0][0]
 
         self.assertEqual(ioc_arg.name, "evil.com")
-        self.assertTrue(ioc_arg.cowrie)
+        # Verify add_ioc was called with general_honeypot_name="Cowrie"
+        self.assertEqual(call_args[1]["general_honeypot_name"], "Cowrie")
         self.assertIn("http://evil.com/malware.exe", ioc_arg.related_urls)
 
     def test_extract_payload_in_messages_no_url(self):
@@ -326,7 +327,6 @@ class TestCowrieExtractionStrategy(TestCase):
     def test_extract_from_hits_integration(self, mock_iocs_from_hits):
         """Test the main extract_from_hits coordination."""
         mock_ioc = Mock(name="1.2.3.4")
-        mock_ioc.cowrie = False
         mock_iocs_from_hits.return_value = [mock_ioc]
 
         mock_ioc_record = Mock()
@@ -338,6 +338,7 @@ class TestCowrieExtractionStrategy(TestCase):
             with patch.object(self.strategy, "_extract_possible_payload_in_messages"):
                 self.strategy.extract_from_hits(hits)
 
-        # Verify scanner was processed
-        self.assertTrue(mock_ioc.cowrie)
+        # Verify scanner was processed with correct honeypot association
         self.strategy.ioc_processor.add_ioc.assert_called()
+        call_args = self.strategy.ioc_processor.add_ioc.call_args
+        self.assertEqual(call_args[1]["general_honeypot_name"], "Cowrie")
