@@ -8,9 +8,7 @@ def create_default_clients(apps, schema_editor):
     # version than this migration expects. We use the historical version.
     Client = apps.get_model("durin", "Client")
     # for pygreedybear, custom token_ttl
-    Client.objects.update_or_create(
-        name="pygreedybear", token_ttl=timedelta(weeks=4 * 12 * 10)
-    )
+    Client.objects.update_or_create(name="pygreedybear", token_ttl=timedelta(weeks=4 * 12 * 10))
     # others, default token_ttl
     Client.objects.update_or_create(name="web-browser")
 
@@ -23,6 +21,4 @@ class Migration(migrations.Migration):
         ("durin", "0001_initial"),
     ]
 
-    operations = [
-        migrations.RunPython(create_default_clients, migrations.RunPython.noop)
-    ]
+    operations = [migrations.RunPython(create_default_clients, migrations.RunPython.noop)]
