@@ -39,17 +39,6 @@ class FireHolCronTestCase(CustomTestCase):
 
         mock_get.side_effect = side_effect
 
-        # Create a recently added IOC (within last 24 hours)
-        from datetime import datetime
-
-        ioc_recent = IOC.objects.create(name="1.1.1.1", type="ip", first_seen=datetime.now())
-
-        # Create an old IOC that should NOT be updated
-        from datetime import timedelta
-
-        old_date = datetime.now() - timedelta(days=30)
-        ioc_old = IOC.objects.create(name="2.2.2.2", type="ip", first_seen=old_date)
-
         # Run the cronjob
         cronjob = FireHolCron()
         cronjob.execute()
@@ -61,15 +50,10 @@ class FireHolCronTestCase(CustomTestCase):
         self.assertTrue(FireHolList.objects.filter(ip_address="1.1.1.1", source="bruteforceblocker").exists())
         self.assertTrue(FireHolList.objects.filter(ip_address="4.4.4.0/24", source="dshield").exists())
 
-        # Check that ONLY recently added IOC was enriched
-        ioc_recent.refresh_from_db()
-        self.assertIn("blocklist_de", ioc_recent.firehol_categories)
-        self.assertIn("bruteforceblocker", ioc_recent.firehol_categories)
-        self.assertEqual(len(ioc_recent.firehol_categories), 2)
-
-        # Check that old IOC was NOT enriched
-        ioc_old.refresh_from_db()
-        self.assertEqual(len(ioc_old.firehol_categories), 0)
-
-        # Check that non-existent IOCs didn't crash the job (3.3.3.3)
-        self.assertFalse(IOC.objects.filter(name="3.3.3.3").exists())
+        # Verify FireHolList data is available for IOC enrichment at creation time
+        # (Note: Enrichment now happens in iocs_from_hits during IOC creation, not here)
+        firehol_entries = FireHolList.objects.filter(ip_address="1.1.1.1")
+        self.assertEqual(firehol_entries.count(), 2)
+        sources = list(firehol_entries.values_list("source", flat=True))
+        self.assertIn("blocklist_de", sources)
+        self.assertIn("bruteforceblocker", sources)

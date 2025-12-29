@@ -40,36 +40,8 @@ class FireHolCron(Cronjob):
             except Exception as e:
                 self.log.exception(f"Unexpected error processing {source}: {e}")
 
-        # Enrich recently added IOCs with FireHol categories
-        self._enrich_recent_iocs()
-
         # Clean up old FireHolList entries
         self._cleanup_old_entries()
-
-    def _enrich_recent_iocs(self):
-        """
-        Update firehol_categories only for recently added IOCs.
-        This prevents retroactively marking old IOCs with new intelligence.
-        """
-        from datetime import datetime, timedelta
-
-        # Get FireHolList entries added in the last 24 hours
-        yesterday = datetime.now() - timedelta(hours=24)
-        recent_firehol = FireHolList.objects.filter(added__gte=yesterday)
-
-        self.log.info(f"Enriching {recent_firehol.count()} recent FireHol entries")
-
-        for entry in recent_firehol:
-            try:
-                # Only update IOCs that were also recently added
-                ioc = IOC.objects.get(name=entry.ip_address, first_seen__gte=yesterday)
-                if entry.source not in ioc.firehol_categories:
-                    ioc.firehol_categories.append(entry.source)
-                    ioc.save()
-                    self.log.debug(f"Added {entry.source} category to recently added IOC {entry.ip_address}")
-            except IOC.DoesNotExist:
-                # IOC doesn't exist or wasn't recently added - skip
-                pass
 
     def _cleanup_old_entries(self):
         """
