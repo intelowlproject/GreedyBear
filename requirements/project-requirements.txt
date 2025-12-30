@@ -1,4 +1,4 @@
-celery==5.6.0
+celery==5.6.1
 
 # if you change this, update the documentation
 elasticsearch8==8.19.2
