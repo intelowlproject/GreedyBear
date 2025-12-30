@@ -16,7 +16,7 @@ slack-sdk==3.39.0
 uwsgitop==0.12
 uwsgi==2.0.31
 
-joblib==1.5.2
+joblib==1.5.3
 pandas==2.3.3
 scikit-learn==1.8.0
 numpy==2.3.5
