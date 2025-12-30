@@ -30,6 +30,17 @@ class GeneralHoneypot(models.Model):
         return self.name
 
 
+class FireHolList(models.Model):
+    ip_address = models.CharField(max_length=256, blank=False)
+    added = models.DateTimeField(blank=False, default=datetime.now)
+    source = models.CharField(max_length=64, blank=True, null=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["ip_address"]),
+        ]
+
+
 class IOC(models.Model):
     name = models.CharField(max_length=256, blank=False)
     type = models.CharField(max_length=32, blank=False, choices=iocType.choices)
@@ -48,6 +59,7 @@ class IOC(models.Model):
     related_ioc = models.ManyToManyField("self", blank=True, symmetrical=True)
     related_urls = pg_fields.ArrayField(models.CharField(max_length=900, blank=True), blank=True, default=list)
     ip_reputation = models.CharField(max_length=32, blank=True)
+    firehol_categories = pg_fields.ArrayField(models.CharField(max_length=64, blank=True), blank=True, default=list)
     asn = models.IntegerField(blank=True, null=True)
     destination_ports = pg_fields.ArrayField(models.IntegerField(), blank=False, null=False, default=list)
     login_attempts = models.IntegerField(blank=False, null=False, default=0)

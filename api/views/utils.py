@@ -240,6 +240,7 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
                 "scanner",
                 "payload_request",
                 "ip_reputation",
+                "firehol_categories",
                 "asn",
                 "destination_ports",
                 "login_attempts",

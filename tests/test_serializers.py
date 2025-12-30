@@ -115,6 +115,7 @@ class FeedsResponseSerializersTestCase(TestCase):
                 "attack_count": "5",
                 "interaction_count": "50",
                 "ip_reputation": "known attacker",
+                "firehol_categories": [],
                 "asn": "8400",
                 "destination_port_count": "14",
                 "login_attempts": "0",
