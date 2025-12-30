@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from ipaddress import ip_address
 
 from api.enums import Honeypots
-from api.serializers import FeedsRequestSerializer, FeedsResponseSerializer
+from api.serializers import FeedsRequestSerializer
 from django.conf import settings
 from django.contrib.postgres.aggregates import ArrayAgg
 from django.db.models import F, Q
