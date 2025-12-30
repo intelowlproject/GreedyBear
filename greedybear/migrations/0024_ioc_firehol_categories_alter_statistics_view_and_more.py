@@ -8,7 +8,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("greedybear", "0022_whatsmyip"),
+        ("greedybear", "0023_rename_massscanners_massscanner_and_more"),
     ]
 
     operations = [

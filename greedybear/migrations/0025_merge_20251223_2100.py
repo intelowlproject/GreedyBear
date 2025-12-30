@@ -6,7 +6,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("greedybear", "0023_ioc_firehol_categories_alter_statistics_view_and_more"),
+        ("greedybear", "0024_ioc_firehol_categories_alter_statistics_view_and_more"),
         ("greedybear", "0023_rename_massscanners_massscanner_and_more"),
     ]
 
