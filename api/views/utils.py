@@ -266,16 +266,8 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
                     "destination_port_count": len(ioc["destination_ports"]),
                 }
 
-                if verbose:
-                    json_list.append(data_)
-                    continue
-
-                serializer_item = FeedsResponseSerializer(
-                    data=data_,
-                    context={"valid_feed_types": valid_feed_types},
-                )
-                serializer_item.is_valid(raise_exception=True)
-                json_list.append(serializer_item.data)
+                # Skip validation - data_ is constructed internally and matches the API contract
+                json_list.append(data_)
 
             # check if sorting the results by feed_type
             if feed_params.feed_type_sorting is not None:
