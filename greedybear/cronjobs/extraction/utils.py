@@ -50,6 +50,40 @@ def correct_ip_reputation(ip: str, ip_reputation: str) -> str:
     return ip_reputation
 
 
+def get_firehol_categories(ip: str, extracted_ip) -> list[str]:
+    """
+    Get FireHol categories for an IP address.
+    Checks both exact IP matches (for .ipset files) and network range
+    membership (for .netset files with CIDR notation).
+
+    Args:
+        ip: IP address string.
+        extracted_ip: Parsed IP address object from ipaddress library.
+
+    Returns:
+        List of FireHol source categories.
+    """
+    firehol_categories = []
+
+    # First check for exact IP match (for .ipset files)
+    exact_matches = FireHolList.objects.filter(ip_address=ip).values_list("source", flat=True)
+    firehol_categories.extend(exact_matches)
+
+    # Then check if IP is within any network ranges (for .netset files)
+    # Only query entries that contain '/' (CIDR notation)
+    network_entries = FireHolList.objects.filter(ip_address__contains="/")
+    for entry in network_entries:
+        try:
+            network_range = ip_network(entry.ip_address, strict=False)
+            if extracted_ip in network_range and entry.source not in firehol_categories:
+                firehol_categories.append(entry.source)
+        except (ValueError, IndexError):
+            # Not a valid network range, skip
+            continue
+
+    return firehol_categories
+
+
 def iocs_from_hits(hits: list[dict]) -> list[IOC]:
     """
     Convert Elasticsearch hits into IOC objects.
@@ -74,25 +108,7 @@ def iocs_from_hits(hits: list[dict]) -> list[IOC]:
         if extracted_ip.is_loopback or extracted_ip.is_private or extracted_ip.is_multicast or extracted_ip.is_link_local or extracted_ip.is_reserved:
             continue
 
-        # Get FireHol categories for this IP at creation time
-        # Handle both exact IP matches and network range membership (for netsets)
-        firehol_categories = []
-
-        # First check for exact IP match (for .ipset files)
-        exact_matches = FireHolList.objects.filter(ip_address=ip).values_list("source", flat=True)
-        firehol_categories.extend(exact_matches)
-
-        # Then check if IP is within any network ranges (for .netset files)
-        # Only query entries that contain '/' (CIDR notation)
-        network_entries = FireHolList.objects.filter(ip_address__contains="/")
-        for entry in network_entries:
-            try:
-                network_range = ip_network(entry.ip_address, strict=False)
-                if extracted_ip in network_range and entry.source not in firehol_categories:
-                    firehol_categories.append(entry.source)
-            except (ValueError, IndexError):
-                # Not a valid network range, skip
-                continue
+        firehol_categories = get_firehol_categories(ip, extracted_ip)
 
         ioc = IOC(
             name=ip,
