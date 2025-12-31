@@ -1,53 +1,9 @@
 repos:
--   repo: local
-    hooks:
-      # pylint needs to be set up as local, otherwise you won't be able to install all dependencies
-      - id: pylint
-        name: pylint
-        entry: pylint
-        language: system
-        types: [python]
-        require_serial: true
-        args: ["--rcfile", ".github/configurations/python_linters/.pylintrc"]
-
--   repo: https://github.com/pycqa/bandit
-    rev: 1.8.3
-    hooks:
-      - id: bandit
-        args: ["-c", ".github/configurations/python_linters/.bandit.yaml"]
-
--   repo: https://github.com/pycqa/flake8
-    rev: 7.1.2
-    hooks:
-    - id: flake8
-      args: ["--config", ".github/configurations/python_linters/.flake8"]
-      # use fork since main repo is not updated
-      # see https://github.com/rocioar/flake8-django/pull/134
-      additional_dependencies: ["git+https://github.com/terencehonles/flake8-django.git@a6e369e89d275dfd5514f2aa9d091aa36c5ff84b"]
-
--   repo: https://github.com/pycqa/isort
-    rev: 6.0.1
-    hooks:
-      - id: isort
-        args: ["--settings-path", ".github/configurations/python_linters/.isort.cfg", "--filter-files", "--skip", "venv"]
-
--   repo: https://github.com/psf/black
-    rev: 25.1.0
-    hooks:
-      - id: black
-        args: ["--config", ".github/configurations/python_linters/.black"]
-
--   repo: https://github.com/PyCQA/autoflake
-    rev: v2.3.1
-    hooks:
-    -   id: autoflake
-        args: ["-i", "--remove-all-unused-imports", "--remove-unused-variables", "--ignore-init-module-imports", "--ignore-pass-statements"]
-
 -   repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.12.7
     hooks:
-      - id: ruff-format
-        args: ["--config", "./.github/configurations/python_linters/.ruff.toml"]
       - id: ruff
         name: ruff-lint
+        args: ["check", "--fix", "--config", "./.github/configurations/python_linters/.ruff.toml"]
+      - id: ruff-format
         args: ["--config", "./.github/configurations/python_linters/.ruff.toml"]
