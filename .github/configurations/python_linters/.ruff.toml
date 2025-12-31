@@ -1,0 +1,51 @@
+# Top level settings
+## Reference: https://docs.astral.sh/ruff/settings/#top-level
+
+extend-exclude = [
+    ".github",
+    ".idea",
+    ".vscode",
+    "**/migrations/*"
+]
+
+include = ["*.py"]
+
+indent-width = 4
+
+line-length = 160
+
+output-format = "full"
+
+respect-gitignore = false
+
+show-fixes = true
+
+target-version = "py312"
+
+# Format settings level
+## Reference: https://docs.astral.sh/ruff/settings/#format
+[format]
+
+docstring-code-format = true
+
+indent-style = "space"
+
+line-ending = "native"
+
+quote-style = "double"
+
+skip-magic-trailing-comma = false
+
+[lint]
+
+# Default + Isort
+select = [
+    "E4",
+    "E7",
+    "E9",
+    "F",
+    # Isort - https://docs.astral.sh/ruff/rules/#isort-i
+    "I"
+]
+
+ignore = [ ]

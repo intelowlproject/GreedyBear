@@ -2,144 +2,84 @@ name: Reusable python linter workflow
 on:
   workflow_call:
     inputs:
+      # Base configs
       python_versions:
-        description: Python versions to use
+        description: Python versions to use (in the form of a JSON array)
         type: string
         required: true
+      ubuntu_version:
+        description: Ubuntu version to use
+        type: string
+        default: latest
+        required: false
       working_directory:
         description: Directory that must be run against the linters
         type: string
         required: true
-
-      use_autoflake:
-        description: Use autoflake linter
-        default: false
-        type: boolean
-        required: false
-      use_black:
-        description: Use black formatter
-        default: false
-        type: boolean
-        required: false
-      use_isort:
-        description: Use isort formatter
-        default: false
-        type: boolean
-        required: false
-      use_flake8:
-        description: Use flake8 linter
-        default: false
-        type: boolean
-        required: false
-      use_pylint:
-        description: Use pylint linter
-        default: false
-        type: boolean
-        required: false
-      use_bandit:
-        description: Use bandit linter
-        default: false
-        type: boolean
-        required: false
-
-      run_codeql:
-        description: Run codeql
-        default: false
-        type: boolean
-        required: false
-
       requirements_path:
         description: Path to the requirements.txt file
         type: string
         required: true
-
       install_from:
         description: Directory that must be used to install the packages
         type: string
         required: false
         default: .
-
       packages_path:
-        description: Path to the packages.txt file
+        description: Path to the packages.txt file (APT requirements)
         type: string
         required: false
+      env:
+        description: Environment variables to set
+        type: string
+        required: false
+        default: >-
+          {}
+      max_timeout:
+        description: Max time that the CI can be run
+        type: number
+        required: false
+        default: 30
 
-      custom_command:
-        description: String of custom command to run
-        type: string
-        required: false
-      django_settings_module:
-        description: Path to the django settings file
-        type: string
-        required: false
-        default: ''
-
-      check_migrations:
-        description: Check if migrations are valid. Require django_settings_module to be set.
+      # Formatters
+      use_black:
+        description: Use black formatter
         type: boolean
         required: false
-        default: false
-      check_requirements_licenses:
-        description: Check if requirements have a valid license. Require django_settings_module to be set.
+      use_isort:
+        description: Use isort formatter
         type: boolean
         required: false
-        default: true
-      ignore_requirements_licenses_regex:
-        description: Regex of repositories of which ignore license
-        type: string
-        required: false
-        default: uWSGI.*|lunardate.*|.*QuokkaClient.*|pyquokka.*
-
-      check_docs_directory:
-        description: Check docs using rstcheck inside this directory
-        type: string
-        required: false
-        default: ''
-      check_dockerfile:
-        description: Check dockerfile build. WARNING action total time may increase significantly
-        type: string
-        required: false
-        default: ''
-
-      use_postgres:
-        description: Use postgres service
-        default: false
-        type: boolean
-        required: false
-      use_elastic_search:
-        description: Use elastic_search service
-        default: false
-        type: boolean
-        required: false
-      use_memcached:
-        description: Use memcached service
-        default: false
-        type: boolean
-        required: false
-      use_redis:
-        description: Use redis service
-        default: false
-        type: boolean
-        required: false
-      use_rabbitmq:
-        description: Use rabbitmq service
-        default: false
-        type: boolean
-        required: false
-      use_mongo:
-        description: Use mongo service
-        default: false
-        type: boolean
-        required: false
-      use_celery:
-        description: Create a celery worker
-        default: false
+      use_ruff_formatter:
+        description: Use ruff formatter
         type: boolean
         required: false
 
+      # Linters
+      use_autoflake:
+        description: Use autoflake linter
+        type: boolean
+        required: false
+      use_bandit:
+        description: Use bandit linter
+        type: boolean
+        required: false
+      use_flake8:
+        description: Use flake8 linter
+        type: boolean
+        required: false
+      use_pylint:
+        description: Use pylint linter
+        type: boolean
+        required: false
+      use_ruff_linter:
+        description: Use ruff linter
+        type: boolean
+        required: false
+
+      # Coverage configs
       use_coverage:
         description: Use coverage.py.
-        default: false
         type: boolean
         required: false
       coverage_config_path:
@@ -149,21 +89,80 @@ on:
         default: .coveragerc
       upload_coverage:
         description: Upload coverage.py report to github
-        default: false
         type: boolean
         required: false
 
-      tags_for_slow_tests:
-        description: Tags for tests that will be run only on master/main branch, space separated. Can be used only for django projects.
-        default: slow
-        type: string
+      # CodeQL configs
+      run_codeql:
+        description: Run codeql
+        type: boolean
         required: false
-      tags_for_manual_tests:
-        description: Tags for tests that will not be run on the CI, space separated. Can be used only for django projects.
-        default: manual
-        type: string
+      
+      # Services
+      use_celery:
+        description: Create a celery worker
+        type: boolean
+        required: false
+      use_elastic_search:
+        description: Use elastic_search service
+        type: boolean
+        required: false
+      use_memcached:
+        description: Use memcached service
+        type: boolean
+        required: false
+      use_mongo:
+        description: Use mongo service
+        type: boolean
+        required: false
+      use_postgres:
+        description: Use postgres service
+        type: boolean
+        required: false
+      use_rabbitmq:
+        description: Use rabbitmq service
+        type: boolean
+        required: false
+      use_redis:
+        description: Use redis service
+        type: boolean
         required: false
 
+      # Services configs
+      ## Celery service configs
+      celery_app:
+        description: Celery app name. Requires use_celery to be true
+        type: string
+        required: false
+      celery_queues:
+        description: Celery queues separated by ,. Requires use_celery to be true
+        type: string
+        required: false
+        default: default
+      ## Elasticsearch service configs
+      elasticsearch_version:
+        description: Elasticsearch container version
+        type: string
+        required: false
+        default: latest
+      elasticsearch_port:
+        description: Elasticsearch container port
+        type: string
+        required: false
+        default: 9200
+      ## Memcached service configs
+      memcached_version:
+        description: Memcached alpine container version
+        type: string
+        required: false
+        default: latest
+      ## Mongo service configs
+      mongo_version:
+        description: Mongo container version
+        type: string
+        required: false
+        default: latest
+      ## Postgres service configs
       postgres_db:
         description: Postgres service db. Requires use_postgres to be true
         type: string
@@ -184,66 +183,63 @@ on:
         type: string
         required: false
         default: latest
-
-      mongo_version:
-        description: Mongo container version
+      ## RabbitMQ service configs
+      rabbitmq_version:
+        description: RabbitMQ management-alpine container version
         type: string
         required: false
         default: latest
-      elasticsearch_version:
-        description: Elasticsearch container version
-        type: string
-        required: false
-        default: 8.11.1
-      elasticsearch_port:
-        description: Elasticsearch container port
-        type: string
-        required: false
-        default: 9200
-      memcached_version:
-        description: Memcached alpine container version
-        type: string
-        required: false
-        default: latest
+      ## Redis service configs
       redis_version:
         description: Redis alpine container version
         type: string
         required: false
         default: latest
-      rabbitmq_version:
-        description: RabbitMQ management-alpine container version
+      
+
+      # Django configs
+      django_settings_module:
+        description: Path to the django settings file
         type: string
         required: false
-        default: 3
-
-      celery_app:
-        description: Celery app name. Requires use_celery to be true
+      check_migrations:
+        description: Check if migrations are valid. Require django_settings_module to be set.
+        type: boolean
+        required: false
+      check_requirements_licenses:
+        description: Check if requirements have a valid license. Require django_settings_module to be set.
+        type: boolean
+        required: false
+        default: true
+      ignore_requirements_licenses_regex:
+        description: Regex of repositories of which ignore license
+        type: string
+        required: false
+        default: uWSGI.*|lunardate.*|.*QuokkaClient.*|pyquokka.*
+      tags_for_slow_tests:
+        description: Tags for tests that will be run only on master/main branch, space separated. Can be used only for django projects.
+        default: slow
+        type: string
+        required: false
+      tags_for_manual_tests:
+        description: Tags for tests that will not be run on the CI, space separated. Can be used only for django projects.
+        default: manual
         type: string
         required: false
 
-      celery_queues:
-        description: Celery queues separated by ,. Requires use_celery to be true
+      # Misc configs
+      custom_command:
+        description: String of custom command to run
         type: string
         required: false
-        default: default
 
-      env:
-        description: Environment variables to set
+      check_docs_directory:
+        description: Check docs using rstcheck inside this directory
         type: string
         required: false
-        default: >-
-          {}
-
-      max_timeout:
-        description: Max time that the CI can be run
-        type: number
-        required: false
-        default: 30
-
-      ubuntu_version:
-        description: Ubuntu version to use
+      check_dockerfile:
+        description: Check dockerfile build. WARNING action total time may increase significantly
         type: string
-        default: latest
         required: false
 
 jobs:
@@ -257,10 +253,11 @@ jobs:
         language: ['python']
     env: ${{ fromJson(inputs.env) }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Check out latest commit
+        uses: actions/checkout@v4
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python_version }}
 
@@ -276,21 +273,133 @@ jobs:
         shell:
           bash
 
-      - name: Install apt requirements
-        if: inputs.packages_path
-        uses: ./.github/actions/apt_requirements
+      - name: Restore APT cache related to PR event
+        id: restore_apt_cache_pr
+        uses: ./.github/actions/apt_requirements/restore_apt_cache
         with:
-          requirements_file: ${{ inputs.packages_path }}
+          apt_requirements_file_path: ${{ inputs.packages_path }}
+      
+      - name: Restore APT cache related to target branch
+        id: restore_apt_cache_target_branch
+        if: steps.restore_apt_cache_pr.outputs.cache-hit != 'true'
+        uses: ./.github/actions/apt_requirements/restore_apt_cache
+        with:
+          apt_requirements_file_path: ${{ inputs.packages_path }}
+          git_reference: ${{ github.base_ref }}
+      
+      - name: Refresh APT repositories
+        if: >
+          steps.restore_apt_cache_pr.outputs.cache-hit != 'true' &&
+          steps.restore_apt_cache_target_branch.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update
+        shell: bash
+
+      - name: Install APT requirements
+        run: |
+          sudo apt-get install -y --no-install-recommends $(tr '\n' ' ' < ${{ inputs.packages_path }})
+        shell: bash
+      
+      - name: Save APT cache related to PR event
+        if: >
+          steps.restore_apt_cache_pr.outputs.cache-hit != 'true'
+        uses: ./.github/actions/apt_requirements/save_apt_cache
+        with:
+          apt_requirements_file_path: ${{ inputs.packages_path }}
+
+      - name: Create linter requirements file
+        uses: ./.github/actions/python_requirements/create_linter_requirements_file
+        with:
+          install_from: ${{ inputs.install_from }}
+          django_settings_module: ${{ inputs.django_settings_module }}
+          use_autoflake: ${{ inputs.use_autoflake }}
+          use_bandit: ${{ inputs.use_bandit }}
+          use_black: ${{ inputs.use_black }}
+          use_flake8: ${{ inputs.use_flake8 }}
+          use_isort: ${{ inputs.use_isort }}
+          use_pylint: ${{ inputs.use_pylint }}
+          use_ruff_formatter: ${{ inputs.use_ruff_formatter }}
+          use_ruff_linter: ${{ inputs.use_ruff_linter }}
+
+      - name: Create dev requirements file
+        uses: ./.github/actions/python_requirements/create_dev_requirements_file
+        with:
+          install_from: ${{ inputs.install_from }}
+          use_coverage: ${{ inputs.use_coverage }}
+
+      - name: Create docs requirements file
+        uses: ./.github/actions/python_requirements/create_docs_requirements_file
+        with:
+          install_from: ${{ inputs.install_from }}
+          check_docs_directory: ${{ inputs.check_docs_directory }}
+          django_settings_module: ${{ inputs.django_settings_module }}
+
+      - name: Restore Python virtual environment related to PR event
+        id: restore_python_virtual_environment_pr
+        uses: ./.github/actions/python_requirements/restore_virtualenv/
+        with:
+          requirements_paths: "${{ inputs.requirements_path }} requirements-linters.txt requirements-dev.txt requirements-docs.txt"
+
+      - name: Restore Python virtual environment related to target branch
+        id: restore_python_virtual_environment_target_branch
+        if: steps.restore_python_virtual_environment_pr.outputs.cache-hit != 'true'
+        uses: ./.github/actions/python_requirements/restore_virtualenv/
+        with:
+          requirements_paths: ${{ inputs.requirements_path }}
+          git_reference: ${{ github.base_ref }}
+
+      - name: Create Python virtual environment
+        if: >
+         steps.restore_python_virtual_environment_pr.outputs.cache-hit != 'true' && 
+         steps.restore_python_virtual_environment_target_branch.outputs.cache-hit != 'true'
+        uses: ./.github/actions/python_requirements/create_virtualenv
+
+      - name: Restore pip cache related to PR event
+        id: restore_pip_cache_pr
+        if: > 
+          steps.restore_python_virtual_environment_pr.outputs.cache-hit != 'true' && 
+          steps.restore_python_virtual_environment_target_branch.outputs.cache-hit != 'true'
+        uses: ./.github/actions/python_requirements/restore_pip_cache
+
+      - name: Restore pip cache related to target branch
+        id: restore_pip_cache_target_branch
+        if: >
+          steps.restore_python_virtual_environment_pr.outputs.cache-hit != 'true' &&
+          steps.restore_python_virtual_environment_target_branch.outputs.cache-hit != 'true' &&
+          steps.restore_pip_cache_pr.outputs.cache-hit != 'true'
+        uses: ./.github/actions/python_requirements/restore_pip_cache
+        with:
+          git_reference: ${{ github.base_ref }}
+      
+      - name: Install project requirements
+        if: >
+          steps.restore_python_virtual_environment_pr.outputs.cache-hit != 'true' &&
+          steps.restore_python_virtual_environment_target_branch.outputs.cache-hit != 'true'
+        run: pip install -r ${{ inputs.requirements_path }}
+        shell: bash
+        working-directory: ${{ inputs.install_from }}
+
+      - name: Install other requirements
+        if: >
+          steps.restore_python_virtual_environment_pr.outputs.cache-hit != 'true'
+        run: |
+          pip install -r requirements-dev.txt
+          pip install -r requirements-linters.txt
+          pip install -r requirements-docs.txt
+        shell: bash
+        working-directory: ${{ inputs.install_from }}
 
       - name: Check requirements licenses
-        if: inputs.check_requirements_licenses && steps.cache-virtualenv.outputs.cache-hit != 'true'
+        if: >
+            inputs.check_requirements_licenses && 
+            steps.restore_python_virtual_environment_pr.outputs.cache-hit != 'true'
         id: license_check_report
         continue-on-error: true
         uses: pilosus/action-pip-license-checker@v2
         with:
           requirements: ${{ inputs.install_from }}/${{ inputs.requirements_path }}
           exclude: ${{ inputs.ignore_requirements_licenses_regex }}
-          table-headers: true
+          headers: true
           fail: 'StrongCopyleft,NetworkCopyleft,Error'
           fails-only: true
 
@@ -304,102 +413,30 @@ jobs:
           exit 1
         shell: bash
 
-      # not the best solution because i do not think that dependabot supports this
-      - name: Create requirements-linters.txt
-        run: |
-          echo > requirements-linters.txt
-
-          if [[ '${{ inputs.use_black}}' != 'false' ]]; then
-            echo "black==23.11.0" >> requirements-linters.txt
-          fi
-
-          if [[ '${{ inputs.use_isort}}' != 'false' ]]; then
-            echo "isort==5.12.0" >> requirements-linters.txt
-          fi
-
-          if [[ '${{ inputs.use_flake8}}' != 'false' ]]; then
-            echo "flake8==6.1.0" >> requirements-linters.txt
-            if [[ -n '${{ inputs.django_settings_module }}' ]]; then
-              echo "flake8-django==1.4" >> requirements-linters.txt
-            fi
-          fi
-
-          if [[ '${{ inputs.use_pylint}}' != 'false' ]]; then
-            echo "pylint==2.17.7" >> requirements-linters.txt
-            if [[ -n '${{ inputs.django_settings_module }}' ]]; then
-              echo "pylint-django==2.5.5" >> requirements-linters.txt
-            fi
-          fi
-
-          if [[ '${{ inputs.use_bandit}}' != 'false' ]]; then
-            echo "bandit==1.7.5" >> requirements-linters.txt
-          fi
-          if [[ '${{ inputs.use_autoflake}}' != 'false' ]]; then
-            echo "autoflake==2.2.1" >> requirements-linters.txt
-          fi
-          cat $(echo ${{ inputs.requirements_path }} | sed -e 's/.txt/-linter.txt/') >> requirements-linters.txt 2>/dev/null || exit 0
-        shell: bash
-        working-directory: ${{ inputs.install_from }}
-
-      - name: Create requirements-dev.txt
-        run: |
-          echo > requirements-dev.txt
-          if [[ '${{ inputs.use_coverage }}' != 'false' ]]; then
-            echo "coverage>=7.3.2" >> requirements-dev.txt
-          fi
-          cat $(echo ${{ inputs.requirements_path }} | sed -e 's/.txt/-dev.txt/') >> requirements-dev.txt 2>/dev/null || exit 0
-        shell: bash
-        working-directory: ${{ inputs.install_from }}
-
-      - name: Create requirements-docs.txt
-        run: |
-          echo > requirements-docs.txt
-          if [[ -n '${{ inputs.check_docs_directory }}' ]]; then
-            echo "rstcheck[sphinx]" >> requirements-docs.txt 
-            echo "sphinx==7.2.6" >> requirements-docs.txt
-            echo "sphinx_rtd_theme==1.3.0" >> requirements-docs.txt
-            echo "sphinxcontrib-spelling==8.0.0" >> requirements-docs.txt
-            if [[ -n '${{ inputs.django_settings_module }}' ]]; then
-              echo "sphinxcontrib-django2==1.9" >> requirements-docs.txt
-            fi
-            cat $(echo ${{ inputs.requirements_path }} | sed -e 's/.txt/-docs.txt/') >> requirements-docs.txt 2>/dev/null || exit 0 
-          fi
-        shell: bash
-        working-directory: ${{ inputs.install_from }}
-
-      - name: Check virtualenv cache
-        uses: syphar/restore-virtualenv@v1
-        id: cache-virtualenv
+      - name: Save Python virtual environment related to PR event
+        if: >
+          steps.restore_python_virtual_environment_pr.outputs.cache-hit != 'true'
+        uses: ./.github/actions/python_requirements/save_virtualenv
         with:
-          requirement_files: |
-            ${{ inputs.install_from }}/${{ inputs.requirements_path }}
-            ${{ inputs.install_from }}/requirements-dev.txt
-            ${{ inputs.install_from }}/requirements-linters.txt
-            ${{ inputs.install_from }}/requirements-docs.txt
+          requirements_paths: "${{ inputs.requirements_path }} requirements-linters.txt requirements-dev.txt requirements-docs.txt"
 
-      - name: Check pip cache
-        uses: syphar/restore-pip-download-cache@v1
-        if: steps.cache-virtualenv.outputs.cache-hit != 'true'
-        with:
-          requirement_files: |
-            ${{ inputs.install_from }}/${{ inputs.requirements_path }}
-            ${{ inputs.install_from }}/requirements-dev.txt
-            ${{ inputs.install_from }}/requirements-linters.txt
-            ${{ inputs.install_from }}/requirements-docs.txt
-
-      - name: Install requirements
-        if: steps.cache-virtualenv.outputs.cache-hit != 'true'
-        run: |
-          pip install -r ${{ inputs.requirements_path }}
-          pip install -r requirements-dev.txt
-          pip install -r requirements-linters.txt
-          pip install -r requirements-docs.txt
-        shell: bash
-        working-directory: ${{ inputs.install_from }}
+      - name: Save pip cache related to PR event
+        if: >
+          steps.restore_python_virtual_environment_pr.outputs.cache-hit != 'true' &&
+          steps.restore_pip_cache_pr.outputs.cache-hit != 'true'
+        uses: ./.github/actions/python_requirements/save_pip_cache
 
       - name: Run linters
         uses: ./.github/actions/python_linter
-        if: inputs.use_black || inputs.use_isort || inputs.use_flake8 || inputs.use_pylint || inputs.use_bandit || inputs.use_autoflake
+        if: > 
+          inputs.use_black ||
+          inputs.use_isort ||
+          inputs.use_flake8 ||
+          inputs.use_pylint ||
+          inputs.use_bandit ||
+          inputs.use_autoflake ||
+          inputs.use_ruff_formatter ||
+          inputs.use_ruff_linter
         with:
           working_directory: ${{ inputs.working_directory }}
           use_black: ${{ inputs.use_black }}
@@ -408,6 +445,8 @@ jobs:
           use_pylint: ${{ inputs.use_pylint }}
           use_bandit: ${{ inputs.use_bandit }}
           use_autoflake: ${{ inputs.use_autoflake }}
+          use_ruff_formatter: ${{ inputs.use_ruff_formatter }}
+          use_ruff_linter: ${{ inputs.use_ruff_linter }}
 
       - name: Run CodeQL
         if: inputs.run_codeql
@@ -423,12 +462,6 @@ jobs:
           python3 -m sphinx -a -T -E -b html -d  _build/doctrees -D language=en . _build/html
         shell: bash
         working-directory: ${{ inputs.check_docs_directory }}
-
-      - name: Build DockerFile
-        if: inputs.check_dockerfile
-        run: |
-           docker build -f ${{ inputs.check_dockerfile }} .
-        working-directory: ${{ inputs.working_directory }}
 
       - name: Start services
         uses: ./.github/actions/services
