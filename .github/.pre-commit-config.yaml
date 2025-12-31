@@ -4,6 +4,6 @@ repos:
     hooks:
       - id: ruff
         name: ruff-lint
-        args: ["check", "--fix", "--config", "./.github/configurations/python_linters/.ruff.toml"]
+        args: ["--fix", "--config", "./.github/configurations/python_linters/.ruff.toml"]
       - id: ruff-format
         args: ["--config", "./.github/configurations/python_linters/.ruff.toml"]

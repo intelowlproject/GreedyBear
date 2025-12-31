@@ -2,10 +2,11 @@
 # See the file 'LICENSE' for copying permission.
 import logging
 
-from greedybear.consts import GET
-from greedybear.models import GeneralHoneypot
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+
+from greedybear.consts import GET
+from greedybear.models import GeneralHoneypot
 
 logger = logging.getLogger(__name__)
 

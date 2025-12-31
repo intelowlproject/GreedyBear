@@ -3,9 +3,10 @@ from functools import cache
 
 import numpy as np
 import pandas as pd
-from api.views.utils import FeedRequestParams, feeds_response
 from django.contrib.postgres.aggregates import ArrayAgg
 from django.db.models import F, Q
+
+from api.views.utils import FeedRequestParams, feeds_response
 from greedybear.models import IOC
 
 

@@ -1,4 +1,3 @@
-import numpy as np
 from greedybear.cronjobs.commands.cluster import tokenize
 
 from . import CustomTestCase

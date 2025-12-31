@@ -2,12 +2,13 @@ import json
 from abc import abstractmethod
 
 import pandas as pd
+from sklearn.base import BaseEstimator
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+
 from greedybear.cronjobs.scoring.consts import MULTI_VAL_FEATURES, NUM_FEATURES
 from greedybear.cronjobs.scoring.ml_model import Classifier, MLModel, Regressor
 from greedybear.cronjobs.scoring.utils import multi_label_encode
 from greedybear.settings import ML_CONFIG_FILE
-from sklearn.base import BaseEstimator
-from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 
 
 class RFModel(MLModel):

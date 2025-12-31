@@ -7,11 +7,12 @@ import numpy as np
 import pandas as pd
 from django.core.files.base import ContentFile
 from django.core.files.storage import FileSystemStorage
+from sklearn.model_selection import train_test_split
+
 from greedybear.cronjobs.scoring.consts import MULTI_VAL_FEATURES, SAMPLE_COUNT
 from greedybear.cronjobs.scoring.scorer import Scorer
 from greedybear.cronjobs.scoring.utils import multi_label_encode
 from greedybear.settings import ML_MODEL_DIRECTORY
-from sklearn.model_selection import train_test_split
 
 
 class MLModel(Scorer):

@@ -1,6 +1,7 @@
 import json
 
 from django.test import SimpleTestCase
+
 from greedybear.cronjobs.scoring.random_forest import RFClassifier, RFRegressor
 from greedybear.settings import ML_CONFIG_FILE
 

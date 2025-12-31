@@ -3,6 +3,7 @@
 from __future__ import absolute_import, unicode_literals
 
 from celery import shared_task
+
 from greedybear.settings import CLUSTER_COWRIE_COMMAND_SEQUENCES
 
 

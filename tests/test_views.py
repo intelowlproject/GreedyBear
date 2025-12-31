@@ -1,8 +1,9 @@
-from api.views.utils import is_ip_address, is_sha256hash
 from django.conf import settings
 from django.test import override_settings
-from greedybear.models import GeneralHoneypot, Statistics, viewType
 from rest_framework.test import APIClient
+
+from api.views.utils import is_ip_address, is_sha256hash
+from greedybear.models import GeneralHoneypot, Statistics, viewType
 
 from . import CustomTestCase
 

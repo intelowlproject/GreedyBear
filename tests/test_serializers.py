@@ -1,11 +1,12 @@
 import random
 from itertools import product
 
-from api.serializers import FeedsRequestSerializer, FeedsResponseSerializer
 from django.test import TestCase
+from rest_framework.serializers import ValidationError
+
+from api.serializers import FeedsRequestSerializer, FeedsResponseSerializer
 from greedybear.consts import PAYLOAD_REQUEST, SCANNER
 from greedybear.models import IOC, GeneralHoneypot
-from rest_framework.serializers import ValidationError
 
 
 class FeedsRequestSerializersTestCase(TestCase):

@@ -1,6 +1,7 @@
 import re
 
 import requests
+
 from greedybear.cronjobs.base import Cronjob
 from greedybear.models import IOC, MassScanner
 

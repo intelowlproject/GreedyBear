@@ -2,6 +2,7 @@ from unittest.mock import Mock
 
 import numpy as np
 import pandas as pd
+
 from greedybear.cronjobs.scoring.ml_model import Classifier, Regressor
 from greedybear.cronjobs.scoring.random_forest import RFModel
 

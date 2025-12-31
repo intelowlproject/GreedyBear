@@ -92,7 +92,7 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
         self._extract_possible_payload_in_messages(hits)
         self._get_url_downloads(hits)
         self.log.info(
-            f"added {len(self.ioc_records)} scanners, " f"{self.payloads_in_message} payloads found in messages, " f"{self.added_url_downloads} download URLs"
+            f"added {len(self.ioc_records)} scanners, {self.payloads_in_message} payloads found in messages, {self.added_url_downloads} download URLs"
         )
 
     def _get_scanners(self, hits: list[dict]) -> None:
@@ -208,7 +208,7 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
             if session_record.commands is not None:
                 self._deduplicate_command_sequence(session_record)
                 self.session_repo.save_command_sequence(session_record.commands)
-                self.log.info(f"saved new command execute from {ioc.name} " f"with hash {session_record.commands.commands_hash}")
+                self.log.info(f"saved new command execute from {ioc.name} with hash {session_record.commands.commands_hash}")
 
             self.ioc_repo.save(session_record.source)
             self.session_repo.save_session(session_record)
@@ -268,7 +268,7 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
         # Log warning if IOCs are missing - shouldn't happen in normal operation
         if not scanner_ip_instance or not hostname_instance:
             self.log.warning(
-                f"Cannot link IOCs - missing from database: " f"scanner_ip={scanner_ip_instance is not None}, " f"hostname={hostname_instance is not None}"
+                f"Cannot link IOCs - missing from database: scanner_ip={scanner_ip_instance is not None}, hostname={hostname_instance is not None}"
             )
             return
 

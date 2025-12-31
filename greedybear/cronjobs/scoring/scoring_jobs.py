@@ -1,12 +1,12 @@
 import json
-import logging
 from collections import defaultdict
 from datetime import date
 
 import pandas as pd
 from django.core.files.base import ContentFile
 from django.core.files.storage import FileSystemStorage
-from django.db.models import F, Q
+from django.db.models import Q
+
 from greedybear.cronjobs.base import Cronjob
 from greedybear.cronjobs.scoring.random_forest import RFClassifier, RFRegressor
 from greedybear.cronjobs.scoring.utils import correlated_features, get_current_data, get_data_by_pks, get_features

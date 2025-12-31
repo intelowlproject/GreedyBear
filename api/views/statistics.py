@@ -6,10 +6,11 @@ from certego_saas.ext.helpers import parse_humanized_range
 from django.db.models import Count, Q
 from django.db.models.functions import Trunc
 from django.http import HttpResponseServerError
-from greedybear.models import IOC, GeneralHoneypot, Statistics, viewType
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
+
+from greedybear.models import IOC, GeneralHoneypot, Statistics, viewType
 
 logger = logging.getLogger(__name__)
 
