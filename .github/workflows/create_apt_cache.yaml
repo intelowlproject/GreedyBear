@@ -1,0 +1,38 @@
+name: Create APT cache
+
+# GitHub will remove any cache entries that have not been accessed in over 7 days.
+
+on: 
+  push:
+    branches:
+      - main
+      - master
+      - develop
+      - dev
+    paths:
+      # Path to APT requirements file
+      - '.github/test/python_test/packages.txt'
+
+# discard previous execution if you commit to a branch that is already running
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  create-cache:
+    name: Create cache for APT dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out latest commit on current branch
+        uses: actions/checkout@v4
+
+      # Remember to set the same APT requirements file path set before!
+      - name: Install APT dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get -y install  --no-install-recommends $(tr '\n' ' ' < .github/test/python_test/packages.txt)
+      
+      - name: Save APT cache
+        uses: ./.github/actions/apt_requirements/save_apt_cache
+        with:
+          apt_requirements_file_path: .github/test/python_test/packages.txt

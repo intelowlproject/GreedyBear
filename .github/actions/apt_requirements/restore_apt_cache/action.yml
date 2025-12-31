@@ -1,0 +1,64 @@
+name: Composite action restore APT cache
+description: Composite action to restore APT cache
+inputs:
+  apt_requirements_file_path:
+    description: Path to the APT requirements file
+    required: true
+  git_reference:
+    description: A git reference (name of the branch, reference to the PR) that will be used to build the cache key.
+    required: false
+    default: ${{ github.ref_name }}
+
+outputs:
+  cache-hit:
+    description: Whether the APT cache was found in the GitHub's cache or not.
+    value: ${{ steps.restore_apt_cache.outputs.cache-hit }}
+
+
+runs:
+  using: "composite"
+  steps:
+    - name: Compute APT requirements file SHA256 hash
+      id: compute_apt_requirements_file_sha256_hash
+      uses: ./.github/actions/misc/compute_files_hash
+      with:
+        file_paths: ${{ inputs.apt_requirements_file_path }}
+
+    - name: Backup /var/cache/apt/archives permissions
+      id: backup_apt_cache_dir_permissions
+      run: |
+        PERMISSIONS_FILE_PATH="/tmp/apt_cache_dir_permissions.facl"
+        echo "apt_cache_dir_permissions_file=$PERMISSIONS_FILE_PATH" > $GITHUB_OUTPUT
+        sudo getfacl -p /var/cache/apt/archives > $PERMISSIONS_FILE_PATH
+        ARCHIVES_PERMISSIONS=$(ls -ld /var/cache/apt/archives)
+        echo "::debug::Original permissions given to /var/cache/apt/archives: $ARCHIVES_PERMISSIONS"
+        echo "::debug::Created /var/cache/apt/archives permissions backup to $PERMISSIONS_FILE_PATH"
+      shell: bash
+    
+    # Vital to be able to restore cache
+    # If write permission is not set, a permissions error will be raised
+    - name: Add write permission for all to /var/cache/apt/archives
+      run: |
+        sudo chmod a+w /var/cache/apt/archives
+        ARCHIVES_NEW_PERMISSIONS=$(ls -ld /var/cache/apt/archives)
+        echo "::debug::New permissions given to /var/cache/apt/archives: $ARCHIVES_NEW_PERMISSIONS"
+      shell: bash
+    
+    - name: Restore APT cache
+      uses: actions/cache/restore@v4
+      id: restore_apt_cache
+      with:
+        path: /var/cache/apt/archives/*.deb
+        key: ${{ inputs.git_reference }}-apt-${{ steps.compute_apt_requirements_file_sha256_hash.outputs.computed_hash }}
+    
+    - name: Restore original permissions to /var/cache/apt/archives and delete backup
+      run: |
+        PERMISSIONS_FILE_PATH=${{ steps.backup_apt_cache_dir_permissions.outputs.apt_cache_dir_permissions_file }}
+        sudo setfacl --restore="$PERMISSIONS_FILE_PATH"
+        ARCHIVES_RESTORED_PERMISSIONS=$(ls -ld /var/cache/apt/archives)
+        echo "::debug::Restored original permissions to /var/cache/apt/archives: $ARCHIVES_RESTORED_PERMISSIONS"
+        if [[ -f "$PERMISSIONS_FILE_PATH" ]]; then
+          sudo rm "$PERMISSIONS_FILE_PATH"
+          echo "::debug::Correctly removed $PERMISSIONS_FILE_PATH permissions backup file"
+        fi
+      shell: bash

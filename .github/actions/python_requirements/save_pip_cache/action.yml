@@ -1,0 +1,36 @@
+name: Composite action save pip cache
+description: Composite action to save pip cache
+inputs:
+  custom_pip_cache_path:
+    description: Path to the pip cache.
+    required: false
+  git_reference:
+    description: A git reference (name of the branch, reference to the PR) that will be used to build the cache key.
+    required: false
+    default: ${{ github.ref_name }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Generate random UUID
+      id: generate_random_uuid
+      run: |
+        random_uuid=$(uuidgen -r)
+        echo "::debug::Random uuid generated is $random_uuid"
+        echo "computed_uuid=$random_uuid" >> $GITHUB_OUTPUT
+      shell: bash
+    - name: Get pip cache directory
+      id: get_pip_cache_directory
+      run: |
+        if [[ -z '${{ inputs.custom_pip_cache_path }}' ]]; then
+          echo "pip_cache_path=$(pip cache dir)" >> $GITHUB_OUTPUT
+        else
+          echo "pip_cache_path=${{ inputs.custom_pip_cache_path }}" >> $GITHUB_OUTPUT
+        fi
+        echo "::debug::The pip cache path is $pip_cache_path"
+      shell: bash
+    - name: Save pip cache
+      uses: actions/cache/save@v4
+      with:
+        path: ${{ steps.get_pip_cache_directory.outputs.pip_cache_path }}
+        key: ${{ inputs.git_reference }}-pip-cache-${{ steps.generate_random_uuid.outputs.computed_uuid }}

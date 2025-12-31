@@ -1,0 +1,24 @@
+name: Composite action save APT cache
+description: Composite action to save APT cache
+inputs:
+  apt_requirements_file_path:
+    description: Path to the APT requirements file
+    required: true
+  git_reference:
+    description: A git reference (name of the branch, reference to the PR) that will be used to build the cache key.
+    required: false
+    default: ${{ github.ref_name }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Compute APT requiremments file SHA256 hash
+      id: compute_apt_requirements_file_sha256_hash
+      uses: ./.github/actions/misc/compute_files_hash
+      with:
+        file_paths: ${{ inputs.apt_requirements_file_path }}
+    - name: Save APT cache
+      uses: actions/cache/save@v4
+      with:
+        path: /var/cache/apt/archives/*.deb
+        key: ${{ inputs.git_reference }}-apt-${{ steps.compute_apt_requirements_file_sha256_hash.outputs.computed_hash }}

@@ -1,0 +1,55 @@
+name: Create Python cache
+
+# GitHub will remove any cache entries that have not been accessed in over 7 days.
+
+# Only project dependencies will be cached here
+
+on:
+  push:
+    branches:
+      - main
+      - master
+      - develop
+      - dev
+    paths:
+      - '.github/test/python_test/requirements.txt'
+
+# discard previous execution if you commit to a branch that is already running
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  create-python-cache:
+    name: Create cache for Python dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out latest commit
+        uses: actions/checkout@v4
+
+      # Uncomment only if necessary
+      #- name: Install system dependencies required by Python packages
+      #  run: |
+      #        sudo apt-get update && sudo apt install <package1> <package2>...
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Set up Python virtual environment
+        uses: ./.github/actions/python_requirements/create_virtualenv
+
+      - name: Install Python dependencies
+        run: |
+          pip install -r .github/test/python_test/requirements.txt
+        working-directory: "."
+
+      - name: Save pip cache
+        uses: ./.github/actions/python_requirements/save_pip_cache
+
+      - name: Create virtual environment cache
+        uses: ./.github/actions/python_requirements/save_virtualenv
+        with:
+          requirements_paths: .github/test/python_test/requirements.txt
+
