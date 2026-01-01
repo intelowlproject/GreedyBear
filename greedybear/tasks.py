@@ -76,3 +76,10 @@ def extract_firehol_lists():
     from greedybear.cronjobs.firehol import FireHolCron
 
     FireHolCron().execute()
+
+
+@shared_task()
+def get_tor_exit_nodes():
+    from greedybear.cronjobs.tor_exit_nodes import TorExitNodesCron
+
+    TorExitNodesCron().execute()

@@ -135,3 +135,13 @@ class WhatsMyIPDomain(models.Model):
         indexes = [
             models.Index(fields=["domain"]),
         ]
+
+
+class TorExitNodes(models.Model):
+    ip_address = models.CharField(max_length=256, blank=False)
+    added = models.DateTimeField(blank=False, default=datetime.now)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["ip_address"]),
+        ]
