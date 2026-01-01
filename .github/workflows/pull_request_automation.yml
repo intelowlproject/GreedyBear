@@ -78,6 +78,7 @@ jobs:
       use_memcached: false
       use_elastic_search: false
       use_rabbitmq: true
+      rabbitmq_version: 4-management-alpine
       use_mongo: false
       use_celery: false
 
