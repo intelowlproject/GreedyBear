@@ -1,7 +1,7 @@
 celery==5.6.1
 
 # if you change this, update the documentation
-elasticsearch8==8.19.2
+elasticsearch8==8.19.3
 
 Django==5.2.9
 djangorestframework==3.16.1
