@@ -4,10 +4,19 @@ import logging
 
 from certego_saas.apps.auth.backend import CookieTokenAuthentication
 from certego_saas.ext.pagination import CustomPageNumberPagination
-from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.decorators import (
+    api_view,
+    authentication_classes,
+    permission_classes,
+)
 from rest_framework.permissions import IsAuthenticated
 
-from api.views.utils import FeedRequestParams, feeds_response, get_queryset, get_valid_feed_types
+from api.views.utils import (
+    FeedRequestParams,
+    feeds_response,
+    get_queryset,
+    get_valid_feed_types,
+)
 from greedybear.consts import GET
 
 logger = logging.getLogger(__name__)

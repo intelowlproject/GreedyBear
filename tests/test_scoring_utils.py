@@ -2,7 +2,13 @@ from datetime import datetime
 
 import pandas as pd
 
-from greedybear.cronjobs.scoring.utils import correlated_features, date_delta, get_current_data, get_features, multi_label_encode
+from greedybear.cronjobs.scoring.utils import (
+    correlated_features,
+    date_delta,
+    get_current_data,
+    get_features,
+    multi_label_encode,
+)
 
 from . import CustomTestCase
 

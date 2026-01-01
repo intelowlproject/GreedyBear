@@ -9,7 +9,10 @@ from greedybear.models import IOC, MassScanner
 class MassScannersCron(Cronjob):
     def run(self) -> None:
         regex_compiled = re.compile(r"(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\s*#\s*(.+)*", re.DOTALL)
-        r = requests.get("https://raw.githubusercontent.com/stamparm/maltrail/master/trails/static/mass_scanner.txt", timeout=10)
+        r = requests.get(
+            "https://raw.githubusercontent.com/stamparm/maltrail/master/trails/static/mass_scanner.txt",
+            timeout=10,
+        )
         for line_bytes in r.iter_lines():
             if line_bytes:
                 line = line_bytes.decode("utf-8")

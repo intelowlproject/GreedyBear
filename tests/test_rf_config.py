@@ -26,7 +26,11 @@ class TestRFConfig(SimpleTestCase):
 
         for key, value in params.items():
             actual_value = getattr(model, key)
-            self.assertEqual(actual_value, value, f"RFClassifier parameter '{key}' mismatch. Config: {value}, Model: {actual_value}")
+            self.assertEqual(
+                actual_value,
+                value,
+                f"RFClassifier parameter '{key}' mismatch. Config: {value}, Model: {actual_value}",
+            )
 
     def test_rf_regressor_config_loading(self):
         """
@@ -39,4 +43,8 @@ class TestRFConfig(SimpleTestCase):
 
         for key, value in params.items():
             actual_value = getattr(model, key)
-            self.assertEqual(actual_value, value, f"RFRegressor parameter '{key}' mismatch. Config: {value}, Model: {actual_value}")
+            self.assertEqual(
+                actual_value,
+                value,
+                f"RFRegressor parameter '{key}' mismatch. Config: {value}, Model: {actual_value}",
+            )

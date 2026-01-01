@@ -1,8 +1,20 @@
 from datetime import datetime
 from unittest.mock import Mock, patch
 
-from greedybear.cronjobs.repositories import CowrieSessionRepository, ElasticRepository, IocRepository, SensorRepository, get_time_window
-from greedybear.models import IOC, CommandSequence, CowrieSession, GeneralHoneypot, Sensor
+from greedybear.cronjobs.repositories import (
+    CowrieSessionRepository,
+    ElasticRepository,
+    IocRepository,
+    SensorRepository,
+    get_time_window,
+)
+from greedybear.models import (
+    IOC,
+    CommandSequence,
+    CowrieSession,
+    GeneralHoneypot,
+    Sensor,
+)
 
 from . import CustomTestCase
 
@@ -228,12 +240,18 @@ class TestCowrieSessionRepository(CustomTestCase):
         session.interaction_count = 10
         result = self.repo.save_session(session)
         self.assertEqual(result.interaction_count, 10)
-        self.assertEqual(CowrieSession.objects.get(session_id=int(existing_session_id, 16)).interaction_count, 10)
+        self.assertEqual(
+            CowrieSession.objects.get(session_id=int(existing_session_id, 16)).interaction_count,
+            10,
+        )
 
         session.interaction_count = original_interaction_count
         result = self.repo.save_session(session)
         self.assertEqual(result.interaction_count, original_interaction_count)
-        self.assertEqual(CowrieSession.objects.get(session_id=int(existing_session_id, 16)).interaction_count, original_interaction_count)
+        self.assertEqual(
+            CowrieSession.objects.get(session_id=int(existing_session_id, 16)).interaction_count,
+            original_interaction_count,
+        )
 
     def test_get_command_sequence_by_hash_returns_existing(self):
         existing = self.command_sequence

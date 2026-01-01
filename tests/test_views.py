@@ -48,8 +48,14 @@ class EnrichmentViewTestCase(CustomTestCase):
         self.assertEqual(response.json()["ioc"]["general_honeypot"][1], self.ciscoasa.name)  # FEEDS
         self.assertEqual(response.json()["ioc"]["scanner"], self.ioc.scanner)
         self.assertEqual(response.json()["ioc"]["payload_request"], self.ioc.payload_request)
-        self.assertEqual(response.json()["ioc"]["recurrence_probability"], self.ioc.recurrence_probability)
-        self.assertEqual(response.json()["ioc"]["expected_interactions"], self.ioc.expected_interactions)
+        self.assertEqual(
+            response.json()["ioc"]["recurrence_probability"],
+            self.ioc.recurrence_probability,
+        )
+        self.assertEqual(
+            response.json()["ioc"]["expected_interactions"],
+            self.ioc.expected_interactions,
+        )
 
     def test_for_invalid_authentication(self):
         """Check for a invalid authentication"""

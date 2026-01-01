@@ -10,7 +10,11 @@ from django.contrib.auth import get_user_model, login
 from django.core.cache import cache
 from durin import views as durin_views
 from rest_framework import status
-from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.decorators import (
+    api_view,
+    authentication_classes,
+    permission_classes,
+)
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
@@ -18,7 +22,11 @@ from greedybear.consts import GET
 from greedybear.enums import FrontendPage
 from greedybear.settings import AUTH_USER_MODEL
 
-from .serializers import EmailVerificationSerializer, LoginSerializer, RegistrationSerializer
+from .serializers import (
+    EmailVerificationSerializer,
+    LoginSerializer,
+    RegistrationSerializer,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -88,7 +96,12 @@ def checkConfiguration(request):
                     errors["AWS SES backend"] = "configuration required"
             else:
                 # SMTP backend
-                required_variables = [settings.EMAIL_HOST, settings.EMAIL_HOST_USER, settings.EMAIL_HOST_PASSWORD, settings.EMAIL_PORT]
+                required_variables = [
+                    settings.EMAIL_HOST,
+                    settings.EMAIL_HOST_USER,
+                    settings.EMAIL_HOST_PASSWORD,
+                    settings.EMAIL_PORT,
+                ]
                 for variable in required_variables:
                     if not variable:
                         errors["SMTP backend"] = "configuration required"

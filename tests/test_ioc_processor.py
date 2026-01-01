@@ -212,7 +212,10 @@ class TestMergeIocs(ExtractionTestCase):
 
         result = self.processor._merge_iocs(existing, new)
 
-        self.assertEqual(sorted(result.related_urls), ["http://a.com", "http://b.com", "http://c.com"])
+        self.assertEqual(
+            sorted(result.related_urls),
+            ["http://a.com", "http://b.com", "http://c.com"],
+        )
         self.assertEqual(result.destination_ports, [80, 443, 8080])
 
     def test_updating(self):

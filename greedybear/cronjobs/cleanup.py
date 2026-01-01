@@ -2,7 +2,11 @@ from datetime import datetime, timedelta
 
 from greedybear.cronjobs.base import Cronjob
 from greedybear.models import IOC, CommandSequence, CowrieSession
-from greedybear.settings import COMMAND_SEQUENCE_RETENTION, COWRIE_SESSION_RETENTION, IOC_RETENTION
+from greedybear.settings import (
+    COMMAND_SEQUENCE_RETENTION,
+    COWRIE_SESSION_RETENTION,
+    IOC_RETENTION,
+)
 
 
 class CleanUp(Cronjob):

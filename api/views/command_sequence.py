@@ -6,7 +6,11 @@ from certego_saas.apps.auth.backend import CookieTokenAuthentication
 from django.conf import settings
 from django.http import Http404, HttpResponseBadRequest
 from rest_framework import status
-from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.decorators import (
+    api_view,
+    authentication_classes,
+    permission_classes,
+)
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 

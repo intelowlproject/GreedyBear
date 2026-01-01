@@ -5,7 +5,13 @@ from unittest.mock import Mock
 from certego_saas.apps.user.models import User
 from django.test import TestCase
 
-from greedybear.models import IOC, CommandSequence, CowrieSession, GeneralHoneypot, iocType
+from greedybear.models import (
+    IOC,
+    CommandSequence,
+    CowrieSession,
+    GeneralHoneypot,
+    iocType,
+)
 
 
 class CustomTestCase(TestCase):
