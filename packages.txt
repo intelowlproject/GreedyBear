@@ -1,2 +1,0 @@
-# This file intentionally left empty
-# GreedyBear doesn't require additional APT packages
