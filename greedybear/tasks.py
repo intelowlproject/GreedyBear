@@ -80,6 +80,12 @@ def extract_firehol_lists():
 
 @shared_task()
 def get_tor_exit_nodes():
+    """Celery task to extract and store Tor exit nodes.
+
+    Periodic task that executes the TorExitNodesCron job to download,
+    extract, and store Tor exit node IP addresses from the official
+    Tor Project source.
+    """
     from greedybear.cronjobs.tor_exit_nodes import TorExitNodesCron
 
     TorExitNodesCron().execute()

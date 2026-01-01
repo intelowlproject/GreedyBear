@@ -138,6 +138,13 @@ class WhatsMyIPDomain(models.Model):
 
 
 class TorExitNodes(models.Model):
+    """Model to store Tor Exit Node IP addresses.
+
+    Stores IP addresses of Tor exit nodes extracted from the official
+    Tor Project exit address list. These IPs are updated periodically
+    by the TorExitNodesCron job and used to enrich IOC records.
+    """
+
     ip_address = models.CharField(max_length=256, blank=False)
     added = models.DateTimeField(blank=False, default=datetime.now)
 

@@ -8,7 +8,20 @@ from greedybear.models import IOC, TorExitNodes
 
 
 class TorExitNodesCron(Cronjob):
+    """Cronjob to extract and store Tor exit node IP addresses.
+
+    Downloads the official Tor Project exit address list, extracts unique IPs,
+    stores them in the TorExitNodes model, and updates existing IOC entries
+    with ip_reputation = "tor exit node".
+    """
+
     def run(self) -> None:
+        """Execute the Tor exit nodes extraction cronjob.
+
+        Fetches the Tor exit address list from the official Tor Project source,
+        extracts IP addresses using regex pattern matching, deduplicates them,
+        saves new IPs to the database, and updates corresponding IOC records.
+        """
         url = "https://check.torproject.org/exit-addresses"
         r = requests.get(url, timeout=10)
         r.raise_for_status()
@@ -30,6 +43,11 @@ class TorExitNodesCron(Cronjob):
                 self._update_old_ioc(ip_address)
 
     def _update_old_ioc(self, ip_address):
+        """Update existing IOC entries to mark them as Tor exit nodes.
+
+        Args:
+            ip_address: The IP address to update in the IOC model.
+        """
         try:
             ioc = IOC.objects.get(name=ip_address)
         except IOC.DoesNotExist:
