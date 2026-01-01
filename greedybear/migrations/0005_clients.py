@@ -16,7 +16,6 @@ def create_default_clients(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("greedybear", "0004_alter_id_field"),
         # added dependency to enable using models from app2 in move_m1

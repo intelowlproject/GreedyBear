@@ -12,7 +12,6 @@ def migrateData(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("greedybear", "0008_auto_20230120_1548"),
     ]
@@ -31,6 +30,8 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="ioc",
             name="type",
-            field=models.CharField(choices=[("ip", "Ip"), ("domain", "Domain")], max_length=32),
+            field=models.CharField(
+                choices=[("ip", "Ip"), ("domain", "Domain")], max_length=32
+            ),
         ),
     ]
