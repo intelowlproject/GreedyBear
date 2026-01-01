@@ -48,4 +48,7 @@ select = [
     "I"
 ]
 
-ignore = [ ]
+ignore = [
+    # F403: Allow wildcard imports in __init__.py files
+    "F403"
+]
