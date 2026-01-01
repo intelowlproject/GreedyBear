@@ -63,6 +63,7 @@ jobs:
       use_ruff_linter: true
 
       requirements_path: requirements/project-requirements.txt
+      packages_path: packages.txt
       django_settings_module: greedybear.settings
 
       check_migrations: true
