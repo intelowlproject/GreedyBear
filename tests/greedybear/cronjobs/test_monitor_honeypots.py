@@ -1,4 +1,5 @@
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
 from django.test import TestCase
 from greedybear.cronjobs.monitor_honeypots import MonitorHoneypots
 from greedybear.models import GeneralHoneypot
@@ -16,7 +17,7 @@ class MonitorHoneypotsIntegrationTest(TestCase):
         mock_elastic_repo = mock_elastic_repo_class.return_value
 
         def has_been_hit(minutes_back, honeypot_name):
-            return honeypot_name == "Log4pot" 
+            return honeypot_name == "Log4pot"
 
         mock_elastic_repo.has_honeypot_been_hit.side_effect = has_been_hit
         cronjob = MonitorHoneypots(minutes_back=60)

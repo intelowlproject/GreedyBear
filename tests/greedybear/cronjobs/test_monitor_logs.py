@@ -1,7 +1,7 @@
-from unittest import TestCase
-from unittest.mock import patch, MagicMock
 from datetime import datetime, timedelta
 from pathlib import Path
+from unittest import TestCase
+from unittest.mock import MagicMock, patch
 
 from greedybear.cronjobs.monitor_logs import MonitorLogs
 from greedybear.slack import send_message
