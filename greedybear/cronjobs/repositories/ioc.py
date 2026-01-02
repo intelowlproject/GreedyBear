@@ -119,7 +119,7 @@ class IocRepository:
     def is_ready_for_extraction(self, honeypot_name: str) -> bool:
         """
         Check if a honeypot is ready for data extraction.
-        Creates the honeypot if it doesn't exist, then checks if it's enabled.
+        Loads or creates the honeypot if it doesn't exist, then checks if it's enabled.
 
         Args:
             honeypot_name: Name of the honeypot to check.
@@ -127,9 +127,25 @@ class IocRepository:
         Returns:
             True if the honeypot exists and is enabled, False otherwise.
         """
-        if honeypot_name not in self._honeypot_cache:
-            self.create_honeypot(honeypot_name)
-        return self.is_enabled(honeypot_name)
+        normalized = honeypot_name.lower().strip()
+
+        if normalized in self._honeypot_cache:
+            return self._honeypot_cache[normalized]
+
+        try:
+            gh = GeneralHoneypot.objects.get(name__iexact=honeypot_name)
+        except GeneralHoneypot.DoesNotExist:
+            # preserving original casing
+            gh = GeneralHoneypot.objects.create(
+                name=honeypot_name,
+                active=True,
+            )
+        except GeneralHoneypot.MultipleObjectsReturned:
+            # picking the first one deterministically (rare case)
+            gh = GeneralHoneypot.objects.filter(name__iexact=honeypot_name).order_by("id").first()
+
+        self._honeypot_cache[normalized] = gh.active
+        return gh.active
 
     def save(self, ioc: IOC) -> IOC:
         """
