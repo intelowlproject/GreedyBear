@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 from greedybear.cronjobs.base import Cronjob
+from greedybear.ntfy import send_ntfy_message
 from greedybear.slack import send_message
 
 
@@ -27,7 +28,7 @@ class MonitorLogs(Cronjob):
         self.logs_to_monitor = ["greedybear", "api", "django", "celery"]
 
     def run(self):
-        """Check error logs for recent modifications and alert via Slack."""
+        """Check error logs for recent modifications and alert via Slack and ntfy."""
         cutoff_time = datetime.now() - timedelta(minutes=self.check_window_minutes)
         self.log.info(f"checking {len(self.logs_to_monitor)} error logs for activity since {cutoff_time}")
 
@@ -47,5 +48,6 @@ class MonitorLogs(Cronjob):
                 message = f"found errors in log file {log_file}"
                 self.log.warning(message)
                 send_message(message)
+                send_ntfy_message(message)
             else:
                 self.log.debug(f"no recent activity in {log_file}")
