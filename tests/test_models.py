@@ -49,7 +49,11 @@ class ModelsTestCase(CustomTestCase):
         self.assertEqual(self.cowrie_session.commands.commands, self.cmd_seq)
 
     def test_statistics_model(self):
-        self.statistic = Statistics.objects.create(source="140.246.171.141", view=viewType.ENRICHMENT_VIEW.value, request_date=self.current_time)
+        self.statistic = Statistics.objects.create(
+            source="140.246.171.141",
+            view=viewType.ENRICHMENT_VIEW.value,
+            request_date=self.current_time,
+        )
         self.assertEqual(self.statistic.source, "140.246.171.141")
         self.assertEqual(self.statistic.view, viewType.ENRICHMENT_VIEW.value)
         self.assertEqual(self.statistic.request_date, self.current_time)

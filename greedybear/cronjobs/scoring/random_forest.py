@@ -2,12 +2,13 @@ import json
 from abc import abstractmethod
 
 import pandas as pd
+from sklearn.base import BaseEstimator
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+
 from greedybear.cronjobs.scoring.consts import MULTI_VAL_FEATURES, NUM_FEATURES
 from greedybear.cronjobs.scoring.ml_model import Classifier, MLModel, Regressor
 from greedybear.cronjobs.scoring.utils import multi_label_encode
 from greedybear.settings import ML_CONFIG_FILE
-from sklearn.base import BaseEstimator
-from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 
 
 class RFModel(MLModel):
@@ -86,7 +87,7 @@ class RFClassifier(RFModel, Classifier):
             BaseEstimator: Configured but untrained scikit-learn Random Forest
                 Classifier with all hyperparameters set
         """
-        with open(ML_CONFIG_FILE, "r") as f:
+        with open(ML_CONFIG_FILE) as f:
             config = json.load(f)
 
         params = config["RFClassifier"]
@@ -118,7 +119,7 @@ class RFRegressor(RFModel, Regressor):
             BaseEstimator: Configured but untrained scikit-learn Random Forest
                 Regressor with all hyperparameters set
         """
-        with open(ML_CONFIG_FILE, "r") as f:
+        with open(ML_CONFIG_FILE) as f:
             config = json.load(f)
 
         params = config["RFRegressor"]

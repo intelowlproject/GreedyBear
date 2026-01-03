@@ -2,12 +2,22 @@
 # See the file 'LICENSE' for copying permission.
 import logging
 
-from api.views.utils import FeedRequestParams, feeds_response, get_queryset, get_valid_feed_types
 from certego_saas.apps.auth.backend import CookieTokenAuthentication
 from certego_saas.ext.pagination import CustomPageNumberPagination
-from greedybear.consts import GET
-from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.decorators import (
+    api_view,
+    authentication_classes,
+    permission_classes,
+)
 from rest_framework.permissions import IsAuthenticated
+
+from api.views.utils import (
+    FeedRequestParams,
+    feeds_response,
+    get_queryset,
+    get_valid_feed_types,
+)
+from greedybear.consts import GET
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +39,7 @@ def feeds(request, feed_type, attack_type, prioritize, format_):
     Returns:
         Response: The HTTP response with formatted IOC data.
     """
-    logger.info(f"request /api/feeds with params: feed type: {feed_type}, " f"attack_type: {attack_type}, prioritization: {prioritize}, format: {format_}")
+    logger.info(f"request /api/feeds with params: feed type: {feed_type}, attack_type: {attack_type}, prioritization: {prioritize}, format: {format_}")
 
     feed_params_data = request.query_params.dict()
     feed_params_data.update({"feed_type": feed_type, "attack_type": attack_type, "format_": format_})

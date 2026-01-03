@@ -1,5 +1,4 @@
 import logging
-from typing import Optional
 
 from greedybear.consts import PAYLOAD_REQUEST, SCANNER
 from greedybear.cronjobs.extraction.utils import is_whatsmyip_domain
@@ -27,7 +26,7 @@ class IocProcessor:
         self.ioc_repo = ioc_repo
         self.sensor_repo = sensor_repo
 
-    def add_ioc(self, ioc: IOC, attack_type: str, general_honeypot_name: str = None) -> Optional[IOC]:
+    def add_ioc(self, ioc: IOC, attack_type: str, general_honeypot_name: str = None) -> IOC | None:
         """
         Process an IOC record.
         Filters out sensor IPs and whats-my-ip domains, then creates a new

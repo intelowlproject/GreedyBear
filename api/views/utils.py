@@ -6,15 +6,16 @@ import re
 from datetime import datetime, timedelta
 from ipaddress import ip_address
 
-from api.enums import Honeypots
-from api.serializers import FeedsRequestSerializer
 from django.conf import settings
 from django.contrib.postgres.aggregates import ArrayAgg
 from django.db.models import F, Q
 from django.http import HttpResponse, HttpResponseBadRequest, StreamingHttpResponse
-from greedybear.models import IOC, GeneralHoneypot, Statistics
 from rest_framework import status
 from rest_framework.response import Response
+
+from api.enums import Honeypots
+from api.serializers import FeedsRequestSerializer
+from greedybear.models import IOC, GeneralHoneypot, Statistics
 
 logger = logging.getLogger(__name__)
 
@@ -272,7 +273,11 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
             # check if sorting the results by feed_type
             if feed_params.feed_type_sorting is not None:
                 logger.info("Return feeds sorted by feed_type field")
-                json_list = sorted(json_list, key=lambda k: k["feed_type"], reverse=feed_params.feed_type_sorting == "-feed_type")
+                json_list = sorted(
+                    json_list,
+                    key=lambda k: k["feed_type"],
+                    reverse=feed_params.feed_type_sorting == "-feed_type",
+                )
 
             logger.info(f"Number of feeds returned: {len(json_list)}")
             resp_data = {"iocs": json_list}

@@ -1,5 +1,8 @@
 # This file is a part of GreedyBear https://github.com/honeynet/GreedyBear
 # See the file 'LICENSE' for copying permission.
+from django.urls import include, path
+from rest_framework import routers
+
 from api.views import (
     StatisticsViewSet,
     command_sequence_view,
@@ -10,8 +13,6 @@ from api.views import (
     feeds_pagination,
     general_honeypot_list,
 )
-from django.urls import include, path
-from rest_framework import routers
 
 # Routers provide an easy way of automatically determining the URL conf.
 router = routers.DefaultRouter(trailing_slash=False)

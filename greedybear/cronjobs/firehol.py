@@ -1,6 +1,7 @@
 import requests
+
 from greedybear.cronjobs.base import Cronjob
-from greedybear.models import IOC, FireHolList
+from greedybear.models import FireHolList
 
 
 class FireHolCron(Cronjob):

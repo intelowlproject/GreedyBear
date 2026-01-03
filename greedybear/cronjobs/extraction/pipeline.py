@@ -2,9 +2,17 @@ import logging
 from collections import defaultdict
 
 from greedybear.cronjobs.extraction.strategies.factory import ExtractionStrategyFactory
-from greedybear.cronjobs.repositories import ElasticRepository, IocRepository, SensorRepository
+from greedybear.cronjobs.repositories import (
+    ElasticRepository,
+    IocRepository,
+    SensorRepository,
+)
 from greedybear.cronjobs.scoring.scoring_jobs import UpdateScores
-from greedybear.settings import EXTRACTION_INTERVAL, INITIAL_EXTRACTION_TIMESPAN, LEGACY_EXTRACTION
+from greedybear.settings import (
+    EXTRACTION_INTERVAL,
+    INITIAL_EXTRACTION_TIMESPAN,
+    LEGACY_EXTRACTION,
+)
 
 
 class ExtractionPipeline:

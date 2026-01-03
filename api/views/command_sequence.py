@@ -2,16 +2,21 @@
 # See the file 'LICENSE' for copying permission.
 import logging
 
-from api.views.utils import is_ip_address, is_sha256hash
 from certego_saas.apps.auth.backend import CookieTokenAuthentication
 from django.conf import settings
 from django.http import Http404, HttpResponseBadRequest
-from greedybear.consts import GET
-from greedybear.models import IOC, CommandSequence, CowrieSession, Statistics, viewType
 from rest_framework import status
-from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.decorators import (
+    api_view,
+    authentication_classes,
+    permission_classes,
+)
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+
+from api.views.utils import is_ip_address, is_sha256hash
+from greedybear.consts import GET
+from greedybear.models import IOC, CommandSequence, CowrieSession, Statistics, viewType
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +56,7 @@ def command_sequence_view(request):
 
     if is_ip_address(observable):
         sessions = CowrieSession.objects.filter(source__name=observable, start_time__isnull=False, commands__isnull=False)
-        sequences = set(s.commands for s in sessions)
+        sequences = {s.commands for s in sessions}
         seqs = [
             {
                 "time": s.start_time,
@@ -62,7 +67,7 @@ def command_sequence_view(request):
         ]
         related_iocs = IOC.objects.filter(cowriesession__commands__in=sequences).distinct().only("name")
         if include_similar:
-            related_clusters = set(s.cluster for s in sequences if s.cluster is not None)
+            related_clusters = {s.cluster for s in sequences if s.cluster is not None}
             related_iocs = IOC.objects.filter(cowriesession__commands__cluster__in=related_clusters).distinct().only("name")
         if not seqs:
             raise Http404(f"No command sequences found for IP: {observable}")

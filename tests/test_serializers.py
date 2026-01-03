@@ -1,23 +1,24 @@
 import random
 from itertools import product
 
-from api.serializers import FeedsRequestSerializer, FeedsResponseSerializer
 from django.test import TestCase
+from rest_framework.serializers import ValidationError
+
+from api.serializers import FeedsRequestSerializer, FeedsResponseSerializer
 from greedybear.consts import PAYLOAD_REQUEST, SCANNER
 from greedybear.models import IOC, GeneralHoneypot
-from rest_framework.serializers import ValidationError
 
 
 class FeedsRequestSerializersTestCase(TestCase):
     @classmethod
-    def setUpClass(self):
+    def setUpClass(cls):
         GeneralHoneypot.objects.create(
             name="adbhoney",
             active=True,
         )
 
     @classmethod
-    def tearDownClass(self):
+    def tearDownClass(cls):
         # db clean
         GeneralHoneypot.objects.all().delete()
 
@@ -28,8 +29,16 @@ class FeedsRequestSerializersTestCase(TestCase):
             "ioc_type": ["ip", "domain", "all"],
             "max_age": [str(n) for n in [1, 2, 4, 8, 16]],
             "min_days_seen": [str(n) for n in [1, 2, 4, 8, 16]],
-            "include_reputation": [[], ["known attacker"], ["known attacker", "mass scanner"]],
-            "exclude_reputation": [[], ["known attacker"], ["known attacker", "mass scanner"]],
+            "include_reputation": [
+                [],
+                ["known attacker"],
+                ["known attacker", "mass scanner"],
+            ],
+            "exclude_reputation": [
+                [],
+                ["known attacker"],
+                ["known attacker", "mass scanner"],
+            ],
             "feed_size": [str(n) for n in [100, 200, 5000, 10_000_000]],
             "ordering": [field.name for field in IOC._meta.get_fields()],
             "verbose": ["true", "false"],
@@ -85,14 +94,14 @@ class FeedsRequestSerializersTestCase(TestCase):
 
 class FeedsResponseSerializersTestCase(TestCase):
     @classmethod
-    def setUpClass(self):
+    def setUpClass(cls):
         GeneralHoneypot.objects.create(
             name="adbhoney",
             active=True,
         )
 
     @classmethod
-    def tearDownClass(self):
+    def tearDownClass(cls):
         # db clean
         GeneralHoneypot.objects.all().delete()
 

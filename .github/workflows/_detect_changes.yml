@@ -3,16 +3,24 @@ on:
   workflow_call:
     inputs:
       backend_directories:
-        description: Backend directories separated by spaces
+        description: Space separated list of backend directories
         required: false
         type: string
-        default: ''
+      
+      backend_exclusions:
+        description: Space separated list of Backend directories or files to be excluded
+        required: false
+        type: string
 
       frontend_directories:
-        description: Frontend directories separated by spaces
+        description: Space separated list of frontend directories
         required: false
         type: string
-        default: ''
+      
+      frontend_exclusions:
+        description: Space separated list of frontend directories or files to be excluded
+        required: false
+        type: string
 
       ubuntu_version:
         description: Ubuntu version to use
@@ -37,13 +45,16 @@ jobs:
       backend: ${{steps.diff_check_backend.outputs.backend}}
       frontend: ${{steps.diff_check_frontend.outputs.frontend}}
     steps:
-    - uses: actions/checkout@v4
+    - name: Check out PR target branch
+      uses: actions/checkout@v4
       with:
         ref: ${{ github.base_ref }}
 
-    - uses: actions/checkout@v4
+    - name: Check out source branch latest commit
+      uses: actions/checkout@v4
       with:
         clean: false
+
     - name: Generate summary
       if: ${{inputs.backend_directories != ''}} | ${{inputs.frontend_directories != ''}}
       run: |
@@ -54,18 +65,34 @@ jobs:
       if: ${{inputs.backend_directories != ''}}
       id: diff_check_backend
       run: |
-        BACKEND_CHANGES=$(git diff --compact-summary origin/${{ github.base_ref }} -- ${{ inputs.backend_directories }} | head -n -1 | wc -l)
+        BACKEND_EXCLUSIONS=""
+        if ${{ inputs.backend_exclusions != ''}}; then
+          for exclusion in ${{ inputs.backend_exclusions }}; do
+            BACKEND_EXCLUSIONS+=":(glob,exclude)$exclusion "
+          done
+        fi
+        # No need to add other quotes since they will already be added.
+        BACKEND_CHANGES=$(git diff --compact-summary origin/${{ github.base_ref }} -- ${{ inputs.backend_directories }} $BACKEND_EXCLUSIONS | head -n -1 | wc -l)
         echo "backend=$BACKEND_CHANGES" >> $GITHUB_OUTPUT
         echo "Backend Changes: $BACKEND_CHANGES" >> $GITHUB_STEP_SUMMARY
+        echo "::debug::diff command:git diff --compact-summary origin/${{ github.base_ref }} -- ${{ inputs.backend_directories }} $BACKEND_EXCLUSIONS"
+        echo "::debug::diff command results: $(git diff --compact-summary origin/${{ github.base_ref }} -- ${{ inputs.backend_directories }} $BACKEND_EXCLUSIONS | head -n -1 )"
         echo "backend $BACKEND_CHANGES"
-
 
     - name: Generate diffs for frontend
       if: ${{inputs.frontend_directories != ''}}
       id: diff_check_frontend
       run: |
-        FRONTEND_CHANGES=$(git diff --compact-summary origin/${{ github.base_ref }} -- ${{ inputs.frontend_directories }} | head -n -1 | wc -l)
+        FRONTEND_EXCLUSIONS=""
+        if ${{ inputs.frontend_exclusions != ''}}; then
+          for exclusion in ${{ inputs.frontend_exclusions }}; do
+            FRONTEND_EXCLUSIONS+=":(glob,exclude)$exclusion "
+          done
+        fi
+        FRONTEND_CHANGES=$(git diff --compact-summary origin/${{ github.base_ref }} -- ${{ inputs.frontend_directories }} $FRONTEND_EXCLUSIONS | head -n -1 | wc -l)
         echo "frontend=$FRONTEND_CHANGES" >> $GITHUB_OUTPUT
         echo "Frontend Changes: $FRONTEND_CHANGES" >> $GITHUB_STEP_SUMMARY
+        echo "::debug::diff command:git diff --compact-summary origin/${{ github.base_ref }} -- ${{ inputs.backend_directories }} $FRONTEND_EXCLUSIONS"
+        echo "::debug::diff command results: $(git diff --compact-summary origin/${{ github.base_ref }} -- ${{ inputs.backend_directories }} $FRONTEND_EXCLUSIONS | head -n -1 )"
         echo "frontend $FRONTEND_CHANGES"
 

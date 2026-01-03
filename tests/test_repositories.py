@@ -1,8 +1,20 @@
 from datetime import datetime
 from unittest.mock import Mock, patch
 
-from greedybear.cronjobs.repositories import CowrieSessionRepository, ElasticRepository, IocRepository, SensorRepository, get_time_window
-from greedybear.models import IOC, CommandSequence, CowrieSession, GeneralHoneypot, Sensor
+from greedybear.cronjobs.repositories import (
+    CowrieSessionRepository,
+    ElasticRepository,
+    IocRepository,
+    SensorRepository,
+    get_time_window,
+)
+from greedybear.models import (
+    IOC,
+    CommandSequence,
+    CowrieSession,
+    GeneralHoneypot,
+    Sensor,
+)
 
 from . import CustomTestCase
 
@@ -228,12 +240,18 @@ class TestCowrieSessionRepository(CustomTestCase):
         session.interaction_count = 10
         result = self.repo.save_session(session)
         self.assertEqual(result.interaction_count, 10)
-        self.assertEqual(CowrieSession.objects.get(session_id=int(existing_session_id, 16)).interaction_count, 10)
+        self.assertEqual(
+            CowrieSession.objects.get(session_id=int(existing_session_id, 16)).interaction_count,
+            10,
+        )
 
         session.interaction_count = original_interaction_count
         result = self.repo.save_session(session)
         self.assertEqual(result.interaction_count, original_interaction_count)
-        self.assertEqual(CowrieSession.objects.get(session_id=int(existing_session_id, 16)).interaction_count, original_interaction_count)
+        self.assertEqual(
+            CowrieSession.objects.get(session_id=int(existing_session_id, 16)).interaction_count,
+            original_interaction_count,
+        )
 
     def test_get_command_sequence_by_hash_returns_existing(self):
         existing = self.command_sequence
@@ -361,7 +379,7 @@ class TestElasticRepository(CustomTestCase):
         mock_search.scan.return_value = iter(mock_hits)
 
         result = list(self.repo.search(minutes_back_to_lookup=10))
-        is_ordered = all(a["@timestamp"] <= b["@timestamp"] for a, b in zip(result, result[1:]))
+        is_ordered = all(a["@timestamp"] <= b["@timestamp"] for a, b in zip(result, result[1:], strict=False))
         self.assertTrue(is_ordered)
 
     @patch("greedybear.cronjobs.repositories.elastic.Search")
