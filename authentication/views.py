@@ -69,13 +69,13 @@ class ResendVerificationView(rest_email_auth.views.ResendVerificationView):
 @api_view([GET])
 @authentication_classes([CookieTokenAuthentication])
 @permission_classes([IsAuthenticated])
-def checkAuthentication(request):
+def check_authentication(request):
     logger.info(f"User: {request.user}, Administrator: {request.user.is_superuser}")
     return Response({"is_superuser": request.user.is_superuser}, status=status.HTTP_200_OK)
 
 
 @api_view([GET])
-def checkConfiguration(request):
+def check_configuration(request):
     logger.info(f"Requested checking configuration from {request.user}.")
     page = request.query_params.get("page")
     errors = {}

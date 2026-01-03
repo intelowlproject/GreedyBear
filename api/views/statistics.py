@@ -95,8 +95,8 @@ class StatisticsViewSet(viewsets.ViewSet):
             "Cowrie": Count("name", distinct=True, filter=Q(cowrie=True)),
         }
         # feed_type for each general honeypot in the list
-        generalHoneypots = GeneralHoneypot.objects.all().filter(active=True)
-        for hp in generalHoneypots:
+        general_honeypots = GeneralHoneypot.objects.all().filter(active=True)
+        for hp in general_honeypots:
             annotations[hp.name] = Count("name", Q(general_honeypot__name__iexact=hp.name.lower()))
         return self.__aggregation_response_static_ioc(annotations)
 

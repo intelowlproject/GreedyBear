@@ -90,11 +90,11 @@ class TestRegressor(CustomTestCase):
         for a, b in zip(training_target, REGRESSOR_TARGET, strict=False):
             self.assertEqual(a, b)
 
-        X_train, X_test, y_train, y_test = regressor.split_train_test(SAMPLE_DATA, training_target)
-        self.assertEqual(len(X_train), 4)
-        self.assertEqual(len(X_test), 1)
-        self.assertEqual(len(X_train), len(y_train))
-        self.assertEqual(len(X_test), len(y_test))
+        x_train, x_test, y_train, y_test = regressor.split_train_test(SAMPLE_DATA, training_target)
+        self.assertEqual(len(x_train), 4)
+        self.assertEqual(len(x_test), 1)
+        self.assertEqual(len(x_train), len(y_train))
+        self.assertEqual(len(x_test), len(y_test))
 
         df = regressor.score(SAMPLE_DATA)
         for a, b in zip(df["mock_score"], regressor.model.predict.return_value, strict=False):
