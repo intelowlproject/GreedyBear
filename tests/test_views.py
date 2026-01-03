@@ -267,15 +267,15 @@ class FeedsAdvancedViewTestCase(CustomTestCase):
 
 class StatisticsViewTestCase(CustomTestCase):
     @classmethod
-    def setUpClass(self):
-        super(StatisticsViewTestCase, self).setUpClass()
+    def setUpClass(cls):
+        super().setUpClass()
         Statistics.objects.all().delete()
         Statistics.objects.create(source="140.246.171.141", view=viewType.FEEDS_VIEW.value)
         Statistics.objects.create(source="140.246.171.141", view=viewType.ENRICHMENT_VIEW.value)
 
     @classmethod
-    def tearDownClass(self):
-        super(StatisticsViewTestCase, self).tearDownClass()
+    def tearDownClass(cls):
+        super().tearDownClass()
         Statistics.objects.all().delete()
 
     def test_200_feeds_sources(self):

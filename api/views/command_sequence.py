@@ -56,7 +56,7 @@ def command_sequence_view(request):
 
     if is_ip_address(observable):
         sessions = CowrieSession.objects.filter(source__name=observable, start_time__isnull=False, commands__isnull=False)
-        sequences = set(s.commands for s in sessions)
+        sequences = {s.commands for s in sessions}
         seqs = [
             {
                 "time": s.start_time,
@@ -67,7 +67,7 @@ def command_sequence_view(request):
         ]
         related_iocs = IOC.objects.filter(cowriesession__commands__in=sequences).distinct().only("name")
         if include_similar:
-            related_clusters = set(s.cluster for s in sequences if s.cluster is not None)
+            related_clusters = {s.cluster for s in sequences if s.cluster is not None}
             related_iocs = IOC.objects.filter(cowriesession__commands__cluster__in=related_clusters).distinct().only("name")
         if not seqs:
             raise Http404(f"No command sequences found for IP: {observable}")

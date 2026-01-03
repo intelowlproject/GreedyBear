@@ -94,8 +94,8 @@ def cowrie_session_view(request):
         return HttpResponseBadRequest("Query must be a valid IP address or SHA-256 hash")
 
     if include_similar:
-        commands = set(s.commands for s in sessions if s.commands)
-        clusters = set(cmd.cluster for cmd in commands if cmd.cluster is not None)
+        commands = {s.commands for s in sessions if s.commands}
+        clusters = {cmd.cluster for cmd in commands if cmd.cluster is not None}
         related_sessions = CowrieSession.objects.filter(commands__cluster__in=clusters).prefetch_related("source", "commands")
         sessions = sessions.union(related_sessions)
 
@@ -105,9 +105,9 @@ def cowrie_session_view(request):
     if settings.FEEDS_LICENSE:
         response_data["license"] = settings.FEEDS_LICENSE
 
-    unique_commands = set(s.commands for s in sessions if s.commands)
+    unique_commands = {s.commands for s in sessions if s.commands}
     response_data["commands"] = sorted("\n".join(cmd.commands) for cmd in unique_commands)
-    response_data["sources"] = sorted(set(s.source.name for s in sessions), key=socket.inet_aton)
+    response_data["sources"] = sorted({s.source.name for s in sessions}, key=socket.inet_aton)
     if include_credentials:
         response_data["credentials"] = sorted(set(itertools.chain(*[s.credentials for s in sessions])))
     if include_session_data:

@@ -11,14 +11,14 @@ from greedybear.models import IOC, GeneralHoneypot
 
 class FeedsRequestSerializersTestCase(TestCase):
     @classmethod
-    def setUpClass(self):
+    def setUpClass(cls):
         GeneralHoneypot.objects.create(
             name="adbhoney",
             active=True,
         )
 
     @classmethod
-    def tearDownClass(self):
+    def tearDownClass(cls):
         # db clean
         GeneralHoneypot.objects.all().delete()
 
@@ -94,14 +94,14 @@ class FeedsRequestSerializersTestCase(TestCase):
 
 class FeedsResponseSerializersTestCase(TestCase):
     @classmethod
-    def setUpClass(self):
+    def setUpClass(cls):
         GeneralHoneypot.objects.create(
             name="adbhoney",
             active=True,
         )
 
     @classmethod
-    def tearDownClass(self):
+    def tearDownClass(cls):
         # db clean
         GeneralHoneypot.objects.all().delete()
 

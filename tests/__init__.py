@@ -17,7 +17,7 @@ from greedybear.models import (
 class CustomTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
-        super(CustomTestCase, cls).setUpTestData()
+        super().setUpTestData()
 
         cls.heralding = GeneralHoneypot.objects.create(name="Heralding", active=True)
         cls.ciscoasa = GeneralHoneypot.objects.create(name="Ciscoasa", active=True)
@@ -178,7 +178,7 @@ class CustomTestCase(TestCase):
             cls.regular_user = User.objects.create_user(username="regular", email="regular@greedybear.com", password="regular")
 
     @classmethod
-    def tearDownClass(self):
+    def tearDownClass(cls):
         # db clean
         GeneralHoneypot.objects.all().delete()
         IOC.objects.all().delete()

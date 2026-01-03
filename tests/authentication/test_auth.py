@@ -68,7 +68,7 @@ class TestUserAuth(CustomOAuthTestCase):
         )
         self.assertEqual(AuthToken.objects.count(), 1)
 
-        self.client.credentials(HTTP_AUTHORIZATION=("Token %s" % token.token))
+        self.client.credentials(HTTP_AUTHORIZATION=(f"Token {token.token}"))
         response = self.client.post(logout_uri)
 
         self.assertEqual(response.status_code, 204, msg=(response))

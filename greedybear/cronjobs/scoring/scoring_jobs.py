@@ -218,7 +218,7 @@ class UpdateScores(Cronjob):
             int: Number of objects updated
         """
         iocs = set(iocs)
-        primary_keys = set(ioc.pk for ioc in iocs)
+        primary_keys = {ioc.pk for ioc in iocs}
         data = get_data_by_pks(primary_keys)
         current_date = str(date.today())
         self.log.info("extracting features: score_only")
