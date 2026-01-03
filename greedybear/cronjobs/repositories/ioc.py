@@ -135,14 +135,10 @@ class IocRepository:
         try:
             gh = GeneralHoneypot.objects.get(name__iexact=honeypot_name)
         except GeneralHoneypot.DoesNotExist:
-            # preserving original casing
             gh = GeneralHoneypot.objects.create(
                 name=honeypot_name,
                 active=True,
             )
-        except GeneralHoneypot.MultipleObjectsReturned:
-            # picking the first one deterministically (rare case)
-            gh = GeneralHoneypot.objects.filter(name__iexact=honeypot_name).order_by("id").first()
 
         self._honeypot_cache[normalized] = gh.active
         return gh.active
