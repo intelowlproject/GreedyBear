@@ -5,7 +5,7 @@ from pathlib import Path
 
 from greedybear.cronjobs.base import Cronjob
 from greedybear.ntfy import send_ntfy_message
-from greedybear.slack import send_message
+from greedybear.slack import send_slack_message
 
 
 class MonitorLogs(Cronjob):
@@ -47,7 +47,7 @@ class MonitorLogs(Cronjob):
             if last_modified > cutoff_time:
                 message = f"found errors in log file {log_file}"
                 self.log.warning(message)
-                send_message(message)
+                send_slack_message(message)
                 send_ntfy_message(message)
             else:
                 self.log.debug(f"no recent activity in {log_file}")
