@@ -48,6 +48,7 @@ class MonitorLogs(Cronjob):
                 message = f"found errors in log file {log_file}"
                 self.log.warning(message)
                 send_slack_message(message)
+                message = f"**⚠️ GreedyBear Error**\n\nErrors detected in `{log_file}`"
                 send_ntfy_message(message)
             else:
                 self.log.debug(f"no recent activity in {log_file}")
