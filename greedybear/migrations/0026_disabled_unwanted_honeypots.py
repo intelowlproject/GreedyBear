@@ -29,7 +29,7 @@ def disable_unwanted_honeypots(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("greedybear", "0023_rename_massscanners_massscanner_and_more"),
+        ("greedybear", "0025_merge_20251223_2100"),
     ]
 
     operations = [

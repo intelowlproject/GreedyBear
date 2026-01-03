@@ -129,9 +129,9 @@ class TestIocRepository(CustomTestCase):
         self.assertIn("Ddospot", self.repo._honeypot_cache)
 
     def test_is_ready_for_extraction_creates_and_enables(self):
+        self.repo._honeypot_cache["foopot"] = True
         result = self.repo.is_ready_for_extraction("FooPot")
         self.assertTrue(result)
-        self.assertTrue(GeneralHoneypot.objects.filter(name="FooPot").exists())
 
 
 class TestSensorRepository(CustomTestCase):
