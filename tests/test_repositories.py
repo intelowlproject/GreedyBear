@@ -379,7 +379,7 @@ class TestElasticRepository(CustomTestCase):
         mock_search.scan.return_value = iter(mock_hits)
 
         result = list(self.repo.search(minutes_back_to_lookup=10))
-        is_ordered = all(a["@timestamp"] <= b["@timestamp"] for a, b in zip(result, result[1:]))
+        is_ordered = all(a["@timestamp"] <= b["@timestamp"] for a, b in zip(result, result[1:], strict=False))
         self.assertTrue(is_ordered)
 
     @patch("greedybear.cronjobs.repositories.elastic.Search")

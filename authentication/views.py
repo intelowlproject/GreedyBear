@@ -1,5 +1,4 @@
 import logging
-from typing import List
 
 import rest_email_auth.views
 from certego_saas.apps.auth import views as certego_views
@@ -36,35 +35,35 @@ User: AUTH_USER_MODEL = get_user_model()
 
 
 class PasswordResetRequestView(rest_email_auth.views.PasswordResetRequestView):
-    authentication_classes: List = []
-    permission_classes: List = []
-    throttle_classes: List = [POSTUserRateThrottle]
+    authentication_classes: list = []
+    permission_classes: list = []
+    throttle_classes: list = [POSTUserRateThrottle]
 
 
 class PasswordResetView(rest_email_auth.views.PasswordResetView):
-    authentication_classes: List = []
-    permission_classes: List = []
-    throttle_classes: List = [POSTUserRateThrottle]
+    authentication_classes: list = []
+    permission_classes: list = []
+    throttle_classes: list = [POSTUserRateThrottle]
 
 
 class EmailVerificationView(rest_email_auth.views.EmailVerificationView):
-    authentication_classes: List = []
-    permission_classes: List = []
-    throttle_classes: List = [POSTUserRateThrottle]
+    authentication_classes: list = []
+    permission_classes: list = []
+    throttle_classes: list = [POSTUserRateThrottle]
     serializer_class = EmailVerificationSerializer
 
 
 class RegistrationView(rest_email_auth.views.RegistrationView):
-    authentication_classes: List = []
-    permission_classes: List = []
-    throttle_classes: List = [POSTUserRateThrottle]
+    authentication_classes: list = []
+    permission_classes: list = []
+    throttle_classes: list = [POSTUserRateThrottle]
     serializer_class = RegistrationSerializer
 
 
 class ResendVerificationView(rest_email_auth.views.ResendVerificationView):
-    authentication_classes: List = []
-    permission_classes: List = []
-    throttle_classes: List = [POSTUserRateThrottle]
+    authentication_classes: list = []
+    permission_classes: list = []
+    throttle_classes: list = [POSTUserRateThrottle]
 
 
 @api_view([GET])

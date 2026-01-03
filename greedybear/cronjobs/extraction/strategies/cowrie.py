@@ -3,7 +3,6 @@
 import re
 from collections import defaultdict
 from hashlib import sha256
-from typing import Optional
 from urllib.parse import urlparse
 
 from greedybear.consts import PAYLOAD_REQUEST, SCANNER
@@ -22,7 +21,7 @@ from greedybear.models import IOC, CommandSequence, CowrieSession
 from greedybear.regex import REGEX_URL_PROTOCOL
 
 
-def parse_url_hostname(url: str) -> Optional[str]:
+def parse_url_hostname(url: str) -> str | None:
     """
     Extract hostname from URL safely.
 

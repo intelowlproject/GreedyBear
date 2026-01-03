@@ -38,17 +38,53 @@ skip-magic-trailing-comma = false
 
 [lint]
 
-# Default + Isort
 select = [
-    "E4",
-    "E7",
-    "E9",
-    "F",
-    # Isort - https://docs.astral.sh/ruff/rules/#isort-i
-    "I"
+    "E",   # pycodestyle errors - https://docs.astral.sh/ruff/rules/#error-e
+    "W",   # pycodestyle warnings - https://docs.astral.sh/ruff/rules/#warning-w
+    "F",   # pyflakes - https://docs.astral.sh/ruff/rules/#pyflakes-f
+    "I",   # isort - https://docs.astral.sh/ruff/rules/#isort-i
+    "N",   # pep8-naming - https://docs.astral.sh/ruff/rules/#pep8-naming-n
+    "UP",  # pyupgrade - https://docs.astral.sh/ruff/rules/#pyupgrade-up
+    "B",   # flake8-bugbear - https://docs.astral.sh/ruff/rules/#flake8-bugbear-b
+    "C4",  # flake8-comprehensions - https://docs.astral.sh/ruff/rules/#flake8-comprehensions-c4
+    "DJ",  # flake8-django - https://docs.astral.sh/ruff/rules/#flake8-django-dj
 ]
 
 ignore = [
     # F403: Allow wildcard imports in __init__.py files
-    "F403"
+    "F403",
+    # B006/B008: Allow mutable defaults and function calls in defaults for test helpers
+    "B006",
+    "B008",
+    # B017: Allow blind exception in tests  
+    "B017",
+    # B023: Allow loop variable in lambda (functional style)
+    "B023",
+    # B904: Allow raise without from (intentional re-raise)
+    "B904",
+    # C401/C408: Allow dict() and generator patterns (style preference)
+    "C401",
+    "C408",
+    # DJ001: Allow null=True on CharField (intentional for optional fields)
+    "DJ001",
+    # DJ008: Allow models without __str__ (legacy models, API-only)
+    "DJ008",
+    # DJ012: Allow existing Django model field ordering
+    "DJ012",
+    # E501: Allow long lines in docstrings
+    "E501",
+    # N801/N802/N803: Allow existing naming conventions (viewType, iocType, X for ML, migration functions)
+    "N801",
+    "N802",
+    "N803",
+    # N804: Allow 'self' in class methods for Django test compatibility
+    "N804",
+    # N806: Allow uppercase variable names for ML conventions (X_train, X_test)
+    "N806",
+    # N818: Allow existing exception naming
+    "N818",
+    # UP008: Allow explicit super() in tests for clarity
+    "UP008",
+    # UP031: Allow old-style % formatting in tests
+    "UP031",
 ]

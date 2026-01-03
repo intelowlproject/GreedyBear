@@ -2,7 +2,6 @@
 # See the file 'LICENSE' for copying permission.
 import base64
 import re
-from typing import Optional
 from urllib.parse import urlparse
 
 from greedybear.consts import PAYLOAD_REQUEST, SCANNER
@@ -141,7 +140,7 @@ class Log4potExtractionStrategy(BaseExtractionStrategy):
                 hidden_hostname_instance.related_ioc.add(scanner_ip_instance)
             self.ioc_repo.save(hidden_hostname_instance)
 
-    def _get_scanner_ip(self, correlation_id: str, hits: list[dict]) -> Optional[str]:
+    def _get_scanner_ip(self, correlation_id: str, hits: list[dict]) -> str | None:
         self.log.info(f"extracting scanner IP from correlation_id {correlation_id}")
         filtered_hits = [hit for hit in hits if str(hit.get("correlation_id", "")) == str(correlation_id) and hit.get("reason", "") == "request"]
 

@@ -8,7 +8,7 @@ from greedybear.settings import ML_CONFIG_FILE
 
 class TestRFConfig(SimpleTestCase):
     def setUp(self):
-        with open(ML_CONFIG_FILE, "r") as f:
+        with open(ML_CONFIG_FILE) as f:
             self.config = json.load(f)
 
     def test_rf_classifier_config_loading(self):

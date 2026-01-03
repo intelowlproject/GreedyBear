@@ -87,7 +87,7 @@ class RFClassifier(RFModel, Classifier):
             BaseEstimator: Configured but untrained scikit-learn Random Forest
                 Classifier with all hyperparameters set
         """
-        with open(ML_CONFIG_FILE, "r") as f:
+        with open(ML_CONFIG_FILE) as f:
             config = json.load(f)
 
         params = config["RFClassifier"]
@@ -119,7 +119,7 @@ class RFRegressor(RFModel, Regressor):
             BaseEstimator: Configured but untrained scikit-learn Random Forest
                 Regressor with all hyperparameters set
         """
-        with open(ML_CONFIG_FILE, "r") as f:
+        with open(ML_CONFIG_FILE) as f:
             config = json.load(f)
 
         params = config["RFRegressor"]
