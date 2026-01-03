@@ -69,3 +69,10 @@ def get_whatsmyip():
     from greedybear.cronjobs.whatsmyip import WhatsMyIPCron
 
     WhatsMyIPCron().execute()
+
+
+@shared_task()
+def extract_firehol_lists():
+    from greedybear.cronjobs.firehol import FireHolCron
+
+    FireHolCron().execute()

@@ -46,6 +46,26 @@ class TestIocRepository(CustomTestCase):
         hp = GeneralHoneypot.objects.get(name="NewHoneypot")
         self.assertTrue(hp.active)
 
+    def test_get_active_honeypots_returns_only_active(self):
+        GeneralHoneypot.objects.create(name="TestActivePot1", active=True)
+        GeneralHoneypot.objects.create(name="TestActivePot2", active=True)
+        GeneralHoneypot.objects.create(name="TestInactivePot", active=False)
+
+        result = self.repo.get_active_honeypots()
+        names = [hp.name for hp in result]
+
+        self.assertIn("TestActivePot1", names)
+        self.assertIn("TestActivePot2", names)
+        self.assertNotIn("TestInactivePot", names)
+
+    def test_get_active_honeypots_returns_empty_if_none_active(self):
+        GeneralHoneypot.objects.update(active=False)
+
+        result = self.repo.get_active_honeypots()
+        self.assertEqual(len(result), 0)
+
+        GeneralHoneypot.objects.update(active=True)
+
     def test_get_hp_by_name_returns_existing(self):
         GeneralHoneypot.objects.create(name="TestPot", active=True)
         result = self.repo.get_hp_by_name("TestPot")
@@ -269,6 +289,39 @@ class TestElasticRepository(CustomTestCase):
 
         self.repo = ElasticRepository()
 
+    @patch("greedybear.cronjobs.repositories.elastic.Search")
+    def test_has_honeypot_been_hit_returns_true_when_hits_exist(self, mock_search_class):
+        mock_search = Mock()
+        mock_search_class.return_value = mock_search
+        mock_q = Mock()
+        with patch.object(self.repo, "_standard_query", return_value=mock_q):
+            mock_search.query.return_value = mock_search
+            mock_search.filter.return_value = mock_search
+            mock_search.count.return_value = 1
+
+            result = self.repo.has_honeypot_been_hit(minutes_back_to_lookup=10, honeypot_name="test_honeypot")
+            self.assertTrue(result)
+            mock_search.query.assert_called_once_with(mock_q)
+            mock_search.filter.assert_called_once_with("term", **{"type.keyword": "test_honeypot"})
+            mock_search.count.assert_called_once()
+
+    @patch("greedybear.cronjobs.repositories.elastic.Search")
+    def test_has_honeypot_been_hit_returns_false_when_no_hits(self, mock_search_class):
+        mock_search = Mock()
+        mock_search_class.return_value = mock_search
+        mock_q = Mock()
+        with patch.object(self.repo, "_standard_query", return_value=mock_q):
+            mock_search.query.return_value = mock_search
+            mock_search.filter.return_value = mock_search
+            mock_search.count.return_value = 0
+
+            result = self.repo.has_honeypot_been_hit(minutes_back_to_lookup=10, honeypot_name="test_honeypot")
+
+            self.assertFalse(result)
+            mock_search.query.assert_called_once_with(mock_q)
+            mock_search.filter.assert_called_once_with("term", **{"type.keyword": "test_honeypot"})
+            mock_search.count.assert_called_once()
+
     def test_healthcheck_passes_when_ping_succeeds(self):
         self.mock_client.ping.return_value = True
         self.repo._healthcheck()
@@ -343,6 +396,21 @@ class TestElasticRepository(CustomTestCase):
         self.repo.search(minutes_back_to_lookup=10)
 
         mock_get_time_window.assert_called_once()
+
+    @patch("greedybear.cronjobs.repositories.elastic.get_time_window")
+    @patch("greedybear.cronjobs.repositories.elastic.datetime")
+    def test_standard_query_returns_correct_query(self, mock_datetime, mock_get_time_window):
+        now = datetime(2023, 1, 1, 0, 0, 0)
+        mock_datetime.now.return_value = now
+        window_start = "2022-12-31T23:50:00"
+        window_end = "2023-01-01T00:00:00"
+        mock_get_time_window.return_value = (window_start, window_end)
+
+        q = self.repo._standard_query(minutes_back_to_lookup=10)
+
+        expected_dict = {"range": {"@timestamp": {"gte": window_start, "lt": window_end}}}
+        self.assertEqual(q.to_dict(), expected_dict)
+        mock_get_time_window.assert_called_once_with(now, 10)
 
 
 class TestTimeWindowCalculation(CustomTestCase):

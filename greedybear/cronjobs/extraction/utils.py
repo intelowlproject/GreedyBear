@@ -1,13 +1,13 @@
 from collections import defaultdict
 from datetime import datetime
-from ipaddress import IPv4Address, ip_address
+from ipaddress import IPv4Address, ip_address, ip_network
 from logging import Logger
 from urllib.parse import urlparse
 
 import requests
 from django.conf import settings
 from greedybear.consts import DOMAIN, IP
-from greedybear.models import IOC, MassScanner, WhatsMyIPDomain
+from greedybear.models import IOC, FireHolList, MassScanner, WhatsMyIPDomain
 
 
 def is_whatsmyip_domain(domain: str) -> bool:
@@ -50,11 +50,47 @@ def correct_ip_reputation(ip: str, ip_reputation: str) -> str:
     return ip_reputation
 
 
+def get_firehol_categories(ip: str, extracted_ip) -> list[str]:
+    """
+    Get FireHol categories for an IP address.
+    Checks both exact IP matches (for .ipset files) and network range
+    membership (for .netset files with CIDR notation).
+
+    Args:
+        ip: IP address string.
+        extracted_ip: Parsed IP address object from ipaddress library.
+
+    Returns:
+        List of FireHol source categories.
+    """
+    firehol_categories = []
+
+    # First check for exact IP match (for .ipset files)
+    exact_matches = FireHolList.objects.filter(ip_address=ip).values_list("source", flat=True)
+    firehol_categories.extend(exact_matches)
+
+    # Then check if IP is within any network ranges (for .netset files)
+    # Only query entries that contain '/' (CIDR notation)
+    network_entries = FireHolList.objects.filter(ip_address__contains="/")
+    for entry in network_entries:
+        try:
+            network_range = ip_network(entry.ip_address, strict=False)
+            if extracted_ip in network_range and entry.source not in firehol_categories:
+                firehol_categories.append(entry.source)
+        except (ValueError, IndexError):
+            # Not a valid network range, skip
+            continue
+
+    return firehol_categories
+
+
 def iocs_from_hits(hits: list[dict]) -> list[IOC]:
     """
     Convert Elasticsearch hits into IOC objects.
     Groups hits by source IP, filters out non-global addresses, and
     constructs IOC objects with aggregated data.
+    Enriches IOCs with FireHol categories at creation time to ensure
+    only fresh data is used.
 
     Args:
         hits: List of Elasticsearch hit dictionaries.
@@ -72,6 +108,8 @@ def iocs_from_hits(hits: list[dict]) -> list[IOC]:
         if extracted_ip.is_loopback or extracted_ip.is_private or extracted_ip.is_multicast or extracted_ip.is_link_local or extracted_ip.is_reserved:
             continue
 
+        firehol_categories = get_firehol_categories(ip, extracted_ip)
+
         ioc = IOC(
             name=ip,
             type=get_ioc_type(ip),
@@ -80,6 +118,7 @@ def iocs_from_hits(hits: list[dict]) -> list[IOC]:
             asn=hits[0].get("geoip", {}).get("asn"),
             destination_ports=sorted(set(dest_ports)),
             login_attempts=len(hits) if hits[0].get("type", "") == "Heralding" else 0,
+            firehol_categories=firehol_categories,
         )
         timestamps = [hit["@timestamp"] for hit in hits if "@timestamp" in hit]
         if timestamps:

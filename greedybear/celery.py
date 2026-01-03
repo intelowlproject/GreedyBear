@@ -112,4 +112,9 @@ app.conf.beat_schedule = {
         "schedule": crontab(hour=4, minute=3, day_of_week=6),
         "options": {"queue": "default"},
     },
+    "extract_firehol_lists": {
+        "task": "greedybear.tasks.extract_firehol_lists",
+        "schedule": crontab(hour=4, minute=15, day_of_week=0),
+        "options": {"queue": "default"},
+    },
 }

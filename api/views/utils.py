@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from ipaddress import ip_address
 
 from api.enums import Honeypots
-from api.serializers import FeedsRequestSerializer, FeedsResponseSerializer
+from api.serializers import FeedsRequestSerializer
 from django.conf import settings
 from django.contrib.postgres.aggregates import ArrayAgg
 from django.db.models import F, Q
@@ -240,6 +240,7 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
                 "scanner",
                 "payload_request",
                 "ip_reputation",
+                "firehol_categories",
                 "asn",
                 "destination_ports",
                 "login_attempts",
@@ -265,16 +266,8 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
                     "destination_port_count": len(ioc["destination_ports"]),
                 }
 
-                if verbose:
-                    json_list.append(data_)
-                    continue
-
-                serializer_item = FeedsResponseSerializer(
-                    data=data_,
-                    context={"valid_feed_types": valid_feed_types},
-                )
-                serializer_item.is_valid(raise_exception=True)
-                json_list.append(serializer_item.data)
+                # Skip validation - data_ is constructed internally and matches the API contract
+                json_list.append(data_)
 
             # check if sorting the results by feed_type
             if feed_params.feed_type_sorting is not None:

@@ -118,6 +118,29 @@ class FeedsRequestSerializer(serializers.Serializer):
 
 
 class FeedsResponseSerializer(serializers.Serializer):
+    """
+    Serializer for feed response data structure.
+
+    NOTE: This serializer is currently NOT used in production code (as of #629).
+    It has been kept in the codebase for the following reasons:
+
+    1. **Documentation**: Serves as a clear schema definition for the API response contract
+    2. **Testing**: Validates the expected response structure through unit tests
+    3. **Future-proofing**: Allows easy re-enabling of validation if security requirements change
+    4. **Reference**: Useful for API consumers and developers to understand the response format
+
+    Performance Optimization Context:
+    Previously, this serializer was instantiated and validated for each IOC in the response
+    (up to 5000 times per request), causing significant overhead (~1.8s for 5000 IOCs).
+    The optimization removed this per-item validation since the data is constructed internally
+    in api/views/utils.py::feeds_response() and guaranteed to match this schema.
+
+    The response is now built directly without serializer validation, reducing response time
+    to ~0.03s (50-90x speedup) while maintaining the exact same API contract defined here.
+
+    See: #629 for benchmarking details and discussion.
+    """
+
     feed_type = serializers.ListField(child=serializers.CharField(max_length=120))
     value = serializers.CharField(max_length=256)
     scanner = serializers.BooleanField()
@@ -127,6 +150,7 @@ class FeedsResponseSerializer(serializers.Serializer):
     attack_count = serializers.IntegerField(min_value=1)
     interaction_count = serializers.IntegerField(min_value=1)
     ip_reputation = serializers.CharField(allow_blank=True, max_length=32)
+    firehol_categories = serializers.ListField(child=serializers.CharField(max_length=64), allow_empty=True)
     asn = serializers.IntegerField(allow_null=True, min_value=1)
     destination_port_count = serializers.IntegerField(min_value=0)
     login_attempts = serializers.IntegerField(min_value=0)

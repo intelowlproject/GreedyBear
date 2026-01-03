@@ -1,9 +1,9 @@
-celery==5.6.0
+celery==5.6.1
 
 # if you change this, update the documentation
-elasticsearch8==8.19.2
+elasticsearch8==8.19.3
 
-Django==5.2.8
+Django==5.2.9
 djangorestframework==3.16.1
 django-rest-email-auth==5.0.0
 django-ses==4.5.0
@@ -16,8 +16,8 @@ slack-sdk==3.39.0
 uwsgitop==0.12
 uwsgi==2.0.31
 
-joblib==1.5.2
+joblib==1.5.3
 pandas==2.3.3
 scikit-learn==1.8.0
-numpy==2.3.5
+numpy==2.4.0
 datasketch==1.8.0
