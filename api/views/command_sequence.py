@@ -16,7 +16,7 @@ from rest_framework.response import Response
 
 from api.views.utils import is_ip_address, is_sha256hash
 from greedybear.consts import GET
-from greedybear.models import IOC, CommandSequence, CowrieSession, Statistics, viewType
+from greedybear.models import IOC, CommandSequence, CowrieSession, Statistics, ViewType
 
 logger = logging.getLogger(__name__)
 
@@ -48,7 +48,7 @@ def command_sequence_view(request):
     include_similar = request.query_params.get("include_similar") is not None
     logger.info(f"Command Sequence view requested by {request.user} for {observable}")
     source_ip = str(request.META["REMOTE_ADDR"])
-    request_source = Statistics(source=source_ip, view=viewType.COMMAND_SEQUENCE_VIEW.value)
+    request_source = Statistics(source=source_ip, view=ViewType.COMMAND_SEQUENCE_VIEW.value)
     request_source.save()
 
     if not observable:

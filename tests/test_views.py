@@ -3,7 +3,7 @@ from django.test import override_settings
 from rest_framework.test import APIClient
 
 from api.views.utils import is_ip_address, is_sha256hash
-from greedybear.models import GeneralHoneypot, Statistics, viewType
+from greedybear.models import GeneralHoneypot, Statistics, ViewType
 
 from . import CustomTestCase
 
@@ -270,8 +270,8 @@ class StatisticsViewTestCase(CustomTestCase):
     def setUpClass(cls):
         super().setUpClass()
         Statistics.objects.all().delete()
-        Statistics.objects.create(source="140.246.171.141", view=viewType.FEEDS_VIEW.value)
-        Statistics.objects.create(source="140.246.171.141", view=viewType.ENRICHMENT_VIEW.value)
+        Statistics.objects.create(source="140.246.171.141", view=ViewType.FEEDS_VIEW.value)
+        Statistics.objects.create(source="140.246.171.141", view=ViewType.ENRICHMENT_VIEW.value)
 
     @classmethod
     def tearDownClass(cls):

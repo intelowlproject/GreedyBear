@@ -10,7 +10,7 @@ from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from greedybear.models import IOC, GeneralHoneypot, Statistics, viewType
+from greedybear.models import IOC, GeneralHoneypot, Statistics, ViewType
 
 logger = logging.getLogger(__name__)
 
@@ -40,11 +40,11 @@ class StatisticsViewSet(viewsets.ViewSet):
                 "Sources": Count(
                     "source",
                     distinct=True,
-                    filter=Q(view=viewType.FEEDS_VIEW.value),
+                    filter=Q(view=ViewType.FEEDS_VIEW.value),
                 )
             }
         elif pk == "downloads":
-            annotations = {"Downloads": Count("source", filter=Q(view=viewType.FEEDS_VIEW.value))}
+            annotations = {"Downloads": Count("source", filter=Q(view=ViewType.FEEDS_VIEW.value))}
         else:
             logger.error("this is impossible. check the code")
             return HttpResponseServerError()
@@ -67,11 +67,11 @@ class StatisticsViewSet(viewsets.ViewSet):
                 "Sources": Count(
                     "source",
                     distinct=True,
-                    filter=Q(view=viewType.ENRICHMENT_VIEW.value),
+                    filter=Q(view=ViewType.ENRICHMENT_VIEW.value),
                 )
             }
         elif pk == "requests":
-            annotations = {"Requests": Count("source", filter=Q(view=viewType.ENRICHMENT_VIEW.value))}
+            annotations = {"Requests": Count("source", filter=Q(view=ViewType.ENRICHMENT_VIEW.value))}
         else:
             logger.error("this is impossible. check the code")
             return HttpResponseServerError()

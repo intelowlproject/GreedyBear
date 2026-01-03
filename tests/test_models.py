@@ -1,4 +1,4 @@
-from greedybear.models import Statistics, iocType, viewType
+from greedybear.models import IocType, Statistics, ViewType
 
 from . import CustomTestCase
 
@@ -6,7 +6,7 @@ from . import CustomTestCase
 class ModelsTestCase(CustomTestCase):
     def test_ioc_model(self):
         self.assertEqual(self.ioc.name, "140.246.171.141")
-        self.assertEqual(self.ioc.type, iocType.IP.value)
+        self.assertEqual(self.ioc.type, IocType.IP.value)
         self.assertEqual(self.ioc.first_seen, self.current_time)
         self.assertEqual(self.ioc.last_seen, self.current_time)
         self.assertEqual(self.ioc.days_seen, [self.current_time])
@@ -51,11 +51,11 @@ class ModelsTestCase(CustomTestCase):
     def test_statistics_model(self):
         self.statistic = Statistics.objects.create(
             source="140.246.171.141",
-            view=viewType.ENRICHMENT_VIEW.value,
+            view=ViewType.ENRICHMENT_VIEW.value,
             request_date=self.current_time,
         )
         self.assertEqual(self.statistic.source, "140.246.171.141")
-        self.assertEqual(self.statistic.view, viewType.ENRICHMENT_VIEW.value)
+        self.assertEqual(self.statistic.view, ViewType.ENRICHMENT_VIEW.value)
         self.assertEqual(self.statistic.request_date, self.current_time)
 
     def test_general_honeypot_model(self):

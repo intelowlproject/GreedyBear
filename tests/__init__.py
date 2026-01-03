@@ -10,7 +10,7 @@ from greedybear.models import (
     CommandSequence,
     CowrieSession,
     GeneralHoneypot,
-    iocType,
+    IocType,
 )
 
 
@@ -26,7 +26,7 @@ class CustomTestCase(TestCase):
         cls.current_time = datetime.now()
         cls.ioc = IOC.objects.create(
             name="140.246.171.141",
-            type=iocType.IP.value,
+            type=IocType.IP.value,
             first_seen=cls.current_time,
             last_seen=cls.current_time,
             days_seen=[cls.current_time],
@@ -48,7 +48,7 @@ class CustomTestCase(TestCase):
 
         cls.ioc_2 = IOC.objects.create(
             name="99.99.99.99",
-            type=iocType.IP.value,
+            type=IocType.IP.value,
             first_seen=cls.current_time,
             last_seen=cls.current_time,
             days_seen=[cls.current_time],
@@ -70,7 +70,7 @@ class CustomTestCase(TestCase):
 
         cls.ioc_3 = IOC.objects.create(
             name="100.100.100.100",
-            type=iocType.IP.value,
+            type=IocType.IP.value,
             first_seen=cls.current_time,
             last_seen=cls.current_time,
             days_seen=[cls.current_time],
@@ -92,7 +92,7 @@ class CustomTestCase(TestCase):
 
         cls.ioc_domain = IOC.objects.create(
             name="malicious.example.com",
-            type=iocType.DOMAIN.value,
+            type=IocType.DOMAIN.value,
             first_seen=cls.current_time,
             last_seen=cls.current_time,
             days_seen=[cls.current_time],
