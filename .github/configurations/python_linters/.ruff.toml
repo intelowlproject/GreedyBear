@@ -73,14 +73,10 @@ ignore = [
     "DJ012",
     # E501: Allow long lines in docstrings
     "E501",
-    # N801/N802/N803: Allow existing naming conventions (viewType, iocType, X for ML, migration functions)
-    "N801",
-    "N802",
-    "N803",
+
     # N804: Allow 'self' in class methods for Django test compatibility
     "N804",
-    # N806: Allow uppercase variable names for ML conventions (X_train, X_test)
-    "N806",
+
     # N818: Allow existing exception naming
     "N818",
     # UP008: Allow explicit super() in tests for clarity
