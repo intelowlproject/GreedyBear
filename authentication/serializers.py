@@ -147,8 +147,8 @@ class LoginSerializer(AuthTokenSerializer):
                 user = User.objects.get(username=attrs["username"])
             except User.DoesNotExist:
                 # we do not want to leak info
-                # so just raise the original exception
-                raise exc
+                # so just raise the original exception without context
+                raise exc from None
             else:
                 # custom error messages
                 if not user.is_active:
@@ -160,4 +160,4 @@ class LoginSerializer(AuthTokenSerializer):
                         exc.detail = "Your account was declined."
                     logger.info(f"User {user} is not active. Error message: {exc.detail}")
             # else
-            raise exc
+            raise exc from None

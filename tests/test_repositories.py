@@ -1,6 +1,8 @@
 from datetime import datetime
 from unittest.mock import Mock, patch
 
+from django.db import IntegrityError
+
 from greedybear.cronjobs.repositories import (
     CowrieSessionRepository,
     ElasticRepository,
@@ -288,7 +290,7 @@ class TestCowrieSessionRepository(CustomTestCase):
 
     def test_command_sequence_unique_hash_constraint(self):
         existing = self.command_sequence
-        with self.assertRaises(Exception):
+        with self.assertRaises(IntegrityError):
             CommandSequence.objects.create(
                 commands=["different", "commands"],
                 commands_hash=existing.commands_hash,
