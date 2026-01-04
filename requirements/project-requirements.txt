@@ -21,5 +21,3 @@ pandas==2.3.3
 scikit-learn==1.8.0
 numpy==2.4.0
 datasketch==1.8.0
-
-requests>=2.31,<3
