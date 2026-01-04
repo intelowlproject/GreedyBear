@@ -26,11 +26,11 @@ def general_honeypot_list(request):
     logger.info(f"Requested general honeypots list from {request.user}.")
     active = request.query_params.get("onlyActive")
     honeypots = []
-    generalHoneypots = GeneralHoneypot.objects.all()
+    general_honeypots = GeneralHoneypot.objects.all()
     if active == "true":
-        generalHoneypots = generalHoneypots.filter(active=True)
+        general_honeypots = general_honeypots.filter(active=True)
         logger.info(f"Requested only active general honeypots from {request.user}")
-    honeypots.extend([hp.name for hp in generalHoneypots])
+    honeypots.extend([hp.name for hp in general_honeypots])
 
     logger.info(f"General honeypots: {honeypots} given back to user {request.user}")
     return Response(honeypots)

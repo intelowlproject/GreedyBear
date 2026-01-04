@@ -3,7 +3,7 @@ from unittest.mock import patch
 
 from greedybear.consts import PAYLOAD_REQUEST, SCANNER
 from greedybear.cronjobs.extraction.ioc_processor import IocProcessor
-from greedybear.models import iocType
+from greedybear.models import IocType
 
 from . import ExtractionTestCase
 
@@ -26,7 +26,7 @@ class TestAddIoc(ExtractionTestCase):
     def test_filters_whatsmyip_domains(self, mock_whatsmyip):
         mock_whatsmyip.return_value = True
         self.mock_sensor_repo.sensors = set()
-        ioc = self._create_mock_ioc(name="some.domain.com", ioc_type=iocType.DOMAIN)
+        ioc = self._create_mock_ioc(name="some.domain.com", ioc_type=IocType.DOMAIN)
 
         result = self.processor.add_ioc(ioc, attack_type=SCANNER)
 
@@ -168,7 +168,7 @@ class TestAddIoc(ExtractionTestCase):
     def test_only_checks_whatsmyip_for_domains(self, mock_whatsmyip):
         self.mock_sensor_repo.sensors = set()
         self.mock_ioc_repo.get_ioc_by_name.return_value = None
-        ioc = self._create_mock_ioc(name="1.2.3.4", ioc_type=iocType.IP)
+        ioc = self._create_mock_ioc(name="1.2.3.4", ioc_type=IocType.IP)
         self.mock_ioc_repo.save.return_value = ioc
 
         result = self.processor.add_ioc(ioc, attack_type=SCANNER)

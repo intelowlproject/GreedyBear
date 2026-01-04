@@ -18,7 +18,7 @@ from rest_framework.response import Response
 
 from api.views.utils import is_ip_address, is_sha256hash
 from greedybear.consts import GET
-from greedybear.models import CommandSequence, CowrieSession, Statistics, viewType
+from greedybear.models import CommandSequence, CowrieSession, Statistics, ViewType
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +73,7 @@ def cowrie_session_view(request):
 
     logger.info(f"Cowrie view requested by {request.user} for {observable}")
     source_ip = str(request.META["REMOTE_ADDR"])
-    request_source = Statistics(source=source_ip, view=viewType.COWRIE_SESSION_VIEW.value)
+    request_source = Statistics(source=source_ip, view=ViewType.COWRIE_SESSION_VIEW.value)
     request_source.save()
 
     if not observable:

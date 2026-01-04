@@ -6,14 +6,14 @@ from django.contrib.postgres import fields as pg_fields
 from django.db import models
 
 
-class viewType(models.TextChoices):
+class ViewType(models.TextChoices):
     FEEDS_VIEW = "feeds"
     ENRICHMENT_VIEW = "enrichment"
     COMMAND_SEQUENCE_VIEW = "command sequence"
     COWRIE_SESSION_VIEW = "cowrie session"
 
 
-class iocType(models.TextChoices):
+class IocType(models.TextChoices):
     IP = "ip"
     DOMAIN = "domain"
 
@@ -43,7 +43,7 @@ class FireHolList(models.Model):
 
 class IOC(models.Model):
     name = models.CharField(max_length=256, blank=False)
-    type = models.CharField(max_length=32, blank=False, choices=iocType.choices)
+    type = models.CharField(max_length=32, blank=False, choices=IocType.choices)
     first_seen = models.DateTimeField(blank=False, default=datetime.now)
     last_seen = models.DateTimeField(blank=False, default=datetime.now)
     days_seen = pg_fields.ArrayField(models.DateField(), blank=True, default=list)
@@ -120,8 +120,8 @@ class Statistics(models.Model):
     view = models.CharField(
         max_length=32,
         blank=False,
-        choices=viewType.choices,
-        default=viewType.FEEDS_VIEW.value,
+        choices=ViewType.choices,
+        default=ViewType.FEEDS_VIEW.value,
     )
     request_date = models.DateTimeField(blank=False, default=datetime.now)
 
