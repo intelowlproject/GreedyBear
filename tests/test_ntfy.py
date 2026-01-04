@@ -1,6 +1,7 @@
 from unittest.mock import MagicMock, patch
 
 from django.test import SimpleTestCase, override_settings
+
 from greedybear.ntfy import send_ntfy_message
 
 TEST_LOGGING = {
