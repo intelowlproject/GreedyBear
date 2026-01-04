@@ -11,7 +11,6 @@ TEST_LOGGING = {
 
 @override_settings(LOGGING=TEST_LOGGING)
 class SendNtfyMessageTests(SimpleTestCase):
-
     @override_settings(NTFY_URL="https://ntfy.sh/greedybear")
     @patch("greedybear.ntfy.requests.post")
     @patch("greedybear.ntfy.logger")
