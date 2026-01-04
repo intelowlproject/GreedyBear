@@ -19,6 +19,7 @@ jobs:
       frontend_directories: frontend
       ubuntu_version: latest
 
+
   frontend-tests:
     needs: detect-changes
     if: ${{ needs.detect-changes.outputs.frontend > 0 }}
@@ -39,9 +40,9 @@ jobs:
       use_coverage: true
       upload_coverage: true
       max_timeout: 15
-      ubuntu_version: 22.04
       node_versions: >-
         ["20"]
+      ubuntu_version: latest
 
 
   backend-tests:
@@ -52,14 +53,17 @@ jobs:
      with:
       working_directory: .
 
-      use_black: true
-      use_isort: true
-      use_flake8: true
+      use_black: false
+      use_isort: false
+      use_flake8: false
       use_pylint: false
       use_bandit: false
       use_autoflake: false
+      use_ruff_formatter: true
+      use_ruff_linter: true
 
       requirements_path: requirements/project-requirements.txt
+      packages_path: packages.txt
       django_settings_module: greedybear.settings
 
       check_migrations: true
@@ -74,6 +78,7 @@ jobs:
       use_memcached: false
       use_elastic_search: false
       use_rabbitmq: true
+      rabbitmq_version: "4"
       use_mongo: false
       use_celery: false
 

@@ -1,8 +1,9 @@
-from api.views.utils import is_ip_address, is_sha256hash
 from django.conf import settings
 from django.test import override_settings
-from greedybear.models import GeneralHoneypot, Statistics, viewType
 from rest_framework.test import APIClient
+
+from api.views.utils import is_ip_address, is_sha256hash
+from greedybear.models import GeneralHoneypot, Statistics, viewType
 
 from . import CustomTestCase
 
@@ -47,8 +48,14 @@ class EnrichmentViewTestCase(CustomTestCase):
         self.assertEqual(response.json()["ioc"]["general_honeypot"][1], self.ciscoasa.name)  # FEEDS
         self.assertEqual(response.json()["ioc"]["scanner"], self.ioc.scanner)
         self.assertEqual(response.json()["ioc"]["payload_request"], self.ioc.payload_request)
-        self.assertEqual(response.json()["ioc"]["recurrence_probability"], self.ioc.recurrence_probability)
-        self.assertEqual(response.json()["ioc"]["expected_interactions"], self.ioc.expected_interactions)
+        self.assertEqual(
+            response.json()["ioc"]["recurrence_probability"],
+            self.ioc.recurrence_probability,
+        )
+        self.assertEqual(
+            response.json()["ioc"]["expected_interactions"],
+            self.ioc.expected_interactions,
+        )
 
     def test_for_invalid_authentication(self):
         """Check for a invalid authentication"""
@@ -260,15 +267,15 @@ class FeedsAdvancedViewTestCase(CustomTestCase):
 
 class StatisticsViewTestCase(CustomTestCase):
     @classmethod
-    def setUpClass(self):
-        super(StatisticsViewTestCase, self).setUpClass()
+    def setUpClass(cls):
+        super().setUpClass()
         Statistics.objects.all().delete()
         Statistics.objects.create(source="140.246.171.141", view=viewType.FEEDS_VIEW.value)
         Statistics.objects.create(source="140.246.171.141", view=viewType.ENRICHMENT_VIEW.value)
 
     @classmethod
-    def tearDownClass(self):
-        super(StatisticsViewTestCase, self).tearDownClass()
+    def tearDownClass(cls):
+        super().tearDownClass()
         Statistics.objects.all().delete()
 
     def test_200_feeds_sources(self):

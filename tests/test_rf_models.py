@@ -2,6 +2,7 @@ from unittest.mock import Mock
 
 import numpy as np
 import pandas as pd
+
 from greedybear.cronjobs.scoring.ml_model import Classifier, Regressor
 from greedybear.cronjobs.scoring.random_forest import RFModel
 
@@ -49,11 +50,11 @@ class TestClassifier(CustomTestCase):
 
         training_target = classifier.training_target(SAMPLE_DATA)
         self.assertEqual(len(training_target), len(CLASSIFIER_TARGET))
-        for a, b in zip(training_target, CLASSIFIER_TARGET):
+        for a, b in zip(training_target, CLASSIFIER_TARGET, strict=False):
             self.assertEqual(a, b)
 
         df = classifier.score(SAMPLE_DATA)
-        for a, b in zip(df["mock_score"], classifier.model.predict_proba.return_value[:, 1]):
+        for a, b in zip(df["mock_score"], classifier.model.predict_proba.return_value[:, 1], strict=False):
             self.assertEqual(a, b)
 
         auc = classifier.recall_auc(df, training_target)
@@ -86,7 +87,7 @@ class TestRegressor(CustomTestCase):
 
         training_target = regressor.training_target(SAMPLE_DATA)
         self.assertEqual(len(training_target), len(REGRESSOR_TARGET))
-        for a, b in zip(training_target, REGRESSOR_TARGET):
+        for a, b in zip(training_target, REGRESSOR_TARGET, strict=False):
             self.assertEqual(a, b)
 
         X_train, X_test, y_train, y_test = regressor.split_train_test(SAMPLE_DATA, training_target)
@@ -96,7 +97,7 @@ class TestRegressor(CustomTestCase):
         self.assertEqual(len(X_test), len(y_test))
 
         df = regressor.score(SAMPLE_DATA)
-        for a, b in zip(df["mock_score"], regressor.model.predict.return_value):
+        for a, b in zip(df["mock_score"], regressor.model.predict.return_value, strict=False):
             self.assertEqual(a, b)
 
         auc = regressor.recall_auc(df, training_target)

@@ -40,7 +40,11 @@ class Migration(migrations.Migration):
             model_name="statistics",
             name="view",
             field=models.CharField(
-                choices=[("feeds", "Feeds View"), ("enrichment", "Enrichment View"), ("command sequence", "Command Sequence View")],
+                choices=[
+                    ("feeds", "Feeds View"),
+                    ("enrichment", "Enrichment View"),
+                    ("command sequence", "Command Sequence View"),
+                ],
                 default="feeds",
                 max_length=32,
             ),

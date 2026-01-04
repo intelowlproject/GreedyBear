@@ -59,7 +59,11 @@ class TestGenericExtractionStrategy(ExtractionTestCase):
 
         hits = [
             {"src_ip": "1.2.3.4", "dest_port": 80, "@timestamp": "2025-01-01T00:00:00"},
-            {"src_ip": "5.6.7.8", "dest_port": 443, "@timestamp": "2025-01-01T00:00:00"},
+            {
+                "src_ip": "5.6.7.8",
+                "dest_port": 443,
+                "@timestamp": "2025-01-01T00:00:00",
+            },
         ]
 
         self.strategy.extract_from_hits(hits)

@@ -1,4 +1,3 @@
-import numpy as np
 from greedybear.cronjobs.commands.cluster import tokenize
 
 from . import CustomTestCase
@@ -61,6 +60,24 @@ class TokenizeTestCase(CustomTestCase):
 
     def test_tokenize_mixed_content(self):
         """Test mixture of various command patterns"""
-        input_seq = ["ls -l;cd /home;pwd", "echo hello   world", ";", "git commit -m 'update'"]
-        expected = ["ls", "-l", "cd", "/home", "pwd", "echo", "hello", "world", "git", "commit", "-m", "'update'"]
+        input_seq = [
+            "ls -l;cd /home;pwd",
+            "echo hello   world",
+            ";",
+            "git commit -m 'update'",
+        ]
+        expected = [
+            "ls",
+            "-l",
+            "cd",
+            "/home",
+            "pwd",
+            "echo",
+            "hello",
+            "world",
+            "git",
+            "commit",
+            "-m",
+            "'update'",
+        ]
         self.assertEqual(tokenize(input_seq), expected)

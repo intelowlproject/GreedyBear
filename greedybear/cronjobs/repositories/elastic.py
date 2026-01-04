@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 
 from django.conf import settings
 from elasticsearch8.dsl import Q, Search
+
 from greedybear.consts import REQUIRED_FIELDS
 from greedybear.settings import EXTRACTION_INTERVAL, LEGACY_EXTRACTION
 
@@ -127,7 +128,11 @@ class ElasticRepository:
         self.log.debug("elastic server is reachable")
 
 
-def get_time_window(reference_time: datetime, lookback_minutes: int, extraction_interval: int = EXTRACTION_INTERVAL) -> tuple[datetime, datetime]:
+def get_time_window(
+    reference_time: datetime,
+    lookback_minutes: int,
+    extraction_interval: int = EXTRACTION_INTERVAL,
+) -> tuple[datetime, datetime]:
     """
     Calculates a time window that ends at the last completed extraction interval and looks back a specified number of minutes.
 

@@ -6,6 +6,7 @@ from urllib.parse import urlparse
 
 import requests
 from django.conf import settings
+
 from greedybear.consts import DOMAIN, IP
 from greedybear.models import IOC, FireHolList, MassScanner, WhatsMyIPDomain
 
@@ -204,7 +205,12 @@ def threatfox_submission(ioc_record: IOC, related_urls: list, log: Logger) -> No
         "iocs": urls_to_submit,
     }
     try:
-        r = requests.post("https://threatfox-api.abuse.ch/api/v1/", headers=headers, json=json_data, timeout=5)
+        r = requests.post(
+            "https://threatfox-api.abuse.ch/api/v1/",
+            headers=headers,
+            json=json_data,
+            timeout=5,
+        )
     except requests.RequestException as e:
         log.exception(f"Threatfox push error: {e}")
     else:

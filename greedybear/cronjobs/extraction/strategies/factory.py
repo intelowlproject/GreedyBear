@@ -1,4 +1,9 @@
-from greedybear.cronjobs.extraction.strategies import BaseExtractionStrategy, CowrieExtractionStrategy, GenericExtractionStrategy, Log4potExtractionStrategy
+from greedybear.cronjobs.extraction.strategies import (
+    BaseExtractionStrategy,
+    CowrieExtractionStrategy,
+    GenericExtractionStrategy,
+    Log4potExtractionStrategy,
+)
 from greedybear.cronjobs.repositories import IocRepository, SensorRepository
 
 

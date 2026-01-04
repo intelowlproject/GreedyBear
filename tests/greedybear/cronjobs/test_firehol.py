@@ -1,7 +1,7 @@
 from unittest.mock import MagicMock, patch
 
 from greedybear.cronjobs.firehol import FireHolCron
-from greedybear.models import IOC, FireHolList
+from greedybear.models import FireHolList
 from tests import CustomTestCase
 
 

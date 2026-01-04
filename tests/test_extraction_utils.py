@@ -2,7 +2,13 @@ from datetime import datetime
 from unittest.mock import Mock, patch
 
 from greedybear.consts import DOMAIN, IP
-from greedybear.cronjobs.extraction.utils import correct_ip_reputation, get_ioc_type, iocs_from_hits, is_whatsmyip_domain, threatfox_submission
+from greedybear.cronjobs.extraction.utils import (
+    correct_ip_reputation,
+    get_ioc_type,
+    iocs_from_hits,
+    is_whatsmyip_domain,
+    threatfox_submission,
+)
 from greedybear.models import FireHolList, MassScanner, WhatsMyIPDomain
 
 from . import CustomTestCase, ExtractionTestCase

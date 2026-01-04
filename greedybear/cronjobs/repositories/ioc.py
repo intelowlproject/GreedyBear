@@ -1,5 +1,4 @@
 import logging
-from typing import Optional
 
 from greedybear.models import IOC, GeneralHoneypot
 
@@ -18,7 +17,7 @@ class IocRepository:
         """Initialize the repository and populate the honeypot cache from the database."""
         self.log = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
         self._honeypot_cache = {hp.name: hp.active for hp in GeneralHoneypot.objects.all()}
-        self._honeypot_cache.update({name: True for name in self.SPECIAL_HONEYPOTS})
+        self._honeypot_cache.update(dict.fromkeys(self.SPECIAL_HONEYPOTS, True))
 
     def add_honeypot_to_ioc(self, honeypot_name: str, ioc: IOC) -> IOC:
         """
@@ -63,7 +62,7 @@ class IocRepository:
         """
         return list(GeneralHoneypot.objects.filter(active=True))
 
-    def get_ioc_by_name(self, name: str) -> Optional[IOC]:
+    def get_ioc_by_name(self, name: str) -> IOC | None:
         """
         Retrieve an IOC by its name.
 
@@ -78,7 +77,7 @@ class IocRepository:
         except IOC.DoesNotExist:
             return None
 
-    def get_hp_by_name(self, name: str) -> Optional[GeneralHoneypot]:
+    def get_hp_by_name(self, name: str) -> GeneralHoneypot | None:
         """
         Retrieve a honeypot by its name.
 

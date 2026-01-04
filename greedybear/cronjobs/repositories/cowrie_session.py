@@ -1,5 +1,4 @@
 import logging
-from typing import Optional
 
 from greedybear.models import IOC, CommandSequence, CowrieSession
 
@@ -34,7 +33,7 @@ class CowrieSessionRepository:
         self.log.debug(f"created new session {session_id}" if created else f"{session_id} already exists")
         return record
 
-    def get_command_sequence_by_hash(self, commands_hash: str) -> Optional[CommandSequence]:
+    def get_command_sequence_by_hash(self, commands_hash: str) -> CommandSequence | None:
         """
         Retrieve a command sequence by its hash.
 
