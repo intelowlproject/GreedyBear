@@ -36,6 +36,8 @@ SLACK_TOKEN=
 DEFAULT_SLACK_CHANNEL=
 
 NTFY_URL=
+# Url of the ntfy topic to recieve error alerts
+# Example: https://ntfy.sh/your_topic
 
 STAGE="production"
 DEBUG=False
