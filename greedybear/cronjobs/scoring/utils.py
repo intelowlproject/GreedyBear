@@ -123,7 +123,7 @@ def multi_label_encode(df: pd.DataFrame, column_name: str) -> pd.DataFrame:
     for value_list in df[column_name]:
         unique_values.update(value_list)
     for value in sorted(unique_values):
-        result_df[f"has_{value}"] = df[column_name].apply(lambda x: 1 if value in x else 0)
+        result_df[f"has_{value}"] = df[column_name].apply(lambda x, value=value: 1 if value in x else 0)
     return result_df.drop(column_name, axis=1)
 
 
