@@ -206,16 +206,6 @@ class ExtractionTestCase(CustomTestCase):
         ip_reputation="",
         asn=1234,
     ):
-        # Initialize mutable defaults inside function to avoid shared state
-        if related_urls is None:
-            related_urls = []
-        if destination_ports is None:
-            destination_ports = []
-        if days_seen is None:
-            days_seen = []
-        if last_seen is None:
-            last_seen = datetime.now()
-
         mock = Mock(spec=IOC)
         mock.name = name
         mock.type = ioc_type
@@ -223,11 +213,11 @@ class ExtractionTestCase(CustomTestCase):
         mock.payload_request = False
         mock.attack_count = attack_count
         mock.interaction_count = interaction_count
-        mock.related_urls = related_urls
-        mock.destination_ports = destination_ports
-        mock.days_seen = days_seen
+        mock.related_urls = related_urls if related_urls is not None else []
+        mock.destination_ports = destination_ports if destination_ports is not None else []
+        mock.days_seen = days_seen if days_seen is not None else []
         mock.login_attempts = login_attempts
-        mock.last_seen = last_seen
+        mock.last_seen = last_seen if last_seen is not None else datetime.now()
         mock.ip_reputation = ip_reputation
         mock.asn = asn
         mock.number_of_days_seen = len(mock.days_seen)
