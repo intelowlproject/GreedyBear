@@ -53,15 +53,6 @@ select = [
 ignore = [
     # F403: Allow wildcard imports in __init__.py files
     "F403",
-    # B006/B008: Allow mutable defaults and function calls in defaults for test helpers
-    "B006",
-    "B008",
-    # B017: Allow blind exception in tests  
-    "B017",
-    # B023: Allow loop variable in lambda (functional style)
-    "B023",
-    # B904: Allow raise without from (intentional re-raise)
-    "B904",
     # C401/C408: Allow dict() and generator patterns (style preference)
     "C401",
     "C408",

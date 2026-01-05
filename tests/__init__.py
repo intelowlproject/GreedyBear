@@ -198,11 +198,11 @@ class ExtractionTestCase(CustomTestCase):
         ioc_type="ip",
         attack_count=1,
         interaction_count=1,
-        related_urls=[],
-        destination_ports=[],
+        related_urls=None,
+        destination_ports=None,
         login_attempts=0,
-        days_seen=[],
-        last_seen=datetime.now(),
+        days_seen=None,
+        last_seen=None,
         ip_reputation="",
         asn=1234,
     ):
@@ -213,11 +213,11 @@ class ExtractionTestCase(CustomTestCase):
         mock.payload_request = False
         mock.attack_count = attack_count
         mock.interaction_count = interaction_count
-        mock.related_urls = related_urls
-        mock.destination_ports = destination_ports
-        mock.days_seen = days_seen
+        mock.related_urls = related_urls if related_urls is not None else []
+        mock.destination_ports = destination_ports if destination_ports is not None else []
+        mock.days_seen = days_seen if days_seen is not None else []
         mock.login_attempts = login_attempts
-        mock.last_seen = last_seen
+        mock.last_seen = last_seen if last_seen is not None else datetime.now()
         mock.ip_reputation = ip_reputation
         mock.asn = asn
         mock.number_of_days_seen = len(mock.days_seen)
