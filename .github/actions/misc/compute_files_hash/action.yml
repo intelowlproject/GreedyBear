@@ -1,0 +1,40 @@
+name: Composite action compute files hash
+description: Composite action to compute a single hash of one or more files
+inputs:
+  file_paths:
+    description: Space separeted list of files for which a single SHA256 hash will be computed.
+    required: true
+
+outputs:
+  computed_hash:
+    description: The hash of the concatenated files
+    value: ${{ steps.compute_files_sha256_hash.outputs.computed_hash }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Compute files SHA256 hash
+      id: compute_files_sha256_hash
+      run: |
+        if [[ -z '${{ inputs.file_paths }}' ]]; then
+          echo "::error::file_paths cannot be empty!"
+          exit 1
+        fi
+        JOINED_FILES="cat "
+        # Create a bash array of file paths
+        for file in ${{ inputs.file_paths }};
+        do
+          if [[ -f $file ]]; then
+            # Concat file path to cat command
+            JOINED_FILES+="$file "
+            echo "::debug::Current file is $file"
+            echo "::debug::JOINED_FILES variable state is $JOINED_FILES"
+          else
+            echo "::error::$file does not exist or it is not a regular file!"
+            exit 1
+          fi
+        done
+        COMPUTED_HASH=$($JOINED_FILES | sha256sum | cut -d ' ' -f 1)
+        echo "::debug::Hash is $COMPUTED_HASH"
+        echo "computed_hash=$COMPUTED_HASH" >> $GITHUB_OUTPUT
+      shell: bash

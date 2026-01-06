@@ -8,7 +8,7 @@ from slack_sdk import WebClient
 logger = logging.getLogger(__name__)
 
 
-def send_message(text):
+def send_slack_message(text):
     if not settings.SLACK_TOKEN:
         logger.warning("Slack is not configured, message not sent")
         return

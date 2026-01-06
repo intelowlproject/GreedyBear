@@ -1,5 +1,4 @@
 import logging
-from typing import Optional
 
 from greedybear.models import IOC, GeneralHoneypot
 
@@ -68,7 +67,7 @@ class IocRepository:
         """
         return list(GeneralHoneypot.objects.filter(active=True))
 
-    def get_ioc_by_name(self, name: str) -> Optional[IOC]:
+    def get_ioc_by_name(self, name: str) -> IOC | None:
         """
         Retrieve an IOC by its name.
 
@@ -83,7 +82,7 @@ class IocRepository:
         except IOC.DoesNotExist:
             return None
 
-    def get_hp_by_name(self, name: str) -> Optional[GeneralHoneypot]:
+    def get_hp_by_name(self, name: str) -> GeneralHoneypot | None:
         """
         Retrieve a honeypot by its name.
 

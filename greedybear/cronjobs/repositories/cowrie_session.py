@@ -1,5 +1,4 @@
 import logging
-from typing import Optional
 
 from greedybear.models import IOC, CommandSequence, CowrieSession
 
@@ -28,13 +27,13 @@ class CowrieSessionRepository:
         """
         try:
             pk = int(session_id, 16)
-        except ValueError:
-            raise ValueError(f"session_id must be a valid hex string, got: {session_id!r}")
+        except ValueError as e:
+            raise ValueError(f"session_id must be a valid hex string, got: {session_id!r}") from e
         record, created = CowrieSession.objects.get_or_create(session_id=pk, defaults={"source": source})
         self.log.debug(f"created new session {session_id}" if created else f"{session_id} already exists")
         return record
 
-    def get_command_sequence_by_hash(self, commands_hash: str) -> Optional[CommandSequence]:
+    def get_command_sequence_by_hash(self, commands_hash: str) -> CommandSequence | None:
         """
         Retrieve a command sequence by its hash.
 

@@ -2,12 +2,13 @@ import json
 from abc import abstractmethod
 
 import pandas as pd
+from sklearn.base import BaseEstimator
+from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
+
 from greedybear.cronjobs.scoring.consts import MULTI_VAL_FEATURES, NUM_FEATURES
 from greedybear.cronjobs.scoring.ml_model import Classifier, MLModel, Regressor
 from greedybear.cronjobs.scoring.utils import multi_label_encode
 from greedybear.settings import ML_CONFIG_FILE
-from sklearn.base import BaseEstimator
-from sklearn.ensemble import RandomForestClassifier, RandomForestRegressor
 
 
 class RFModel(MLModel):
@@ -41,16 +42,16 @@ class RFModel(MLModel):
         """
         self.log.info(f"start training {self.name}")
 
-        X = df[self.features].copy()
+        x = df[self.features].copy()
         y = self.training_target(df).copy()
 
         for feature in MULTI_VAL_FEATURES:
-            X = multi_label_encode(X, feature)
+            x = multi_label_encode(x, feature)
 
-        X_train, X_test, y_train, y_test = self.split_train_test(X, y)
+        x_train, x_test, y_train, y_test = self.split_train_test(x, y)
 
-        self.model = self.untrained_model.fit(X_train, y_train)
-        self.log.info(f"finished training {self.name} - recall AUC: {self.recall_auc(X_test, y_test):.4f}")
+        self.model = self.untrained_model.fit(x_train, y_train)
+        self.log.info(f"finished training {self.name} - recall AUC: {self.recall_auc(x_test, y_test):.4f}")
         self.save()
 
     @property
@@ -86,7 +87,7 @@ class RFClassifier(RFModel, Classifier):
             BaseEstimator: Configured but untrained scikit-learn Random Forest
                 Classifier with all hyperparameters set
         """
-        with open(ML_CONFIG_FILE, "r") as f:
+        with open(ML_CONFIG_FILE) as f:
             config = json.load(f)
 
         params = config["RFClassifier"]
@@ -118,7 +119,7 @@ class RFRegressor(RFModel, Regressor):
             BaseEstimator: Configured but untrained scikit-learn Random Forest
                 Regressor with all hyperparameters set
         """
-        with open(ML_CONFIG_FILE, "r") as f:
+        with open(ML_CONFIG_FILE) as f:
             config = json.load(f)
 
         params = config["RFRegressor"]

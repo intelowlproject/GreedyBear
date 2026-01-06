@@ -1,15 +1,20 @@
 import json
-import logging
 from collections import defaultdict
 from datetime import date
 
 import pandas as pd
 from django.core.files.base import ContentFile
 from django.core.files.storage import FileSystemStorage
-from django.db.models import F, Q
+from django.db.models import Q
+
 from greedybear.cronjobs.base import Cronjob
 from greedybear.cronjobs.scoring.random_forest import RFClassifier, RFRegressor
-from greedybear.cronjobs.scoring.utils import correlated_features, get_current_data, get_data_by_pks, get_features
+from greedybear.cronjobs.scoring.utils import (
+    correlated_features,
+    get_current_data,
+    get_data_by_pks,
+    get_features,
+)
 from greedybear.models import IOC
 from greedybear.settings import ML_MODEL_DIRECTORY
 
@@ -47,7 +52,10 @@ class TrainModels(Cronjob):
         try:
             if self.storage.exists(TRAINING_DATA_FILENAME):
                 self.storage.delete(TRAINING_DATA_FILENAME)
-            self.storage.save(TRAINING_DATA_FILENAME, ContentFile(json.dumps(self.current_data, default=str)))
+            self.storage.save(
+                TRAINING_DATA_FILENAME,
+                ContentFile(json.dumps(self.current_data, default=str)),
+            )
         except Exception as exc:
             self.log.error(f"error saving training data: {exc}")
             raise exc
@@ -110,7 +118,8 @@ class TrainModels(Cronjob):
             raise TrainingDataError()
 
         current_ips = defaultdict(
-            int, {ioc["value"]: ioc["interaction_count"] - training_ips.get(ioc["value"], 0) for ioc in self.current_data if ioc["last_seen"] > training_date}
+            int,
+            {ioc["value"]: ioc["interaction_count"] - training_ips.get(ioc["value"], 0) for ioc in self.current_data if ioc["last_seen"] > training_date},
         )
 
         self.log.info("extracting features from training data")
@@ -209,7 +218,7 @@ class UpdateScores(Cronjob):
             int: Number of objects updated
         """
         iocs = set(iocs)
-        primary_keys = set(ioc.pk for ioc in iocs)
+        primary_keys = {ioc.pk for ioc in iocs}
         data = get_data_by_pks(primary_keys)
         current_date = str(date.today())
         self.log.info("extracting features: score_only")

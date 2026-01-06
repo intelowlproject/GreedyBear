@@ -3,9 +3,10 @@ import re
 from functools import cache
 
 from django.core.exceptions import FieldDoesNotExist
+from rest_framework import serializers
+
 from greedybear.consts import REGEX_DOMAIN, REGEX_IP
 from greedybear.models import IOC, GeneralHoneypot
-from rest_framework import serializers
 
 logger = logging.getLogger(__name__)
 

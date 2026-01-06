@@ -12,13 +12,12 @@ runs:
   using: "composite"
   steps:
     - name: Initialize CodeQL
-      uses: github/codeql-action/init@v2
+      uses: github/codeql-action/init@v3
       with:
         languages: ${{ inputs.language }}
-        setup-python-dependencies: false
         source-root: ${{ inputs.working_directory }}
 
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v2
+      uses: github/codeql-action/analyze@v3
 
 

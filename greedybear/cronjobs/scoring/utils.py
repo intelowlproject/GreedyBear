@@ -3,9 +3,10 @@ from functools import cache
 
 import numpy as np
 import pandas as pd
-from api.views.utils import FeedRequestParams, feeds_response
 from django.contrib.postgres.aggregates import ArrayAgg
 from django.db.models import F, Q
+
+from api.views.utils import FeedRequestParams, feeds_response
 from greedybear.models import IOC
 
 
@@ -67,7 +68,7 @@ def get_features(iocs: list[dict], reference_day: str) -> pd.DataFrame:
     result = []
     for ioc in iocs:
         days_seen_count = len(ioc["days_seen"])
-        time_diffs = [date_delta(str(a), str(b)) for a, b in zip(ioc["days_seen"], ioc["days_seen"][1:])]
+        time_diffs = [date_delta(str(a), str(b)) for a, b in zip(ioc["days_seen"], ioc["days_seen"][1:], strict=False)]
         active_timespan = sum(time_diffs) + 1
         result.append(
             {
@@ -122,7 +123,7 @@ def multi_label_encode(df: pd.DataFrame, column_name: str) -> pd.DataFrame:
     for value_list in df[column_name]:
         unique_values.update(value_list)
     for value in sorted(unique_values):
-        result_df[f"has_{value}"] = df[column_name].apply(lambda x: 1 if value in x else 0)
+        result_df[f"has_{value}"] = df[column_name].apply(lambda x, value=value: 1 if value in x else 0)
     return result_df.drop(column_name, axis=1)
 
 

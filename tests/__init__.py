@@ -4,13 +4,20 @@ from unittest.mock import Mock
 
 from certego_saas.apps.user.models import User
 from django.test import TestCase
-from greedybear.models import IOC, CommandSequence, CowrieSession, GeneralHoneypot, iocType
+
+from greedybear.models import (
+    IOC,
+    CommandSequence,
+    CowrieSession,
+    GeneralHoneypot,
+    IocType,
+)
 
 
 class CustomTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
-        super(CustomTestCase, cls).setUpTestData()
+        super().setUpTestData()
 
         cls.heralding = GeneralHoneypot.objects.create(name="Heralding", active=True)
         cls.ciscoasa = GeneralHoneypot.objects.create(name="Ciscoasa", active=True)
@@ -19,7 +26,7 @@ class CustomTestCase(TestCase):
         cls.current_time = datetime.now()
         cls.ioc = IOC.objects.create(
             name="140.246.171.141",
-            type=iocType.IP.value,
+            type=IocType.IP.value,
             first_seen=cls.current_time,
             last_seen=cls.current_time,
             days_seen=[cls.current_time],
@@ -41,7 +48,7 @@ class CustomTestCase(TestCase):
 
         cls.ioc_2 = IOC.objects.create(
             name="99.99.99.99",
-            type=iocType.IP.value,
+            type=IocType.IP.value,
             first_seen=cls.current_time,
             last_seen=cls.current_time,
             days_seen=[cls.current_time],
@@ -63,7 +70,7 @@ class CustomTestCase(TestCase):
 
         cls.ioc_3 = IOC.objects.create(
             name="100.100.100.100",
-            type=iocType.IP.value,
+            type=IocType.IP.value,
             first_seen=cls.current_time,
             last_seen=cls.current_time,
             days_seen=[cls.current_time],
@@ -85,7 +92,7 @@ class CustomTestCase(TestCase):
 
         cls.ioc_domain = IOC.objects.create(
             name="malicious.example.com",
-            type=iocType.DOMAIN.value,
+            type=IocType.DOMAIN.value,
             first_seen=cls.current_time,
             last_seen=cls.current_time,
             days_seen=[cls.current_time],
@@ -171,7 +178,7 @@ class CustomTestCase(TestCase):
             cls.regular_user = User.objects.create_user(username="regular", email="regular@greedybear.com", password="regular")
 
     @classmethod
-    def tearDownClass(self):
+    def tearDownClass(cls):
         # db clean
         GeneralHoneypot.objects.all().delete()
         IOC.objects.all().delete()
@@ -191,11 +198,11 @@ class ExtractionTestCase(CustomTestCase):
         ioc_type="ip",
         attack_count=1,
         interaction_count=1,
-        related_urls=[],
-        destination_ports=[],
+        related_urls=None,
+        destination_ports=None,
         login_attempts=0,
-        days_seen=[],
-        last_seen=datetime.now(),
+        days_seen=None,
+        last_seen=None,
         ip_reputation="",
         asn=1234,
     ):
@@ -206,11 +213,11 @@ class ExtractionTestCase(CustomTestCase):
         mock.payload_request = False
         mock.attack_count = attack_count
         mock.interaction_count = interaction_count
-        mock.related_urls = related_urls
-        mock.destination_ports = destination_ports
-        mock.days_seen = days_seen
+        mock.related_urls = related_urls if related_urls is not None else []
+        mock.destination_ports = destination_ports if destination_ports is not None else []
+        mock.days_seen = days_seen if days_seen is not None else []
         mock.login_attempts = login_attempts
-        mock.last_seen = last_seen
+        mock.last_seen = last_seen if last_seen is not None else datetime.now()
         mock.ip_reputation = ip_reputation
         mock.asn = asn
         mock.number_of_days_seen = len(mock.days_seen)
