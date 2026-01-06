@@ -14,16 +14,10 @@ def disable_unwanted_honeypots(apps, schema_editor):
     ]
 
     for name in unwanted:
-        try:
-            hp = GeneralHoneypot.objects.get(name__iexact=name)
-            if hp.active:
-                hp.active = False
-                hp.save(update_fields=["active"])
-        except GeneralHoneypot.DoesNotExist:
-            GeneralHoneypot.objects.create(
-                name=name,
-                active=False,
-            )
+        GeneralHoneypot.objects.get_or_create(
+            name=name,
+            defaults={"active": False},
+        )
 
 
 class Migration(migrations.Migration):

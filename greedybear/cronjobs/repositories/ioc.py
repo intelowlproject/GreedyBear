@@ -17,8 +17,12 @@ class IocRepository:
     def __init__(self):
         """Initialize the repository and populate the honeypot cache from the database."""
         self.log = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
-        self._honeypot_cache = {hp.name: hp.active for hp in GeneralHoneypot.objects.all()}
-        self._honeypot_cache.update({name: True for name in self.SPECIAL_HONEYPOTS})
+        self._honeypot_cache = {self._normalize_name(hp.name): hp.active for hp in GeneralHoneypot.objects.all()}
+        self._honeypot_cache.update({self._normalize_name(name): True for name in self.SPECIAL_HONEYPOTS})
+
+    def _normalize_name(self, name: str) -> str:
+        """Normalize honeypot names for consistent cache and DB usage."""
+        return name.lower().strip()
 
     def add_honeypot_to_ioc(self, honeypot_name: str, ioc: IOC) -> IOC:
         """
@@ -48,10 +52,11 @@ class IocRepository:
         Returns:
             The newly created GeneralHoneypot instance.
         """
+        normalized = self._normalize_name(honeypot_name)
         self.log.debug(f"creating honeypot {honeypot_name}")
         honeypot = GeneralHoneypot(name=honeypot_name, active=True)
         honeypot.save()
-        self._honeypot_cache[honeypot_name] = True
+        self._honeypot_cache[normalized] = True
         return honeypot
 
     def get_active_honeypots(self) -> list[GeneralHoneypot]:
@@ -114,7 +119,8 @@ class IocRepository:
         Returns:
             True if the honeypot is enabled, False otherwise.
         """
-        return self._honeypot_cache.get(honeypot_name, False)
+        normalized = self._normalize_name(honeypot_name)
+        return self._honeypot_cache.get(normalized, False)
 
     def is_ready_for_extraction(self, honeypot_name: str) -> bool:
         """
@@ -127,8 +133,10 @@ class IocRepository:
         Returns:
             True if the honeypot exists and is enabled, False otherwise.
         """
-        normalized = honeypot_name.lower().strip()
-        return self._honeypot_cache.get(normalized, False)
+        normalized = self._normalize_name(honeypot_name)
+        if normalized not in self._honeypot_cache:
+            self.create_honeypot(honeypot_name)
+        return self.is_enabled(honeypot_name)
 
     def save(self, ioc: IOC) -> IOC:
         """

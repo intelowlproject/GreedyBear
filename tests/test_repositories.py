@@ -122,16 +122,14 @@ class TestIocRepository(CustomTestCase):
         self.assertIn(hp2, ioc.general_honeypot.all())
 
     def test_existing_honeypots(self):
-        self.assertIn("Cowrie", self.repo._honeypot_cache)
-        self.assertIn("Log4pot", self.repo._honeypot_cache)
-        self.assertIn("Heralding", self.repo._honeypot_cache)
-        self.assertIn("Ciscoasa", self.repo._honeypot_cache)
-        self.assertIn("Ddospot", self.repo._honeypot_cache)
+        expected_honeypots = ["Cowrie", "Log4pot", "Heralding", "Ciscoasa", "Ddospot"]
+        for hp_name in expected_honeypots:
+            self.assertIn(hp_name.lower(), self.repo._honeypot_cache)
 
     def test_is_ready_for_extraction_creates_and_enables(self):
-        self.repo._honeypot_cache["foopot"] = True
         result = self.repo.is_ready_for_extraction("FooPot")
         self.assertTrue(result)
+        self.assertTrue(GeneralHoneypot.objects.filter(name="FooPot").exists())
 
 
 class TestSensorRepository(CustomTestCase):
