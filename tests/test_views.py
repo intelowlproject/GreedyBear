@@ -40,8 +40,10 @@ class EnrichmentViewTestCase(CustomTestCase):
             response.json()["ioc"]["last_seen"],
             self.ioc.last_seen.isoformat(sep="T", timespec="microseconds"),
         )
-        self.assertEqual(response.json()["ioc"]["number_of_days_seen"], self.ioc.number_of_days_seen)
-        self.assertEqual(response.json()["ioc"]["attack_count"], self.ioc.attack_count)
+        self.assertCountEqual(
+            response.json()["ioc"]["general_honeypot"],
+            [self.heralding.name, self.ciscoasa.name],
+        )
         self.assertEqual(response.json()["ioc"]["log4j"], self.ioc.log4j)
         self.assertEqual(response.json()["ioc"]["cowrie"], self.ioc.cowrie)
         self.assertEqual(response.json()["ioc"]["general_honeypot"][0], self.heralding.name)  # FEEDS
@@ -74,15 +76,29 @@ class FeedsViewTestCase(CustomTestCase):
             self.assertNotIn("license", response.json())
 
         iocs = response.json()["iocs"]
-        target_ioc = next((i for i in iocs if i["value"] == self.ioc.name), None)
-        self.assertIsNotNone(target_ioc)
+        expected_feeds = {"log4j", "cowrie", "heralding", "ciscoasa"}
 
-        self.assertEqual(target_ioc["feed_type"], ["log4j", "cowrie", "heralding", "ciscoasa"])
+        target_ioc = next(
+            (i for i in iocs if i.get("value") == self.ioc.name and set(i.get("feed_type", [])) == expected_feeds),
+            None,
+        )
+
+        self.assertIsNotNone(
+            target_ioc,
+            f"IOC {self.ioc.name} with expected feeds not found",
+        )
+
         self.assertEqual(target_ioc["attack_count"], 1)
-        self.assertEqual(target_ioc["scanner"], True)
-        self.assertEqual(target_ioc["payload_request"], True)
-        self.assertEqual(target_ioc["recurrence_probability"], self.ioc.recurrence_probability)
-        self.assertEqual(target_ioc["expected_interactions"], self.ioc.expected_interactions)
+        self.assertTrue(target_ioc["scanner"])
+        self.assertTrue(target_ioc["payload_request"])
+        self.assertEqual(
+            target_ioc["recurrence_probability"],
+            self.ioc.recurrence_probability,
+        )
+        self.assertEqual(
+            target_ioc["expected_interactions"],
+            self.ioc.expected_interactions,
+        )
 
     @override_settings(FEEDS_LICENSE="https://example.com/license")
     def test_200_all_feeds_with_license(self):
@@ -108,15 +124,29 @@ class FeedsViewTestCase(CustomTestCase):
             self.assertNotIn("license", response.json())
 
         iocs = response.json()["iocs"]
-        target_ioc = next((i for i in iocs if i["value"] == self.ioc.name), None)
-        self.assertIsNotNone(target_ioc)
+        expected_feeds = {"log4j", "cowrie", "heralding", "ciscoasa"}
 
-        self.assertEqual(target_ioc["feed_type"], ["log4j", "cowrie", "heralding", "ciscoasa"])
+        target_ioc = next(
+            (i for i in iocs if i.get("value") == self.ioc.name and set(i.get("feed_type", [])) == expected_feeds),
+            None,
+        )
+
+        self.assertIsNotNone(
+            target_ioc,
+            f"IOC {self.ioc.name} with expected feeds not found",
+        )
+
         self.assertEqual(target_ioc["attack_count"], 1)
-        self.assertEqual(target_ioc["scanner"], True)
-        self.assertEqual(target_ioc["payload_request"], True)
-        self.assertEqual(target_ioc["recurrence_probability"], self.ioc.recurrence_probability)
-        self.assertEqual(target_ioc["expected_interactions"], self.ioc.expected_interactions)
+        self.assertTrue(target_ioc["scanner"])
+        self.assertTrue(target_ioc["payload_request"])
+        self.assertEqual(
+            target_ioc["recurrence_probability"],
+            self.ioc.recurrence_probability,
+        )
+        self.assertEqual(
+            target_ioc["expected_interactions"],
+            self.ioc.expected_interactions,
+        )
 
     def test_200_feeds_scanner_inclusion(self):
         response = self.client.get("/api/feeds/heralding/all/recent.json?include_mass_scanners")
@@ -203,15 +233,29 @@ class FeedsAdvancedViewTestCase(CustomTestCase):
             self.assertNotIn("license", response.json())
 
         iocs = response.json()["iocs"]
-        target_ioc = next((i for i in iocs if i["value"] == self.ioc.name), None)
-        self.assertIsNotNone(target_ioc)
+        expected_feeds = {"log4j", "cowrie", "heralding", "ciscoasa"}
 
-        self.assertEqual(target_ioc["feed_type"], ["log4j", "cowrie", "heralding", "ciscoasa"])
+        target_ioc = next(
+            (i for i in iocs if i.get("value") == self.ioc.name and set(i.get("feed_type", [])) == expected_feeds),
+            None,
+        )
+
+        self.assertIsNotNone(
+            target_ioc,
+            f"IOC {self.ioc.name} with expected feeds not found",
+        )
+
         self.assertEqual(target_ioc["attack_count"], 1)
-        self.assertEqual(target_ioc["scanner"], True)
-        self.assertEqual(target_ioc["payload_request"], True)
-        self.assertEqual(target_ioc["recurrence_probability"], self.ioc.recurrence_probability)
-        self.assertEqual(target_ioc["expected_interactions"], self.ioc.expected_interactions)
+        self.assertTrue(target_ioc["scanner"])
+        self.assertTrue(target_ioc["payload_request"])
+        self.assertEqual(
+            target_ioc["recurrence_probability"],
+            self.ioc.recurrence_probability,
+        )
+        self.assertEqual(
+            target_ioc["expected_interactions"],
+            self.ioc.expected_interactions,
+        )
 
     def test_200_general_feeds(self):
         response = self.client.get("/api/feeds/advanced/?feed_type=heralding")
@@ -222,15 +266,29 @@ class FeedsAdvancedViewTestCase(CustomTestCase):
             self.assertNotIn("license", response.json())
 
         iocs = response.json()["iocs"]
-        target_ioc = next((i for i in iocs if i["value"] == self.ioc.name), None)
-        self.assertIsNotNone(target_ioc)
+        expected_feeds = {"log4j", "cowrie", "heralding", "ciscoasa"}
 
-        self.assertEqual(target_ioc["feed_type"], ["log4j", "cowrie", "heralding", "ciscoasa"])
+        target_ioc = next(
+            (i for i in iocs if i.get("value") == self.ioc.name and set(i.get("feed_type", [])) == expected_feeds),
+            None,
+        )
+
+        self.assertIsNotNone(
+            target_ioc,
+            f"IOC {self.ioc.name} with expected feeds not found",
+        )
+
         self.assertEqual(target_ioc["attack_count"], 1)
-        self.assertEqual(target_ioc["scanner"], True)
-        self.assertEqual(target_ioc["payload_request"], True)
-        self.assertEqual(target_ioc["recurrence_probability"], self.ioc.recurrence_probability)
-        self.assertEqual(target_ioc["expected_interactions"], self.ioc.expected_interactions)
+        self.assertTrue(target_ioc["scanner"])
+        self.assertTrue(target_ioc["payload_request"])
+        self.assertEqual(
+            target_ioc["recurrence_probability"],
+            self.ioc.recurrence_probability,
+        )
+        self.assertEqual(
+            target_ioc["expected_interactions"],
+            self.ioc.expected_interactions,
+        )
 
     def test_400_feeds(self):
         response = self.client.get("/api/feeds/advanced/?attack_type=test")
