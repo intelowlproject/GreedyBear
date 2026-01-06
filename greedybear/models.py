@@ -21,6 +21,9 @@ class IocType(models.TextChoices):
 class Sensor(models.Model):
     address = models.CharField(max_length=15, blank=False)
 
+    def __str__(self):
+        return self.address
+
 
 class GeneralHoneypot(models.Model):
     name = models.CharField(max_length=15, blank=False)
@@ -39,6 +42,9 @@ class FireHolList(models.Model):
         indexes = [
             models.Index(fields=["ip_address"]),
         ]
+
+    def __str__(self):
+        return f"{self.ip_address} ({self.source or 'unknown'})"
 
 
 class IOC(models.Model):
@@ -114,6 +120,9 @@ class CowrieSession(models.Model):
             models.Index(fields=["source"]),
         ]
 
+    def __str__(self):
+        return f"Session {hex(self.session_id)[2:]} from {self.source.name}"
+
 
 class Statistics(models.Model):
     source = models.CharField(max_length=15, blank=False)
@@ -124,6 +133,9 @@ class Statistics(models.Model):
         default=ViewType.FEEDS_VIEW.value,
     )
     request_date = models.DateTimeField(blank=False, default=datetime.now)
+
+    def __str__(self):
+        return f"{self.source} - {self.view} ({self.request_date.strftime('%Y-%m-%d %H:%M')})"
 
 
 class MassScanner(models.Model):
@@ -136,6 +148,9 @@ class MassScanner(models.Model):
             models.Index(fields=["ip_address"]),
         ]
 
+    def __str__(self):
+        return f"{self.ip_address}{f' ({self.reason})' if self.reason else ''}"
+
 
 class WhatsMyIPDomain(models.Model):
     domain = models.CharField(max_length=256, blank=False)
@@ -145,3 +160,6 @@ class WhatsMyIPDomain(models.Model):
         indexes = [
             models.Index(fields=["domain"]),
         ]
+
+    def __str__(self):
+        return self.domain
