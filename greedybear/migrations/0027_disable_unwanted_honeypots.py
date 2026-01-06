@@ -23,7 +23,7 @@ def disable_unwanted_honeypots(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("greedybear", "0025_merge_20251223_2100"),
+        ("greedybear", "0026_fix_charfield_null_true"),
     ]
 
     operations = [
