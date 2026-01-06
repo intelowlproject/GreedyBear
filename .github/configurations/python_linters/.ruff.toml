@@ -56,12 +56,6 @@ ignore = [
     # C401/C408: Allow dict() and generator patterns (style preference)
     "C401",
     "C408",
-    # DJ001: Allow null=True on CharField (intentional for optional fields)
-    "DJ001",
-    # DJ008: Allow models without __str__ (legacy models, API-only)
-    "DJ008",
-    # DJ012: Allow existing Django model field ordering
-    "DJ012",
     # E501: Allow long lines in docstrings
     "E501",
 

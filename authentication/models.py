@@ -18,15 +18,10 @@ class DiscoverFromChoices(models.TextChoices):
 
 # models
 class UserProfile(models.Model):
-    # meta
-    class Meta:
-        verbose_name_plural = "User Profiles"
-
-    # contants
+    # constants
     DiscoverFromChoices = DiscoverFromChoices
 
     # fields
-
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
@@ -40,3 +35,10 @@ class UserProfile(models.Model):
         choices=DiscoverFromChoices.choices,
         default=DiscoverFromChoices.OTHER,
     )
+
+    # meta
+    class Meta:
+        verbose_name_plural = "User Profiles"
+
+    def __str__(self):
+        return f"{self.user.username} - {self.company_name}"
