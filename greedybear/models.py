@@ -36,7 +36,7 @@ class GeneralHoneypot(models.Model):
 class FireHolList(models.Model):
     ip_address = models.CharField(max_length=256, blank=False)
     added = models.DateTimeField(blank=False, default=datetime.now)
-    source = models.CharField(max_length=64, blank=True, null=True)
+    source = models.CharField(max_length=64, blank=True, default="")
 
     class Meta:
         indexes = [
@@ -141,7 +141,7 @@ class Statistics(models.Model):
 class MassScanner(models.Model):
     ip_address = models.CharField(max_length=256, blank=False)
     added = models.DateTimeField(blank=False, default=datetime.now)
-    reason = models.CharField(max_length=64, blank=True, null=True)
+    reason = models.CharField(max_length=64, blank=True, default="")
 
     class Meta:
         indexes = [

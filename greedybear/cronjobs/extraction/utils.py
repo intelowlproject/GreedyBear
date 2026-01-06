@@ -68,7 +68,8 @@ def get_firehol_categories(ip: str, extracted_ip) -> list[str]:
 
     # First check for exact IP match (for .ipset files)
     exact_matches = FireHolList.objects.filter(ip_address=ip).values_list("source", flat=True)
-    firehol_categories.extend(exact_matches)
+    # Filter out empty strings (from default='')
+    firehol_categories.extend([source for source in exact_matches if source])
 
     # Then check if IP is within any network ranges (for .netset files)
     # Only query entries that contain '/' (CIDR notation)
@@ -76,7 +77,8 @@ def get_firehol_categories(ip: str, extracted_ip) -> list[str]:
     for entry in network_entries:
         try:
             network_range = ip_network(entry.ip_address, strict=False)
-            if extracted_ip in network_range and entry.source not in firehol_categories:
+            # Check entry.source is not empty and not already in list
+            if extracted_ip in network_range and entry.source and entry.source not in firehol_categories:
                 firehol_categories.append(entry.source)
         except (ValueError, IndexError):
             # Not a valid network range, skip
