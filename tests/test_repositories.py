@@ -151,6 +151,11 @@ class TestIocRepository(CustomTestCase):
         self.assertTrue(result)
         self.assertEqual(GeneralHoneypot.objects.filter(name__iexact="cowrie").count(), 1)
 
+    def test_get_hp_by_name_insensitive(self):
+        GeneralHoneypot.objects.create(name="Cowrie", active=True)
+        result = self.repo.get_hp_by_name("cowrie")
+        self.assertIsNotNone(result)
+
     def test_disabled_honeypot_case_insensitive(self):
         GeneralHoneypot.objects.create(name="Heralding", active=False)
 
