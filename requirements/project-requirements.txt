@@ -6,7 +6,7 @@ elasticsearch8==8.19.3
 Django==5.2.9
 djangorestframework==3.16.1
 django-rest-email-auth==5.0.0
-django-ses==4.5.0
+django-ses==4.6.0
 
 psycopg2-binary==2.9.11
 
