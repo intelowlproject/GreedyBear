@@ -136,16 +136,43 @@ class TestIocRepository(CustomTestCase):
         self.assertIn(hp2, ioc.general_honeypot.all())
 
     def test_existing_honeypots(self):
-        self.assertIn("Cowrie", self.repo._honeypot_cache)
-        self.assertIn("Log4pot", self.repo._honeypot_cache)
-        self.assertIn("Heralding", self.repo._honeypot_cache)
-        self.assertIn("Ciscoasa", self.repo._honeypot_cache)
-        self.assertIn("Ddospot", self.repo._honeypot_cache)
+        expected_honeypots = ["Cowrie", "Log4pot", "Heralding", "Ciscoasa", "Ddospot"]
+        for hp_name in expected_honeypots:
+            self.assertIn(self.repo._normalize_name(hp_name), self.repo._honeypot_cache)
 
     def test_is_ready_for_extraction_creates_and_enables(self):
         result = self.repo.is_ready_for_extraction("FooPot")
         self.assertTrue(result)
         self.assertTrue(GeneralHoneypot.objects.filter(name="FooPot").exists())
+
+    def test_is_ready_for_extraction_case_insensitive(self):
+        GeneralHoneypot.objects.create(name="Cowrie", active=True)
+        result = self.repo.is_ready_for_extraction("cowrie")
+        self.assertTrue(result)
+        self.assertEqual(GeneralHoneypot.objects.filter(name__iexact="cowrie").count(), 1)
+
+    def test_get_hp_by_name_insensitive(self):
+        GeneralHoneypot.objects.create(name="Cowrie", active=True)
+        result = self.repo.get_hp_by_name("cowrie")
+        self.assertIsNotNone(result)
+
+    def test_disabled_honeypot_case_insensitive(self):
+        GeneralHoneypot.objects.create(name="Heralding", active=False)
+
+        # reiniting repo after DB change to refresh the cache
+        repo = IocRepository()
+        result = repo.is_ready_for_extraction("heralding")
+        self.assertFalse(result)
+
+    def test_special_and_normal_honeypots(self):
+        GeneralHoneypot.objects.create(name="NormalPot", active=False)
+
+        repo = IocRepository()
+
+        self.assertTrue(repo.is_ready_for_extraction("cowrie"))
+        self.assertTrue(repo.is_ready_for_extraction("Log4Pot"))
+        self.assertFalse(repo.is_ready_for_extraction("NormalPot"))
+        self.assertFalse(repo.is_ready_for_extraction("normalpot"))
 
 
 class TestSensorRepository(CustomTestCase):
