@@ -131,6 +131,24 @@ def iocs_from_hits(hits: list[dict]) -> list[IOC]:
     return iocs
 
 
+def is_valid_ipv4(candidate: str) -> tuple[bool, str | None]:
+    """
+    Validate if a string is a valid IPv4 address.
+
+    Args:
+        candidate: String to validate as IPv4 address.
+
+    Returns:
+        Tuple of (is_valid, cleaned_ip). If valid, cleaned_ip is the stripped
+        IP address; otherwise, it is None.
+    """
+    try:
+        IPv4Address(candidate.strip())
+        return True, candidate.strip()
+    except ValueError:
+        return False, None
+
+
 def get_ioc_type(ioc: str) -> str:
     """
     Determine the type of an IOC based on its format.
@@ -141,13 +159,8 @@ def get_ioc_type(ioc: str) -> str:
     Returns:
         IP if the value is a valid IPv4 address, DOMAIN otherwise.
     """
-    try:
-        IPv4Address(ioc)
-    except ValueError:
-        ioc_type = DOMAIN
-    else:
-        ioc_type = IP
-    return ioc_type
+    is_valid, _ = is_valid_ipv4(ioc)
+    return IP if is_valid else DOMAIN
 
 
 def threatfox_submission(ioc_record: IOC, related_urls: list, log: Logger) -> None:
