@@ -92,10 +92,7 @@ class IocRepository:
         Returns:
             The matching GeneralHoneypot, or None if not found.
         """
-        try:
-            return GeneralHoneypot.objects.get(name=name)
-        except GeneralHoneypot.DoesNotExist:
-            return None
+        return GeneralHoneypot.objects.filter(name__iexact=name).first()
 
     def is_empty(self) -> bool:
         """

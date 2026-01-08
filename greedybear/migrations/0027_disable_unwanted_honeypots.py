@@ -8,9 +8,9 @@ def disable_unwanted_honeypots(apps, schema_editor):
     GeneralHoneypot = apps.get_model("greedybear", "GeneralHoneypot")
 
     unwanted = [
-        "ddospot",
+        "Ddospot",
         "ssh-rsa",
-        "nginx",
+        "NGINX",
     ]
 
     for name in unwanted:
