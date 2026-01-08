@@ -12,7 +12,7 @@ class MassScannersCron(Cronjob):
         # Simple regex to extract potential IPv4 addresses
         ip_candidate_regex = re.compile(r"(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})")
         # Regex to extract optional comment/reason after '#'
-        comment_regex = re.compile(r"#\s*(.+)", re.DOTALL)
+        comment_regex = re.compile(r"#\s*(.+)")
 
         r = requests.get(
             "https://raw.githubusercontent.com/stamparm/maltrail/master/trails/static/mass_scanner.txt",
