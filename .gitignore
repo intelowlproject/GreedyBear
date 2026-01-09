@@ -10,3 +10,4 @@ mlmodels/
 # Ruff cache
 .ruff_cache/
 
+IntelOwl/
