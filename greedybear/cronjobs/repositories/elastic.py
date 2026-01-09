@@ -27,7 +27,7 @@ class ElasticRepository:
         """Initialize the repository with an Elasticsearch client and empty cache."""
         self.log = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
         self.elastic_client = settings.ELASTIC_CLIENT
-        self.search_cache = dict()
+        self.search_cache = {}
 
     def has_honeypot_been_hit(self, minutes_back_to_lookup: int, honeypot_name: str) -> bool:
         """

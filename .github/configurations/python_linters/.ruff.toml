@@ -53,9 +53,6 @@ select = [
 ignore = [
     # F403: Allow wildcard imports in __init__.py files
     "F403",
-    # C401/C408: Allow dict() and generator patterns (style preference)
-    "C401",
-    "C408",
     # E501: Allow long lines in docstrings
     "E501",
 ]
