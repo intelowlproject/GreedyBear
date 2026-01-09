@@ -376,7 +376,7 @@ class TestElasticRepository(CustomTestCase):
 
     def test_healthcheck_raises_when_ping_fails(self):
         self.mock_client.ping.return_value = False
-        with self.assertRaises(ElasticRepository.ElasticServerDownException) as ctx:
+        with self.assertRaises(ElasticRepository.ElasticServerDownError) as ctx:
             self.repo._healthcheck()
         self.assertIn("not reachable", str(ctx.exception))
 

@@ -58,14 +58,4 @@ ignore = [
     "C408",
     # E501: Allow long lines in docstrings
     "E501",
-
-    # N804: Allow 'self' in class methods for Django test compatibility
-    "N804",
-
-    # N818: Allow existing exception naming
-    "N818",
-    # UP008: Allow explicit super() in tests for clarity
-    "UP008",
-    # UP031: Allow old-style % formatting in tests
-    "UP031",
 ]
