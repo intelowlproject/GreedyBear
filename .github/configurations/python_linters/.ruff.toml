@@ -53,19 +53,6 @@ select = [
 ignore = [
     # F403: Allow wildcard imports in __init__.py files
     "F403",
-    # C401/C408: Allow dict() and generator patterns (style preference)
-    "C401",
-    "C408",
     # E501: Allow long lines in docstrings
     "E501",
-
-    # N804: Allow 'self' in class methods for Django test compatibility
-    "N804",
-
-    # N818: Allow existing exception naming
-    "N818",
-    # UP008: Allow explicit super() in tests for clarity
-    "UP008",
-    # UP031: Allow old-style % formatting in tests
-    "UP031",
 ]

@@ -18,7 +18,7 @@ class ElasticRepository:
     This class is intended for individual extraction runs, so the cache never clears.
     """
 
-    class ElasticServerDownException(Exception):
+    class ElasticServerDownError(Exception):
         """Raised when the Elasticsearch server is unreachable."""
 
         pass
@@ -27,7 +27,7 @@ class ElasticRepository:
         """Initialize the repository with an Elasticsearch client and empty cache."""
         self.log = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
         self.elastic_client = settings.ELASTIC_CLIENT
-        self.search_cache = dict()
+        self.search_cache = {}
 
     def has_honeypot_been_hit(self, minutes_back_to_lookup: int, honeypot_name: str) -> bool:
         """
@@ -62,7 +62,7 @@ class ElasticRepository:
             list: Log entries sorted by @timestamp, containing only REQUIRED_FIELDS.
 
         Raises:
-            ElasticServerDownException: If Elasticsearch is unreachable.
+            ElasticServerDownError: If Elasticsearch is unreachable.
         """
         if minutes_back_to_lookup in self.search_cache:
             self.log.debug("fetching elastic search result from cache")
@@ -120,11 +120,11 @@ class ElasticRepository:
         Verify Elasticsearch connectivity.
 
         Raises:
-            ElasticServerDownException: If the server does not respond to ping.
+            ElasticServerDownError: If the server does not respond to ping.
         """
         self.log.debug("performing healthcheck")
         if not self.elastic_client.ping():
-            raise self.ElasticServerDownException("elastic server is not reachable, could be down")
+            raise self.ElasticServerDownError("elastic server is not reachable, could be down")
         self.log.debug("elastic server is reachable")
 
 
