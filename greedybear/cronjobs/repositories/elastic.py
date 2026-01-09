@@ -2,7 +2,7 @@ import logging
 from datetime import datetime, timedelta
 
 from django.conf import settings
-from elasticsearch8.dsl import Q, Search
+from elasticsearch.dsl import Q, Search
 
 from greedybear.consts import REQUIRED_FIELDS
 from greedybear.settings import EXTRACTION_INTERVAL, LEGACY_EXTRACTION
