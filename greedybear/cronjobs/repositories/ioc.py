@@ -1,5 +1,7 @@
 import logging
 
+from django.db import IntegrityError
+
 from greedybear.models import IOC, GeneralHoneypot
 
 
@@ -52,10 +54,21 @@ class IocRepository:
             The newly created GeneralHoneypot instance.
         """
         normalized = self._normalize_name(honeypot_name)
-        self.log.debug(f"creating honeypot {honeypot_name}")
-        honeypot = GeneralHoneypot(name=honeypot_name, active=True)
-        honeypot.save()
-        self._honeypot_cache[normalized] = True
+
+        existing = self.get_hp_by_name(honeypot_name)
+        if existing:
+            self._honeypot_cache[normalized] = existing.active
+            return existing
+
+        try:
+            honeypot = GeneralHoneypot(name=honeypot_name, active=True)
+            honeypot.save()
+        except IntegrityError:
+            honeypot = self.get_hp_by_name(honeypot_name)
+            if honeypot is None:
+                raise
+
+        self._honeypot_cache[normalized] = honeypot.active
         return honeypot
 
     def get_active_honeypots(self) -> list[GeneralHoneypot]:

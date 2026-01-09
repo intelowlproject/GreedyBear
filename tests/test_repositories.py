@@ -157,6 +157,7 @@ class TestIocRepository(CustomTestCase):
         self.assertIsNotNone(result)
 
     def test_disabled_honeypot_case_insensitive(self):
+        GeneralHoneypot.objects.all().delete()
         GeneralHoneypot.objects.create(name="Heralding", active=False)
 
         # reiniting repo after DB change to refresh the cache
@@ -173,6 +174,31 @@ class TestIocRepository(CustomTestCase):
         self.assertTrue(repo.is_ready_for_extraction("Log4Pot"))
         self.assertFalse(repo.is_ready_for_extraction("NormalPot"))
         self.assertFalse(repo.is_ready_for_extraction("normalpot"))
+
+    def test_create_honeypot_case_insensitive_uniqueness(self):
+        GeneralHoneypot.objects.all().delete()
+        hp1 = self.repo.create_honeypot("TestPot")
+        self.assertEqual(hp1.name, "TestPot")
+        self.assertTrue("testpot" in self.repo._honeypot_cache)
+
+        hp2 = self.repo.create_honeypot("testpot")
+        self.assertEqual(hp2, hp1)
+        self.assertEqual(GeneralHoneypot.objects.count(), 1)
+
+    def test_create_honeypot_integrity_error_handling(self):
+        GeneralHoneypot.objects.create(name="Log4Pot", active=True)
+        repo = IocRepository()
+
+        with self.assertNoLogs("greedybear.cronjobs.repositories.ioc", level="WARNING"):
+            hp = repo.create_honeypot("log4pot")
+            self.assertEqual(hp.name, "Log4Pot")
+
+    def test_create_new_honeypot_creates_and_updates_cache(self):
+        self.repo._honeypot_cache.clear()
+        hp = self.repo.create_honeypot("NewPot")
+        self.assertEqual(hp.name, "NewPot")
+        self.assertTrue("newpot" in self.repo._honeypot_cache)
+        self.assertTrue(hp.active)
 
 
 class TestSensorRepository(CustomTestCase):
