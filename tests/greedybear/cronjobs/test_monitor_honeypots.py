@@ -1,15 +1,10 @@
 from unittest.mock import MagicMock, patch
 
-from django.test import TestCase
 from greedybear.cronjobs.monitor_honeypots import MonitorHoneypots
-from greedybear.models import GeneralHoneypot
+from tests import CustomTestCase
 
 
-class MonitorHoneypotsTestCase(TestCase):
-    def setUp(self):
-        """Creating two honeypots in the database for testing."""
-        self.honeypot1 = GeneralHoneypot.objects.create(name="Log4pot", active=True)
-        self.honeypot2 = GeneralHoneypot.objects.create(name="Cowrie", active=True)
+class MonitorHoneypotsTestCase(CustomTestCase):
 
     @patch("greedybear.cronjobs.monitor_honeypots.ElasticRepository")
     def test_run_all_active_honeypots_are_hit(self, mock_elastic_repo_class):
