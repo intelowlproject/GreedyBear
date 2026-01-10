@@ -146,3 +146,87 @@ class IocRepository:
         """
         ioc.save()
         return ioc
+
+    def get_scanners_for_scoring(self, score_fields: list[str]) -> list[IOC]:
+        """
+        Get all scanners associated with active honeypots for scoring.
+
+        Retrieves IOCs that are marked as scanners and are associated with either
+        Cowrie, Log4j, or active general honeypots. Returns only the name field
+        and specified score fields for efficiency.
+
+        Args:
+            score_fields: List of score field names to retrieve (e.g., ['recurrence_probability']).
+
+        Returns:
+            QuerySet of IOC objects with only name and score fields loaded.
+        """
+        from django.db.models import Q
+
+        return IOC.objects.filter(Q(cowrie=True) | Q(log4j=True) | Q(general_honeypot__active=True)).filter(scanner=True).distinct().only("name", *score_fields)
+
+    def get_scanners_by_pks(self, primary_keys: set[int]):
+        """
+        Retrieve scanners by their primary keys with related honeypot data.
+
+        Args:
+            primary_keys: Set of IOC primary keys to retrieve.
+
+        Returns:
+            QuerySet of IOC objects with prefetched general_honeypot relationships
+            and annotated with value and honeypots fields.
+        """
+        from django.contrib.postgres.aggregates import ArrayAgg
+        from django.db.models import F
+
+        return (
+            IOC.objects.filter(pk__in=primary_keys)
+            .prefetch_related("general_honeypot")
+            .annotate(value=F("name"))
+            .annotate(honeypots=ArrayAgg("general_honeypot__name"))
+            .values()
+        )
+
+    def get_recent_scanners(self, cutoff_date, days_lookback: int = 30):
+        """
+        Get scanners seen after a specific cutoff date.
+
+        Retrieves IOCs that are marked as scanners, associated with active honeypots,
+        and have been seen after the specified cutoff date.
+
+        Args:
+            cutoff_date: DateTime threshold - only IOCs seen after this will be returned.
+            days_lookback: Number of days to look back (used for logging, not query).
+
+        Returns:
+            QuerySet of IOC objects with prefetched relationships and annotations.
+        """
+        from django.contrib.postgres.aggregates import ArrayAgg
+        from django.db.models import F, Q
+
+        return (
+            IOC.objects.filter(Q(cowrie=True) | Q(log4j=True) | Q(general_honeypot__active=True))
+            .filter(last_seen__gte=cutoff_date, scanner=True)
+            .prefetch_related("general_honeypot")
+            .annotate(value=F("name"))
+            .annotate(honeypots=ArrayAgg("general_honeypot__name"))
+            .values()
+        )
+
+    def bulk_update_scores(self, iocs: list[IOC], score_fields: list[str], batch_size: int = 1000) -> int:
+        """
+        Bulk update IOC score fields in the database.
+
+        Args:
+            iocs: List of IOC objects with updated score values.
+            score_fields: List of field names to update (e.g., ['recurrence_probability']).
+            batch_size: Number of objects to update per database query.
+
+        Returns:
+            Number of objects updated (Note: Django's bulk_update returns None,
+            so we return the count of iocs provided).
+        """
+        if not iocs:
+            return 0
+        IOC.objects.bulk_update(iocs, score_fields, batch_size=batch_size)
+        return len(iocs)
