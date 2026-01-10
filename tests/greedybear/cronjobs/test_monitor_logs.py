@@ -36,17 +36,12 @@ class MonitorLogsTestCase(TestCase):
         old_time = (datetime.now() - timedelta(hours=2)).timestamp()
 
         # Side effect for multiple calls
-        def stat_side_effect():
-            mock_stat_result = MagicMock()
-            if stat_side_effect.call_count == 0:
-                mock_stat_result.st_mtime = recent_time
-            else:
-                mock_stat_result.st_mtime = old_time
-            stat_side_effect.call_count += 1
-            return mock_stat_result
-
-        stat_side_effect.call_count = 0
-        mock_stat.side_effect = stat_side_effect
+        mock_stat.side_effect = [
+            MagicMock(spec=["st_mtime"], st_mtime=recent_time),
+            MagicMock(spec=["st_mtime"], st_mtime=old_time),
+            MagicMock(spec=["st_mtime"], st_mtime=old_time),
+            MagicMock(spec=["st_mtime"], st_mtime=old_time),
+        ]
 
         # Run the cronjob
         cronjob = MonitorLogs()
