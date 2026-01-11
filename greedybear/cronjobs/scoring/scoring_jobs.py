@@ -5,9 +5,9 @@ from datetime import date
 import pandas as pd
 from django.core.files.base import ContentFile
 from django.core.files.storage import FileSystemStorage
-from django.db.models import Q
 
 from greedybear.cronjobs.base import Cronjob
+from greedybear.cronjobs.repositories import IocRepository
 from greedybear.cronjobs.scoring.random_forest import RFClassifier, RFRegressor
 from greedybear.cronjobs.scoring.utils import (
     correlated_features,
@@ -149,9 +149,10 @@ class UpdateScores(Cronjob):
     Designed to run as a scheduled cronjob.
     """
 
-    def __init__(self):
+    def __init__(self, ioc_repo=None):
         super().__init__()
         self.data = None
+        self.ioc_repo = ioc_repo if ioc_repo is not None else IocRepository()
 
     def update_db(self, df: pd.DataFrame, iocs: set[IOC] = None) -> int:
         """
@@ -173,15 +174,11 @@ class UpdateScores(Cronjob):
             int: The number of objects updated in the database.
         """
         self.log.info("begin updating scores")
-        reset_old_scores = False
+        reset_old_scores = iocs is None
         score_names = [s.score_name for s in SCORERS]
         scores_by_ip = df.set_index("value")[score_names].to_dict("index")
-        # If no IoCs were passed as an argument, fetch all IoCs
-        if iocs is None:
-            iocs = (
-                IOC.objects.filter(Q(cowrie=True) | Q(log4j=True) | Q(general_honeypot__active=True)).filter(scanner=True).distinct().only("name", *score_names)
-            )
-            reset_old_scores = True
+        # If no IoCs were passed as an argument, fetch all IoCs via repository
+        iocs = self.ioc_repo.get_scanners_for_scoring(score_names) if iocs is None else iocs
         iocs_to_update = []
 
         self.log.info(f"checking {len(iocs)} IoCs")
@@ -203,7 +200,7 @@ class UpdateScores(Cronjob):
             if updated:
                 iocs_to_update.append(ioc)
         self.log.info(f"writing updated scores for {len(iocs_to_update)} IoCs to DB")
-        result = IOC.objects.bulk_update(iocs_to_update, score_names, batch_size=1000) if iocs_to_update else 0
+        result = self.ioc_repo.bulk_update_scores(iocs_to_update, score_names)
         self.log.info(f"{result} IoCs were updated")
         return result
 

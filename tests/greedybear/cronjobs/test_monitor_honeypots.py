@@ -5,7 +5,6 @@ from tests import CustomTestCase
 
 
 class MonitorHoneypotsTestCase(CustomTestCase):
-
     @patch("greedybear.cronjobs.monitor_honeypots.ElasticRepository")
     def test_run_all_active_honeypots_are_hit(self, mock_elastic_repo_class):
         # Setup mock responses

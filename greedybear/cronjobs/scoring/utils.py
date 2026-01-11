@@ -3,11 +3,9 @@ from functools import cache
 
 import numpy as np
 import pandas as pd
-from django.contrib.postgres.aggregates import ArrayAgg
-from django.db.models import F, Q
 
 from api.views.utils import FeedRequestParams, feeds_response
-from greedybear.models import IOC
+from greedybear.cronjobs.repositories import IocRepository
 
 
 @cache
@@ -147,28 +145,24 @@ def serialize_iocs(iocs: list[dict]) -> list[dict]:
     )["iocs"]
 
 
-def get_data_by_pks(primary_keys: set) -> list[dict]:
+def get_data_by_pks(primary_keys: set, ioc_repo=None) -> list[dict]:
     """
     Retrieve and serialize IOC data for a collection of primary keys.
 
     Args:
         primary_keys: A set of IOC primary keys to retrieve from the database.
+        ioc_repo: Optional IocRepository instance. If None, creates a new one.
 
     Returns:
         list: Serialized IOC data including associated honeypot names.
               Processed through feeds_response API method.
     """
-    iocs = (
-        IOC.objects.filter(pk__in=primary_keys)
-        .prefetch_related("general_honeypot")
-        .annotate(value=F("name"))
-        .annotate(honeypots=ArrayAgg("general_honeypot__name"))
-        .values()
-    )
+    ioc_repo = ioc_repo if ioc_repo is not None else IocRepository()
+    iocs = ioc_repo.get_scanners_by_pks(primary_keys)
     return serialize_iocs(iocs)
 
 
-def get_current_data(days_lookback: int = 30) -> list[dict]:
+def get_current_data(days_lookback: int = 30, ioc_repo=None) -> list[dict]:
     """
     Get current IOC data for scanners seen in the last N days.
 
@@ -180,22 +174,13 @@ def get_current_data(days_lookback: int = 30) -> list[dict]:
     Args:
         days_lookback: Number of days to look back for last_seen timestamp.
             Defaults to 30 days.
+        ioc_repo: Optional IocRepository instance. If None, creates a new one.
 
     Returns:
         list: Serialized IOC data including associated honeypot names.
               Processed through feeds_response API method.
     """
+    ioc_repo = ioc_repo if ioc_repo is not None else IocRepository()
     cutoff_date = datetime.now() - timedelta(days=days_lookback)
-    query_dict = {
-        "last_seen__gte": cutoff_date,
-        "scanner": True,
-    }
-    iocs = (
-        IOC.objects.filter(Q(cowrie=True) | Q(log4j=True) | Q(general_honeypot__active=True))
-        .filter(**query_dict)
-        .prefetch_related("general_honeypot")
-        .annotate(value=F("name"))
-        .annotate(honeypots=ArrayAgg("general_honeypot__name"))
-        .values()
-    )
+    iocs = ioc_repo.get_recent_scanners(cutoff_date, days_lookback)
     return serialize_iocs(iocs)
