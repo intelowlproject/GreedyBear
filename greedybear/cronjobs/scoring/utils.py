@@ -5,6 +5,7 @@ import numpy as np
 import pandas as pd
 
 from api.views.utils import FeedRequestParams, feeds_response
+from greedybear.cronjobs.repositories import IocRepository
 
 
 @cache
@@ -156,11 +157,7 @@ def get_data_by_pks(primary_keys: set, ioc_repo=None) -> list[dict]:
         list: Serialized IOC data including associated honeypot names.
               Processed through feeds_response API method.
     """
-    if ioc_repo is None:
-        from greedybear.cronjobs.repositories import IocRepository
-
-        ioc_repo = IocRepository()
-
+    ioc_repo = ioc_repo if ioc_repo is not None else IocRepository()
     iocs = ioc_repo.get_scanners_by_pks(primary_keys)
     return serialize_iocs(iocs)
 
@@ -183,11 +180,7 @@ def get_current_data(days_lookback: int = 30, ioc_repo=None) -> list[dict]:
         list: Serialized IOC data including associated honeypot names.
               Processed through feeds_response API method.
     """
-    if ioc_repo is None:
-        from greedybear.cronjobs.repositories import IocRepository
-
-        ioc_repo = IocRepository()
-
+    ioc_repo = ioc_repo if ioc_repo is not None else IocRepository()
     cutoff_date = datetime.now() - timedelta(days=days_lookback)
     iocs = ioc_repo.get_recent_scanners(cutoff_date, days_lookback)
     return serialize_iocs(iocs)

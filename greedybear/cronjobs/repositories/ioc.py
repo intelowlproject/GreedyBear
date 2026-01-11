@@ -1,5 +1,8 @@
 import logging
 
+from django.contrib.postgres.aggregates import ArrayAgg
+from django.db.models import F, Q
+
 from greedybear.models import IOC, GeneralHoneypot
 
 
@@ -161,8 +164,6 @@ class IocRepository:
         Returns:
             QuerySet of IOC objects with only name and score fields loaded.
         """
-        from django.db.models import Q
-
         return IOC.objects.filter(Q(cowrie=True) | Q(log4j=True) | Q(general_honeypot__active=True)).filter(scanner=True).distinct().only("name", *score_fields)
 
     def get_scanners_by_pks(self, primary_keys: set[int]):
@@ -176,9 +177,6 @@ class IocRepository:
             QuerySet of IOC objects with prefetched general_honeypot relationships
             and annotated with value and honeypots fields.
         """
-        from django.contrib.postgres.aggregates import ArrayAgg
-        from django.db.models import F
-
         return (
             IOC.objects.filter(pk__in=primary_keys)
             .prefetch_related("general_honeypot")
@@ -201,9 +199,6 @@ class IocRepository:
         Returns:
             QuerySet of IOC objects with prefetched relationships and annotations.
         """
-        from django.contrib.postgres.aggregates import ArrayAgg
-        from django.db.models import F, Q
-
         return (
             IOC.objects.filter(Q(cowrie=True) | Q(log4j=True) | Q(general_honeypot__active=True))
             .filter(last_seen__gte=cutoff_date, scanner=True)

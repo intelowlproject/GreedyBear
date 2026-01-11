@@ -149,14 +149,12 @@ class UpdateScores(Cronjob):
     """
 
     def __init__(self, ioc_repo=None):
+        from greedybear.cronjobs.repositories import IocRepository
+
         super().__init__()
         self.data = None
         # Use dependency injection, fall back to creating repository if not provided
-        if ioc_repo is None:
-            from greedybear.cronjobs.repositories import IocRepository
-
-            ioc_repo = IocRepository()
-        self.ioc_repo = ioc_repo
+        self.ioc_repo = ioc_repo if ioc_repo is not None else IocRepository()
 
     def update_db(self, df: pd.DataFrame, iocs: set[IOC] = None) -> int:
         """
@@ -178,13 +176,11 @@ class UpdateScores(Cronjob):
             int: The number of objects updated in the database.
         """
         self.log.info("begin updating scores")
-        reset_old_scores = False
+        reset_old_scores = iocs is None
         score_names = [s.score_name for s in SCORERS]
         scores_by_ip = df.set_index("value")[score_names].to_dict("index")
         # If no IoCs were passed as an argument, fetch all IoCs via repository
-        if iocs is None:
-            iocs = self.ioc_repo.get_scanners_for_scoring(score_names)
-            reset_old_scores = True
+        iocs = self.ioc_repo.get_scanners_for_scoring(score_names) if iocs is None else iocs
         iocs_to_update = []
 
         self.log.info(f"checking {len(iocs)} IoCs")

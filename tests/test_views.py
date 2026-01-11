@@ -329,11 +329,12 @@ class GeneralHoneypotViewTestCase(CustomTestCase):
     def test_200_active_general_honeypots(self):
         response = self.client.get("/api/general_honeypot?onlyActive=true")
         self.assertEqual(response.status_code, 200)
-        # Should only return active honeypots (check response is not empty and is a list)
-        self.assertIsInstance(response.json(), list)
-        # All should be strings (honeypot names)
-        for honeypot in response.json():
-            self.assertIsInstance(honeypot, str)
+        result = response.json()
+        # Should include active honeypots from CustomTestCase
+        self.assertIn("Heralding", result)
+        self.assertIn("Ciscoasa", result)
+        # Should NOT include inactive honeypot
+        self.assertNotIn("Ddospot", result)
 
 
 class CommandSequenceViewTestCase(CustomTestCase):
