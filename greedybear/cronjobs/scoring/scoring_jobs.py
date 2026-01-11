@@ -7,6 +7,7 @@ from django.core.files.base import ContentFile
 from django.core.files.storage import FileSystemStorage
 
 from greedybear.cronjobs.base import Cronjob
+from greedybear.cronjobs.repositories import IocRepository
 from greedybear.cronjobs.scoring.random_forest import RFClassifier, RFRegressor
 from greedybear.cronjobs.scoring.utils import (
     correlated_features,
@@ -149,11 +150,8 @@ class UpdateScores(Cronjob):
     """
 
     def __init__(self, ioc_repo=None):
-        from greedybear.cronjobs.repositories import IocRepository
-
         super().__init__()
         self.data = None
-        # Use dependency injection, fall back to creating repository if not provided
         self.ioc_repo = ioc_repo if ioc_repo is not None else IocRepository()
 
     def update_db(self, df: pd.DataFrame, iocs: set[IOC] = None) -> int:
