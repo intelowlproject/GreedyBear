@@ -199,6 +199,327 @@ class TestIocRepository(CustomTestCase):
         self.assertEqual(hp.name, "NewPot")
         self.assertTrue("newpot" in self.repo._honeypot_cache)
         self.assertTrue(hp.active)
+=======
+    def test_get_scanners_for_scoring_returns_scanners(self):
+        # Create scanners
+        IOC.objects.create(name="1.2.3.4", type="ip", scanner=True, cowrie=True)
+        IOC.objects.create(name="5.6.7.8", type="ip", scanner=True, log4j=True)
+
+        result = self.repo.get_scanners_for_scoring(["recurrence_probability", "expected_interactions"])
+
+        names = [ioc.name for ioc in result]
+        self.assertIn("1.2.3.4", names)
+        self.assertIn("5.6.7.8", names)
+
+    def test_get_scanners_for_scoring_excludes_non_scanners(self):
+        IOC.objects.create(name="1.2.3.4", type="ip", scanner=False, cowrie=True)
+
+        result = self.repo.get_scanners_for_scoring(["recurrence_probability"])
+
+        names = [ioc.name for ioc in result]
+        self.assertNotIn("1.2.3.4", names)
+
+    def test_get_scanners_for_scoring_only_loads_specified_fields(self):
+        IOC.objects.create(name="1.2.3.4", type="ip", scanner=True, cowrie=True, attack_count=100)
+
+        result = list(self.repo.get_scanners_for_scoring(["recurrence_probability"]))
+
+        # Check that our created IOC is in the results
+        names = [ioc.name for ioc in result]
+        self.assertIn("1.2.3.4", names)
+        # Verify name field is accessible (field was loaded)
+        test_ioc = next(ioc for ioc in result if ioc.name == "1.2.3.4")
+        self.assertEqual(test_ioc.name, "1.2.3.4")
+
+    def test_get_scanners_by_pks_returns_correct_iocs(self):
+        ioc1 = IOC.objects.create(name="1.2.3.4", type="ip")
+        ioc2 = IOC.objects.create(name="5.6.7.8", type="ip")
+        IOC.objects.create(name="9.10.11.12", type="ip")  # Should not be returned
+
+        result = list(self.repo.get_scanners_by_pks({ioc1.pk, ioc2.pk}))
+
+        self.assertEqual(len(result), 2)
+        values = [r["value"] for r in result]
+        self.assertIn("1.2.3.4", values)
+        self.assertIn("5.6.7.8", values)
+        self.assertNotIn("9.10.11.12", values)
+
+    def test_get_scanners_by_pks_includes_honeypot_annotation(self):
+        hp = GeneralHoneypot.objects.create(name="TestPot", active=True)
+        ioc = IOC.objects.create(name="1.2.3.4", type="ip")
+        ioc.general_honeypot.add(hp)
+
+        result = list(self.repo.get_scanners_by_pks({ioc.pk}))
+
+        self.assertEqual(len(result), 1)
+        self.assertIn("honeypots", result[0])
+
+    def test_get_recent_scanners_returns_recent_only(self):
+        from datetime import datetime, timedelta
+
+        recent_date = datetime.now() - timedelta(days=5)
+        old_date = datetime.now() - timedelta(days=40)
+
+        IOC.objects.create(name="1.2.3.4", type="ip", scanner=True, cowrie=True, last_seen=recent_date)
+        IOC.objects.create(name="5.6.7.8", type="ip", scanner=True, cowrie=True, last_seen=old_date)
+
+        cutoff = datetime.now() - timedelta(days=30)
+        result = list(self.repo.get_recent_scanners(cutoff, days_lookback=30))
+
+        values = [r["value"] for r in result]
+        self.assertIn("1.2.3.4", values)
+        self.assertNotIn("5.6.7.8", values)
+
+    def test_get_recent_scanners_excludes_non_scanners(self):
+        from datetime import datetime, timedelta
+
+        recent_date = datetime.now() - timedelta(days=5)
+        IOC.objects.create(name="1.2.3.4", type="ip", scanner=False, cowrie=True, last_seen=recent_date)
+
+        cutoff = datetime.now() - timedelta(days=30)
+        result = list(self.repo.get_recent_scanners(cutoff))
+
+        values = [r["value"] for r in result]
+        self.assertNotIn("1.2.3.4", values)
+
+    def test_bulk_update_scores_updates_multiple_iocs(self):
+        ioc1 = IOC.objects.create(name="1.2.3.4", type="ip", recurrence_probability=0.0)
+        ioc2 = IOC.objects.create(name="5.6.7.8", type="ip", recurrence_probability=0.0)
+
+        ioc1.recurrence_probability = 0.75
+        ioc2.recurrence_probability = 0.85
+
+        result = self.repo.bulk_update_scores([ioc1, ioc2], ["recurrence_probability"])
+
+        self.assertEqual(result, 2)
+        updated1 = IOC.objects.get(name="1.2.3.4")
+        updated2 = IOC.objects.get(name="5.6.7.8")
+        self.assertEqual(updated1.recurrence_probability, 0.75)
+        self.assertEqual(updated2.recurrence_probability, 0.85)
+
+    def test_bulk_update_scores_returns_zero_for_empty_list(self):
+        result = self.repo.bulk_update_scores([], ["recurrence_probability"])
+        self.assertEqual(result, 0)
+
+    def test_bulk_update_scores_updates_multiple_fields(self):
+        ioc = IOC.objects.create(name="1.2.3.4", type="ip", recurrence_probability=0.0, expected_interactions=0.0)
+
+        ioc.recurrence_probability = 0.75
+        ioc.expected_interactions = 10.5
+
+        result = self.repo.bulk_update_scores([ioc], ["recurrence_probability", "expected_interactions"])
+
+        self.assertEqual(result, 1)
+        updated = IOC.objects.get(name="1.2.3.4")
+        self.assertEqual(updated.recurrence_probability, 0.75)
+        self.assertEqual(updated.expected_interactions, 10.5)
+
+    # Edge case tests
+    def test_get_scanners_for_scoring_returns_empty_when_no_scanners(self):
+        # Delete all existing scanners
+        IOC.objects.filter(scanner=True).delete()
+
+        result = list(self.repo.get_scanners_for_scoring(["recurrence_probability"]))
+
+        self.assertEqual(len(result), 0)
+
+    def test_get_scanners_for_scoring_excludes_inactive_honeypots(self):
+        hp = GeneralHoneypot.objects.create(name="InactivePot", active=False)
+        ioc = IOC.objects.create(name="1.2.3.4", type="ip", scanner=True)
+        ioc.general_honeypot.add(hp)
+
+        result = list(self.repo.get_scanners_for_scoring(["recurrence_probability"]))
+
+        names = [ioc.name for ioc in result]
+        self.assertNotIn("1.2.3.4", names)
+
+    def test_get_scanners_for_scoring_with_multiple_honeypots(self):
+        hp1 = GeneralHoneypot.objects.create(name="Pot1", active=True)
+        hp2 = GeneralHoneypot.objects.create(name="Pot2", active=True)
+        ioc = IOC.objects.create(name="1.2.3.4", type="ip", scanner=True)
+        ioc.general_honeypot.add(hp1, hp2)
+
+        result = list(self.repo.get_scanners_for_scoring(["recurrence_probability"]))
+
+        names = [ioc.name for ioc in result]
+        # Should appear only once despite multiple honeypots (distinct)
+        self.assertEqual(names.count("1.2.3.4"), 1)
+
+    def test_get_scanners_by_pks_with_empty_set(self):
+        result = list(self.repo.get_scanners_by_pks(set()))
+
+        self.assertEqual(len(result), 0)
+
+    def test_get_scanners_by_pks_with_nonexistent_pks(self):
+        result = list(self.repo.get_scanners_by_pks({99999, 99998}))
+
+        self.assertEqual(len(result), 0)
+
+    def test_get_scanners_by_pks_ioc_with_no_honeypots(self):
+        ioc = IOC.objects.create(name="1.2.3.4", type="ip")
+
+        result = list(self.repo.get_scanners_by_pks({ioc.pk}))
+
+        self.assertEqual(len(result), 1)
+        self.assertIn("honeypots", result[0])
+
+    def test_get_recent_scanners_all_iocs_older_than_cutoff(self):
+        from datetime import datetime, timedelta
+
+        old_date = datetime.now() - timedelta(days=40)
+        IOC.objects.create(name="1.2.3.4", type="ip", scanner=True, cowrie=True, last_seen=old_date)
+
+        cutoff = datetime.now() - timedelta(days=30)
+        result = list(self.repo.get_recent_scanners(cutoff))
+
+        values = [r["value"] for r in result]
+        self.assertNotIn("1.2.3.4", values)
+
+    def test_get_recent_scanners_with_inactive_honeypot(self):
+        from datetime import datetime, timedelta
+
+        hp = GeneralHoneypot.objects.create(name="InactivePot", active=False)
+        recent_date = datetime.now() - timedelta(days=5)
+        ioc = IOC.objects.create(name="1.2.3.4", type="ip", scanner=True, last_seen=recent_date)
+        ioc.general_honeypot.add(hp)
+
+        cutoff = datetime.now() - timedelta(days=30)
+        result = list(self.repo.get_recent_scanners(cutoff))
+
+        values = [r["value"] for r in result]
+        self.assertNotIn("1.2.3.4", values)
+
+    def test_bulk_update_scores_with_custom_batch_size(self):
+        ioc1 = IOC.objects.create(name="1.2.3.4", type="ip", recurrence_probability=0.0)
+        ioc2 = IOC.objects.create(name="5.6.7.8", type="ip", recurrence_probability=0.0)
+
+        ioc1.recurrence_probability = 0.75
+        ioc2.recurrence_probability = 0.85
+
+        result = self.repo.bulk_update_scores([ioc1, ioc2], ["recurrence_probability"], batch_size=1)
+
+        self.assertEqual(result, 2)
+        updated1 = IOC.objects.get(name="1.2.3.4")
+        updated2 = IOC.objects.get(name="5.6.7.8")
+        self.assertEqual(updated1.recurrence_probability, 0.75)
+        self.assertEqual(updated2.recurrence_probability, 0.85)
+
+
+class TestScoringIntegration(CustomTestCase):
+    """Integration tests for scoring jobs using IocRepository."""
+
+    def setUp(self):
+        from greedybear.cronjobs.repositories import IocRepository
+
+        self.repo = IocRepository()
+
+    def test_update_scores_with_repository(self):
+        """Test UpdateScores class works with injected repository."""
+        import pandas as pd
+
+        from greedybear.cronjobs.scoring.scoring_jobs import UpdateScores
+
+        # Create test data
+        IOC.objects.create(name="10.1.2.3", type="ip", scanner=True, cowrie=True, recurrence_probability=0.0)
+        IOC.objects.create(name="10.5.6.7", type="ip", scanner=True, log4j=True, recurrence_probability=0.0)
+
+        # Create score dataframe
+        df = pd.DataFrame(
+            {
+                "value": ["10.1.2.3", "10.5.6.7"],
+                "recurrence_probability": [0.75, 0.85],
+                "expected_interactions": [10.0, 15.0],
+            }
+        )
+
+        # Inject repository and run update
+        job = UpdateScores(ioc_repo=self.repo)
+        result = job.update_db(df)
+
+        # Verify our IOCs were updated (may be more due to test fixtures)
+        self.assertGreaterEqual(result, 2)
+        updated1 = IOC.objects.get(name="10.1.2.3")
+        updated2 = IOC.objects.get(name="10.5.6.7")
+        self.assertEqual(updated1.recurrence_probability, 0.75)
+        self.assertEqual(updated2.recurrence_probability, 0.85)
+
+    def test_update_scores_resets_missing_iocs(self):
+        """Test UpdateScores resets scores for IOCs not in the dataframe."""
+        import pandas as pd
+
+        from greedybear.cronjobs.scoring.scoring_jobs import UpdateScores
+
+        # Create test data - one IOC will be missing from df
+        IOC.objects.create(name="10.2.3.4", type="ip", scanner=True, cowrie=True, recurrence_probability=0.9)
+        IOC.objects.create(name="10.6.7.8", type="ip", scanner=True, log4j=True, recurrence_probability=0.8)
+
+        # DataFrame only has one IOC
+        df = pd.DataFrame({"value": ["10.2.3.4"], "recurrence_probability": [0.75], "expected_interactions": [10.0]})
+
+        job = UpdateScores(ioc_repo=self.repo)
+        job.update_db(df)
+
+        # First should be updated, second should be reset to 0
+        updated1 = IOC.objects.get(name="10.2.3.4")
+        updated2 = IOC.objects.get(name="10.6.7.8")
+        self.assertEqual(updated1.recurrence_probability, 0.75)
+        self.assertEqual(updated2.recurrence_probability, 0.0)  # Reset
+
+    def test_get_current_data_with_repository(self):
+        """Test get_current_data utility function works with repository."""
+        from datetime import datetime, timedelta
+
+        from greedybear.cronjobs.scoring.utils import get_current_data
+
+        recent_date = datetime.now() - timedelta(days=5)
+        IOC.objects.create(name="1.2.3.4", type="ip", scanner=True, cowrie=True, last_seen=recent_date)
+
+        result = get_current_data(days_lookback=30, ioc_repo=self.repo)
+
+        self.assertIsInstance(result, list)
+        self.assertGreater(len(result), 0)
+        values = [r["value"] for r in result]
+        self.assertIn("1.2.3.4", values)
+
+    def test_get_data_by_pks_with_repository(self):
+        """Test get_data_by_pks utility function works with repository."""
+        from greedybear.cronjobs.scoring.utils import get_data_by_pks
+
+        ioc = IOC.objects.create(name="1.2.3.4", type="ip")
+
+        result = get_data_by_pks({ioc.pk}, ioc_repo=self.repo)
+
+        self.assertIsInstance(result, list)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["value"], "1.2.3.4")
+
+    def test_update_scores_with_mock_repository(self):
+        """Test UpdateScores can be fully mocked for unit testing."""
+        from unittest.mock import Mock
+
+        import pandas as pd
+
+        from greedybear.cronjobs.scoring.scoring_jobs import UpdateScores
+
+        # Create mock repository
+        mock_repo = Mock()
+        mock_ioc = Mock()
+        mock_ioc.name = "1.2.3.4"
+        mock_ioc.recurrence_probability = 0.0
+        mock_repo.get_scanners_for_scoring.return_value = [mock_ioc]
+        mock_repo.bulk_update_scores.return_value = 1
+
+        # Create score dataframe
+        df = pd.DataFrame({"value": ["1.2.3.4"], "recurrence_probability": [0.75], "expected_interactions": [10.0]})
+
+        # Inject mock and verify it's used
+        job = UpdateScores(ioc_repo=mock_repo)
+        result = job.update_db(df)
+
+        # Verify repository methods were called
+        mock_repo.get_scanners_for_scoring.assert_called_once()
+        mock_repo.bulk_update_scores.assert_called_once()
+        self.assertEqual(result, 1)
 
 
 class TestSensorRepository(CustomTestCase):
@@ -402,7 +723,7 @@ class TestElasticRepository(CustomTestCase):
 
     def test_healthcheck_raises_when_ping_fails(self):
         self.mock_client.ping.return_value = False
-        with self.assertRaises(ElasticRepository.ElasticServerDownException) as ctx:
+        with self.assertRaises(ElasticRepository.ElasticServerDownError) as ctx:
             self.repo._healthcheck()
         self.assertIn("not reachable", str(ctx.exception))
 

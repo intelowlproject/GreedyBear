@@ -80,7 +80,7 @@ class FeedRequestParams:
 
     def apply_default_filters(self, query_params):
         if not query_params:
-            query_params = dict()
+            query_params = {}
         if "include_mass_scanners" not in query_params:
             self.exclude_reputation.append("mass scanner")
         if "include_tor_exit_nodes" not in query_params:
