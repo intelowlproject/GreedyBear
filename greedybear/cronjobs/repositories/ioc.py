@@ -225,3 +225,35 @@ class IocRepository:
             return 0
         IOC.objects.bulk_update(iocs, score_fields, batch_size=batch_size)
         return len(iocs)
+
+    def delete_old_iocs(self, cutoff_date) -> int:
+        """
+        Delete IOC records older than the specified cutoff date.
+
+        Args:
+            cutoff_date: DateTime threshold - IOCs with last_seen before this will be deleted.
+
+        Returns:
+            Number of IOC objects deleted.
+        """
+        deleted_count, _ = IOC.objects.filter(last_seen__lte=cutoff_date).delete()
+        return deleted_count
+
+    def update_ioc_reputation(self, ip_address: str, reputation: str) -> bool:
+        """
+        Update the IP reputation for a specific IOC.
+
+        Args:
+            ip_address: IP address to update.
+            reputation: New reputation value.
+
+        Returns:
+            True if IOC was found and updated, False otherwise.
+        """
+        try:
+            ioc = IOC.objects.get(name=ip_address)
+            ioc.ip_reputation = reputation
+            ioc.save()
+            return True
+        except IOC.DoesNotExist:
+            return False

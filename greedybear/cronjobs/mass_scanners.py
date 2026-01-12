@@ -4,11 +4,38 @@ import requests
 
 from greedybear.cronjobs.base import Cronjob
 from greedybear.cronjobs.extraction.utils import is_valid_ipv4
-from greedybear.models import IOC, MassScanner
+from greedybear.cronjobs.repositories import IocRepository, MassScannerRepository
 
 
 class MassScannersCron(Cronjob):
+    """
+    Fetch and store mass scanner IP addresses from Maltrail repository.
+
+    Downloads the mass scanner list from Maltrail's GitHub repository,
+    validates IP addresses, and stores them in the database. Also updates
+    the IP reputation of existing IOCs.
+    """
+
+    def __init__(self, mass_scanner_repo=None, ioc_repo=None):
+        """
+        Initialize the mass scanners cronjob with repository dependencies.
+
+        Args:
+            mass_scanner_repo: Optional MassScannerRepository instance for testing.
+            ioc_repo: Optional IocRepository instance for testing.
+        """
+        super().__init__()
+        self.mass_scanner_repo = mass_scanner_repo if mass_scanner_repo is not None else MassScannerRepository()
+        self.ioc_repo = ioc_repo if ioc_repo is not None else IocRepository()
+
     def run(self) -> None:
+        """
+        Fetch mass scanner IPs from Maltrail and store them.
+
+        Extracts IP addresses from the Maltrail mass scanner list, validates them,
+        and creates database entries. For each new mass scanner, also updates
+        any existing IOC with the same IP address to mark it as a mass scanner.
+        """
         # Simple regex to extract potential IPv4 addresses
         ip_candidate_regex = re.compile(r"(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})")
         # Regex to extract optional comment/reason after '#'
@@ -45,18 +72,18 @@ class MassScannersCron(Cronjob):
                     reason = comment_match.group(1)
 
                 # Add or update mass scanner entry
-                try:
-                    MassScanner.objects.get(ip_address=ip_address)
-                except MassScanner.DoesNotExist:
+                if not self.mass_scanner_repo.exists(ip_address):
+                    self.mass_scanner_repo.create(ip_address, reason)
                     self.log.info(f"added new mass scanner {ip_address}")
-                    MassScanner(ip_address=ip_address, reason=reason).save()
                     self._update_old_ioc(ip_address)
 
-    def _update_old_ioc(self, ip_address):
-        try:
-            ioc = IOC.objects.get(name=ip_address)
-        except IOC.DoesNotExist:
-            pass
-        else:
-            ioc.ip_reputation = "mass scanner"
-            ioc.save()
+    def _update_old_ioc(self, ip_address: str):
+        """
+        Update the IP reputation of an existing IOC to mark it as a mass scanner.
+
+        Args:
+            ip_address: IP address to update.
+        """
+        updated = self.ioc_repo.update_ioc_reputation(ip_address, "mass scanner")
+        if updated:
+            self.log.debug(f"Updated IOC {ip_address} reputation to 'mass scanner'")

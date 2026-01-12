@@ -73,3 +73,52 @@ class CowrieSessionRepository:
         """
         cmd.save()
         return cmd
+
+    def delete_old_command_sequences(self, cutoff_date) -> int:
+        """
+        Delete command sequences older than the specified cutoff date.
+
+        Args:
+            cutoff_date: DateTime threshold - sequences with last_seen before this will be deleted.
+
+        Returns:
+            Number of CommandSequence objects deleted.
+        """
+        deleted_count, _ = CommandSequence.objects.filter(last_seen__lte=cutoff_date).delete()
+        return deleted_count
+
+    def delete_incomplete_sessions(self) -> int:
+        """
+        Delete Cowrie sessions without a start time (incomplete extractions).
+
+        Returns:
+            Number of sessions deleted.
+        """
+        deleted_count, _ = CowrieSession.objects.filter(start_time__isnull=True).delete()
+        return deleted_count
+
+    def delete_sessions_without_login(self, cutoff_date) -> int:
+        """
+        Delete Cowrie sessions without login attempts older than the cutoff date.
+
+        Args:
+            cutoff_date: DateTime threshold.
+
+        Returns:
+            Number of sessions deleted.
+        """
+        deleted_count, _ = CowrieSession.objects.filter(start_time__lte=cutoff_date, login_attempt=False).delete()
+        return deleted_count
+
+    def delete_sessions_without_commands(self, cutoff_date) -> int:
+        """
+        Delete Cowrie sessions without associated commands older than the cutoff date.
+
+        Args:
+            cutoff_date: DateTime threshold.
+
+        Returns:
+            Number of sessions deleted.
+        """
+        deleted_count, _ = CowrieSession.objects.filter(start_time__lte=cutoff_date, commands__isnull=True).delete()
+        return deleted_count
