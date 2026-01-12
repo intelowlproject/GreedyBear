@@ -25,18 +25,14 @@ class FireHolCronTestCase(CustomTestCase):
         mock_response_dshield.text = "# dshield\n4.4.4.0/24"
 
         # Side effect for multiple calls
-        def side_effect(url, timeout):
-            if "blocklist_de" in url:
-                return mock_response_blocklist_de
-            elif "greensnow" in url:
-                return mock_response_greensnow
-            elif "bruteforceblocker" in url:
-                return mock_response_bruteforceblocker
-            elif "dshield" in url:
-                return mock_response_dshield
-            return MagicMock(status_code=404)
-
-        mock_get.side_effect = side_effect
+        mock_get.side_effect = self._firehol_get_side_effect(
+            {
+                "blocklist_de": mock_response_blocklist_de,
+                "greensnow": mock_response_greensnow,
+                "bruteforceblocker": mock_response_bruteforceblocker,
+                "dshield": mock_response_dshield,
+            }
+        )
 
         # Run the cronjob
         cronjob = FireHolCron()
@@ -69,14 +65,12 @@ class FireHolCronTestCase(CustomTestCase):
         mock_response_bruteforceblocker.text = "# bruteforceblocker\n1.1.1.1"
 
         # Side effect for multiple calls
-        def side_effect(url, timeout):
-            if "blocklist_de" in url:
-                return mock_response_blocklist_de
-            elif "bruteforceblocker" in url:
-                return mock_response_bruteforceblocker
-            return MagicMock(status_code=404)
-
-        mock_get.side_effect = side_effect
+        mock_get.side_effect = self._firehol_get_side_effect(
+            {
+                "blocklist_de": mock_response_blocklist_de,
+                "bruteforceblocker": mock_response_bruteforceblocker,
+            }
+        )
 
         # Run the cronjob
         cronjob = FireHolCron()
@@ -100,14 +94,12 @@ class FireHolCronTestCase(CustomTestCase):
         mock_response_bruteforceblocker.text = "# bruteforceblocker\n"
 
         # Side effect for multiple calls
-        def side_effect(url, timeout):
-            if "blocklist_de" in url:
-                return mock_response_blocklist_de
-            elif "bruteforceblocker" in url:
-                return mock_response_bruteforceblocker
-            return MagicMock(status_code=404)
-
-        mock_get.side_effect = side_effect
+        mock_get.side_effect = self._firehol_get_side_effect(
+            {
+                "blocklist_de": mock_response_blocklist_de,
+                "bruteforceblocker": mock_response_bruteforceblocker,
+            }
+        )
 
         # Run the cronjob
         cronjob = FireHolCron()
@@ -167,3 +159,12 @@ class FireHolCronTestCase(CustomTestCase):
 
         self.assertFalse(FireHolList.objects.filter(id=old_entry.id).exists())
         self.assertTrue(FireHolList.objects.filter(id=new_entry.id).exists())
+
+    def _firehol_get_side_effect(self, side_effect_map):
+        def _side_effect(url, timeout):
+            for key, response in side_effect_map.items():
+                if key in url:
+                    return response
+            raise requests.exceptions.HTTPError(f"Unhandled URL: {url}")
+
+        return _side_effect
