@@ -1,9 +1,8 @@
 import logging
 
-from django.db import IntegrityError
 from django.contrib.postgres.aggregates import ArrayAgg
+from django.db import IntegrityError
 from django.db.models import F, Q
-
 
 from greedybear.models import IOC, GeneralHoneypot
 
@@ -58,14 +57,11 @@ class IocRepository:
         """
         normalized = self._normalize_name(honeypot_name)
 
-        existing = self.get_hp_by_name(honeypot_name)
-        if existing:
-            self._honeypot_cache[normalized] = existing.active
-            return existing
-
         try:
-            honeypot = GeneralHoneypot(name=honeypot_name, active=True)
-            honeypot.save()
+            honeypot = GeneralHoneypot.objects.create(
+                name=honeypot_name,
+                active=True,
+            )
         except IntegrityError:
             honeypot = self.get_hp_by_name(honeypot_name)
             if honeypot is None:

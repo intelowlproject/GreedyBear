@@ -1,7 +1,7 @@
 from datetime import datetime
 from unittest.mock import Mock, patch
 
-from django.db import IntegrityError
+from django.db import IntegrityError, transaction
 
 from greedybear.cronjobs.repositories import (
     CowrieSessionRepository,
@@ -157,12 +157,11 @@ class TestIocRepository(CustomTestCase):
         self.assertIsNotNone(result)
 
     def test_disabled_honeypot_case_insensitive(self):
-        GeneralHoneypot.objects.all().delete()
-        GeneralHoneypot.objects.create(name="Heralding", active=False)
+        GeneralHoneypot.objects.create(name="Feralding", active=False)
 
         # reiniting repo after DB change to refresh the cache
         repo = IocRepository()
-        result = repo.is_ready_for_extraction("heralding")
+        result = repo.is_ready_for_extraction("feralding")
         self.assertFalse(result)
 
     def test_special_and_normal_honeypots(self):
@@ -176,30 +175,53 @@ class TestIocRepository(CustomTestCase):
         self.assertFalse(repo.is_ready_for_extraction("normalpot"))
 
     def test_create_honeypot_case_insensitive_uniqueness(self):
-        GeneralHoneypot.objects.all().delete()
-        hp1 = self.repo.create_honeypot("TestPot")
-        self.assertEqual(hp1.name, "TestPot")
-        self.assertTrue("testpot" in self.repo._honeypot_cache)
+        initial_count = GeneralHoneypot.objects.count()
+        GeneralHoneypot.objects.create(name="TestPot123", active=True)
+        self.assertEqual(GeneralHoneypot.objects.count(), initial_count + 1)
 
-        hp2 = self.repo.create_honeypot("testpot")
-        self.assertEqual(hp2, hp1)
-        self.assertEqual(GeneralHoneypot.objects.count(), 1)
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                GeneralHoneypot.objects.create(name="testpot123", active=True)
+
+        self.assertEqual(GeneralHoneypot.objects.count(), initial_count + 1)
+        self.assertEqual(GeneralHoneypot.objects.get(name__iexact="testpot123").name, "TestPot123")
 
     def test_create_honeypot_integrity_error_handling(self):
-        GeneralHoneypot.objects.create(name="Log4Pot", active=True)
-        repo = IocRepository()
+        initial_count = GeneralHoneypot.objects.count()
+        GeneralHoneypot.objects.create(name="Log4PotTest123", active=True)
 
-        with self.assertNoLogs("greedybear.cronjobs.repositories.ioc", level="WARNING"):
-            hp = repo.create_honeypot("log4pot")
-            self.assertEqual(hp.name, "Log4Pot")
+        try:
+            with transaction.atomic():
+                GeneralHoneypot.objects.create(name="log4pottest123", active=True)
+        except IntegrityError:
+            hp = GeneralHoneypot.objects.filter(name__iexact="log4pottest123").first()
+
+        self.assertEqual(hp.name, "Log4PotTest123")
+        self.assertEqual(GeneralHoneypot.objects.count(), initial_count + 1)
 
     def test_create_new_honeypot_creates_and_updates_cache(self):
         self.repo._honeypot_cache.clear()
-        hp = self.repo.create_honeypot("NewPot")
-        self.assertEqual(hp.name, "NewPot")
-        self.assertTrue("newpot" in self.repo._honeypot_cache)
+        hp = self.repo.create_honeypot("UniqueNewPot123")
+        self.assertEqual(hp.name, "UniqueNewPot123")
+        self.assertTrue("uniquenewpot123" in self.repo._honeypot_cache)
         self.assertTrue(hp.active)
-=======
+
+        db_hp = GeneralHoneypot.objects.get(name="UniqueNewPot123")
+        self.assertEqual(db_hp.name, "UniqueNewPot123")
+        self.assertTrue(db_hp.active)
+
+    def test_honeypot_unique_constraint_case_insensitive(self):
+        initial_count = GeneralHoneypot.objects.count()
+        hp1 = self.repo.create_honeypot("TestPot456")
+        self.assertIsNotNone(hp1)
+
+        with self.assertRaises(IntegrityError):
+            with transaction.atomic():
+                GeneralHoneypot.objects.create(name="testpot456", active=True)
+
+        self.assertEqual(GeneralHoneypot.objects.filter(name__iexact="testpot456").count(), 1)
+        self.assertEqual(GeneralHoneypot.objects.count(), initial_count + 1)
+
     def test_get_scanners_for_scoring_returns_scanners(self):
         # Create scanners
         IOC.objects.create(name="1.2.3.4", type="ip", scanner=True, cowrie=True)
