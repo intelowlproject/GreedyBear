@@ -15,8 +15,8 @@ class WhatsMyIPCron(Cronjob):
             try:
                 WhatsMyIPDomain.objects.get(domain=domain)
             except WhatsMyIPDomain.DoesNotExist:
-                self.log.info(f"added new whatsmyip domain {domain=}")
                 WhatsMyIPDomain(domain=domain).save()
+                self.log.info(f"added new whatsmyip domain {domain=}")
                 self._remove_old_ioc(domain)
 
     def _remove_old_ioc(self, domain):
