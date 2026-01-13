@@ -19,9 +19,9 @@ class CustomTestCase(TestCase):
     def setUpTestData(cls):
         super().setUpTestData()
 
-        cls.heralding = GeneralHoneypot.objects.create(name="Heralding", active=True)
-        cls.ciscoasa = GeneralHoneypot.objects.create(name="Ciscoasa", active=True)
-        cls.ddospot = GeneralHoneypot.objects.create(name="Ddospot", active=False)
+        cls.heralding = GeneralHoneypot.objects.get_or_create(name="Heralding", defaults={"active": True})[0]
+        cls.ciscoasa = GeneralHoneypot.objects.get_or_create(name="Ciscoasa", defaults={"active": True})[0]
+        cls.ddospot = GeneralHoneypot.objects.get_or_create(name="Ddospot", defaults={"active": False})[0]
 
         cls.current_time = datetime.now()
         cls.ioc = IOC.objects.create(

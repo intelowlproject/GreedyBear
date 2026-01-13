@@ -4,6 +4,7 @@ from datetime import datetime
 
 from django.contrib.postgres import fields as pg_fields
 from django.db import models
+from django.db.models.functions import Lower
 
 
 class ViewType(models.TextChoices):
@@ -28,6 +29,9 @@ class Sensor(models.Model):
 class GeneralHoneypot(models.Model):
     name = models.CharField(max_length=15, blank=False)
     active = models.BooleanField(blank=False, default=True)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(Lower("name"), name="unique_generalhoneypot_name_ci")]
 
     def __str__(self):
         return self.name
