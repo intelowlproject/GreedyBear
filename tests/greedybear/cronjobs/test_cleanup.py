@@ -75,7 +75,7 @@ class TestCleanUp(TestCase):
         # Verify logging messages
         # We expect 5 pairs of logs (start + result)
         # 10 calls to info level
-        self.assertTrue(cleanup_job.log.info.call_count >= 10)
+        self.assertEqual(cleanup_job.log.info.call_count, 10)
 
         # Check specific log messages to ensure counts are logged
         cleanup_job.log.info.assert_any_call("10 objects deleted")
