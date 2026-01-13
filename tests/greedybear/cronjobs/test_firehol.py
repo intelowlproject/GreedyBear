@@ -62,7 +62,6 @@ class FireHolCronTestCase(CustomTestCase):
 
         mock_response_bruteforceblocker = MagicMock()
         mock_response_bruteforceblocker.raise_for_status.side_effect = requests.exceptions.HTTPError("404 Client Error")
-        mock_response_bruteforceblocker.text = "# bruteforceblocker\n1.1.1.1"
 
         # Side effect for multiple calls
         mock_get.side_effect = self._firehol_get_side_effect(
@@ -91,7 +90,6 @@ class FireHolCronTestCase(CustomTestCase):
 
         mock_response_bruteforceblocker = MagicMock()
         mock_response_bruteforceblocker.raise_for_status.side_effect = requests.exceptions.HTTPError("404 Client Error")
-        mock_response_bruteforceblocker.text = "# bruteforceblocker\n"
 
         # Side effect for multiple calls
         mock_get.side_effect = self._firehol_get_side_effect(
