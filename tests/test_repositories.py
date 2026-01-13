@@ -157,11 +157,11 @@ class TestIocRepository(CustomTestCase):
         self.assertIsNotNone(result)
 
     def test_disabled_honeypot_case_insensitive(self):
-        GeneralHoneypot.objects.create(name="Feralding", active=False)
+        GeneralHoneypot.objects.create(name="Testpot69", active=False)
 
         # reiniting repo after DB change to refresh the cache
         repo = IocRepository()
-        result = repo.is_ready_for_extraction("feralding")
+        result = repo.is_ready_for_extraction("testpot69")
         self.assertFalse(result)
 
     def test_special_and_normal_honeypots(self):

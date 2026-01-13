@@ -47,13 +47,17 @@ class IocRepository:
 
     def create_honeypot(self, honeypot_name: str) -> GeneralHoneypot:
         """
-        Create a new honeypot and save it to the database.
+        Create a new honeypot or return an existing one.
+
+        If a honeypot with the same name (case-insensitive) already exists,
+        recover and return the existing one instead. This method also updates
+        the internal honeypot cache accordingly.
 
         Args:
             honeypot_name: Name for the new honeypot.
 
         Returns:
-            The newly created GeneralHoneypot instance.
+            A GeneralHoneypot instance (newly created or existing).
         """
         normalized = self._normalize_name(honeypot_name)
 
@@ -62,10 +66,11 @@ class IocRepository:
                 name=honeypot_name,
                 active=True,
             )
-        except IntegrityError:
+        except IntegrityError as e:
+            self.log.error(f"IntegrityError creating honeypot '{honeypot_name}': {e}")
             honeypot = self.get_hp_by_name(honeypot_name)
             if honeypot is None:
-                raise
+                raise e
 
         self._honeypot_cache[normalized] = honeypot.active
         return honeypot
