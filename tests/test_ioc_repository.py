@@ -191,7 +191,7 @@ class TestIocRepository(CustomTestCase):
         self.repo._honeypot_cache.clear()
         hp = self.repo.create_honeypot("UniqueNewPot123")
         self.assertEqual(hp.name, "UniqueNewPot123")
-        self.assertTrue("uniquenewpot123" in self.repo._honeypot_cache)
+        self.assertIn("uniquenewpot123", self.repo._honeypot_cache)
         self.assertTrue(hp.active)
 
         db_hp = GeneralHoneypot.objects.get(name="UniqueNewPot123")
