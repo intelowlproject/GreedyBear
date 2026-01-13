@@ -58,7 +58,6 @@ class FireHolCronTestCase(CustomTestCase):
         # Setup mock response
         mock_response_blocklist_de = MagicMock()
         mock_response_blocklist_de.text = "# blocklist_de\n1.1.1.1\n2.2.2.2"
-        mock_get.return_value = mock_response_blocklist_de
 
         mock_response_bruteforceblocker = MagicMock()
         mock_response_bruteforceblocker.raise_for_status.side_effect = requests.exceptions.HTTPError("404 Client Error")
@@ -86,7 +85,6 @@ class FireHolCronTestCase(CustomTestCase):
         # Setup mock response
         mock_response_blocklist_de = MagicMock()
         mock_response_blocklist_de.text = "# blocklist_de\n"
-        mock_get.return_value = mock_response_blocklist_de
 
         mock_response_bruteforceblocker = MagicMock()
         mock_response_bruteforceblocker.raise_for_status.side_effect = requests.exceptions.HTTPError("404 Client Error")
