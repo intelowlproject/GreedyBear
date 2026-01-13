@@ -6,7 +6,9 @@ from django.db import IntegrityError
 from greedybear.cronjobs.repositories import (
     CowrieSessionRepository,
     ElasticRepository,
+    FireHolRepository,
     IocRepository,
+    MassScannerRepository,
     SensorRepository,
     get_time_window,
 )
@@ -14,7 +16,9 @@ from greedybear.models import (
     IOC,
     CommandSequence,
     CowrieSession,
+    FireHolList,
     GeneralHoneypot,
+    MassScanner,
     Sensor,
 )
 
@@ -861,3 +865,199 @@ class TestTimeWindowCalculation(CustomTestCase):
 
         self.assertEqual(start, expected_start)
         self.assertEqual(end, expected_end)
+
+
+# Phase 2: New repository tests for cleanup, firehol, and mass scanners
+
+
+class TestIocRepositoryCleanup(CustomTestCase):
+    """Tests for cleanup-related methods in IocRepository."""
+
+    def setUp(self):
+        self.repo = IocRepository()
+
+    def test_delete_old_iocs_deletes_old_records(self):
+        from datetime import datetime, timedelta
+
+        old_date = datetime.now() - timedelta(days=40)
+        recent_date = datetime.now() - timedelta(days=5)
+
+        IOC.objects.create(name="1.2.3.4", type="ip", last_seen=old_date)
+        IOC.objects.create(name="5.6.7.8", type="ip", last_seen=recent_date)
+
+        cutoff = datetime.now() - timedelta(days=30)
+        deleted_count = self.repo.delete_old_iocs(cutoff)
+
+        self.assertEqual(deleted_count, 1)
+        self.assertFalse(IOC.objects.filter(name="1.2.3.4").exists())
+        self.assertTrue(IOC.objects.filter(name="5.6.7.8").exists())
+
+    def test_delete_old_iocs_returns_zero_when_none_old(self):
+        from datetime import datetime, timedelta
+
+        recent_date = datetime.now() - timedelta(days=5)
+        IOC.objects.create(name="1.2.3.4", type="ip", last_seen=recent_date)
+
+        cutoff = datetime.now() - timedelta(days=30)
+        deleted_count = self.repo.delete_old_iocs(cutoff)
+
+        self.assertEqual(deleted_count, 0)
+
+    def test_update_ioc_reputation_updates_existing(self):
+        IOC.objects.create(name="1.2.3.4", type="ip", ip_reputation="")
+
+        result = self.repo.update_ioc_reputation("1.2.3.4", "mass scanner")
+
+        self.assertTrue(result)
+        updated = IOC.objects.get(name="1.2.3.4")
+        self.assertEqual(updated.ip_reputation, "mass scanner")
+
+    def test_update_ioc_reputation_returns_false_for_missing(self):
+        result = self.repo.update_ioc_reputation("9.9.9.9", "mass scanner")
+        self.assertFalse(result)
+
+
+class TestCowrieSessionRepositoryCleanup(CustomTestCase):
+    """Tests for cleanup-related methods in CowrieSessionRepository."""
+
+    def setUp(self):
+        self.repo = CowrieSessionRepository()
+
+    def test_delete_old_command_sequences(self):
+        from datetime import datetime, timedelta
+
+        old_date = datetime.now() - timedelta(days=40)
+        recent_date = datetime.now() - timedelta(days=5)
+
+        CommandSequence.objects.create(commands=["ls"], commands_hash="old_hash", last_seen=old_date)
+        CommandSequence.objects.create(commands=["pwd"], commands_hash="recent_hash", last_seen=recent_date)
+
+        cutoff = datetime.now() - timedelta(days=30)
+        deleted_count = self.repo.delete_old_command_sequences(cutoff)
+
+        self.assertEqual(deleted_count, 1)
+        self.assertFalse(CommandSequence.objects.filter(commands_hash="old_hash").exists())
+        self.assertTrue(CommandSequence.objects.filter(commands_hash="recent_hash").exists())
+
+    def test_delete_incomplete_sessions(self):
+        source = IOC.objects.create(name="1.2.3.4", type="ip")
+
+        CowrieSession.objects.create(session_id=123, source=source, start_time=None)
+        CowrieSession.objects.create(session_id=456, source=source, start_time=datetime.now())
+
+        deleted_count = self.repo.delete_incomplete_sessions()
+
+        self.assertEqual(deleted_count, 1)
+        self.assertFalse(CowrieSession.objects.filter(session_id=123).exists())
+        self.assertTrue(CowrieSession.objects.filter(session_id=456).exists())
+
+    def test_delete_sessions_without_login(self):
+        from datetime import datetime, timedelta
+
+        source = IOC.objects.create(name="1.2.3.4", type="ip")
+        old_date = datetime.now() - timedelta(days=40)
+        recent_date = datetime.now() - timedelta(days=5)
+
+        # Old session without login
+        CowrieSession.objects.create(session_id=111, source=source, start_time=old_date, login_attempt=False)
+        # Recent session without login
+        CowrieSession.objects.create(session_id=222, source=source, start_time=recent_date, login_attempt=False)
+        # Old session with login
+        CowrieSession.objects.create(session_id=333, source=source, start_time=old_date, login_attempt=True)
+
+        cutoff = datetime.now() - timedelta(days=30)
+        deleted_count = self.repo.delete_sessions_without_login(cutoff)
+
+        self.assertEqual(deleted_count, 1)
+        self.assertFalse(CowrieSession.objects.filter(session_id=111).exists())
+        self.assertTrue(CowrieSession.objects.filter(session_id=222).exists())
+        self.assertTrue(CowrieSession.objects.filter(session_id=333).exists())
+
+    def test_delete_sessions_without_commands(self):
+        from datetime import datetime, timedelta
+
+        source = IOC.objects.create(name="1.2.3.4", type="ip")
+        old_date = datetime.now() - timedelta(days=40)
+
+        # Session without commands
+        CowrieSession.objects.create(session_id=777, source=source, start_time=old_date)
+        # Session with commands
+        session_with_cmd = CowrieSession.objects.create(session_id=888, source=source, start_time=old_date)
+        cmd_seq = CommandSequence.objects.create(commands=["ls"], commands_hash="hash1")
+        session_with_cmd.commands = cmd_seq
+        session_with_cmd.save()
+
+        cutoff = datetime.now() - timedelta(days=30)
+        deleted_count = self.repo.delete_sessions_without_commands(cutoff)
+
+        self.assertEqual(deleted_count, 1)
+        self.assertFalse(CowrieSession.objects.filter(session_id=777).exists())
+        self.assertTrue(CowrieSession.objects.filter(session_id=888).exists())
+
+
+class TestFireHolRepository(CustomTestCase):
+    """Tests for FireHolRepository."""
+
+    def setUp(self):
+        self.repo = FireHolRepository()
+
+    def test_get_or_create_creates_new_entry(self):
+        entry, created = self.repo.get_or_create("1.2.3.4", "blocklist_de")
+
+        self.assertTrue(created)
+        self.assertEqual(entry.ip_address, "1.2.3.4")
+        self.assertEqual(entry.source, "blocklist_de")
+        self.assertTrue(FireHolList.objects.filter(ip_address="1.2.3.4", source="blocklist_de").exists())
+
+    def test_get_or_create_returns_existing(self):
+        FireHolList.objects.create(ip_address="5.6.7.8", source="greensnow")
+
+        entry, created = self.repo.get_or_create("5.6.7.8", "greensnow")
+
+        self.assertFalse(created)
+        self.assertEqual(entry.ip_address, "5.6.7.8")
+        self.assertEqual(FireHolList.objects.filter(ip_address="5.6.7.8", source="greensnow").count(), 1)
+
+    def test_cleanup_old_entries_custom_days(self):
+        from datetime import datetime, timedelta
+
+        old_date = datetime.now() - timedelta(days=65)
+        old_entry = FireHolList.objects.create(ip_address="4.4.4.4", source="test")
+        FireHolList.objects.filter(pk=old_entry.pk).update(added=old_date)
+
+        deleted_count = self.repo.cleanup_old_entries(days=60)
+
+        self.assertEqual(deleted_count, 1)
+
+
+class TestMassScannerRepository(CustomTestCase):
+    """Tests for MassScannerRepository."""
+
+    def setUp(self):
+        self.repo = MassScannerRepository()
+
+    def test_get_or_create_creates_new_entry(self):
+        scanner, created = self.repo.get_or_create("1.2.3.4", "test scanner")
+
+        self.assertTrue(created)
+        self.assertEqual(scanner.ip_address, "1.2.3.4")
+        self.assertEqual(scanner.reason, "test scanner")
+        self.assertTrue(MassScanner.objects.filter(ip_address="1.2.3.4").exists())
+
+    def test_get_or_create_returns_existing(self):
+        MassScanner.objects.create(ip_address="5.6.7.8", reason="existing")
+
+        scanner, created = self.repo.get_or_create("5.6.7.8", "new reason")
+
+        self.assertFalse(created)
+        self.assertEqual(scanner.ip_address, "5.6.7.8")
+        # Should keep original reason, not update it
+        self.assertEqual(scanner.reason, "existing")
+        self.assertEqual(MassScanner.objects.filter(ip_address="5.6.7.8").count(), 1)
+
+    def test_get_or_create_without_reason(self):
+        scanner, created = self.repo.get_or_create("7.7.7.7")
+
+        self.assertTrue(created)
+        self.assertEqual(scanner.ip_address, "7.7.7.7")
+        self.assertEqual(scanner.reason, "")
