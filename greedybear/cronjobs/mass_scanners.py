@@ -72,8 +72,8 @@ class MassScannersCron(Cronjob):
                     reason = comment_match.group(1)
 
                 # Add or update mass scanner entry
-                if not self.mass_scanner_repo.exists(ip_address):
-                    self.mass_scanner_repo.create(ip_address, reason)
+                scanner, created = self.mass_scanner_repo.get_or_create(ip_address, reason)
+                if created:
                     self.log.info(f"added new mass scanner {ip_address}")
                     self._update_old_ioc(ip_address)
 

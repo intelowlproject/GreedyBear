@@ -1036,34 +1036,28 @@ class TestMassScannerRepository(CustomTestCase):
     def setUp(self):
         self.repo = MassScannerRepository()
 
-    def test_get_by_ip_returns_existing(self):
-        MassScanner.objects.create(ip_address="1.2.3.4", reason="test scanner")
+    def test_get_or_create_creates_new_entry(self):
+        scanner, created = self.repo.get_or_create("1.2.3.4", "test scanner")
 
-        result = self.repo.get_by_ip("1.2.3.4")
+        self.assertTrue(created)
+        self.assertEqual(scanner.ip_address, "1.2.3.4")
+        self.assertEqual(scanner.reason, "test scanner")
+        self.assertTrue(MassScanner.objects.filter(ip_address="1.2.3.4").exists())
 
-        self.assertIsNotNone(result)
-        self.assertEqual(result.ip_address, "1.2.3.4")
-        self.assertEqual(result.reason, "test scanner")
+    def test_get_or_create_returns_existing(self):
+        MassScanner.objects.create(ip_address="5.6.7.8", reason="existing")
 
-    def test_get_by_ip_returns_none_for_missing(self):
-        result = self.repo.get_by_ip("9.9.9.9")
-        self.assertIsNone(result)
+        scanner, created = self.repo.get_or_create("5.6.7.8", "new reason")
 
-    def test_create_creates_new_entry(self):
-        scanner = self.repo.create("5.6.7.8", "malicious activity")
-
-        self.assertIsNotNone(scanner.pk)
+        self.assertFalse(created)
         self.assertEqual(scanner.ip_address, "5.6.7.8")
-        self.assertEqual(scanner.reason, "malicious activity")
-        self.assertTrue(MassScanner.objects.filter(ip_address="5.6.7.8").exists())
+        # Should keep original reason, not update it
+        self.assertEqual(scanner.reason, "existing")
+        self.assertEqual(MassScanner.objects.filter(ip_address="5.6.7.8").count(), 1)
 
-    def test_exists_returns_true_for_existing(self):
-        MassScanner.objects.create(ip_address="1.1.1.1")
+    def test_get_or_create_without_reason(self):
+        scanner, created = self.repo.get_or_create("7.7.7.7")
 
-        result = self.repo.exists("1.1.1.1")
-
-        self.assertTrue(result)
-
-    def test_exists_returns_false_for_missing(self):
-        result = self.repo.exists("9.9.9.9")
-        self.assertFalse(result)
+        self.assertTrue(created)
+        self.assertEqual(scanner.ip_address, "7.7.7.7")
+        self.assertEqual(scanner.reason, "")
