@@ -113,8 +113,7 @@ class FeedsViewTestCase(CustomTestCase):
         iocs = response.json()["iocs"]
         # All returned IOCs should have 'log4pot' in their feed_type
         for ioc in iocs:
-            self.assertIn("log4pot", ioc["feed_type"],
-                          f"IOC {ioc['value']} should have 'log4pot' in feed_type")
+            self.assertIn("log4pot", ioc["feed_type"], f"IOC {ioc['value']} should have 'log4pot' in feed_type")
 
     def test_log4j_feeds_csv_format(self):
         """Test legacy log4j endpoint with CSV format."""
