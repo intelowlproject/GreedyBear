@@ -1,14 +1,9 @@
 from datetime import datetime, timedelta
 from unittest import TestCase
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from greedybear.cronjobs.cleanup import CleanUp
 from greedybear.cronjobs.repositories import CowrieSessionRepository, IocRepository
-from greedybear.settings import (
-    COMMAND_SEQUENCE_RETENTION,
-    COWRIE_SESSION_RETENTION,
-    IOC_RETENTION,
-)
 
 
 class TestCleanUp(TestCase):
@@ -20,6 +15,9 @@ class TestCleanUp(TestCase):
         self.assertIsInstance(cleanup_job.ioc_repo, IocRepository)
         self.assertIsInstance(cleanup_job.cowrie_repo, CowrieSessionRepository)
 
+    @patch("greedybear.cronjobs.cleanup.IOC_RETENTION", 100)
+    @patch("greedybear.cronjobs.cleanup.COMMAND_SEQUENCE_RETENTION", 90)
+    @patch("greedybear.cronjobs.cleanup.COWRIE_SESSION_RETENTION", 80)
     def test_run_calls_repository_methods_with_correct_dates(self):
         """Test that run method calls repository deletion methods with correct retention dates."""
         # Create mock repositories
@@ -44,7 +42,7 @@ class TestCleanUp(TestCase):
 
         # Verify interactions with IocRepository
         ioc_repo.delete_old_iocs.assert_called_once()
-        expected_ioc_date = datetime.now() - timedelta(days=IOC_RETENTION)
+        expected_ioc_date = datetime.now() - timedelta(days=100)
         # Check that the date passed is approximately correct (within 1 second)
         args, _ = ioc_repo.delete_old_iocs.call_args
         self.assertAlmostEqual(args[0], expected_ioc_date, delta=timedelta(seconds=1))
@@ -53,7 +51,7 @@ class TestCleanUp(TestCase):
 
         # 1. delete_old_command_sequences
         cowrie_repo.delete_old_command_sequences.assert_called_once()
-        expected_cmd_date = datetime.now() - timedelta(days=COMMAND_SEQUENCE_RETENTION)
+        expected_cmd_date = datetime.now() - timedelta(days=90)
         args, _ = cowrie_repo.delete_old_command_sequences.call_args
         self.assertAlmostEqual(args[0], expected_cmd_date, delta=timedelta(seconds=1))
 
@@ -68,7 +66,7 @@ class TestCleanUp(TestCase):
 
         # 4. delete_sessions_without_commands
         cowrie_repo.delete_sessions_without_commands.assert_called_once()
-        expected_session_cmd_date = datetime.now() - timedelta(days=COWRIE_SESSION_RETENTION)
+        expected_session_cmd_date = datetime.now() - timedelta(days=80)
         args, _ = cowrie_repo.delete_sessions_without_commands.call_args
         self.assertAlmostEqual(args[0], expected_session_cmd_date, delta=timedelta(seconds=1))
 
