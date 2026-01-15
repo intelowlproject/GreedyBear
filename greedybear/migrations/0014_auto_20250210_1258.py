@@ -12,7 +12,7 @@ def removeDdospot(apps, schema_editor):
         if ddospot.active and IOC.objects.filter(general_honeypot=ddospot).exists():
             return
         ddospot.delete()
-    except GeneralHoneypot.DoesNotExist as e:
+    except GeneralHoneypot.DoesNotExist:
         pass
 
 

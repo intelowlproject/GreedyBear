@@ -1,6 +1,5 @@
 # This file is a part of GreedyBear https://github.com/honeynet/GreedyBear
 # See the file 'LICENSE' for copying permission.
-from __future__ import absolute_import, unicode_literals
 
 import os
 
@@ -8,8 +7,9 @@ from celery import Celery
 from celery.schedules import crontab
 from celery.signals import setup_logging
 from django.conf import settings
-from greedybear.settings import EXTRACTION_INTERVAL, LEGACY_EXTRACTION
 from kombu import Exchange, Queue
+
+from greedybear.settings import EXTRACTION_INTERVAL, LEGACY_EXTRACTION
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "greedybear.settings")
 
@@ -110,6 +110,11 @@ app.conf.beat_schedule = {
     "get_whatsmyip": {
         "task": "greedybear.tasks.get_whatsmyip",
         "schedule": crontab(hour=4, minute=3, day_of_week=6),
+        "options": {"queue": "default"},
+    },
+    "extract_firehol_lists": {
+        "task": "greedybear.tasks.extract_firehol_lists",
+        "schedule": crontab(hour=4, minute=15, day_of_week=0),
         "options": {"queue": "default"},
     },
 }

@@ -5,7 +5,12 @@ Tests for Cowrie extraction helper functions and strategy.
 from unittest import TestCase
 from unittest.mock import MagicMock, Mock, patch
 
-from greedybear.cronjobs.extraction.strategies.cowrie import CowrieExtractionStrategy, normalize_command, normalize_credential_field, parse_url_hostname
+from greedybear.cronjobs.extraction.strategies.cowrie import (
+    CowrieExtractionStrategy,
+    normalize_command,
+    normalize_credential_field,
+    parse_url_hostname,
+)
 from greedybear.models import CommandSequence
 
 

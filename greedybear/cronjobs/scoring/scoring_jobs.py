@@ -1,15 +1,17 @@
 import json
-import logging
 from collections import defaultdict
 from datetime import date
 
 import pandas as pd
 from django.core.files.base import ContentFile
 from django.core.files.storage import FileSystemStorage
-from django.db.models import F
+
 from greedybear.cronjobs.base import Cronjob
+from greedybear.cronjobs.repositories import IocRepository
 from greedybear.cronjobs.scoring.random_forest import RFClassifier, RFRegressor
-from greedybear.cronjobs.scoring.utils import correlated_features, get_current_data, get_data_by_pks, get_features
+from greedybear.cronjobs.scoring.utils import (correlated_features,
+                                               get_current_data,
+                                               get_data_by_pks, get_features)
 from greedybear.models import IOC
 from greedybear.settings import ML_MODEL_DIRECTORY
 
@@ -47,7 +49,10 @@ class TrainModels(Cronjob):
         try:
             if self.storage.exists(TRAINING_DATA_FILENAME):
                 self.storage.delete(TRAINING_DATA_FILENAME)
-            self.storage.save(TRAINING_DATA_FILENAME, ContentFile(json.dumps(self.current_data, default=str)))
+            self.storage.save(
+                TRAINING_DATA_FILENAME,
+                ContentFile(json.dumps(self.current_data, default=str)),
+            )
         except Exception as exc:
             self.log.error(f"error saving training data: {exc}")
             raise exc
@@ -88,7 +93,9 @@ class TrainModels(Cronjob):
         self.current_data = get_current_data()
         current_date = max(row["last_seen"] for row in self.current_data)
 
-        self.log.info(f"current IoC data is from {current_date}, contains {len(self.current_data)} IoCs")
+        self.log.info(
+            f"current IoC data is from {current_date}, contains {len(self.current_data)} IoCs"
+        )
 
         training_data = self.load_training_data()
         if not training_data:
@@ -103,21 +110,31 @@ class TrainModels(Cronjob):
 
         training_date = max(ioc["last_seen"] for ioc in training_data)
         training_ips = {ioc["value"]: ioc["interaction_count"] for ioc in training_data}
-        self.log.info(f"training data is from {training_date}, contains {len(training_data)} IoCs")
+        self.log.info(
+            f"training data is from {training_date}, contains {len(training_data)} IoCs"
+        )
 
         if not training_date < current_date:
             self.log.error("training data must be older than current data")
             raise TrainingDataError()
 
         current_ips = defaultdict(
-            int, {ioc["value"]: ioc["interaction_count"] - training_ips.get(ioc["value"], 0) for ioc in self.current_data if ioc["last_seen"] > training_date}
+            int,
+            {
+                ioc["value"]: ioc["interaction_count"]
+                - training_ips.get(ioc["value"], 0)
+                for ioc in self.current_data
+                if ioc["last_seen"] > training_date
+            },
         )
 
         self.log.info("extracting features from training data")
         training_df = get_features(training_data, training_date)
         training_df["interactions_on_eval_day"] = training_df["value"].map(current_ips)
 
-        high_corr_pairs = correlated_features(training_df.select_dtypes(include="number"))
+        high_corr_pairs = correlated_features(
+            training_df.select_dtypes(include="number")
+        )
         if high_corr_pairs:
             self.log.debug("found highly correlated features")
         for f1, f2, corr in high_corr_pairs:
@@ -140,9 +157,10 @@ class UpdateScores(Cronjob):
     Designed to run as a scheduled cronjob.
     """
 
-    def __init__(self):
+    def __init__(self, ioc_repo=None):
         super().__init__()
         self.data = None
+        self.ioc_repo = ioc_repo if ioc_repo is not None else IocRepository()
 
     def update_db(self, df: pd.DataFrame, iocs: set[IOC] = None) -> int:
         """
@@ -164,13 +182,15 @@ class UpdateScores(Cronjob):
             int: The number of objects updated in the database.
         """
         self.log.info("begin updating scores")
-        reset_old_scores = False
+        reset_old_scores = iocs is None
         score_names = [s.score_name for s in SCORERS]
         scores_by_ip = df.set_index("value")[score_names].to_dict("index")
-        # If no IoCs were passed as an argument, fetch all IoCs
-        if iocs is None:
-            iocs = IOC.objects.filter(general_honeypot__active=True).filter(scanner=True).distinct().only("name", *score_names)
-            reset_old_scores = True
+        # If no IoCs were passed as an argument, fetch all IoCs via repository
+        iocs = (
+            self.ioc_repo.get_scanners_for_scoring(score_names)
+            if iocs is None
+            else iocs
+        )
         iocs_to_update = []
 
         self.log.info(f"checking {len(iocs)} IoCs")
@@ -192,7 +212,7 @@ class UpdateScores(Cronjob):
             if updated:
                 iocs_to_update.append(ioc)
         self.log.info(f"writing updated scores for {len(iocs_to_update)} IoCs to DB")
-        result = IOC.objects.bulk_update(iocs_to_update, score_names, batch_size=1000) if iocs_to_update else 0
+        result = self.ioc_repo.bulk_update_scores(iocs_to_update, score_names)
         self.log.info(f"{result} IoCs were updated")
         return result
 
@@ -207,7 +227,7 @@ class UpdateScores(Cronjob):
             int: Number of objects updated
         """
         iocs = set(iocs)
-        primary_keys = set(ioc.pk for ioc in iocs)
+        primary_keys = {ioc.pk for ioc in iocs}
         data = get_data_by_pks(primary_keys)
         current_date = str(date.today())
         self.log.info("extracting features: score_only")
@@ -231,7 +251,9 @@ class UpdateScores(Cronjob):
         their respective score columns to the dataframe.
         """
         if self.data is None:
-            self.log.info("no data handed over from previous task - fetching current IoC data from DB")
+            self.log.info(
+                "no data handed over from previous task - fetching current IoC data from DB"
+            )
             self.data = get_current_data()
         current_date = max(row["last_seen"] for row in self.data)
         self.log.info("extracting features")

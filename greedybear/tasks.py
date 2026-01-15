@@ -1,8 +1,8 @@
 # This file is a part of GreedyBear https://github.com/honeynet/GreedyBear
 # See the file 'LICENSE' for copying permission.
-from __future__ import absolute_import, unicode_literals
 
 from celery import shared_task
+
 from greedybear.settings import CLUSTER_COWRIE_COMMAND_SEQUENCES
 
 
@@ -69,3 +69,10 @@ def get_whatsmyip():
     from greedybear.cronjobs.whatsmyip import WhatsMyIPCron
 
     WhatsMyIPCron().execute()
+
+
+@shared_task()
+def extract_firehol_lists():
+    from greedybear.cronjobs.firehol import FireHolCron
+
+    FireHolCron().execute()

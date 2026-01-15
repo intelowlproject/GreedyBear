@@ -1,18 +1,9 @@
 repos:
--   repo: https://github.com/pycqa/flake8
-    rev: 7.1.1
+-   repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.12.7
     hooks:
-    - id: flake8
-      args: ["--config", ".github/configurations/python_linters/.flake8"]
-
--   repo: https://github.com/pycqa/isort
-    rev: 5.13.2
-    hooks:
-      - id: isort
-        args: ["--settings-path", ".github/configurations/python_linters/.isort.cfg", "--filter-files", "--skip", "venv"]
-
--   repo: https://github.com/psf/black
-    rev: 24.8.0
-    hooks:
-      - id: black
-        args: ["--config", ".github/configurations/python_linters/.black"]
+      - id: ruff
+        name: ruff-lint
+        args: ["--fix", "--config", "./.github/configurations/python_linters/.ruff.toml"]
+      - id: ruff-format
+        args: ["--config", "./.github/configurations/python_linters/.ruff.toml"]

@@ -88,7 +88,8 @@ jobs:
         node_version: ${{ fromJson(inputs.node_versions) }}
         language: ['javascript']
     steps:
-      - uses: actions/checkout@v4
+      - name: Check out latest commit for current branch
+        uses: actions/checkout@v4
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -102,7 +103,7 @@ jobs:
           if [[ '${{ inputs.use_jest }}' != 'false' ]]; then
             npm i -D --package-lock-only jest @testing-library/jest-dom babel-jest @babel/core @babel/preset-env
             if [[ '${{ inputs.use_react }}' != 'false' ]]; then
-              npm i -D --package-lock-only  @testing-library/react @testing-library/jest-dom
+              npm i -D --package-lock-only  @testing-library/react
             fi
           fi
           if [[ '${{ inputs.use_eslint }}' != 'false' ]]; then
@@ -124,10 +125,10 @@ jobs:
         uses: ./.github/actions/node_linter
         with:
           working_directory: ${{ inputs.working_directory }}
-          use_eslint: ${{ inputs.use_eslint == true }}
-          use_prettier: ${{ inputs.use_prettier == true }}
-          use_stylelint: ${{ inputs.use_stylelint == true }}
-          check_packages_licenses: ${{ inputs.check_packages_licenses == true }}
+          use_eslint: ${{ inputs.use_eslint }}
+          use_prettier: ${{ inputs.use_prettier }}
+          use_stylelint: ${{ inputs.use_stylelint }}
+          check_packages_licenses: ${{ inputs.check_packages_licenses }}
 
       - name: Check packages licenses
         if: ${{ inputs.check_packages_licenses }}
@@ -138,7 +139,7 @@ jobs:
           requirements: ${{ inputs.requirements_path }}
           external: ${{ inputs.working_directory }}/licenses.csv
           external-format: csv
-          table-headers: true
+          headers: true
           fail: 'StrongCopyleft,NetworkCopyleft,Error'
           fails-only: true
 

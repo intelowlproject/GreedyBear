@@ -6,7 +6,7 @@ import os
 from datetime import timedelta
 
 from django.core.management.utils import get_random_secret_key
-from elasticsearch8 import Elasticsearch
+from elasticsearch import Elasticsearch
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BASE_STATIC_PATH = os.path.join(BASE_DIR, "static/")
@@ -51,6 +51,7 @@ else:
 
 SLACK_TOKEN = os.environ.get("SLACK_TOKEN", "")
 DEFAULT_SLACK_CHANNEL = os.environ.get("DEFAULT_SLACK_CHANNEL", "")
+NTFY_URL = os.environ.get("NTFY_URL", "")
 
 VERSION = os.environ.get("REACT_APP_GREEDYBEAR_VERSION", "")
 

@@ -1,0 +1,103 @@
+name: Composite action create Python linter requirements file
+description: Composite action to create Python linter requirements file
+inputs:
+  install_from:
+    description: Directory that must be used to install the packages
+    required: false
+    default: .
+  project_linter_requirements_file:
+    description: An additional project linter requirements file
+    required: false
+  django_settings_module:
+    description: Path to the django settings file
+    required: false
+  use_autoflake:
+    description: Use autoflake linter
+    required: false
+  use_bandit:
+    description: Use bandit linter
+    required: false
+  use_black:
+    description: Use black formatter
+    required: false
+  use_flake8:
+    description: Use flake8 linter
+    required: false
+  use_isort:
+    description: Use isort formatter
+    required: false
+  use_pylint:
+    description: Use pylint linter
+    required: false
+  use_ruff_formatter:
+    description: Use ruff formatter
+    required: false
+  use_ruff_linter:
+    description: Use ruff linter
+    required: false
+
+
+runs:
+  using: "composite"
+  steps:
+    - name: Create requirements-linters.txt
+      run: |
+        function check_linter_dependency_and_append_to_file {
+          #
+          # Function to check whether a specific linter is in the requirements file
+          # If it can be found inside the requirements, said linter dependency will be appended to a newly created requirements-linter.txt file.
+          # If the linter is not found inside the requirements file an error will be raised.
+          #
+          # 1st parameter: Name of the linter.
+          # 2nd parameter: Path of the requirements file.
+          #
+          if [[ -z $(grep -P "^$1[^a-zA-Z0-9_-].*" "$2") ]]; then
+            echo "::error::$1 dependency not found in $2 file!"
+            exit 1
+          else
+            echo "$1 dependency found in $2!"
+            echo "$(grep -P ^$1[^a-zA-Z0-9_-].* $2)" >> requirements-linters.txt
+          fi
+        }
+        CI_REQUIREMENTS_LINTERS="${GITHUB_WORKSPACE}/.github/configurations/python_linters/requirements-linters.txt"
+        echo > requirements-linters.txt
+
+        if [[ '${{ inputs.use_black }}' != 'false' ]]; then
+          check_linter_dependency_and_append_to_file "black" "$CI_REQUIREMENTS_LINTERS"
+        fi
+
+        if [[ '${{ inputs.use_isort }}' != 'false' ]]; then
+          check_linter_dependency_and_append_to_file "isort" "$CI_REQUIREMENTS_LINTERS"
+        fi
+
+        if [[ '${{ inputs.use_flake8 }}' != 'false' ]]; then
+          check_linter_dependency_and_append_to_file "flake8" "$CI_REQUIREMENTS_LINTERS"
+          if [[ -n '${{ inputs.django_settings_module }}' ]]; then
+            check_linter_dependency_and_append_to_file "flake8-django" "$CI_REQUIREMENTS_LINTERS"
+          fi
+        fi
+
+        if [[ '${{ inputs.use_pylint }}' != 'false' ]]; then
+          check_linter_dependency_and_append_to_file "pylint" "$CI_REQUIREMENTS_LINTERS"
+          if [[ -n '${{ inputs.django_settings_module }}' ]]; then
+            check_linter_dependency_and_append_to_file "pylint-django" "$CI_REQUIREMENTS_LINTERS"
+          fi
+        fi
+
+        if [[ '${{ inputs.use_bandit }}' != 'false' ]]; then
+          check_linter_dependency_and_append_to_file "bandit" "$CI_REQUIREMENTS_LINTERS"
+        fi
+
+        if [[ '${{ inputs.use_autoflake }}' != 'false' ]]; then
+          check_linter_dependency_and_append_to_file "autoflake" "$CI_REQUIREMENTS_LINTERS"
+        fi
+
+        if [[ '${{ inputs.use_ruff_formatter }}' != 'false' || '${{ inputs.use_ruff_linter }}' != 'false' ]]; then
+          check_linter_dependency_and_append_to_file "ruff" "$CI_REQUIREMENTS_LINTERS"
+        fi
+
+        if [[ -z '${{ inputs.project_linter_requirements_file }}' ]]; then
+          cat $(echo ${{ inputs.project_linter_requirements_file }}) >> requirements-linters.txt
+        fi
+      shell: bash
+      working-directory: ${{ inputs.install_from }}

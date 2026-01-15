@@ -6,10 +6,11 @@ from certego_saas.ext.helpers import parse_humanized_range
 from django.db.models import Count, Q
 from django.db.models.functions import Trunc
 from django.http import HttpResponseServerError
-from greedybear.models import IOC, GeneralHoneypot, Statistics, viewType
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
+
+from greedybear.models import IOC, GeneralHoneypot, Statistics, ViewType
 
 logger = logging.getLogger(__name__)
 
@@ -39,11 +40,13 @@ class StatisticsViewSet(viewsets.ViewSet):
                 "Sources": Count(
                     "source",
                     distinct=True,
-                    filter=Q(view=viewType.FEEDS_VIEW.value),
+                    filter=Q(view=ViewType.FEEDS_VIEW.value),
                 )
             }
         elif pk == "downloads":
-            annotations = {"Downloads": Count("source", filter=Q(view=viewType.FEEDS_VIEW.value))}
+            annotations = {
+                "Downloads": Count("source", filter=Q(view=ViewType.FEEDS_VIEW.value))
+            }
         else:
             logger.error("this is impossible. check the code")
             return HttpResponseServerError()
@@ -66,11 +69,15 @@ class StatisticsViewSet(viewsets.ViewSet):
                 "Sources": Count(
                     "source",
                     distinct=True,
-                    filter=Q(view=viewType.ENRICHMENT_VIEW.value),
+                    filter=Q(view=ViewType.ENRICHMENT_VIEW.value),
                 )
             }
         elif pk == "requests":
-            annotations = {"Requests": Count("source", filter=Q(view=viewType.ENRICHMENT_VIEW.value))}
+            annotations = {
+                "Requests": Count(
+                    "source", filter=Q(view=ViewType.ENRICHMENT_VIEW.value)
+                )
+            }
         else:
             logger.error("this is impossible. check the code")
             return HttpResponseServerError()
@@ -89,9 +96,13 @@ class StatisticsViewSet(viewsets.ViewSet):
         """
         # Build annotations for each active general honeypot
         annotations = {}
-        generalHoneypots = GeneralHoneypot.objects.all().filter(active=True)
-        for hp in generalHoneypots:
-            annotations[hp.name] = Count("name", distinct=True, filter=Q(general_honeypot__name__iexact=hp.name.lower()))
+        general_honeypots = GeneralHoneypot.objects.filter(active=True)
+        for hp in general_honeypots:
+            annotations[hp.name] = Count(
+                "name",
+                distinct=True,
+                filter=Q(general_honeypot__name__iexact=hp.name.lower()),
+            )
         return self.__aggregation_response_static_ioc(annotations)
 
     def __aggregation_response_static_statistics(self, annotations: dict) -> Response:
@@ -105,7 +116,12 @@ class StatisticsViewSet(viewsets.ViewSet):
             Response: A JSON response containing the aggregated statistics.
         """
         delta, basis = self.__parse_range(self.request)
-        qs = Statistics.objects.filter(request_date__gte=delta).annotate(date=Trunc("request_date", basis)).values("date").annotate(**annotations)
+        qs = (
+            Statistics.objects.filter(request_date__gte=delta)
+            .annotate(date=Trunc("request_date", basis))
+            .values("date")
+            .annotate(**annotations)
+        )
         return Response(qs)
 
     def __aggregation_response_static_ioc(self, annotations: dict) -> Response:

@@ -5,6 +5,12 @@ inputs:
     description: Directory that must be run against the linters
     required: true
 
+  use_autoflake:
+    description: Use autoflake
+    required: true
+  use_bandit:
+    description: Use bandit linter
+    required: true
   use_black:
     description: Use black formatter
     required: true
@@ -17,11 +23,11 @@ inputs:
   use_pylint:
     description: Use pylint linter
     required: true
-  use_bandit:
-    description: Use bandit linter
+  use_ruff_formatter:
+    description: Use ruff formatter
     required: true
-  use_autoflake:
-    description: Use autoflake
+  use_ruff_linter:
+    description: Use ruff linter
     required: true
 
 runs:
@@ -66,10 +72,8 @@ runs:
         else
             echo "Skipping isort linter"
         fi
-
       working-directory: ${{ inputs.working_directory }}
       shell: bash
-
 
     - name: bandit
       run: |
@@ -78,7 +82,6 @@ runs:
         else
             echo "Skipping bandit linter"
         fi
-
       working-directory: ${{ inputs.working_directory }}
       shell: bash
 
@@ -88,6 +91,26 @@ runs:
           autoflake -r -cd . --remove-all-unused-imports --remove-unused-variables --ignore-init-module-imports --ignore-pass-statements
         else
             echo "Skipping autoflake"
+        fi
+      working-directory: ${{ inputs.working_directory }}
+      shell: bash
+
+    - name: ruff formatter
+      run: |
+        if [[ ${{ inputs.use_ruff_formatter }} != 'false' ]]; then
+          ruff format --config ${GITHUB_WORKSPACE}/.github/configurations/python_linters/.ruff.toml --diff .
+        else
+          echo "Skipping ruff formatter"
+        fi
+      working-directory: ${{ inputs.working_directory }}
+      shell: bash
+    
+    - name: ruff linter
+      run: |
+        if [[ ${{ inputs.use_ruff_linter }} != 'false' ]]; then
+          ruff check --config ${GITHUB_WORKSPACE}/.github/configurations/python_linters/.ruff.toml .
+        else
+          echo "Skipping ruff linter"
         fi
       working-directory: ${{ inputs.working_directory }}
       shell: bash

@@ -1,0 +1,58 @@
+# Top level settings
+## Reference: https://docs.astral.sh/ruff/settings/#top-level
+
+extend-exclude = [
+    ".github",
+    ".idea",
+    ".vscode",
+    "**/migrations/*"
+]
+
+include = ["*.py"]
+
+indent-width = 4
+
+line-length = 160
+
+output-format = "full"
+
+respect-gitignore = false
+
+show-fixes = true
+
+target-version = "py312"
+
+# Format settings level
+## Reference: https://docs.astral.sh/ruff/settings/#format
+[format]
+
+docstring-code-format = true
+
+indent-style = "space"
+
+line-ending = "native"
+
+quote-style = "double"
+
+skip-magic-trailing-comma = false
+
+[lint]
+
+select = [
+    "E",   # pycodestyle errors - https://docs.astral.sh/ruff/rules/#error-e
+    "W",   # pycodestyle warnings - https://docs.astral.sh/ruff/rules/#warning-w
+    "F",   # pyflakes - https://docs.astral.sh/ruff/rules/#pyflakes-f
+    "I",   # isort - https://docs.astral.sh/ruff/rules/#isort-i
+    "N",   # pep8-naming - https://docs.astral.sh/ruff/rules/#pep8-naming-n
+    "UP",  # pyupgrade - https://docs.astral.sh/ruff/rules/#pyupgrade-up
+    "B",   # flake8-bugbear - https://docs.astral.sh/ruff/rules/#flake8-bugbear-b
+    "C4",  # flake8-comprehensions - https://docs.astral.sh/ruff/rules/#flake8-comprehensions-c4
+    "DJ",  # flake8-django - https://docs.astral.sh/ruff/rules/#flake8-django-dj
+]
+
+ignore = [
+    # F403: Allow wildcard imports in __init__.py files
+    "F403",
+    # E501: Allow long lines in docstrings
+    "E501",
+]

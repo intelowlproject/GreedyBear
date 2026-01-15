@@ -8,14 +8,13 @@ from certego_saas.ext.upload import Slack
 from certego_saas.models import User
 from certego_saas.settings import certego_apps_settings
 from django.conf import settings
-from django.contrib.auth import password_validation
 from django.core.exceptions import ValidationError
 from django.db import DatabaseError, transaction
-from django.utils.translation import gettext_lazy as _
-from greedybear.consts import REGEX_PASSWORD
 from rest_framework import serializers as rfs
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 from slack_sdk.errors import SlackApiError
+
+from greedybear.consts import REGEX_PASSWORD
 
 from .models import UserProfile
 
@@ -103,9 +102,9 @@ class EmailVerificationSerializer(rest_email_auth.serializers.EmailVerificationS
             # custom error messages
             err_str = str(exc.detail)
             if "invalid" in err_str:
-                exc.detail = "The provided verification key" " is invalid or your email address is already verified."
+                exc.detail = "The provided verification key is invalid or your email address is already verified."
             if "expired" in err_str:
-                exc.detail = "The provided verification key" " has expired or your email address is already verified."
+                exc.detail = "The provided verification key has expired or your email address is already verified."
             raise exc
 
     def save(self):
@@ -122,7 +121,7 @@ class EmailVerificationSerializer(rest_email_auth.serializers.EmailVerificationS
             try:
                 userprofile = user.user_profile
                 user_admin_link = f"{settings.HOST_URI}/admin/certego_saas_user/user/{user.pk}"
-                userprofile_admin_link = f"{settings.HOST_URI}" f"/admin/authentication/userprofile/{userprofile.pk}"
+                userprofile_admin_link = f"{settings.HOST_URI}/admin/authentication/userprofile/{userprofile.pk}"
                 slack = Slack()
                 slack.send_message(
                     title="Newly registered user!!",
@@ -148,8 +147,8 @@ class LoginSerializer(AuthTokenSerializer):
                 user = User.objects.get(username=attrs["username"])
             except User.DoesNotExist:
                 # we do not want to leak info
-                # so just raise the original exception
-                raise exc
+                # so just raise the original exception without context
+                raise exc from None
             else:
                 # custom error messages
                 if not user.is_active:
@@ -161,4 +160,4 @@ class LoginSerializer(AuthTokenSerializer):
                         exc.detail = "Your account was declined."
                     logger.info(f"User {user} is not active. Error message: {exc.detail}")
             # else
-            raise exc
+            raise exc from None

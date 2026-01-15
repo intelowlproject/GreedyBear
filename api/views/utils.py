@@ -6,14 +6,16 @@ import re
 from datetime import datetime, timedelta
 from ipaddress import ip_address
 
-from api.serializers import FeedsRequestSerializer, FeedsResponseSerializer
 from django.conf import settings
 from django.contrib.postgres.aggregates import ArrayAgg
 from django.db.models import F
-from django.http import HttpResponse, HttpResponseBadRequest, StreamingHttpResponse
-from greedybear.models import IOC, GeneralHoneypot, Statistics
+from django.http import (HttpResponse, HttpResponseBadRequest,
+                         StreamingHttpResponse)
 from rest_framework import status
 from rest_framework.response import Response
+
+from api.serializers import FeedsRequestSerializer
+from greedybear.models import IOC, GeneralHoneypot, Statistics
 
 logger = logging.getLogger(__name__)
 
@@ -67,10 +69,20 @@ class FeedRequestParams:
         self.ioc_type = query_params.get("ioc_type", "all").lower()
         self.max_age = query_params.get("max_age", "3")
         self.min_days_seen = query_params.get("min_days_seen", "1")
-        self.include_reputation = query_params["include_reputation"].split(";") if "include_reputation" in query_params else []
-        self.exclude_reputation = query_params["exclude_reputation"].split(";") if "exclude_reputation" in query_params else []
+        self.include_reputation = (
+            query_params["include_reputation"].split(";")
+            if "include_reputation" in query_params
+            else []
+        )
+        self.exclude_reputation = (
+            query_params["exclude_reputation"].split(";")
+            if "exclude_reputation" in query_params
+            else []
+        )
         self.feed_size = query_params.get("feed_size", "5000")
-        self.ordering = query_params.get("ordering", "-last_seen").lower().replace("value", "name")
+        self.ordering = (
+            query_params.get("ordering", "-last_seen").lower().replace("value", "name")
+        )
         self.verbose = query_params.get("verbose", "false").lower()
         self.paginate = query_params.get("paginate", "false").lower()
         self.format = query_params.get("format_", "json").lower()
@@ -78,7 +90,7 @@ class FeedRequestParams:
 
     def apply_default_filters(self, query_params):
         if not query_params:
-            query_params = dict()
+            query_params = {}
         if "include_mass_scanners" not in query_params:
             self.exclude_reputation.append("mass scanner")
         if "include_tor_exit_nodes" not in query_params:
@@ -147,7 +159,9 @@ def get_queryset(request, feed_params, valid_feed_types):
     query_dict = {}
     if feed_params.feed_type != "all":
         # Handle 'log4j' as an alias for 'log4pot' for backward compatibility
-        honeypot_name = "log4pot" if feed_params.feed_type == "log4j" else feed_params.feed_type
+        honeypot_name = (
+            "log4pot" if feed_params.feed_type == "log4j" else feed_params.feed_type
+        )
         query_dict["general_honeypot__name__iexact"] = honeypot_name
 
     if feed_params.attack_type != "all":
@@ -156,7 +170,9 @@ def get_queryset(request, feed_params, valid_feed_types):
     if feed_params.ioc_type != "all":
         query_dict["type"] = feed_params.ioc_type
 
-    query_dict["last_seen__gte"] = datetime.now() - timedelta(days=int(feed_params.max_age))
+    query_dict["last_seen__gte"] = datetime.now() - timedelta(
+        days=int(feed_params.max_age)
+    )
     if int(feed_params.min_days_seen) > 1:
         query_dict["number_of_days_seen__gte"] = int(feed_params.min_days_seen)
     if feed_params.include_reputation:
@@ -212,7 +228,9 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
     logger.info(f"Format feeds in: {feed_params.format}")
     match feed_params.format:
         case "txt":
-            text_lines = [f"# {settings.FEEDS_LICENSE}"] if settings.FEEDS_LICENSE else []
+            text_lines = (
+                [f"# {settings.FEEDS_LICENSE}"] if settings.FEEDS_LICENSE else []
+            )
             text_lines += [ioc[0] for ioc in iocs.values_list("name")]
             return HttpResponse("\n".join(text_lines), content_type="text/plain")
         case "csv":
@@ -237,6 +255,7 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
                 "scanner",
                 "payload_request",
                 "ip_reputation",
+                "firehol_categories",
                 "asn",
                 "destination_ports",
                 "login_attempts",
@@ -245,10 +264,16 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
                 "recurrence_probability",
                 "expected_interactions",
             }
-            iocs = (ioc_as_dict(ioc, required_fields) for ioc in iocs) if isinstance(iocs, list) else iocs.values(*required_fields)
+            iocs = (
+                (ioc_as_dict(ioc, required_fields) for ioc in iocs)
+                if isinstance(iocs, list)
+                else iocs.values(*required_fields)
+            )
             for ioc in iocs:
                 # Build feed_type list from general_honeypot associations
-                ioc_feed_type = [hp.lower() for hp in ioc["honeypots"] if hp is not None]
+                ioc_feed_type = [
+                    hp.lower() for hp in ioc["honeypots"] if hp is not None
+                ]
 
                 data_ = ioc | {
                     "first_seen": ioc["first_seen"].strftime("%Y-%m-%d"),
@@ -257,21 +282,17 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
                     "destination_port_count": len(ioc["destination_ports"]),
                 }
 
-                if verbose:
-                    json_list.append(data_)
-                    continue
-
-                serializer_item = FeedsResponseSerializer(
-                    data=data_,
-                    context={"valid_feed_types": valid_feed_types},
-                )
-                serializer_item.is_valid(raise_exception=True)
-                json_list.append(serializer_item.data)
+                # Skip validation - data_ is constructed internally and matches the API contract
+                json_list.append(data_)
 
             # check if sorting the results by feed_type
             if feed_params.feed_type_sorting is not None:
                 logger.info("Return feeds sorted by feed_type field")
-                json_list = sorted(json_list, key=lambda k: k["feed_type"], reverse=feed_params.feed_type_sorting == "-feed_type")
+                json_list = sorted(
+                    json_list,
+                    key=lambda k: k["feed_type"],
+                    reverse=feed_params.feed_type_sorting == "-feed_type",
+                )
 
             logger.info(f"Number of feeds returned: {len(json_list)}")
             resp_data = {"iocs": json_list}

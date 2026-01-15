@@ -2,14 +2,19 @@
 # See the file 'LICENSE' for copying permission.
 import logging
 
-from api.serializers import EnrichmentSerializer
 from certego_saas.apps.auth.backend import CookieTokenAuthentication
-from greedybear.consts import GET
-from greedybear.models import Statistics, viewType
 from rest_framework import status
-from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.decorators import (
+    api_view,
+    authentication_classes,
+    permission_classes,
+)
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+
+from api.serializers import EnrichmentSerializer
+from greedybear.consts import GET
+from greedybear.models import Statistics, ViewType
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +39,7 @@ def enrichment_view(request):
     serializer.is_valid(raise_exception=True)
 
     source_ip = str(request.META["REMOTE_ADDR"])
-    request_source = Statistics(source=source_ip, view=viewType.ENRICHMENT_VIEW.value)
+    request_source = Statistics(source=source_ip, view=ViewType.ENRICHMENT_VIEW.value)
     request_source.save()
 
     return Response(serializer.data, status=status.HTTP_200_OK)

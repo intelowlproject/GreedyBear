@@ -2,8 +2,15 @@ from datetime import datetime
 from unittest.mock import Mock, patch
 
 from greedybear.consts import DOMAIN, IP
-from greedybear.cronjobs.extraction.utils import correct_ip_reputation, get_ioc_type, iocs_from_hits, is_whatsmyip_domain, threatfox_submission
-from greedybear.models import MassScanner, WhatsMyIPDomain
+from greedybear.cronjobs.extraction.utils import (
+    correct_ip_reputation,
+    get_ioc_type,
+    iocs_from_hits,
+    is_valid_ipv4,
+    is_whatsmyip_domain,
+    threatfox_submission,
+)
+from greedybear.models import FireHolList, MassScanner, WhatsMyIPDomain
 
 from . import CustomTestCase, ExtractionTestCase
 
@@ -26,6 +33,134 @@ class TestGetIocType(CustomTestCase):
     def test_invalid_ip_returns_domain(self):
         self.assertEqual(get_ioc_type("256.1.1.1"), DOMAIN)
         self.assertEqual(get_ioc_type("1.2.3"), DOMAIN)
+
+
+class TestIsValidIpv4(CustomTestCase):
+    def test_valid_ipv4_returns_true_and_cleaned_ip(self):
+        is_valid, ip = is_valid_ipv4("1.2.3.4")
+        self.assertTrue(is_valid)
+        self.assertEqual(ip, "1.2.3.4")
+
+    def test_valid_ipv4_edge_cases(self):
+        # Test boundary values
+        is_valid, ip = is_valid_ipv4("0.0.0.0")
+        self.assertTrue(is_valid)
+        self.assertEqual(ip, "0.0.0.0")
+
+        is_valid, ip = is_valid_ipv4("255.255.255.255")
+        self.assertTrue(is_valid)
+        self.assertEqual(ip, "255.255.255.255")
+
+        is_valid, ip = is_valid_ipv4("192.168.1.1")
+        self.assertTrue(is_valid)
+        self.assertEqual(ip, "192.168.1.1")
+
+    def test_ipv4_with_whitespace_strips_and_validates(self):
+        # Test leading whitespace
+        is_valid, ip = is_valid_ipv4("  1.2.3.4")
+        self.assertTrue(is_valid)
+        self.assertEqual(ip, "1.2.3.4")
+
+        # Test trailing whitespace
+        is_valid, ip = is_valid_ipv4("1.2.3.4  ")
+        self.assertTrue(is_valid)
+        self.assertEqual(ip, "1.2.3.4")
+
+        # Test both
+        is_valid, ip = is_valid_ipv4("  1.2.3.4  ")
+        self.assertTrue(is_valid)
+        self.assertEqual(ip, "1.2.3.4")
+
+    def test_invalid_ipv4_out_of_range_octets(self):
+        # Test octets > 255
+        is_valid, ip = is_valid_ipv4("256.1.1.1")
+        self.assertFalse(is_valid)
+        self.assertIsNone(ip)
+
+        is_valid, ip = is_valid_ipv4("1.256.1.1")
+        self.assertFalse(is_valid)
+        self.assertIsNone(ip)
+
+        is_valid, ip = is_valid_ipv4("1.1.256.1")
+        self.assertFalse(is_valid)
+        self.assertIsNone(ip)
+
+        is_valid, ip = is_valid_ipv4("1.1.1.256")
+        self.assertFalse(is_valid)
+        self.assertIsNone(ip)
+
+        is_valid, ip = is_valid_ipv4("999.999.999.999")
+        self.assertFalse(is_valid)
+        self.assertIsNone(ip)
+
+    def test_invalid_ipv4_incomplete_format(self):
+        # Too few octets
+        is_valid, ip = is_valid_ipv4("1.2.3")
+        self.assertFalse(is_valid)
+        self.assertIsNone(ip)
+
+        is_valid, ip = is_valid_ipv4("1.2")
+        self.assertFalse(is_valid)
+        self.assertIsNone(ip)
+
+        is_valid, ip = is_valid_ipv4("1")
+        self.assertFalse(is_valid)
+        self.assertIsNone(ip)
+
+    def test_invalid_ipv4_too_many_octets(self):
+        is_valid, ip = is_valid_ipv4("1.2.3.4.5")
+        self.assertFalse(is_valid)
+        self.assertIsNone(ip)
+
+    def test_invalid_ipv4_domains(self):
+        is_valid, ip = is_valid_ipv4("example.com")
+        self.assertFalse(is_valid)
+        self.assertIsNone(ip)
+
+        is_valid, ip = is_valid_ipv4("sub.example.com")
+        self.assertFalse(is_valid)
+        self.assertIsNone(ip)
+
+    def test_invalid_ipv4_ipv6_addresses(self):
+        # IPv6 should not be valid for IPv4 validation
+        is_valid, ip = is_valid_ipv4("2001:0db8:85a3::8a2e:0370:7334")
+        self.assertFalse(is_valid)
+        self.assertIsNone(ip)
+
+        is_valid, ip = is_valid_ipv4("::1")
+        self.assertFalse(is_valid)
+        self.assertIsNone(ip)
+
+    def test_invalid_ipv4_random_strings(self):
+        is_valid, ip = is_valid_ipv4("/w00tw00t.at.ISC.SANS.DFind:)")
+        self.assertFalse(is_valid)
+        self.assertIsNone(ip)
+
+        is_valid, ip = is_valid_ipv4("not an ip")
+        self.assertFalse(is_valid)
+        self.assertIsNone(ip)
+
+        is_valid, ip = is_valid_ipv4("")
+        self.assertFalse(is_valid)
+        self.assertIsNone(ip)
+
+    def test_invalid_ipv4_special_characters(self):
+        is_valid, ip = is_valid_ipv4("1.2.3.4#comment")
+        self.assertFalse(is_valid)
+        self.assertIsNone(ip)
+
+        is_valid, ip = is_valid_ipv4("1.2.3.4 # comment")
+        self.assertFalse(is_valid)
+        self.assertIsNone(ip)
+
+    def test_invalid_ipv4_negative_numbers(self):
+        is_valid, ip = is_valid_ipv4("-1.2.3.4")
+        self.assertFalse(is_valid)
+        self.assertIsNone(ip)
+
+        is_valid, ip = is_valid_ipv4("1.-2.3.4")
+        self.assertFalse(is_valid)
+        self.assertIsNone(ip)
 
 
 class TestIsWhatsmyipDomain(CustomTestCase):
@@ -227,6 +362,64 @@ class IocsFromHitsTestCase(CustomTestCase):
     def test_empty_hits_returns_empty_list(self):
         iocs = iocs_from_hits([])
         self.assertEqual(iocs, [])
+
+    def test_firehol_enrichment_exact_ip_match(self):
+        """Test that IOCs get FireHol categories for exact IP matches (.ipset files)"""
+        FireHolList.objects.create(ip_address="8.8.8.8", source="blocklist_de")
+        FireHolList.objects.create(ip_address="8.8.8.8", source="greensnow")
+
+        hits = [self._create_hit(src_ip="8.8.8.8")]
+        iocs = iocs_from_hits(hits)
+
+        self.assertEqual(len(iocs), 1)
+        self.assertIn("blocklist_de", iocs[0].firehol_categories)
+        self.assertIn("greensnow", iocs[0].firehol_categories)
+        self.assertEqual(len(iocs[0].firehol_categories), 2)
+
+    def test_firehol_enrichment_network_range_match(self):
+        """Test that IOCs get FireHol categories when IP is within a CIDR range (.netset files)"""
+        FireHolList.objects.create(ip_address="8.8.8.0/24", source="dshield")
+
+        hits = [self._create_hit(src_ip="8.8.8.100")]
+        iocs = iocs_from_hits(hits)
+
+        self.assertEqual(len(iocs), 1)
+        self.assertIn("dshield", iocs[0].firehol_categories)
+
+    def test_firehol_enrichment_no_match(self):
+        """Test that IOCs have empty FireHol categories when there's no match"""
+        FireHolList.objects.create(ip_address="1.1.1.1", source="blocklist_de")
+        FireHolList.objects.create(ip_address="9.9.9.0/24", source="dshield")
+
+        hits = [self._create_hit(src_ip="8.8.8.8")]
+        iocs = iocs_from_hits(hits)
+
+        self.assertEqual(len(iocs), 1)
+        self.assertEqual(iocs[0].firehol_categories, [])
+
+    def test_firehol_enrichment_mixed_match(self):
+        """Test FireHol enrichment with both exact match and network range match"""
+        FireHolList.objects.create(ip_address="8.8.8.8", source="blocklist_de")
+        FireHolList.objects.create(ip_address="8.8.0.0/16", source="dshield")
+
+        hits = [self._create_hit(src_ip="8.8.8.8")]
+        iocs = iocs_from_hits(hits)
+
+        self.assertEqual(len(iocs), 1)
+        self.assertIn("blocklist_de", iocs[0].firehol_categories)
+        self.assertIn("dshield", iocs[0].firehol_categories)
+
+    def test_firehol_enrichment_deduplicates_sources(self):
+        """Test that duplicate sources are not added"""
+        FireHolList.objects.create(ip_address="8.8.8.8", source="blocklist_de")
+        FireHolList.objects.create(ip_address="8.8.0.0/16", source="blocklist_de")
+
+        hits = [self._create_hit(src_ip="8.8.8.8")]
+        iocs = iocs_from_hits(hits)
+
+        self.assertEqual(len(iocs), 1)
+        # Should only have one instance of blocklist_de
+        self.assertEqual(iocs[0].firehol_categories.count("blocklist_de"), 1)
 
 
 class ThreatfoxSubmissionTestCase(ExtractionTestCase):

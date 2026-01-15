@@ -2,7 +2,6 @@
 # See the file 'LICENSE' for copying permission.
 import base64
 import re
-from typing import Optional
 from urllib.parse import urlparse
 
 from greedybear.consts import PAYLOAD_REQUEST, SCANNER
@@ -62,10 +61,10 @@ class Log4potExtractionStrategy(BaseExtractionStrategy):
             if match_command:
                 # we are losing the protocol but that's ok for now
                 base64_encoded = match_command.group(1)
-                self.log.info(f"found base64 encoded command {base64_encoded}" f" in payload from base64 code for CVE-2021-44228")
+                self.log.info(f"found base64 encoded command {base64_encoded} in payload from base64 code for CVE-2021-44228")
                 try:
                     decoded_str = base64.b64decode(base64_encoded).decode()
-                    self.log.info(f"decoded base64 command to {decoded_str}" f" from payload from base64 code for CVE-2021-44228")
+                    self.log.info(f"decoded base64 command to {decoded_str} from payload from base64 code for CVE-2021-44228")
                 except Exception as e:
                     self.log.warning(e, stack_info=True)
                 else:
@@ -74,7 +73,7 @@ class Log4potExtractionStrategy(BaseExtractionStrategy):
                         hidden_url = match_url.group()
                         if "://" not in hidden_url:
                             hidden_url = "tcp://" + hidden_url
-                        self.log.info(f"found hidden URL {hidden_url}" f" in payload for CVE-2021-44228")
+                        self.log.info(f"found hidden URL {hidden_url} in payload for CVE-2021-44228")
 
                         hidden_hostname = urlparse(hidden_url).hostname
                         self.log.info(f"extracted hostname {hidden_hostname} from {hidden_url}")
@@ -110,7 +109,7 @@ class Log4potExtractionStrategy(BaseExtractionStrategy):
             # once all have added, we can add the foreign keys
             self._add_fks(scanner_ip, hostname, hidden_hostname)
 
-        self.log.info(f"added {added_scanners} scanners, {added_payloads}" f" payloads" f" and {added_hidden_payloads} hidden payloads")
+        self.log.info(f"added {added_scanners} scanners, {added_payloads} payloads and {added_hidden_payloads} hidden payloads")
 
     def _add_fks(self, scanner_ip: str, hostname: str, hidden_hostname: str) -> None:
         self.log.info(f"adding foreign keys for the following iocs: {scanner_ip}, {hostname}, {hidden_hostname}")
@@ -139,7 +138,7 @@ class Log4potExtractionStrategy(BaseExtractionStrategy):
                 hidden_hostname_instance.related_ioc.add(scanner_ip_instance)
             self.ioc_repo.save(hidden_hostname_instance)
 
-    def _get_scanner_ip(self, correlation_id: str, hits: list[dict]) -> Optional[str]:
+    def _get_scanner_ip(self, correlation_id: str, hits: list[dict]) -> str | None:
         self.log.info(f"extracting scanner IP from correlation_id {correlation_id}")
         filtered_hits = [hit for hit in hits if str(hit.get("correlation_id", "")) == str(correlation_id) and hit.get("reason", "") == "request"]
 

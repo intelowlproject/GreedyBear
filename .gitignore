@@ -7,3 +7,6 @@ __pycache__/
 mlmodels/
 # JetBrains IDEs (PyCharm, IntelliJ, etc.)
 .idea/
+# Ruff cache
+.ruff_cache/
+
