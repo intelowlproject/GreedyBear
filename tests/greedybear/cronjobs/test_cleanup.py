@@ -1,12 +1,12 @@
 from datetime import datetime, timedelta
-from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
 from greedybear.cronjobs.cleanup import CleanUp
 from greedybear.cronjobs.repositories import CowrieSessionRepository, IocRepository
+from tests import CustomTestCase
 
 
-class TestCleanUp(TestCase):
+class TestCleanUp(CustomTestCase):
     def test_init_uses_default_repos(self):
         """Test that the CleanUp job initializes with default repositories if none are provided."""
         cleanup_job = CleanUp()
@@ -45,7 +45,9 @@ class TestCleanUp(TestCase):
         expected_ioc_date = datetime.now() - timedelta(days=100)
         # Check that the date passed is approximately correct (within 1 second)
         args, _ = ioc_repo.delete_old_iocs.call_args
-        self.assertAlmostEqual(args[0], expected_ioc_date, delta=timedelta(seconds=1))
+        actual_date = args[0]
+        time_diff = abs((actual_date - expected_ioc_date).total_seconds())
+        self.assertLess(time_diff, 1, f"Date difference ({time_diff}s) exceeds 1 second tolerance")
 
         # Verify interactions with CowrieSessionRepository
 
@@ -53,7 +55,9 @@ class TestCleanUp(TestCase):
         cowrie_repo.delete_old_command_sequences.assert_called_once()
         expected_cmd_date = datetime.now() - timedelta(days=90)
         args, _ = cowrie_repo.delete_old_command_sequences.call_args
-        self.assertAlmostEqual(args[0], expected_cmd_date, delta=timedelta(seconds=1))
+        actual_date = args[0]
+        time_diff = abs((actual_date - expected_cmd_date).total_seconds())
+        self.assertLess(time_diff, 1, f"Date difference ({time_diff}s) exceeds 1 second tolerance")
 
         # 2. delete_incomplete_sessions
         cowrie_repo.delete_incomplete_sessions.assert_called_once()
@@ -62,13 +66,17 @@ class TestCleanUp(TestCase):
         cowrie_repo.delete_sessions_without_login.assert_called_once()
         expected_session_login_date = datetime.now() - timedelta(days=30)
         args, _ = cowrie_repo.delete_sessions_without_login.call_args
-        self.assertAlmostEqual(args[0], expected_session_login_date, delta=timedelta(seconds=1))
+        actual_date = args[0]
+        time_diff = abs((actual_date - expected_session_login_date).total_seconds())
+        self.assertLess(time_diff, 1, f"Date difference ({time_diff}s) exceeds 1 second tolerance")
 
         # 4. delete_sessions_without_commands
         cowrie_repo.delete_sessions_without_commands.assert_called_once()
         expected_session_cmd_date = datetime.now() - timedelta(days=80)
         args, _ = cowrie_repo.delete_sessions_without_commands.call_args
-        self.assertAlmostEqual(args[0], expected_session_cmd_date, delta=timedelta(seconds=1))
+        actual_date = args[0]
+        time_diff = abs((actual_date - expected_session_cmd_date).total_seconds())
+        self.assertLess(time_diff, 1, f"Date difference ({time_diff}s) exceeds 1 second tolerance")
 
         # Verify logging messages
         # We expect 5 pairs of logs (start + result)
