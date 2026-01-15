@@ -54,7 +54,11 @@ class TestClassifier(CustomTestCase):
             self.assertEqual(a, b)
 
         df = classifier.score(SAMPLE_DATA)
-        for a, b in zip(df["mock_score"], classifier.model.predict_proba.return_value[:, 1], strict=False):
+        for a, b in zip(
+            df["mock_score"],
+            classifier.model.predict_proba.return_value[:, 1],
+            strict=False,
+        ):
             self.assertEqual(a, b)
 
         auc = classifier.recall_auc(df, training_target)

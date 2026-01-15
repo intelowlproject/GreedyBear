@@ -5,8 +5,13 @@ from unittest.mock import Mock
 from certego_saas.apps.user.models import User
 from django.test import TestCase
 
-from greedybear.models import (IOC, CommandSequence, CowrieSession,
-                               GeneralHoneypot, IocType)
+from greedybear.models import (
+    IOC,
+    CommandSequence,
+    CowrieSession,
+    GeneralHoneypot,
+    IocType,
+)
 
 
 class CustomTestCase(TestCase):
@@ -15,21 +20,11 @@ class CustomTestCase(TestCase):
         super().setUpTestData()
 
         # Create GeneralHoneypot entries for Cowrie and Log4Pot (required for unified model)
-        cls.cowrie = GeneralHoneypot.objects.get_or_create(
-            name="Cowrie", defaults={"active": True}
-        )[0]
-        cls.log4pot = GeneralHoneypot.objects.get_or_create(
-            name="Log4Pot", defaults={"active": True}
-        )[0]
-        cls.heralding = GeneralHoneypot.objects.get_or_create(
-            name="Heralding", defaults={"active": True}
-        )[0]
-        cls.ciscoasa = GeneralHoneypot.objects.get_or_create(
-            name="Ciscoasa", defaults={"active": True}
-        )[0]
-        cls.ddospot = GeneralHoneypot.objects.get_or_create(
-            name="Ddospot", defaults={"active": False}
-        )[0]
+        cls.cowrie = GeneralHoneypot.objects.get_or_create(name="Cowrie", defaults={"active": True})[0]
+        cls.log4pot = GeneralHoneypot.objects.get_or_create(name="Log4Pot", defaults={"active": True})[0]
+        cls.heralding = GeneralHoneypot.objects.get_or_create(name="Heralding", defaults={"active": True})[0]
+        cls.ciscoasa = GeneralHoneypot.objects.get_or_create(name="Ciscoasa", defaults={"active": True})[0]
+        cls.ddospot = GeneralHoneypot.objects.get_or_create(name="Ddospot", defaults={"active": False})[0]
 
         cls.current_time = datetime.now()
         cls.ioc = IOC.objects.create(
@@ -179,15 +174,11 @@ class CustomTestCase(TestCase):
         try:
             cls.superuser = User.objects.get(is_superuser=True)
         except User.DoesNotExist:
-            cls.superuser = User.objects.create_superuser(
-                username="test", email="test@greedybear.com", password="test"
-            )
+            cls.superuser = User.objects.create_superuser(username="test", email="test@greedybear.com", password="test")
         try:
             cls.regular_user = User.objects.get(is_superuser=False)
         except User.DoesNotExist:
-            cls.regular_user = User.objects.create_user(
-                username="regular", email="regular@greedybear.com", password="regular"
-            )
+            cls.regular_user = User.objects.create_user(username="regular", email="regular@greedybear.com", password="regular")
 
     @classmethod
     def tearDownClass(cls):
@@ -226,9 +217,7 @@ class ExtractionTestCase(CustomTestCase):
         mock.attack_count = attack_count
         mock.interaction_count = interaction_count
         mock.related_urls = related_urls if related_urls is not None else []
-        mock.destination_ports = (
-            destination_ports if destination_ports is not None else []
-        )
+        mock.destination_ports = destination_ports if destination_ports is not None else []
         mock.days_seen = days_seen if days_seen is not None else []
         mock.login_attempts = login_attempts
         mock.last_seen = last_seen if last_seen is not None else datetime.now()

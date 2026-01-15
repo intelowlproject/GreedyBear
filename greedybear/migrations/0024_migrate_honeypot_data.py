@@ -16,12 +16,8 @@ def migrate_honeypots_forward(apps, schema_editor):
     GeneralHoneypot = apps.get_model("greedybear", "GeneralHoneypot")
 
     # Create or get the GeneralHoneypot entries for Cowrie and Log4Pot
-    cowrie_hp, _ = GeneralHoneypot.objects.get_or_create(
-        name="Cowrie", defaults={"active": True}
-    )
-    log4pot_hp, _ = GeneralHoneypot.objects.get_or_create(
-        name="Log4Pot", defaults={"active": True}
-    )
+    cowrie_hp, _ = GeneralHoneypot.objects.get_or_create(name="Cowrie", defaults={"active": True})
+    log4pot_hp, _ = GeneralHoneypot.objects.get_or_create(name="Log4Pot", defaults={"active": True})
 
     # Migrate Cowrie IOCs - using iterator for memory efficiency with large datasets
     for ioc in IOC.objects.filter(cowrie=True).iterator():

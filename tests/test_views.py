@@ -40,9 +40,7 @@ class EnrichmentViewTestCase(CustomTestCase):
             response.json()["ioc"]["last_seen"],
             self.ioc.last_seen.isoformat(sep="T", timespec="microseconds"),
         )
-        self.assertEqual(
-            response.json()["ioc"]["number_of_days_seen"], self.ioc.number_of_days_seen
-        )
+        self.assertEqual(response.json()["ioc"]["number_of_days_seen"], self.ioc.number_of_days_seen)
         self.assertEqual(response.json()["ioc"]["attack_count"], self.ioc.attack_count)
         # Verify general_honeypot M2M relationship (unified model, no more boolean fields)
         general_honeypots = response.json()["ioc"]["general_honeypot"]
@@ -51,9 +49,7 @@ class EnrichmentViewTestCase(CustomTestCase):
         self.assertIn(self.heralding.name, general_honeypots)
         self.assertIn(self.ciscoasa.name, general_honeypots)
         self.assertEqual(response.json()["ioc"]["scanner"], self.ioc.scanner)
-        self.assertEqual(
-            response.json()["ioc"]["payload_request"], self.ioc.payload_request
-        )
+        self.assertEqual(response.json()["ioc"]["payload_request"], self.ioc.payload_request)
         self.assertEqual(
             response.json()["ioc"]["recurrence_probability"],
             self.ioc.recurrence_probability,
@@ -83,18 +79,12 @@ class FeedsViewTestCase(CustomTestCase):
         target_ioc = next((i for i in iocs if i["value"] == self.ioc.name), None)
         self.assertIsNotNone(target_ioc)
 
-        self.assertEqual(
-            set(target_ioc["feed_type"]), {"cowrie", "log4pot", "heralding", "ciscoasa"}
-        )
+        self.assertEqual(set(target_ioc["feed_type"]), {"cowrie", "log4pot", "heralding", "ciscoasa"})
         self.assertEqual(target_ioc["attack_count"], 1)
         self.assertEqual(target_ioc["scanner"], True)
         self.assertEqual(target_ioc["payload_request"], True)
-        self.assertEqual(
-            target_ioc["recurrence_probability"], self.ioc.recurrence_probability
-        )
-        self.assertEqual(
-            target_ioc["expected_interactions"], self.ioc.expected_interactions
-        )
+        self.assertEqual(target_ioc["recurrence_probability"], self.ioc.recurrence_probability)
+        self.assertEqual(target_ioc["expected_interactions"], self.ioc.expected_interactions)
 
     def test_log4j_alias_maps_to_log4pot(self):
         """
@@ -187,23 +177,15 @@ class FeedsViewTestCase(CustomTestCase):
         target_ioc = next((i for i in iocs if i["value"] == self.ioc.name), None)
         self.assertIsNotNone(target_ioc)
 
-        self.assertEqual(
-            set(target_ioc["feed_type"]), {"cowrie", "log4pot", "heralding", "ciscoasa"}
-        )
+        self.assertEqual(set(target_ioc["feed_type"]), {"cowrie", "log4pot", "heralding", "ciscoasa"})
         self.assertEqual(target_ioc["attack_count"], 1)
         self.assertEqual(target_ioc["scanner"], True)
         self.assertEqual(target_ioc["payload_request"], True)
-        self.assertEqual(
-            target_ioc["recurrence_probability"], self.ioc.recurrence_probability
-        )
-        self.assertEqual(
-            target_ioc["expected_interactions"], self.ioc.expected_interactions
-        )
+        self.assertEqual(target_ioc["recurrence_probability"], self.ioc.recurrence_probability)
+        self.assertEqual(target_ioc["expected_interactions"], self.ioc.expected_interactions)
 
     def test_200_feeds_scanner_inclusion(self):
-        response = self.client.get(
-            "/api/feeds/heralding/all/recent.json?include_mass_scanners"
-        )
+        response = self.client.get("/api/feeds/heralding/all/recent.json?include_mass_scanners")
         self.assertEqual(response.status_code, 200)
         if settings.FEEDS_LICENSE:
             self.assertEqual(response.json()["license"], settings.FEEDS_LICENSE)
@@ -217,31 +199,23 @@ class FeedsViewTestCase(CustomTestCase):
         self.assertEqual(response.status_code, 400)
 
     def test_200_feeds_pagination(self):
-        response = self.client.get(
-            "/api/feeds/?page_size=10&page=1&feed_type=all&attack_type=all&age=recent"
-        )
+        response = self.client.get("/api/feeds/?page_size=10&page=1&feed_type=all&attack_type=all&age=recent")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["count"], 2)
         self.assertEqual(response.json()["total_pages"], 1)
 
     def test_200_feeds_pagination_inclusion_mass(self):
-        response = self.client.get(
-            "/api/feeds/?page_size=10&page=1&feed_type=all&attack_type=all&age=recent&include_mass_scanners"
-        )
+        response = self.client.get("/api/feeds/?page_size=10&page=1&feed_type=all&attack_type=all&age=recent&include_mass_scanners")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["count"], 3)
 
     def test_200_feeds_pagination_inclusion_tor(self):
-        response = self.client.get(
-            "/api/feeds/?page_size=10&page=1&feed_type=all&attack_type=all&age=recent&include_tor_exit_nodes"
-        )
+        response = self.client.get("/api/feeds/?page_size=10&page=1&feed_type=all&attack_type=all&age=recent&include_tor_exit_nodes")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["count"], 3)
 
     def test_200_feeds_pagination_inclusion_mass_and_tor(self):
-        response = self.client.get(
-            "/api/feeds/?page_size=10&page=1&feed_type=all&attack_type=all&age=recent&include_mass_scanners&include_tor_exit_nodes"
-        )
+        response = self.client.get("/api/feeds/?page_size=10&page=1&feed_type=all&attack_type=all&age=recent&include_mass_scanners&include_tor_exit_nodes")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["count"], 4)
 
@@ -271,17 +245,13 @@ class FeedsViewTestCase(CustomTestCase):
         self.assertEqual(response.json()["count"], 3)
 
     def test_200_feeds_pagination_filter_domain(self):
-        response = self.client.get(
-            "/api/feeds/?page_size=10&page=1&feed_type=all&attack_type=all&age=recent&ioc_type=domain"
-        )
+        response = self.client.get("/api/feeds/?page_size=10&page=1&feed_type=all&attack_type=all&age=recent&ioc_type=domain")
         self.assertEqual(response.status_code, 200)
         # Should return only domains (1 in test data)
         self.assertEqual(response.json()["count"], 1)
 
     def test_400_feeds_pagination(self):
-        response = self.client.get(
-            "/api/feeds/?page_size=10&page=1&feed_type=all&attack_type=test&age=recent"
-        )
+        response = self.client.get("/api/feeds/?page_size=10&page=1&feed_type=all&attack_type=test&age=recent")
         self.assertEqual(response.status_code, 400)
 
 
@@ -302,18 +272,12 @@ class FeedsAdvancedViewTestCase(CustomTestCase):
         target_ioc = next((i for i in iocs if i["value"] == self.ioc.name), None)
         self.assertIsNotNone(target_ioc)
 
-        self.assertEqual(
-            set(target_ioc["feed_type"]), {"cowrie", "log4pot", "heralding", "ciscoasa"}
-        )
+        self.assertEqual(set(target_ioc["feed_type"]), {"cowrie", "log4pot", "heralding", "ciscoasa"})
         self.assertEqual(target_ioc["attack_count"], 1)
         self.assertEqual(target_ioc["scanner"], True)
         self.assertEqual(target_ioc["payload_request"], True)
-        self.assertEqual(
-            target_ioc["recurrence_probability"], self.ioc.recurrence_probability
-        )
-        self.assertEqual(
-            target_ioc["expected_interactions"], self.ioc.expected_interactions
-        )
+        self.assertEqual(target_ioc["recurrence_probability"], self.ioc.recurrence_probability)
+        self.assertEqual(target_ioc["expected_interactions"], self.ioc.expected_interactions)
 
     def test_200_general_feeds(self):
         response = self.client.get("/api/feeds/advanced/?feed_type=heralding")
@@ -327,59 +291,43 @@ class FeedsAdvancedViewTestCase(CustomTestCase):
         target_ioc = next((i for i in iocs if i["value"] == self.ioc.name), None)
         self.assertIsNotNone(target_ioc)
 
-        self.assertEqual(
-            set(target_ioc["feed_type"]), {"cowrie", "log4pot", "heralding", "ciscoasa"}
-        )
+        self.assertEqual(set(target_ioc["feed_type"]), {"cowrie", "log4pot", "heralding", "ciscoasa"})
         self.assertEqual(target_ioc["attack_count"], 1)
         self.assertEqual(target_ioc["scanner"], True)
         self.assertEqual(target_ioc["payload_request"], True)
-        self.assertEqual(
-            target_ioc["recurrence_probability"], self.ioc.recurrence_probability
-        )
-        self.assertEqual(
-            target_ioc["expected_interactions"], self.ioc.expected_interactions
-        )
+        self.assertEqual(target_ioc["recurrence_probability"], self.ioc.recurrence_probability)
+        self.assertEqual(target_ioc["expected_interactions"], self.ioc.expected_interactions)
 
     def test_400_feeds(self):
         response = self.client.get("/api/feeds/advanced/?attack_type=test")
         self.assertEqual(response.status_code, 400)
 
     def test_200_feeds_pagination(self):
-        response = self.client.get(
-            "/api/feeds/advanced/?paginate=true&page_size=10&page=1"
-        )
+        response = self.client.get("/api/feeds/advanced/?paginate=true&page_size=10&page=1")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["count"], 4)
         self.assertEqual(response.json()["total_pages"], 1)
 
     def test_200_feeds_pagination_include(self):
-        response = self.client.get(
-            "/api/feeds/advanced/?paginate=true&page_size=10&page=1&include_reputation=mass%20scanner"
-        )
+        response = self.client.get("/api/feeds/advanced/?paginate=true&page_size=10&page=1&include_reputation=mass%20scanner")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["count"], 1)
         self.assertEqual(response.json()["total_pages"], 1)
 
     def test_200_feeds_pagination_exclude_mass(self):
-        response = self.client.get(
-            "/api/feeds/advanced/?paginate=true&page_size=10&page=1&exclude_reputation=mass%20scanner"
-        )
+        response = self.client.get("/api/feeds/advanced/?paginate=true&page_size=10&page=1&exclude_reputation=mass%20scanner")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["count"], 3)
         self.assertEqual(response.json()["total_pages"], 1)
 
     def test_200_feeds_pagination_exclude_tor(self):
-        response = self.client.get(
-            "/api/feeds/advanced/?paginate=true&page_size=10&page=1&exclude_reputation=tor%20exit%20node"
-        )
+        response = self.client.get("/api/feeds/advanced/?paginate=true&page_size=10&page=1&exclude_reputation=tor%20exit%20node")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["count"], 3)
         self.assertEqual(response.json()["total_pages"], 1)
 
     def test_400_feeds_pagination(self):
-        response = self.client.get(
-            "/api/feeds/advanced/?paginate=true&page_size=10&page=1&attack_type=test"
-        )
+        response = self.client.get("/api/feeds/advanced/?paginate=true&page_size=10&page=1&attack_type=test")
         self.assertEqual(response.status_code, 400)
 
 
@@ -388,12 +336,8 @@ class StatisticsViewTestCase(CustomTestCase):
     def setUpClass(cls):
         super().setUpClass()
         Statistics.objects.all().delete()
-        Statistics.objects.create(
-            source="140.246.171.141", view=ViewType.FEEDS_VIEW.value
-        )
-        Statistics.objects.create(
-            source="140.246.171.141", view=ViewType.ENRICHMENT_VIEW.value
-        )
+        Statistics.objects.create(source="140.246.171.141", view=ViewType.FEEDS_VIEW.value)
+        Statistics.objects.create(source="140.246.171.141", view=ViewType.ENRICHMENT_VIEW.value)
 
     @classmethod
     def tearDownClass(cls):
@@ -491,9 +435,7 @@ class CommandSequenceViewTestCase(CustomTestCase):
 
     def test_ip_address_query_with_similar(self):
         """Test view with a valid IP address query including similar sequences."""
-        response = self.client.get(
-            "/api/command_sequence?query=140.246.171.141&include_similar"
-        )
+        response = self.client.get("/api/command_sequence?query=140.246.171.141&include_similar")
         self.assertEqual(response.status_code, 200)
         self.assertIn("executed_commands", response.data)
         self.assertIn("executed_by", response.data)
@@ -512,9 +454,7 @@ class CommandSequenceViewTestCase(CustomTestCase):
 
     def test_hash_query_with_similar(self):
         """Test view with a valid hash query including similar sequences."""
-        response = self.client.get(
-            f"/api/command_sequence?query={self.hash}&include_similar"
-        )
+        response = self.client.get(f"/api/command_sequence?query={self.hash}&include_similar")
         self.assertEqual(response.status_code, 200)
         self.assertIn("commands", response.data)
         self.assertIn("iocs", response.data)
@@ -576,9 +516,7 @@ class CowrieSessionViewTestCase(CustomTestCase):
 
     def test_ip_address_query_with_similar(self):
         """Test view with a valid IP address query including similar sequences."""
-        response = self.client.get(
-            "/api/cowrie_session?query=140.246.171.141&include_similar=true"
-        )
+        response = self.client.get("/api/cowrie_session?query=140.246.171.141&include_similar=true")
         self.assertEqual(response.status_code, 200)
         self.assertIn("query", response.data)
         self.assertIn("commands", response.data)
@@ -589,9 +527,7 @@ class CowrieSessionViewTestCase(CustomTestCase):
 
     def test_ip_address_query_with_credentials(self):
         """Test view with a valid IP address query including credentials."""
-        response = self.client.get(
-            "/api/cowrie_session?query=140.246.171.141&include_credentials=true"
-        )
+        response = self.client.get("/api/cowrie_session?query=140.246.171.141&include_credentials=true")
         self.assertEqual(response.status_code, 200)
         self.assertIn("query", response.data)
         self.assertIn("commands", response.data)
@@ -603,9 +539,7 @@ class CowrieSessionViewTestCase(CustomTestCase):
 
     def test_ip_address_query_with_sessions(self):
         """Test view with a valid IP address query including session data."""
-        response = self.client.get(
-            "/api/cowrie_session?query=140.246.171.141&include_session_data=true"
-        )
+        response = self.client.get("/api/cowrie_session?query=140.246.171.141&include_session_data=true")
         self.assertEqual(response.status_code, 200)
         self.assertIn("query", response.data)
         self.assertIn("commands", response.data)
@@ -622,9 +556,7 @@ class CowrieSessionViewTestCase(CustomTestCase):
 
     def test_ip_address_query_with_all(self):
         """Test view with a valid IP address query including everything."""
-        response = self.client.get(
-            "/api/cowrie_session?query=140.246.171.141&include_similar=true&include_credentials=true&include_session_data=true"
-        )
+        response = self.client.get("/api/cowrie_session?query=140.246.171.141&include_similar=true&include_credentials=true&include_session_data=true")
         self.assertEqual(response.status_code, 200)
         self.assertIn("query", response.data)
         self.assertIn("commands", response.data)
@@ -645,9 +577,7 @@ class CowrieSessionViewTestCase(CustomTestCase):
 
     def test_hash_query_with_all(self):
         """Test view with a valid hash query including everything."""
-        response = self.client.get(
-            f"/api/cowrie_session?query={self.hash}&include_similar=true&include_credentials=true&include_session_data=true"
-        )
+        response = self.client.get(f"/api/cowrie_session?query={self.hash}&include_similar=true&include_credentials=true&include_session_data=true")
         self.assertEqual(response.status_code, 200)
         self.assertIn("query", response.data)
         self.assertIn("commands", response.data)
@@ -690,23 +620,17 @@ class CowrieSessionViewTestCase(CustomTestCase):
 
     def test_include_credentials_invalid_value(self):
         """Test that invalid boolean values default to false."""
-        response = self.client.get(
-            "/api/cowrie_session?query=140.246.171.141&include_credentials=maybe"
-        )
+        response = self.client.get("/api/cowrie_session?query=140.246.171.141&include_credentials=maybe")
         self.assertEqual(response.status_code, 200)
         self.assertNotIn("credentials", response.data)
 
     def test_case_insensitive_boolean_parameters(self):
         """Test that boolean parameters accept various case formats."""
-        response = self.client.get(
-            "/api/cowrie_session?query=140.246.171.141&include_credentials=TRUE"
-        )
+        response = self.client.get("/api/cowrie_session?query=140.246.171.141&include_credentials=TRUE")
         self.assertEqual(response.status_code, 200)
         self.assertIn("credentials", response.data)
 
-        response = self.client.get(
-            "/api/cowrie_session?query=140.246.171.141&include_credentials=True"
-        )
+        response = self.client.get("/api/cowrie_session?query=140.246.171.141&include_credentials=True")
         self.assertEqual(response.status_code, 200)
         self.assertIn("credentials", response.data)
 
@@ -718,9 +642,7 @@ class CowrieSessionViewTestCase(CustomTestCase):
 
     def test_hash_wrong_length(self):
         """Test that hashes with incorrect length are rejected."""
-        response = self.client.get(
-            "/api/cowrie_session?query=" + "a" * 32
-        )  # 32 chars instead of 64
+        response = self.client.get("/api/cowrie_session?query=" + "a" * 32)  # 32 chars instead of 64
         self.assertEqual(response.status_code, 400)
 
     def test_hash_invalid_characters(self):
@@ -731,12 +653,8 @@ class CowrieSessionViewTestCase(CustomTestCase):
 
     def test_hash_case_insensitive(self):
         """Test that hash queries are case-insensitive."""
-        response_lower = self.client.get(
-            f"/api/cowrie_session?query={self.hash.lower()}"
-        )
-        response_upper = self.client.get(
-            f"/api/cowrie_session?query={self.hash.upper()}"
-        )
+        response_lower = self.client.get(f"/api/cowrie_session?query={self.hash.lower()}")
+        response_upper = self.client.get(f"/api/cowrie_session?query={self.hash.upper()}")
         self.assertEqual(response_lower.status_code, response_upper.status_code)
 
     # # # # # Special Characters & Encoding Tests # # # # #
@@ -779,9 +697,7 @@ class CowrieSessionViewTestCase(CustomTestCase):
 
     def test_query_with_special_characters(self):
         """Test handling of queries with special characters."""
-        response = self.client.get(
-            "/api/cowrie_session?query=<script>alert('xss')</script>"
-        )
+        response = self.client.get("/api/cowrie_session?query=<script>alert('xss')</script>")
         self.assertEqual(response.status_code, 400)
 
     # # # # # Authentication & Authorization Tests # # # # #

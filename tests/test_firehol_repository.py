@@ -27,7 +27,10 @@ class TestFireHolRepository(CustomTestCase):
 
         self.assertFalse(created)
         self.assertEqual(entry.ip_address, "5.6.7.8")
-        self.assertEqual(FireHolList.objects.filter(ip_address="5.6.7.8", source="greensnow").count(), 1)
+        self.assertEqual(
+            FireHolList.objects.filter(ip_address="5.6.7.8", source="greensnow").count(),
+            1,
+        )
 
     def test_cleanup_old_entries_custom_days(self):
         old_date = datetime.now() - timedelta(days=65)

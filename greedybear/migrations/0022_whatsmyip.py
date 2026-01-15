@@ -27,11 +27,7 @@ class Migration(migrations.Migration):
                 ("added", models.DateTimeField(default=datetime.datetime.now)),
             ],
             options={
-                "indexes": [
-                    models.Index(
-                        fields=["domain"], name="greedybear__domain_f89b04_idx"
-                    )
-                ],
+                "indexes": [models.Index(fields=["domain"], name="greedybear__domain_f89b04_idx")],
             },
         ),
     ]

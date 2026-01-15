@@ -11,8 +11,6 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AddIndex(
             model_name="cowriesession",
-            index=models.Index(
-                fields=["source"], name="greedybear__source__a3720f_idx"
-            ),
+            index=models.Index(fields=["source"], name="greedybear__source__a3720f_idx"),
         ),
     ]

@@ -9,9 +9,12 @@ from django.core.files.storage import FileSystemStorage
 from greedybear.cronjobs.base import Cronjob
 from greedybear.cronjobs.repositories import IocRepository
 from greedybear.cronjobs.scoring.random_forest import RFClassifier, RFRegressor
-from greedybear.cronjobs.scoring.utils import (correlated_features,
-                                               get_current_data,
-                                               get_data_by_pks, get_features)
+from greedybear.cronjobs.scoring.utils import (
+    correlated_features,
+    get_current_data,
+    get_data_by_pks,
+    get_features,
+)
 from greedybear.models import IOC
 from greedybear.settings import ML_MODEL_DIRECTORY
 
@@ -93,9 +96,7 @@ class TrainModels(Cronjob):
         self.current_data = get_current_data()
         current_date = max(row["last_seen"] for row in self.current_data)
 
-        self.log.info(
-            f"current IoC data is from {current_date}, contains {len(self.current_data)} IoCs"
-        )
+        self.log.info(f"current IoC data is from {current_date}, contains {len(self.current_data)} IoCs")
 
         training_data = self.load_training_data()
         if not training_data:
@@ -110,9 +111,7 @@ class TrainModels(Cronjob):
 
         training_date = max(ioc["last_seen"] for ioc in training_data)
         training_ips = {ioc["value"]: ioc["interaction_count"] for ioc in training_data}
-        self.log.info(
-            f"training data is from {training_date}, contains {len(training_data)} IoCs"
-        )
+        self.log.info(f"training data is from {training_date}, contains {len(training_data)} IoCs")
 
         if not training_date < current_date:
             self.log.error("training data must be older than current data")
@@ -120,21 +119,14 @@ class TrainModels(Cronjob):
 
         current_ips = defaultdict(
             int,
-            {
-                ioc["value"]: ioc["interaction_count"]
-                - training_ips.get(ioc["value"], 0)
-                for ioc in self.current_data
-                if ioc["last_seen"] > training_date
-            },
+            {ioc["value"]: ioc["interaction_count"] - training_ips.get(ioc["value"], 0) for ioc in self.current_data if ioc["last_seen"] > training_date},
         )
 
         self.log.info("extracting features from training data")
         training_df = get_features(training_data, training_date)
         training_df["interactions_on_eval_day"] = training_df["value"].map(current_ips)
 
-        high_corr_pairs = correlated_features(
-            training_df.select_dtypes(include="number")
-        )
+        high_corr_pairs = correlated_features(training_df.select_dtypes(include="number"))
         if high_corr_pairs:
             self.log.debug("found highly correlated features")
         for f1, f2, corr in high_corr_pairs:
@@ -186,11 +178,7 @@ class UpdateScores(Cronjob):
         score_names = [s.score_name for s in SCORERS]
         scores_by_ip = df.set_index("value")[score_names].to_dict("index")
         # If no IoCs were passed as an argument, fetch all IoCs via repository
-        iocs = (
-            self.ioc_repo.get_scanners_for_scoring(score_names)
-            if iocs is None
-            else iocs
-        )
+        iocs = self.ioc_repo.get_scanners_for_scoring(score_names) if iocs is None else iocs
         iocs_to_update = []
 
         self.log.info(f"checking {len(iocs)} IoCs")
@@ -251,9 +239,7 @@ class UpdateScores(Cronjob):
         their respective score columns to the dataframe.
         """
         if self.data is None:
-            self.log.info(
-                "no data handed over from previous task - fetching current IoC data from DB"
-            )
+            self.log.info("no data handed over from previous task - fetching current IoC data from DB")
             self.data = get_current_data()
         current_date = max(row["last_seen"] for row in self.data)
         self.log.info("extracting features")

@@ -5,14 +5,16 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('greedybear', '0027_disable_unwanted_honeypots'),
+        ("greedybear", "0027_disable_unwanted_honeypots"),
     ]
 
     operations = [
         migrations.AddConstraint(
-            model_name='generalhoneypot',
-            constraint=models.UniqueConstraint(django.db.models.functions.text.Lower('name'), name='unique_generalhoneypot_name_ci'),
+            model_name="generalhoneypot",
+            constraint=models.UniqueConstraint(
+                django.db.models.functions.text.Lower("name"),
+                name="unique_generalhoneypot_name_ci",
+            ),
         ),
     ]

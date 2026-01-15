@@ -308,7 +308,12 @@ class TestIocRepository(CustomTestCase):
         self.assertEqual(result, 0)
 
     def test_bulk_update_scores_updates_multiple_fields(self):
-        ioc = IOC.objects.create(name="1.2.3.4", type="ip", recurrence_probability=0.0, expected_interactions=0.0)
+        ioc = IOC.objects.create(
+            name="1.2.3.4",
+            type="ip",
+            recurrence_probability=0.0,
+            expected_interactions=0.0,
+        )
 
         ioc.recurrence_probability = 0.75
         ioc.expected_interactions = 10.5
@@ -420,8 +425,20 @@ class TestScoringIntegration(CustomTestCase):
         from greedybear.cronjobs.scoring.scoring_jobs import UpdateScores
 
         # Create test data
-        IOC.objects.create(name="10.1.2.3", type="ip", scanner=True, cowrie=True, recurrence_probability=0.0)
-        IOC.objects.create(name="10.5.6.7", type="ip", scanner=True, log4j=True, recurrence_probability=0.0)
+        IOC.objects.create(
+            name="10.1.2.3",
+            type="ip",
+            scanner=True,
+            cowrie=True,
+            recurrence_probability=0.0,
+        )
+        IOC.objects.create(
+            name="10.5.6.7",
+            type="ip",
+            scanner=True,
+            log4j=True,
+            recurrence_probability=0.0,
+        )
 
         # Create score dataframe
         df = pd.DataFrame(
@@ -450,11 +467,29 @@ class TestScoringIntegration(CustomTestCase):
         from greedybear.cronjobs.scoring.scoring_jobs import UpdateScores
 
         # Create test data - one IOC will be missing from df
-        IOC.objects.create(name="10.2.3.4", type="ip", scanner=True, cowrie=True, recurrence_probability=0.9)
-        IOC.objects.create(name="10.6.7.8", type="ip", scanner=True, log4j=True, recurrence_probability=0.8)
+        IOC.objects.create(
+            name="10.2.3.4",
+            type="ip",
+            scanner=True,
+            cowrie=True,
+            recurrence_probability=0.9,
+        )
+        IOC.objects.create(
+            name="10.6.7.8",
+            type="ip",
+            scanner=True,
+            log4j=True,
+            recurrence_probability=0.8,
+        )
 
         # DataFrame only has one IOC
-        df = pd.DataFrame({"value": ["10.2.3.4"], "recurrence_probability": [0.75], "expected_interactions": [10.0]})
+        df = pd.DataFrame(
+            {
+                "value": ["10.2.3.4"],
+                "recurrence_probability": [0.75],
+                "expected_interactions": [10.0],
+            }
+        )
 
         job = UpdateScores(ioc_repo=self.repo)
         job.update_db(df)
@@ -506,7 +541,13 @@ class TestScoringIntegration(CustomTestCase):
         mock_repo.bulk_update_scores.return_value = 1
 
         # Create score dataframe
-        df = pd.DataFrame({"value": ["1.2.3.4"], "recurrence_probability": [0.75], "expected_interactions": [10.0]})
+        df = pd.DataFrame(
+            {
+                "value": ["1.2.3.4"],
+                "recurrence_probability": [0.75],
+                "expected_interactions": [10.0],
+            }
+        )
 
         # Inject mock and verify it's used
         job = UpdateScores(ioc_repo=mock_repo)

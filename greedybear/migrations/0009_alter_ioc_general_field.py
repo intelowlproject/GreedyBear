@@ -30,8 +30,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="ioc",
             name="type",
-            field=models.CharField(
-                choices=[("ip", "Ip"), ("domain", "Domain")], max_length=32
-            ),
+            field=models.CharField(choices=[("ip", "Ip"), ("domain", "Domain")], max_length=32),
         ),
     ]
