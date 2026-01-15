@@ -2,24 +2,22 @@ import random
 from itertools import product
 
 from api.serializers import FeedsRequestSerializer, FeedsResponseSerializer
-from django.test import TestCase
 from greedybear.consts import PAYLOAD_REQUEST, SCANNER
 from greedybear.models import IOC, GeneralHoneypot
 from rest_framework.serializers import ValidationError
+from tests import CustomTestCase
 
 
-class FeedsRequestSerializersTestCase(TestCase):
+class FeedsRequestSerializersTestCase(CustomTestCase):
     @classmethod
-    def setUpClass(self):
-        GeneralHoneypot.objects.create(
+    def setUpTestData(cls):
+        # CRITICAL: Call super() first to set up common test data (IOCs, users, honeypots)
+        super().setUpTestData()
+        # Add adbhoney specifically needed for this test
+        cls.adbhoney = GeneralHoneypot.objects.create(
             name="adbhoney",
             active=True,
         )
-
-    @classmethod
-    def tearDownClass(self):
-        # db clean
-        GeneralHoneypot.objects.all().delete()
 
     def test_valid_fields(self):
         choices = {
@@ -82,18 +80,15 @@ class FeedsRequestSerializersTestCase(TestCase):
             self.assertIn("format", serializer.errors)
 
 
-class FeedsResponseSerializersTestCase(TestCase):
+class FeedsResponseSerializersTestCase(CustomTestCase):
     @classmethod
-    def setUpClass(self):
-        GeneralHoneypot.objects.create(
+    def setUpTestData(cls):
+        # CRITICAL: Call super() first to set up common test data
+        super().setUpTestData()
+        cls.adbhoney = GeneralHoneypot.objects.create(
             name="adbhoney",
             active=True,
         )
-
-    @classmethod
-    def tearDownClass(self):
-        # db clean
-        GeneralHoneypot.objects.all().delete()
 
     def test_valid_fields(self):
         scanner_choices = [True, False]
