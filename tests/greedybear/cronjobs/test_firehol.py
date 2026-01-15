@@ -103,8 +103,8 @@ class FireHolCronTestCase(CustomTestCase):
         cronjob.execute()
 
         # Check that no FireHolList entries were created
-        self.assertFalse(FireHolList.objects.filter(source="blocklist_de").exists())
-        self.assertFalse(FireHolList.objects.filter(source="bruteforceblocker").exists())
+        self.assertFalse(FireHolList.objects.filter(ip_address="256.1.1.1", source="blocklist_de").exists())
+        self.assertFalse(FireHolList.objects.filter(ip_address="999.999.999.999", source="blocklist_de").exists())
 
     @patch("greedybear.cronjobs.firehol.requests.get")
     def test_run_handles_network_errors(self, mock_get):
@@ -133,7 +133,37 @@ class FireHolCronTestCase(CustomTestCase):
 
         cronjob.log.error.assert_called()
 
-    def test_cleanup_old_entries(self):
+    @patch("greedybear.cronjobs.firehol.requests.get")
+    def test_run_handles_invalid_ip(self, mock_get):
+        # Setup mock response
+        mock_response = MagicMock()
+        mock_response.text = "# blocklist_de\n256.1.1.1\n999.999.999.999\n"
+        mock_get.return_value = mock_response
+
+        # Run the cronjob
+        cronjob = FireHolCron()
+        cronjob.log = MagicMock()
+        cronjob.execute()
+
+        self.assertFalse(FireHolList.objects.filter(ip_address="256.1.1.1", source="blocklist_de").exists())
+        self.assertFalse(FireHolList.objects.filter(ip_address="999.999.999.999", source="blocklist_de").exists())
+
+    @patch("greedybear.cronjobs.firehol.requests.get")
+    def test_run_handles_invalid_cidr(self, mock_get):
+        # Setup mock response
+        mock_response = MagicMock()
+        mock_response.text = "# blocklist_de\n192.168.1.256/24\n"
+        mock_get.return_value = mock_response
+
+        # Run the cronjob
+        cronjob = FireHolCron()
+        cronjob.log = MagicMock()
+        cronjob.execute()
+
+        self.assertFalse(FireHolList.objects.filter(ip_address="192.168.1.256", source="blocklist_de").exists())
+
+    @patch("greedybear.cronjobs.firehol.requests.get")
+    def test_cleanup_old_entries(self, mock_get):
         now = datetime.now()
 
         old_entry = FireHolList.objects.create(

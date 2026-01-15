@@ -1,6 +1,6 @@
 from collections import defaultdict
 from datetime import datetime
-from ipaddress import IPv4Address, ip_address, ip_network
+from ipaddress import IPv4Address, IPv4Network, ip_address, ip_network
 from logging import Logger
 from urllib.parse import urlparse
 
@@ -144,6 +144,23 @@ def is_valid_ipv4(candidate: str) -> tuple[bool, str | None]:
     """
     try:
         IPv4Address(candidate.strip())
+        return True, candidate.strip()
+    except ValueError:
+        return False, None
+
+
+def is_valid_cidr(candidate: str) -> tuple[bool, str | None]:
+    """
+    Validate if a string is a valid CIDR notation.
+
+    Args:
+        candidate: String to validate as CIDR.
+
+    Returns:
+        True if valid CIDR, False otherwise.
+    """
+    try:
+        IPv4Network(candidate.strip(), strict=False)
         return True, candidate.strip()
     except ValueError:
         return False, None
