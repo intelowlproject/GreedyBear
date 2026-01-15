@@ -151,3 +151,32 @@ class CustomTestCase(TestCase):
         IOC.objects.all().delete()
         CowrieSession.objects.all().delete()
         CommandSequence.objects.all().delete()
+
+
+class ExtractionTestCase(TestCase):
+    """
+    Base class for extraction/integration tests that require
+    a live ElasticSearch connection (only_manual tests).
+
+    These tests are run manually and not part of CI.
+    They use Django's TestCase for proper database transaction handling.
+
+    WARNING: ElasticSearch operations are NOT rolled back after tests.
+    Django's TestCase only handles Postgres transaction rollback.
+    Any data written to ElasticSearch during tests will persist.
+    Consider manual cleanup of ES indices if needed.
+
+    NOTE: Running these tests requires the Postgres user to have
+    CREATEDB privileges to create the test database.
+    """
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        # Common setup for extraction tests can go here
+
+    @classmethod
+    def tearDownClass(cls):
+        # Common cleanup for extraction tests
+        # NOTE: This does NOT clean up ElasticSearch data
+        super().tearDownClass()
