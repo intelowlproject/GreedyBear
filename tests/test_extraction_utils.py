@@ -2,7 +2,7 @@ from datetime import datetime
 from unittest.mock import Mock, patch
 
 from greedybear.consts import DOMAIN, IP
-from greedybear.cronjobs.extraction.utils import (
+from greedybear.extraction.utils import (
     correct_ip_reputation,
     get_ioc_type,
     iocs_from_hits,
@@ -439,22 +439,22 @@ class ThreatfoxSubmissionTestCase(ExtractionTestCase):
         threatfox_submission(ioc_record, ["http://malicious.com/payload"], self.mock_log)
         self.mock_log.warning.assert_not_called()
 
-    @patch("greedybear.cronjobs.extraction.utils.settings")
+    @patch("greedybear.extraction.utils.settings")
     def test_warns_when_api_key_missing(self, mock_settings):
         mock_settings.THREATFOX_API_KEY = None
         ioc_record = self._create_mock_payload_request()
         threatfox_submission(ioc_record, ["http://malicious.com/payload"], self.mock_log)
         self.mock_log.warning.assert_called_once_with("Threatfox API Key not available")
 
-    @patch("greedybear.cronjobs.extraction.utils.settings")
+    @patch("greedybear.extraction.utils.settings")
     def test_skips_urls_without_path(self, mock_settings):
         mock_settings.THREATFOX_API_KEY = "test-key"
         ioc_record = self._create_mock_payload_request()
         threatfox_submission(ioc_record, ["http://malicious.com", "http://evil.com/"], self.mock_log)
         self.assertTrue(any("skipping" in str(call) for call in self.mock_log.info.call_args_list))
 
-    @patch("greedybear.cronjobs.extraction.utils.requests.post")
-    @patch("greedybear.cronjobs.extraction.utils.settings")
+    @patch("greedybear.extraction.utils.requests.post")
+    @patch("greedybear.extraction.utils.settings")
     def test_submits_urls_with_path(self, mock_settings, mock_post):
         mock_settings.THREATFOX_API_KEY = "test-key"
         mock_post.return_value = Mock(text='{"status": "ok"}')
@@ -465,8 +465,8 @@ class ThreatfoxSubmissionTestCase(ExtractionTestCase):
         self.assertEqual(call_kwargs["headers"]["Auth-Key"], "test-key")
         self.assertIn("http://malicious.com/payload.sh", call_kwargs["json"]["iocs"])
 
-    @patch("greedybear.cronjobs.extraction.utils.requests.post")
-    @patch("greedybear.cronjobs.extraction.utils.settings")
+    @patch("greedybear.extraction.utils.requests.post")
+    @patch("greedybear.extraction.utils.settings")
     def test_includes_honeypot_names_in_comment(self, mock_settings, mock_post):
         mock_settings.THREATFOX_API_KEY = "test-key"
         mock_post.return_value = Mock(text='{"status": "ok"}')
@@ -481,8 +481,8 @@ class ThreatfoxSubmissionTestCase(ExtractionTestCase):
         self.assertIn("log4pot", comment)
         self.assertIn("Dionaea", comment)
 
-    @patch("greedybear.cronjobs.extraction.utils.requests.post")
-    @patch("greedybear.cronjobs.extraction.utils.settings")
+    @patch("greedybear.extraction.utils.requests.post")
+    @patch("greedybear.extraction.utils.settings")
     def test_logs_successful_submission(self, mock_settings, mock_post):
         mock_settings.THREATFOX_API_KEY = "test-key"
         mock_post.return_value = Mock(text='{"status": "ok"}')
@@ -490,12 +490,12 @@ class ThreatfoxSubmissionTestCase(ExtractionTestCase):
         threatfox_submission(ioc_record, ["http://malicious.com/payload.sh"], self.mock_log)
         self.assertTrue(any("successful" in str(call) for call in self.mock_log.info.call_args_list))
 
-    @patch("greedybear.cronjobs.extraction.utils.settings")
+    @patch("greedybear.extraction.utils.settings")
     def test_filters_mixed_urls(self, mock_settings):
         mock_settings.THREATFOX_API_KEY = "test-key"
         ioc_record = self._create_mock_payload_request()
 
-        with patch("greedybear.cronjobs.extraction.utils.requests.post") as mock_post:
+        with patch("greedybear.extraction.utils.requests.post") as mock_post:
             mock_post.return_value = Mock(text='{"status": "ok"}')
             urls = [
                 "http://malicious.com",  # No path - skip

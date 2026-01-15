@@ -6,8 +6,8 @@ from hashlib import sha256
 from urllib.parse import urlparse
 
 from greedybear.consts import PAYLOAD_REQUEST, SCANNER
-from greedybear.cronjobs.extraction.strategies import BaseExtractionStrategy
-from greedybear.cronjobs.extraction.utils import (
+from greedybear.extraction.strategies import BaseExtractionStrategy
+from greedybear.extraction.utils import (
     get_ioc_type,
     iocs_from_hits,
     threatfox_submission,

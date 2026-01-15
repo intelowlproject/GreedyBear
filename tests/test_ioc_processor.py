@@ -2,7 +2,7 @@ from datetime import date, datetime
 from unittest.mock import patch
 
 from greedybear.consts import PAYLOAD_REQUEST, SCANNER
-from greedybear.cronjobs.extraction.ioc_processor import IocProcessor
+from greedybear.extraction.ioc_processor import IocProcessor
 from greedybear.models import IocType
 
 from . import ExtractionTestCase
@@ -22,7 +22,7 @@ class TestAddIoc(ExtractionTestCase):
         self.assertIsNone(result)
         self.mock_ioc_repo.save.assert_not_called()
 
-    @patch("greedybear.cronjobs.extraction.ioc_processor.is_whatsmyip_domain")
+    @patch("greedybear.extraction.ioc_processor.is_whatsmyip_domain")
     def test_filters_whatsmyip_domains(self, mock_whatsmyip):
         mock_whatsmyip.return_value = True
         self.mock_sensor_repo.sensors = set()
@@ -164,7 +164,7 @@ class TestAddIoc(ExtractionTestCase):
         self.assertEqual(len(result.days_seen), 2)
         self.assertTrue(result.payload_request)
 
-    @patch("greedybear.cronjobs.extraction.ioc_processor.is_whatsmyip_domain")
+    @patch("greedybear.extraction.ioc_processor.is_whatsmyip_domain")
     def test_only_checks_whatsmyip_for_domains(self, mock_whatsmyip):
         self.mock_sensor_repo.sensors = set()
         self.mock_ioc_repo.get_ioc_by_name.return_value = None

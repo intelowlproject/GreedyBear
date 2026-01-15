@@ -1,7 +1,7 @@
 from unittest.mock import Mock, patch
 
 from greedybear.consts import SCANNER
-from greedybear.cronjobs.extraction.strategies import GenericExtractionStrategy
+from greedybear.extraction.strategies import GenericExtractionStrategy
 
 from . import ExtractionTestCase
 
@@ -15,8 +15,8 @@ class TestGenericExtractionStrategy(ExtractionTestCase):
             sensor_repo=self.mock_sensor_repo,
         )
 
-    @patch("greedybear.cronjobs.extraction.strategies.generic.iocs_from_hits")
-    @patch("greedybear.cronjobs.extraction.strategies.generic.threatfox_submission")
+    @patch("greedybear.extraction.strategies.generic.iocs_from_hits")
+    @patch("greedybear.extraction.strategies.generic.threatfox_submission")
     def test_processes_enabled_honeypot(self, mock_threatfox, mock_iocs_from_hits):
         self.mock_ioc_repo.is_enabled.return_value = True
 
@@ -34,7 +34,7 @@ class TestGenericExtractionStrategy(ExtractionTestCase):
         self.assertEqual(len(self.strategy.ioc_records), 1)
         mock_threatfox.assert_called_once()
 
-    @patch("greedybear.cronjobs.extraction.strategies.generic.iocs_from_hits")
+    @patch("greedybear.extraction.strategies.generic.iocs_from_hits")
     def test_handles_none_ioc_record(self, mock_iocs_from_hits):
         self.mock_ioc_repo.is_enabled.return_value = True
         mock_ioc = self._create_mock_ioc()
@@ -48,7 +48,7 @@ class TestGenericExtractionStrategy(ExtractionTestCase):
 
         self.assertEqual(len(self.strategy.ioc_records), 0)
 
-    @patch("greedybear.cronjobs.extraction.strategies.generic.iocs_from_hits")
+    @patch("greedybear.extraction.strategies.generic.iocs_from_hits")
     def test_processes_multiple_iocs(self, mock_iocs_from_hits):
         self.mock_ioc_repo.is_enabled.return_value = True
 
@@ -71,7 +71,7 @@ class TestGenericExtractionStrategy(ExtractionTestCase):
         self.assertEqual(len(self.strategy.ioc_records), 2)
         self.assertEqual(self.strategy.ioc_processor.add_ioc.call_count, 2)
 
-    @patch("greedybear.cronjobs.extraction.strategies.generic.iocs_from_hits")
+    @patch("greedybear.extraction.strategies.generic.iocs_from_hits")
     def test_logs_correct_honeypot_name(self, mock_iocs_from_hits):
         self.mock_ioc_repo.is_enabled.return_value = True
 

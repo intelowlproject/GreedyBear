@@ -5,7 +5,7 @@ Tests for Cowrie extraction helper functions and strategy.
 from unittest import TestCase
 from unittest.mock import MagicMock, Mock, patch
 
-from greedybear.cronjobs.extraction.strategies.cowrie import (
+from greedybear.extraction.strategies.cowrie import (
     CowrieExtractionStrategy,
     normalize_command,
     normalize_credential_field,
@@ -327,7 +327,7 @@ class TestCowrieExtractionStrategy(TestCase):
         self.assertEqual(session.commands, existing_cmd_seq)
         self.assertEqual(session.commands.last_seen, "2023-01-01T10:00:10")
 
-    @patch("greedybear.cronjobs.extraction.strategies.cowrie.iocs_from_hits")
+    @patch("greedybear.extraction.strategies.cowrie.iocs_from_hits")
     def test_extract_from_hits_integration(self, mock_iocs_from_hits):
         """Test the main extract_from_hits coordination."""
         mock_ioc = Mock(name="1.2.3.4")

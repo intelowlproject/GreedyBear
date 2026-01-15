@@ -1,7 +1,7 @@
 import logging
 from abc import ABCMeta, abstractmethod
 
-from greedybear.cronjobs.extraction.ioc_processor import IocProcessor
+from greedybear.extraction.ioc_processor import IocProcessor
 from greedybear.cronjobs.repositories import IocRepository, SensorRepository
 
 

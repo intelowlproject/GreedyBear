@@ -1,5 +1,5 @@
 from greedybear.cronjobs.base import Cronjob
-from greedybear.cronjobs.extraction.pipeline import ExtractionPipeline
+from greedybear.extraction.extraction_pipeline import ExtractionPipeline
 
 
 class ExtractionJob(Cronjob):

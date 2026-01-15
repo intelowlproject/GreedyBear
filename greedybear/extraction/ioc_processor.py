@@ -1,7 +1,7 @@
 import logging
 
 from greedybear.consts import PAYLOAD_REQUEST, SCANNER
-from greedybear.cronjobs.extraction.utils import is_whatsmyip_domain
+from greedybear.extraction.utils import is_whatsmyip_domain
 from greedybear.cronjobs.repositories import IocRepository, SensorRepository
 from greedybear.models import IOC, IocType
 

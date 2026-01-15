@@ -1,7 +1,7 @@
 import logging
 
 from greedybear.consts import IP
-from greedybear.cronjobs.extraction.utils import get_ioc_type
+from greedybear.extraction.utils import get_ioc_type
 from greedybear.models import Sensor
 
 

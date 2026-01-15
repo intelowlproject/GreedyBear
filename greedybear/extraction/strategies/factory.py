@@ -1,4 +1,4 @@
-from greedybear.cronjobs.extraction.strategies import (
+from greedybear.extraction.strategies import (
     BaseExtractionStrategy,
     CowrieExtractionStrategy,
     GenericExtractionStrategy,
@@ -39,6 +39,11 @@ class ExtractionStrategyFactory:
         Returns:
             A fitting strategy.
         """
-        if honeypot in self._strategies:
-            return self._strategies[honeypot]()
+        # specialized strategies
+        for name, strategy_factory in self._strategies.items():
+            if name.lower() == honeypot.lower():
+                return strategy_factory()
+
+        # default to generic strategy
         return GenericExtractionStrategy(honeypot, self.ioc_repo, self.sensor_repo)
+

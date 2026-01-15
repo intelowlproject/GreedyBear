@@ -5,8 +5,8 @@ import re
 from urllib.parse import urlparse
 
 from greedybear.consts import PAYLOAD_REQUEST, SCANNER
-from greedybear.cronjobs.extraction.strategies import BaseExtractionStrategy
-from greedybear.cronjobs.extraction.utils import get_ioc_type
+from greedybear.extraction.strategies import BaseExtractionStrategy
+from greedybear.extraction.utils import get_ioc_type
 from greedybear.cronjobs.repositories import IocRepository, SensorRepository
 from greedybear.models import IOC
 from greedybear.regex import REGEX_CVE_BASE64COMMAND, REGEX_CVE_URL, REGEX_URL
@@ -30,20 +30,25 @@ class Log4potExtractionStrategy(BaseExtractionStrategy):
 
     def extract_from_hits(self, hits: list[dict]) -> None:
         # we want to get only probes that tried to exploit the specific log4j CVE
-        hits = [hit for hit in hits if hit.get("reason", "") == "exploit"]
+        exploit_hits = [hit for hit in hits if hit.get("reason", "") == "exploit"]
 
-        url = None
-        hostname = None
-        hidden_url = None
-        hidden_hostname = None
+
+
         added_scanners = 0
         added_payloads = 0
         added_hidden_payloads = 0
 
-        for hit in hits:
-            scanner_ip = self._get_scanner_ip(hit["correlation_id"], hits)
+        for hit in exploit_hits:
+            url = None
+            hostname = None
+            hidden_url = None
+            hidden_hostname = None
+            
+            scanner_ip = self._get_scanner_ip(hit.get("correlation_id"), hits)
 
-            match = re.search(REGEX_CVE_URL, hit["deobfuscated_payload"])
+
+
+            match = re.search(REGEX_CVE_URL, hit.get("deobfuscated_payload", ""))
             if match:
                 # we are losing the protocol but that's ok for now
                 url = match.group()
@@ -57,7 +62,7 @@ class Log4potExtractionStrategy(BaseExtractionStrategy):
 
             # it is possible to extract another payload from base64 encoded string.
             # this is a behavior related to the attack that leverages LDAP
-            match_command = re.search(REGEX_CVE_BASE64COMMAND, hit["deobfuscated_payload"])
+            match_command = re.search(REGEX_CVE_BASE64COMMAND, hit.get("deobfuscated_payload", ""))
             if match_command:
                 # we are losing the protocol but that's ok for now
                 base64_encoded = match_command.group(1)
@@ -81,37 +86,44 @@ class Log4potExtractionStrategy(BaseExtractionStrategy):
             # add scanner
             if scanner_ip:
                 ioc = IOC(name=scanner_ip, type=get_ioc_type(scanner_ip), log4j=True)
-                self.ioc_processor.add_ioc(ioc, attack_type=SCANNER)
-                added_scanners += 1
+                ioc_record = self.ioc_processor.add_ioc(ioc, attack_type=SCANNER)
+                if ioc_record:
+                    self.ioc_records.append(ioc_record)
+                    added_scanners += 1
 
             # add first URL
             if hostname:
                 related_urls = [url] if url else []
-                ioc = IOC(
-                    name=scanner_ip,
-                    type=get_ioc_type(scanner_ip),
-                    log4j=True,
-                    related_urls=related_urls,
-                )
-                self.ioc_processor.add_ioc(ioc, attack_type=SCANNER)
-                added_payloads += 1
-
-            # add hidden URL
-            if hidden_hostname:
-                related_urls = [hidden_url] if hidden_url else []
                 ioc = IOC(
                     name=hostname,
                     type=get_ioc_type(hostname),
                     log4j=True,
                     related_urls=related_urls,
                 )
-                self.ioc_processor.add_ioc(ioc, attack_type=PAYLOAD_REQUEST)
-                added_hidden_payloads += 1
+                ioc_record = self.ioc_processor.add_ioc(ioc, attack_type=PAYLOAD_REQUEST)
+                if ioc_record:
+                    self.ioc_records.append(ioc_record)
+                    added_payloads += 1
+
+            # add hidden URL
+            if hidden_hostname:
+                related_urls = [hidden_url] if hidden_url else []
+                ioc = IOC(
+                    name=hidden_hostname,
+                    type=get_ioc_type(hidden_hostname),
+                    log4j=True,
+                    related_urls=related_urls,
+                )
+                ioc_record = self.ioc_processor.add_ioc(ioc, attack_type=PAYLOAD_REQUEST)
+                if ioc_record:
+                    self.ioc_records.append(ioc_record)
+                    added_hidden_payloads += 1
 
             # once all have added, we can add the foreign keys
             self._add_fks(scanner_ip, hostname, hidden_hostname)
 
         self.log.info(f"added {added_scanners} scanners, {added_payloads} payloads and {added_hidden_payloads} hidden payloads")
+
 
     def _add_fks(self, scanner_ip: str, hostname: str, hidden_hostname: str) -> None:
         self.log.info(f"adding foreign keys for the following iocs: {scanner_ip}, {hostname}, {hidden_hostname}")

@@ -1,6 +1,6 @@
 from greedybear.consts import SCANNER
-from greedybear.cronjobs.extraction.strategies import BaseExtractionStrategy
-from greedybear.cronjobs.extraction.utils import iocs_from_hits, threatfox_submission
+from greedybear.extraction.strategies import BaseExtractionStrategy
+from greedybear.extraction.utils import iocs_from_hits, threatfox_submission
 
 
 class GenericExtractionStrategy(BaseExtractionStrategy):

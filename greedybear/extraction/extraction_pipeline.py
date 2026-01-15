@@ -1,7 +1,7 @@
 import logging
 from collections import defaultdict
 
-from greedybear.cronjobs.extraction.strategies.factory import ExtractionStrategyFactory
+from greedybear.extraction.strategies.factory import ExtractionStrategyFactory
 from greedybear.cronjobs.repositories import (
     ElasticRepository,
     IocRepository,
@@ -48,9 +48,7 @@ class ExtractionPipeline:
 
         Performs the following steps:
         1. Search Elasticsearch for honeypot log entries
-        2. Group hits by honeypot type and extract sensors
-        3. Apply honeypot-specific extraction strategies
-        4. Update IOC scores
+        2. Run the extraction logic on the search results
 
         Returns:
             Number of IOC records processed.
@@ -58,23 +56,41 @@ class ExtractionPipeline:
         # 1. Search
         self.log.info("Getting honeypot hits from Elasticsearch")
         search_result = self.elastic_repo.search(self._minutes_back_to_lookup)
+        
+        # 2. Run
+        return len(self.run(search_result))
+
+    def run(self, search_result: list) -> list:
+        """
+        Core extraction logic. Processes a list of log entries.
+
+        Args:
+            search_result: List of log entries (Elasticsearch hits)
+
+        Returns:
+            List of extracted IOC records.
+        """
         hits_by_honeypot = defaultdict(list)
 
-        # 2. Group by honeypot
+        # Group by honeypot
         self.log.info("Grouping hits by honeypot type")
         for hit in search_result:
+            # handle both dict and elasticsearch Response objects
+            if not isinstance(hit, dict):
+                hit = hit.to_dict()
+
             # skip hits with non-existing or empty sources
-            if "src_ip" not in hit or not hit["src_ip"].strip():
+            if "src_ip" not in hit or not str(hit["src_ip"]).strip():
                 continue
             # skip hits with non-existing or empty types (=honeypots)
-            if "type" not in hit or not hit["type"].strip():
+            if "type" not in hit or not str(hit["type"]).strip():
                 continue
             # extract sensor
             if "t-pot_ip_ext" in hit:
                 self.sensor_repo.add_sensor(hit["t-pot_ip_ext"])
-            hits_by_honeypot[hit["type"]].append(hit.to_dict())
+            hits_by_honeypot[hit["type"]].append(hit)
 
-        # 3. Extract using strategies
+        # Extract using strategies
         ioc_records = []
         factory = ExtractionStrategyFactory(self.ioc_repo, self.sensor_repo)
         for honeypot, hits in sorted(hits_by_honeypot.items()):
@@ -89,8 +105,10 @@ class ExtractionPipeline:
             except Exception as exc:
                 self.log.error(f"Extraction failed for honeypot {honeypot}: {exc}")
 
-        # 4. Update scores
+        # Update scores
         self.log.info("Updating scores")
         if ioc_records:
             UpdateScores().score_only(ioc_records)
-        return len(ioc_records)
+        
+        return ioc_records
+
