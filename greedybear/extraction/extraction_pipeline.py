@@ -1,13 +1,13 @@
 import logging
 from collections import defaultdict
 
-from greedybear.extraction.strategies.factory import ExtractionStrategyFactory
 from greedybear.cronjobs.repositories import (
     ElasticRepository,
     IocRepository,
     SensorRepository,
 )
 from greedybear.cronjobs.scoring.scoring_jobs import UpdateScores
+from greedybear.extraction.strategies.factory import ExtractionStrategyFactory
 from greedybear.settings import (
     EXTRACTION_INTERVAL,
     INITIAL_EXTRACTION_TIMESPAN,
@@ -56,7 +56,7 @@ class ExtractionPipeline:
         # 1. Search
         self.log.info("Getting honeypot hits from Elasticsearch")
         search_result = self.elastic_repo.search(self._minutes_back_to_lookup)
-        
+
         # 2. Run
         return len(self.run(search_result))
 
@@ -109,6 +109,5 @@ class ExtractionPipeline:
         self.log.info("Updating scores")
         if ioc_records:
             UpdateScores().score_only(ioc_records)
-        
-        return ioc_records
 
+        return ioc_records

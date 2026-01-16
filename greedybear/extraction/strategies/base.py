@@ -1,8 +1,8 @@
 import logging
 from abc import ABCMeta, abstractmethod
 
-from greedybear.extraction.ioc_processor import IocProcessor
 from greedybear.cronjobs.repositories import IocRepository, SensorRepository
+from greedybear.extraction.ioc_processor import IocProcessor
 
 
 class BaseExtractionStrategy(metaclass=ABCMeta):

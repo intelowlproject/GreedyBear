@@ -111,8 +111,6 @@ def iocs_from_hits(hits: list[dict]) -> list[IOC]:
         if extracted_ip.is_loopback or extracted_ip.is_private or extracted_ip.is_multicast or extracted_ip.is_link_local or extracted_ip.is_reserved:
             continue
 
-
-
         firehol_categories = get_firehol_categories(ip, extracted_ip)
 
         ioc = IOC(

@@ -6,16 +6,16 @@ from hashlib import sha256
 from urllib.parse import urlparse
 
 from greedybear.consts import PAYLOAD_REQUEST, SCANNER
+from greedybear.cronjobs.repositories import (
+    CowrieSessionRepository,
+    IocRepository,
+    SensorRepository,
+)
 from greedybear.extraction.strategies import BaseExtractionStrategy
 from greedybear.extraction.utils import (
     get_ioc_type,
     iocs_from_hits,
     threatfox_submission,
-)
-from greedybear.cronjobs.repositories import (
-    CowrieSessionRepository,
-    IocRepository,
-    SensorRepository,
 )
 from greedybear.models import IOC, CommandSequence, CowrieSession
 from greedybear.regex import REGEX_URL_PROTOCOL
