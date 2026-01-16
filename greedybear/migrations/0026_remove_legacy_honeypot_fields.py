@@ -13,7 +13,7 @@ class Migration(migrations.Migration):
     """
 
     dependencies = [
-        ("greedybear", "0024_migrate_honeypot_data"),
+        ("greedybear", "0025_merge_20251223_2100"),
     ]
 
     operations = [

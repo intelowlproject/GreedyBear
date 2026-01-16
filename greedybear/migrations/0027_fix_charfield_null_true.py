@@ -5,7 +5,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("greedybear", "0025_merge_20251223_2100"),
+        ("greedybear", "0026_remove_legacy_honeypot_fields"),
     ]
 
     operations = [

@@ -424,21 +424,25 @@ class TestScoringIntegration(CustomTestCase):
 
         from greedybear.cronjobs.scoring.scoring_jobs import UpdateScores
 
-        # Create test data
-        IOC.objects.create(
+        # Create test data with M2M honeypot relationships
+        cowrie_hp, _ = GeneralHoneypot.objects.get_or_create(name="Cowrie", defaults={"active": True})
+        log4pot_hp, _ = GeneralHoneypot.objects.get_or_create(name="Log4Pot", defaults={"active": True})
+
+        ioc1 = IOC.objects.create(
             name="10.1.2.3",
             type="ip",
             scanner=True,
-            cowrie=True,
             recurrence_probability=0.0,
         )
-        IOC.objects.create(
+        ioc1.general_honeypot.add(cowrie_hp)
+
+        ioc2 = IOC.objects.create(
             name="10.5.6.7",
             type="ip",
             scanner=True,
-            log4j=True,
             recurrence_probability=0.0,
         )
+        ioc2.general_honeypot.add(log4pot_hp)
 
         # Create score dataframe
         df = pd.DataFrame(
@@ -466,21 +470,25 @@ class TestScoringIntegration(CustomTestCase):
 
         from greedybear.cronjobs.scoring.scoring_jobs import UpdateScores
 
-        # Create test data - one IOC will be missing from df
-        IOC.objects.create(
+        # Create test data with M2M honeypot relationships - one IOC will be missing from df
+        cowrie_hp, _ = GeneralHoneypot.objects.get_or_create(name="Cowrie", defaults={"active": True})
+        log4pot_hp, _ = GeneralHoneypot.objects.get_or_create(name="Log4Pot", defaults={"active": True})
+
+        ioc1 = IOC.objects.create(
             name="10.2.3.4",
             type="ip",
             scanner=True,
-            cowrie=True,
             recurrence_probability=0.9,
         )
-        IOC.objects.create(
+        ioc1.general_honeypot.add(cowrie_hp)
+
+        ioc2 = IOC.objects.create(
             name="10.6.7.8",
             type="ip",
             scanner=True,
-            log4j=True,
             recurrence_probability=0.8,
         )
+        ioc2.general_honeypot.add(log4pot_hp)
 
         # DataFrame only has one IOC
         df = pd.DataFrame(

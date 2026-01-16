@@ -41,12 +41,16 @@ def migrate_honeypots_reverse(apps, schema_editor):
         cowrie_hp = GeneralHoneypot.objects.get(name="Cowrie")
         IOC.objects.filter(general_honeypot=cowrie_hp).update(cowrie=True)
     except GeneralHoneypot.DoesNotExist:
+        # If Cowrie honeypot entry doesn't exist, there's no M2M data to restore.
+        # This can happen if running reverse migration on a fresh database.
         pass
 
     try:
         log4pot_hp = GeneralHoneypot.objects.get(name="Log4Pot")
         IOC.objects.filter(general_honeypot=log4pot_hp).update(log4j=True)
     except GeneralHoneypot.DoesNotExist:
+        # If Log4Pot honeypot entry doesn't exist, there's no M2M data to restore.
+        # This can happen if running reverse migration on a fresh database.
         pass
 
 

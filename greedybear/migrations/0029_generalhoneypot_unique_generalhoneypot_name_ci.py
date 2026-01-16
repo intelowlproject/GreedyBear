@@ -6,7 +6,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("greedybear", "0027_disable_unwanted_honeypots"),
+        ("greedybear", "0028_disable_unwanted_honeypots"),
     ]
 
     operations = [
