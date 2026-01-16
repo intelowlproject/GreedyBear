@@ -1,0 +1,4 @@
+# Test requirements
+# Automatically installed in local Docker setup via local.override.yml
+# For manual installation: pip install -r requirements/test.txt
+coverage>=7.3.2
