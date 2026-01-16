@@ -16,8 +16,6 @@ services:
       sh -c "pip install --no-cache-dir coverage>=7.3.2 &&
              exec /opt/deploy/greedybear/docker/entrypoint_uwsgi.sh"
 
-
-
   nginx:
     build:
       context: ..

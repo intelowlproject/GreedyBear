@@ -564,7 +564,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: coverage-report-${{ matrix.python_version }}
-          path: |
-            ${{ inputs.working_directory }}/coverage.xml
-            ${{ inputs.working_directory }}/.coverage
+          path: ${{ inputs.working_directory }}/coverage.xml
           retention-days: 30
