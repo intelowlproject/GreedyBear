@@ -3,6 +3,7 @@
 import csv
 import logging
 import re
+from collections import defaultdict
 from datetime import datetime, timedelta
 from ipaddress import ip_address
 
@@ -326,3 +327,57 @@ def is_sha256hash(string: str) -> bool:
         bool: True if the string is a valid SHA-256 hash, False otherwise
     """
     return bool(re.fullmatch(r"^[A-Fa-f0-9]{64}$", string))
+
+
+def aggregate_iocs_by_asn(iocs):
+    """
+    Aggregate IOC objects by ASN, computing counts, sums, and unique honeypots.
+
+    Args:
+        iocs (Iterable[IOC]): QuerySet or list of IOC objects to aggregate.
+
+    Returns:
+        List[dict]: Each dictionary contains ASN-level statistics:
+    """
+    aggregated = defaultdict(
+        lambda: {
+            "ioc_count": 0,
+            "attack": 0,
+            "interactions": 0,
+            "logins": 0,
+            "honeypots": set(),
+            "exp_ioc": 0.0,
+            "exp_inter": 0.0,
+        }
+    )
+
+    for ioc in iocs:
+        asn = ioc.asn
+        if asn is None:
+            continue
+
+        e = aggregated[asn]
+
+        e["ioc_count"] += 1
+        e["attack"] += ioc.attack_count or 0
+        e["interactions"] += ioc.interaction_count or 0
+        e["logins"] += ioc.login_attempts or 0
+        e["exp_ioc"] += ioc.recurrence_probability or 0.0
+        e["exp_inter"] += ioc.expected_interactions or 0.0
+
+        if getattr(ioc, "honeypots", None):
+            e["honeypots"].update(ioc.honeypots)
+
+    return [
+        {
+            "asn": asn,
+            "ioc_count": e["ioc_count"],
+            "total_attack_count": e["attack"],
+            "total_interaction_count": e["interactions"],
+            "total_login_attempts": e["logins"],
+            "honeypots": sorted(filter(None, e["honeypots"])),
+            "expected_ioc_count": round(e["exp_ioc"], 4),
+            "expected_interactions": round(e["exp_inter"], 4),
+        }
+        for asn, e in aggregated.items()
+    ]

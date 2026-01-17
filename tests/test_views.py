@@ -265,6 +265,62 @@ class FeedsAdvancedViewTestCase(CustomTestCase):
         self.assertEqual(response.status_code, 400)
 
 
+class FeedsASNViewTestCase(CustomTestCase):
+    """Tests for the ASN aggregated feed endpoint."""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.superuser)
+
+    # this endpoint returns raw aggregated data
+    # and does not include license or pagination metadata.
+    def test_200_asn_feed_basic(self):
+        """Test that the ASN feed returns aggregated statistics for existing ASNs."""
+        response = self.client.get("/api/feeds/asn/")
+        self.assertEqual(response.status_code, 200)
+
+        data = response.json()
+        asn_int = int(self.ioc.asn)
+        asn_item = next((item for item in data if item["asn"] == asn_int), None)
+        self.assertIsNotNone(asn_item)
+
+        # expected results are sum of self.ioc, self.ioc_2, self.ioc_3 because they share same asn
+        self.assertEqual(asn_item["ioc_count"], 3)
+        self.assertEqual(asn_item["total_attack_count"], 3)
+        self.assertEqual(asn_item["total_interaction_count"], 3)
+        self.assertEqual(asn_item["total_login_attempts"], 3)
+        # honeypots: filter out None
+        self.assertCountEqual(asn_item["honeypots"], ["Heralding", "Ciscoasa"])
+        # sum recurrence_probability
+        self.assertAlmostEqual(asn_item["expected_ioc_count"], 0.3)
+        # sum expected_interactions
+        self.assertAlmostEqual(asn_item["expected_interactions"], 33.3)
+
+    def test_200_asn_feed_with_filter(self):
+        """Test filtering by honeypot or other query parameters (if supported)."""
+        response = self.client.get("/api/feeds/asn/?honeypot=Heralding")
+        self.assertEqual(response.status_code, 200)
+
+        data = response.json()
+        asn_int = int(self.ioc.asn)
+        asn_item = next((item for item in data if item["asn"] == asn_int), None)
+        self.assertIsNotNone(asn_item)
+        # only honeypots that match the filter are included here
+        self.assertIn("Heralding", asn_item["honeypots"])
+        self.assertNotIn("Ddospot", asn_item["honeypots"])
+
+    def test_400_asn_feed_invalid_param(self):
+        """Invalid query param returns 400."""
+        response = self.client.get("/api/feeds/asn/?attack_type=invalid")
+        self.assertEqual(response.status_code, 400)
+
+    def test_401_asn_feed_unauthenticated(self):
+        """Unauthenticated requests are rejected."""
+        self.client.logout()
+        response = self.client.get("/api/feeds/asn/")
+        self.assertEqual(response.status_code, 401)
+
+
 class StatisticsViewTestCase(CustomTestCase):
     @classmethod
     def setUpClass(cls):

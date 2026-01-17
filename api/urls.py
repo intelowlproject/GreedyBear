@@ -10,6 +10,7 @@ from api.views import (
     enrichment_view,
     feeds,
     feeds_advanced,
+    feeds_asn,
     feeds_pagination,
     general_honeypot_list,
 )
@@ -22,6 +23,7 @@ router.register(r"statistics", StatisticsViewSet, basename="statistics")
 urlpatterns = [
     path("feeds/", feeds_pagination),
     path("feeds/advanced/", feeds_advanced),
+    path("feeds/asn/", feeds_asn),
     path("feeds/<str:feed_type>/<str:attack_type>/<str:prioritize>.<str:format_>", feeds),
     path("enrichment", enrichment_view),
     path("cowrie_session", cowrie_session_view),
