@@ -1,12 +1,11 @@
 import json
 
-from django.test import SimpleTestCase
-
 from greedybear.cronjobs.scoring.random_forest import RFClassifier, RFRegressor
 from greedybear.settings import ML_CONFIG_FILE
+from tests import CustomTestCase
 
 
-class TestRFConfig(SimpleTestCase):
+class TestRFConfig(CustomTestCase):
     def setUp(self):
         with open(ML_CONFIG_FILE) as f:
             self.config = json.load(f)
