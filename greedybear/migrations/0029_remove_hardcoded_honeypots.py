@@ -46,6 +46,7 @@ def remove_hardcoded_honeypots(apps, schema_editor):
 class Migration(migrations.Migration):
     dependencies = [
         ("greedybear", "0027_disable_unwanted_honeypots"),
+        ("greedybear", "0028_generalhoneypot_unique_generalhoneypot_name_ci"),
     ]
 
     operations = [
