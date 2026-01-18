@@ -103,8 +103,8 @@ class FireHolCronTestCase(CustomTestCase):
         cronjob.execute()
 
         # Check that no FireHolList entries were created
-        self.assertFalse(FireHolList.objects.filter(ip_address="256.1.1.1", source="blocklist_de").exists())
-        self.assertFalse(FireHolList.objects.filter(ip_address="999.999.999.999", source="blocklist_de").exists())
+        self.assertFalse(FireHolList.objects.filter(source="blocklist_de").exists())
+        self.assertFalse(FireHolList.objects.filter(source="bruteforceblocker").exists())
 
     @patch("greedybear.cronjobs.firehol.requests.get")
     def test_run_handles_network_errors(self, mock_get):
