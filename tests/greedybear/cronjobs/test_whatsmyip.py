@@ -1,26 +1,16 @@
 # This file is a part of GreedyBear https://github.com/honeynet/GreedyBear
 # See the file 'LICENSE' for copying permission.
 
-from unittest import TestCase
+from tests import CustomTestCase
 from unittest.mock import patch, MagicMock
 
 from greedybear.cronjobs import whatsmyip
 from greedybear.models import IOC, WhatsMyIP
 
 
-class WhatsMyIPTestCase(TestCase):
+class WhatsMyIPTestCase(CustomTestCase):
     """Test WhatsMyIPCron cronjob"""
 
-    def setUp(self):
-        """Set up test data"""
-        # Clean up any existing test data
-        WhatsMyIP.objects.all().delete()
-        IOC.objects.all().delete()
-
-    def tearDown(self):
-        """Clean up after tests"""
-        WhatsMyIP.objects.all().delete()
-        IOC.objects.all().delete()
 
     @patch("greedybear.cronjobs.whatsmyip.requests.get")
     def test_add_new_domains(self, mock_get):
