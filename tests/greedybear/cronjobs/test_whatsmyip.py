@@ -112,7 +112,7 @@ class WhatsMyIPTestCase(CustomTestCase):
         cron.run()
 
         # Verify no domains were added
-        self.assertEqual(WhatsMyIP.objects.count(), 0)
+        self.assertEqual(WhatsMyIPDomain.objects.count(), 0)
 
     @patch("greedybear.cronjobs.whatsmyip.requests.get")
     def test_http_request_parameters(self, mock_get):
