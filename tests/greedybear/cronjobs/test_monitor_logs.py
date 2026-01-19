@@ -1,11 +1,11 @@
 from datetime import datetime, timedelta
-from unittest import TestCase
 from unittest.mock import MagicMock, patch
 
 from greedybear.cronjobs.monitor_logs import MonitorLogs
+from tests import CustomTestCase
 
 
-class MonitorLogsTestCase(TestCase):
+class MonitorLogsTestCase(CustomTestCase):
     @patch("greedybear.cronjobs.monitor_logs.send_ntfy_message")
     @patch("greedybear.cronjobs.monitor_logs.send_slack_message")
     @patch("greedybear.cronjobs.monitor_logs.Path.exists")

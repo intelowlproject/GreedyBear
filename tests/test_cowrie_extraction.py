@@ -2,7 +2,6 @@
 Tests for Cowrie extraction helper functions and strategy.
 """
 
-from unittest import TestCase
 from unittest.mock import MagicMock, Mock, patch
 
 from greedybear.cronjobs.extraction.strategies.cowrie import (
@@ -12,9 +11,10 @@ from greedybear.cronjobs.extraction.strategies.cowrie import (
     parse_url_hostname,
 )
 from greedybear.models import CommandSequence
+from tests import ExtractionTestCase
 
 
-class TestHelperFunctions(TestCase):
+class TestHelperFunctions(ExtractionTestCase):
     """Test standalone helper functions."""
 
     def test_parse_url_hostname_valid_http(self):
@@ -75,7 +75,7 @@ class TestHelperFunctions(TestCase):
         self.assertEqual(result, "admin")
 
 
-class TestCowrieExtractionStrategy(TestCase):
+class TestCowrieExtractionStrategy(ExtractionTestCase):
     """Test CowrieExtractionStrategy class."""
 
     def setUp(self):

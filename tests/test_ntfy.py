@@ -1,17 +1,17 @@
 from unittest.mock import MagicMock, patch
 
-from django.test import SimpleTestCase, override_settings
+from django.test import override_settings
 
 from greedybear.ntfy import send_ntfy_message
+from tests import CustomTestCase
 
 TEST_LOGGING = {
     "version": 1,
     "disable_existing_loggers": True,
 }
 
-
 @override_settings(LOGGING=TEST_LOGGING)
-class SendNtfyMessageTests(SimpleTestCase):
+class SendNtfyMessageTests(CustomTestCase):
     @override_settings(NTFY_URL="https://ntfy.sh/greedybear")
     @patch("greedybear.ntfy.requests.post")
     @patch("greedybear.ntfy.logger")
