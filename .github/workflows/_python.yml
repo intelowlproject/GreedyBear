@@ -563,6 +563,6 @@ jobs:
         if: inputs.use_coverage && inputs.upload_coverage
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-report-${{ matrix.python_version }}
+          name: coverage-report-${{ replace(matrix.python_version, '.', '-') }}
           path: ${{ inputs.working_directory }}/coverage.xml
           retention-days: 30
