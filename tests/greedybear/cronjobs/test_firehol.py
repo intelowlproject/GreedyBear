@@ -162,8 +162,7 @@ class FireHolCronTestCase(CustomTestCase):
 
         self.assertFalse(FireHolList.objects.filter(ip_address="192.168.1.256", source="blocklist_de").exists())
 
-    @patch("greedybear.cronjobs.firehol.requests.get")
-    def test_cleanup_old_entries(self, mock_get):
+    def test_cleanup_old_entries(self):
         now = datetime.now()
 
         old_entry = FireHolList.objects.create(
