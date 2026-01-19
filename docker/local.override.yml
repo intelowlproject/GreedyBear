@@ -5,6 +5,7 @@ services:
       dockerfile: docker/Dockerfile
       args:
         WATCHMAN: "true"
+        INSTALL_DEV: "true"
     image: intelowlproject/greedybear:test
     volumes:
       - ../:/opt/deploy/greedybear
@@ -12,9 +13,6 @@ services:
       - DEBUG=True
       - DJANGO_TEST_SERVER=True
       - DJANGO_WATCHMAN_TIMEOUT=20
-    entrypoint: >
-      sh -c "pip install --no-cache-dir coverage>=7.3.2 &&
-             exec /opt/deploy/greedybear/docker/entrypoint_uwsgi.sh"
 
   nginx:
     build:
