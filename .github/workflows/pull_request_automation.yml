@@ -15,7 +15,7 @@ jobs:
   detect-changes:
     uses: ./.github/workflows/_detect_changes.yml
     with:
-      backend_directories: api greedybear
+      backend_directories: api greedybear tests
       frontend_directories: frontend
       ubuntu_version: latest
 
