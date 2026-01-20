@@ -52,6 +52,12 @@ services:
       driver: none
     depends_on:
       - postgres
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "check_running"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
 
   celery_beat:
     image: intelowlproject/greedybear:prod
@@ -63,9 +69,12 @@ services:
     env_file:
       - env_file
     depends_on:
-      - rabbitmq
-      - postgres
-      - uwsgi
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_started
+      uwsgi:
+        condition: service_started
     <<: *no-healthcheck
 
   celery_worker_default:
@@ -80,11 +89,13 @@ services:
     env_file:
       - env_file
     depends_on:
-      - rabbitmq
-      - postgres
-      - uwsgi
+      rabbitmq:
+        condition: service_healthy
+      postgres:
+        condition: service_started
+      uwsgi:
+        condition: service_started
     <<: *no-healthcheck
-
 
 volumes:
   postgres_data:
