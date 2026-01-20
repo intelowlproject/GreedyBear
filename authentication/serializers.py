@@ -11,11 +11,13 @@ from django.conf import settings
 from django.contrib.auth import password_validation
 from django.core.exceptions import ValidationError
 from django.db import DatabaseError, transaction
+from django.db.models import Q
 from django.utils.translation import gettext_lazy as _
-from greedybear.consts import REGEX_PASSWORD
 from rest_framework import serializers as rfs
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 from slack_sdk.errors import SlackApiError
+
+from greedybear.consts import REGEX_PASSWORD
 
 from .models import UserProfile
 
@@ -95,7 +97,9 @@ class RegistrationSerializer(rest_email_auth.serializers.RegistrationSerializer)
         return user
 
 
-class EmailVerificationSerializer(rest_email_auth.serializers.EmailVerificationSerializer):
+class EmailVerificationSerializer(
+    rest_email_auth.serializers.EmailVerificationSerializer
+):
     def validate_key(self, key):
         try:
             return super().validate_key(key)
@@ -103,9 +107,15 @@ class EmailVerificationSerializer(rest_email_auth.serializers.EmailVerificationS
             # custom error messages
             err_str = str(exc.detail)
             if "invalid" in err_str:
-                exc.detail = "The provided verification key" " is invalid or your email address is already verified."
+                exc.detail = (
+                    "The provided verification key"
+                    " is invalid or your email address is already verified."
+                )
             if "expired" in err_str:
-                exc.detail = "The provided verification key" " has expired or your email address is already verified."
+                exc.detail = (
+                    "The provided verification key"
+                    " has expired or your email address is already verified."
+                )
             raise exc
 
     def save(self):
@@ -118,11 +128,19 @@ class EmailVerificationSerializer(rest_email_auth.serializers.EmailVerificationS
             super().save()
 
         # Send msg on slack
-        if certego_apps_settings.SLACK_TOKEN and certego_apps_settings.DEFAULT_SLACK_CHANNEL:
+        if (
+            certego_apps_settings.SLACK_TOKEN
+            and certego_apps_settings.DEFAULT_SLACK_CHANNEL
+        ):
             try:
                 userprofile = user.user_profile
-                user_admin_link = f"{settings.HOST_URI}/admin/certego_saas_user/user/{user.pk}"
-                userprofile_admin_link = f"{settings.HOST_URI}" f"/admin/authentication/userprofile/{userprofile.pk}"
+                user_admin_link = (
+                    f"{settings.HOST_URI}/admin/certego_saas_user/user/{user.pk}"
+                )
+                userprofile_admin_link = (
+                    f"{settings.HOST_URI}"
+                    f"/admin/authentication/userprofile/{userprofile.pk}"
+                )
                 slack = Slack()
                 slack.send_message(
                     title="Newly registered user!!",
@@ -136,16 +154,33 @@ class EmailVerificationSerializer(rest_email_auth.serializers.EmailVerificationS
                     channel=certego_apps_settings.DEFAULT_SLACK_CHANNEL,
                 )
             except SlackApiError as exc:
-                slack.log.error(f"Slack message failed for user(#{user.pk}) with error: {str(exc)}")
+                slack.log.error(
+                    f"Slack message failed for user(#{user.pk}) with error: {str(exc)}"
+                )
 
 
 class LoginSerializer(AuthTokenSerializer):
     def validate(self, attrs):
+        login_value = attrs.get("username")
+
+        # 🔑 KEY FIX: If user entered an email, convert it to username FIRST
+        try:
+            user = User.objects.get(email__iexact=login_value)
+            # Replace email with actual username for Django auth
+            attrs["username"] = user.username
+        except User.DoesNotExist:
+            # Not an email or email doesn't exist - keep original value
+            pass
+
+        # Now authenticate with the correct username
         try:
             return super().validate(attrs)
         except rfs.ValidationError as exc:
+            # Custom error messages for inactive users
             try:
-                user = User.objects.get(username=attrs["username"])
+                user = User.objects.get(
+                    Q(username=login_value) | Q(email__iexact=login_value)
+                )
             except User.DoesNotExist:
                 # we do not want to leak info
                 # so just raise the original exception
@@ -159,6 +194,8 @@ class LoginSerializer(AuthTokenSerializer):
                         exc.detail = "Your account is pending activation by our team."
                     elif user.approved is False:
                         exc.detail = "Your account was declined."
-                    logger.info(f"User {user} is not active. Error message: {exc.detail}")
+                    logger.info(
+                        f"User {user} is not active. Error message: {exc.detail}"
+                    )
             # else
             raise exc
