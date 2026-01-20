@@ -1,11 +1,11 @@
 # This file is a part of GreedyBear https://github.com/honeynet/GreedyBear
 # See the file 'LICENSE' for copying permission.
 
-from tests import CustomTestCase
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 from greedybear.cronjobs import whatsmyip
 from greedybear.models import IOC, WhatsMyIPDomain
+from tests import CustomTestCase
 
 
 class WhatsMyIPTestCase(CustomTestCase):
