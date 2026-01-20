@@ -1,23 +1,32 @@
 from datetime import datetime
 from hashlib import sha256
+from unittest.mock import Mock
 
 from certego_saas.apps.user.models import User
 from django.test import TestCase
-from greedybear.models import IOC, CommandSequence, CowrieSession, GeneralHoneypot, iocType
+
+from greedybear.models import (
+    IOC,
+    CommandSequence,
+    CowrieSession,
+    GeneralHoneypot,
+    IocType,
+)
 
 
 class CustomTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
-        super(CustomTestCase, cls).setUpTestData()
+        super().setUpTestData()
 
-        cls.heralding = GeneralHoneypot.objects.create(name="Heralding", active=True)
-        cls.ciscoasa = GeneralHoneypot.objects.create(name="Ciscoasa", active=True)
+        cls.heralding = GeneralHoneypot.objects.get_or_create(name="Heralding", defaults={"active": True})[0]
+        cls.ciscoasa = GeneralHoneypot.objects.get_or_create(name="Ciscoasa", defaults={"active": True})[0]
+        cls.ddospot = GeneralHoneypot.objects.get_or_create(name="Ddospot", defaults={"active": False})[0]
 
         cls.current_time = datetime.now()
         cls.ioc = IOC.objects.create(
             name="140.246.171.141",
-            type=iocType.IP.value,
+            type=IocType.IP.value,
             first_seen=cls.current_time,
             last_seen=cls.current_time,
             days_seen=[cls.current_time],
@@ -39,7 +48,7 @@ class CustomTestCase(TestCase):
 
         cls.ioc_2 = IOC.objects.create(
             name="99.99.99.99",
-            type=iocType.IP.value,
+            type=IocType.IP.value,
             first_seen=cls.current_time,
             last_seen=cls.current_time,
             days_seen=[cls.current_time],
@@ -61,7 +70,7 @@ class CustomTestCase(TestCase):
 
         cls.ioc_3 = IOC.objects.create(
             name="100.100.100.100",
-            type=iocType.IP.value,
+            type=IocType.IP.value,
             first_seen=cls.current_time,
             last_seen=cls.current_time,
             days_seen=[cls.current_time],
@@ -81,12 +90,36 @@ class CustomTestCase(TestCase):
             expected_interactions=11.1,
         )
 
+        cls.ioc_domain = IOC.objects.create(
+            name="malicious.example.com",
+            type=IocType.DOMAIN.value,
+            first_seen=cls.current_time,
+            last_seen=cls.current_time,
+            days_seen=[cls.current_time],
+            number_of_days_seen=1,
+            attack_count=1,
+            interaction_count=1,
+            log4j=True,
+            cowrie=False,
+            scanner=False,
+            payload_request=True,
+            related_urls=[],
+            ip_reputation="",
+            asn=None,
+            destination_ports=[],
+            login_attempts=0,
+            recurrence_probability=0.2,
+            expected_interactions=5.5,
+        )
+
         cls.ioc.general_honeypot.add(cls.heralding)  # FEEDS
         cls.ioc.general_honeypot.add(cls.ciscoasa)  # FEEDS
         cls.ioc.save()
         cls.ioc_2.general_honeypot.add(cls.heralding)  # FEEDS
         cls.ioc_2.general_honeypot.add(cls.ciscoasa)  # FEEDS
         cls.ioc_2.save()
+        cls.ioc_domain.general_honeypot.add(cls.heralding)  # FEEDS
+        cls.ioc_domain.save()
 
         cls.cmd_seq = ["cd foo", "ls -la"]
         cls.hash = sha256("\n".join(cls.cmd_seq).encode()).hexdigest()
@@ -145,9 +178,47 @@ class CustomTestCase(TestCase):
             cls.regular_user = User.objects.create_user(username="regular", email="regular@greedybear.com", password="regular")
 
     @classmethod
-    def tearDownClass(self):
+    def tearDownClass(cls):
         # db clean
         GeneralHoneypot.objects.all().delete()
         IOC.objects.all().delete()
         CowrieSession.objects.all().delete()
         CommandSequence.objects.all().delete()
+
+
+class ExtractionTestCase(CustomTestCase):
+    def setUp(self):
+        self.mock_ioc_repo = Mock()
+        self.mock_sensor_repo = Mock()
+        self.mock_session_repo = Mock()
+
+    def _create_mock_ioc(
+        self,
+        name="1.2.3.4",
+        ioc_type="ip",
+        attack_count=1,
+        interaction_count=1,
+        related_urls=None,
+        destination_ports=None,
+        login_attempts=0,
+        days_seen=None,
+        last_seen=None,
+        ip_reputation="",
+        asn=1234,
+    ):
+        mock = Mock(spec=IOC)
+        mock.name = name
+        mock.type = ioc_type
+        mock.scanner = False
+        mock.payload_request = False
+        mock.attack_count = attack_count
+        mock.interaction_count = interaction_count
+        mock.related_urls = related_urls if related_urls is not None else []
+        mock.destination_ports = destination_ports if destination_ports is not None else []
+        mock.days_seen = days_seen if days_seen is not None else []
+        mock.login_attempts = login_attempts
+        mock.last_seen = last_seen if last_seen is not None else datetime.now()
+        mock.ip_reputation = ip_reputation
+        mock.asn = asn
+        mock.number_of_days_seen = len(mock.days_seen)
+        return mock

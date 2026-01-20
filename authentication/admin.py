@@ -1,6 +1,5 @@
 # This file is a part of GreedyBear https://github.com/honeynet/GreedyBear
 # See the file 'LICENSE' for copying permission.
-from typing import Optional
 
 import email_utils
 from certego_saas.apps.user.admin import AbstractUserAdmin
@@ -38,7 +37,7 @@ class UserAdminView(AbstractUserAdmin):
     actions = ["accept_users", "decline_users"]
 
     @admin.display(boolean=True)
-    def is_email_verified(self, obj: User) -> Optional[bool]:
+    def is_email_verified(self, obj: User) -> bool | None:
         return obj.is_email_verified
 
     @admin.action(description="Decline selected users")
@@ -124,7 +123,7 @@ class UserProfileAdmin(admin.ModelAdmin):
         return obj.user.is_active
 
     @admin.display(boolean=True)
-    def user_is_approved(self, obj: UserProfile) -> Optional[bool]:
+    def user_is_approved(self, obj: UserProfile) -> bool | None:
         return obj.user.approved
 
 

@@ -51,7 +51,7 @@ class ClusterCommandSequences(Cronjob):
         tokenized_seqs = [tokenize(s.commands) for s in sequences]
         cluster_labels = LSHConnectedComponents().get_components(tokenized_seqs)
         seqs_to_update = []
-        for seq, label in zip(sequences, cluster_labels):
+        for seq, label in zip(sequences, cluster_labels, strict=False):
             if seq.cluster != label:
                 seq.cluster = label
                 seqs_to_update.append(seq)

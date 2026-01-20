@@ -5,14 +5,25 @@ import logging
 from django.contrib import admin, messages
 from django.db.models import Q
 from django.utils.translation import ngettext
-from greedybear.models import IOC, CommandSequence, CowrieSession, GeneralHoneypot, MassScanners, Sensors, Statistics, WhatsMyIP
+
+from greedybear.models import (
+    IOC,
+    CommandSequence,
+    CowrieSession,
+    FireHolList,
+    GeneralHoneypot,
+    MassScanner,
+    Sensor,
+    Statistics,
+    WhatsMyIPDomain,
+)
 
 logger = logging.getLogger(__name__)
 
 
-@admin.register(Sensors)
+@admin.register(Sensor)
 class SensorsModelAdmin(admin.ModelAdmin):
-    list_display = [field.name for field in Sensors._meta.get_fields()]
+    list_display = [field.name for field in Sensor._meta.get_fields()]
 
 
 @admin.register(Statistics)
@@ -23,14 +34,14 @@ class StatisticsModelAdmin(admin.ModelAdmin):
     search_help_text = ["search for the IP address source"]
 
 
-@admin.register(WhatsMyIP)
+@admin.register(WhatsMyIPDomain)
 class WhatsMyIPModelAdmin(admin.ModelAdmin):
     list_display = ["domain", "added"]
     search_fields = ["domain"]
     search_help_text = ["search for the domain"]
 
 
-@admin.register(MassScanners)
+@admin.register(MassScanner)
 class MassScannersModelAdmin(admin.ModelAdmin):
     list_display = ["ip_address", "added", "reason"]
     list_filter = ["reason"]
@@ -38,9 +49,24 @@ class MassScannersModelAdmin(admin.ModelAdmin):
     search_help_text = ["search for the IP address source"]
 
 
+@admin.register(FireHolList)
+class FireHolListModelAdmin(admin.ModelAdmin):
+    list_display = ["ip_address", "added", "source"]
+    list_filter = ["source"]
+    search_fields = ["ip_address"]
+    search_help_text = ["search for the IP address"]
+
+
 class SessionInline(admin.TabularInline):
     model = CowrieSession
-    fields = ["source", "start_time", "duration", "credentials", "interaction_count", "commands"]
+    fields = [
+        "source",
+        "start_time",
+        "duration",
+        "credentials",
+        "interaction_count",
+        "commands",
+    ]
     readonly_fields = fields
     show_change_link = True
     extra = 0
@@ -49,7 +75,16 @@ class SessionInline(admin.TabularInline):
 
 @admin.register(CowrieSession)
 class CowrieSessionModelAdmin(admin.ModelAdmin):
-    list_display = ["session_id", "start_time", "duration", "login_attempt", "credentials", "command_execution", "interaction_count", "source"]
+    list_display = [
+        "session_id",
+        "start_time",
+        "duration",
+        "login_attempt",
+        "credentials",
+        "command_execution",
+        "interaction_count",
+        "source",
+    ]
     search_fields = ["source__name"]
     search_help_text = ["search for the IP address source"]
     raw_id_fields = ["source", "commands"]
@@ -82,11 +117,20 @@ class IOCModelAdmin(admin.ModelAdmin):
         "cowrie",
         "general_honeypots",
         "ip_reputation",
+        "firehol_categories",
         "asn",
         "destination_ports",
         "login_attempts",
     ]
-    list_filter = ["type", "log4j", "cowrie", "scanner", "payload_request", "ip_reputation", "asn"]
+    list_filter = [
+        "type",
+        "log4j",
+        "cowrie",
+        "scanner",
+        "payload_request",
+        "ip_reputation",
+        "asn",
+    ]
     search_fields = ["name", "related_ioc__name"]
     search_help_text = ["search for the IP address source"]
     raw_id_fields = ["related_ioc"]

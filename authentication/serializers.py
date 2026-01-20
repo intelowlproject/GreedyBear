@@ -8,7 +8,6 @@ from certego_saas.ext.upload import Slack
 from certego_saas.models import User
 from certego_saas.settings import certego_apps_settings
 from django.conf import settings
-from django.contrib.auth import password_validation
 from django.core.exceptions import ValidationError
 from django.db import DatabaseError, transaction
 from django.db.models import Q
@@ -163,7 +162,7 @@ class LoginSerializer(AuthTokenSerializer):
     def validate(self, attrs):
         login_value = attrs.get("username")
 
-        # 🔑 KEY FIX: If user entered an email, convert it to username FIRST
+        #  KEY FIX: If user entered an email, convert it to username FIRST
         try:
             user = User.objects.get(email__iexact=login_value)
             # Replace email with actual username for Django auth
@@ -183,8 +182,8 @@ class LoginSerializer(AuthTokenSerializer):
                 )
             except User.DoesNotExist:
                 # we do not want to leak info
-                # so just raise the original exception
-                raise exc
+                # so just raise the original exception without context
+                raise exc from None
             else:
                 # custom error messages
                 if not user.is_active:
@@ -198,4 +197,4 @@ class LoginSerializer(AuthTokenSerializer):
                         f"User {user} is not active. Error message: {exc.detail}"
                     )
             # else
-            raise exc
+            raise exc from None

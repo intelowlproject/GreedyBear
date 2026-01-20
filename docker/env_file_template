@@ -35,6 +35,10 @@ ELASTIC_ENDPOINT=
 SLACK_TOKEN=
 DEFAULT_SLACK_CHANNEL=
 
+NTFY_URL=
+# Url of the ntfy topic to recieve error alerts
+# Example: https://ntfy.sh/your_topic
+
 STAGE="production"
 DEBUG=False
 MOCK_CONNECTIONS=False
@@ -46,6 +50,9 @@ PUBLIC_DEPLOYMENT=False
 LEGACY_EXTRACTION=False
 # Interval for the honeypot data extraction in minutes (only choose divisors of 60)
 EXTRACTION_INTERVAL=10
+
+# Lookback time for the first extraction run in minutes (default: 1 day)
+INITIAL_EXTRACTION_TIMESPAN = 1440
 
 # Set True to cluster command sequences recorded by Cowrie once a day
 # This might be computationaly expensive on large Databases
@@ -64,3 +71,8 @@ COMMAND_SEQUENCE_RETENTION = 365
 # ThreatFox API key.
 # Once added, your payload request domains will be submitted to ThreatFox
 THREATFOX_API_KEY =
+
+# Optional feed license URL to include in API responses
+# If not set, no license information will be included in feeds
+# Example: https://github.com/honeynet/GreedyBear/blob/main/FEEDS_LICENSE.md
+FEEDS_LICENSE=

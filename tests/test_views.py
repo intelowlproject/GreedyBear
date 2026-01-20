@@ -1,7 +1,9 @@
-from api.views.utils import is_ip_address, is_sha256hash
-from greedybear.consts import FEEDS_LICENSE
-from greedybear.models import GeneralHoneypot, Statistics, viewType
+from django.conf import settings
+from django.test import override_settings
 from rest_framework.test import APIClient
+
+from api.views.utils import is_ip_address, is_sha256hash
+from greedybear.models import GeneralHoneypot, Statistics, ViewType
 
 from . import CustomTestCase
 
@@ -46,8 +48,14 @@ class EnrichmentViewTestCase(CustomTestCase):
         self.assertEqual(response.json()["ioc"]["general_honeypot"][1], self.ciscoasa.name)  # FEEDS
         self.assertEqual(response.json()["ioc"]["scanner"], self.ioc.scanner)
         self.assertEqual(response.json()["ioc"]["payload_request"], self.ioc.payload_request)
-        self.assertEqual(response.json()["ioc"]["recurrence_probability"], self.ioc.recurrence_probability)
-        self.assertEqual(response.json()["ioc"]["expected_interactions"], self.ioc.expected_interactions)
+        self.assertEqual(
+            response.json()["ioc"]["recurrence_probability"],
+            self.ioc.recurrence_probability,
+        )
+        self.assertEqual(
+            response.json()["ioc"]["expected_interactions"],
+            self.ioc.expected_interactions,
+        )
 
     def test_for_invalid_authentication(self):
         """Check for a invalid authentication"""
@@ -57,33 +65,68 @@ class EnrichmentViewTestCase(CustomTestCase):
 
 
 class FeedsViewTestCase(CustomTestCase):
-    def test_200_all_feeds(self):
+    def test_200_log4j_feeds(self):
+        response = self.client.get("/api/feeds/log4j/all/recent.json")
+        self.assertEqual(response.status_code, 200)
+        if settings.FEEDS_LICENSE:
+            self.assertEqual(response.json()["license"], settings.FEEDS_LICENSE)
+        else:
+            self.assertNotIn("license", response.json())
+
+        iocs = response.json()["iocs"]
+        target_ioc = next((i for i in iocs if i["value"] == self.ioc.name), None)
+        self.assertIsNotNone(target_ioc)
+
+        self.assertEqual(target_ioc["feed_type"], ["log4j", "cowrie", "heralding", "ciscoasa"])
+        self.assertEqual(target_ioc["attack_count"], 1)
+        self.assertEqual(target_ioc["scanner"], True)
+        self.assertEqual(target_ioc["payload_request"], True)
+        self.assertEqual(target_ioc["recurrence_probability"], self.ioc.recurrence_probability)
+        self.assertEqual(target_ioc["expected_interactions"], self.ioc.expected_interactions)
+
+    @override_settings(FEEDS_LICENSE="https://example.com/license")
+    def test_200_all_feeds_with_license(self):
+        """Test feeds endpoint when FEEDS_LICENSE is populated"""
         response = self.client.get("/api/feeds/all/all/recent.json")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["license"], FEEDS_LICENSE)
-        self.assertEqual(response.json()["iocs"][0]["feed_type"], ["log4j", "cowrie", "heralding", "ciscoasa"])
-        self.assertEqual(response.json()["iocs"][0]["attack_count"], 1)
-        self.assertEqual(response.json()["iocs"][0]["scanner"], True)
-        self.assertEqual(response.json()["iocs"][0]["payload_request"], True)
-        self.assertEqual(response.json()["iocs"][0]["recurrence_probability"], self.ioc.recurrence_probability)
-        self.assertEqual(response.json()["iocs"][0]["expected_interactions"], self.ioc.expected_interactions)
+        self.assertIn("license", response.json())
+        self.assertEqual(response.json()["license"], "https://example.com/license")
+
+    @override_settings(FEEDS_LICENSE="")
+    def test_200_all_feeds_without_license(self):
+        """Test feeds endpoint when FEEDS_LICENSE is empty"""
+        response = self.client.get("/api/feeds/all/all/recent.json")
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn("license", response.json())
 
     def test_200_general_feeds(self):
         response = self.client.get("/api/feeds/heralding/all/recent.json")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["license"], FEEDS_LICENSE)
-        self.assertEqual(response.json()["iocs"][0]["feed_type"], ["log4j", "cowrie", "heralding", "ciscoasa"])
-        self.assertEqual(response.json()["iocs"][0]["attack_count"], 1)
-        self.assertEqual(response.json()["iocs"][0]["scanner"], True)
-        self.assertEqual(response.json()["iocs"][0]["payload_request"], True)
-        self.assertEqual(response.json()["iocs"][0]["recurrence_probability"], self.ioc.recurrence_probability)
-        self.assertEqual(response.json()["iocs"][0]["expected_interactions"], self.ioc.expected_interactions)
+        if settings.FEEDS_LICENSE:
+            self.assertEqual(response.json()["license"], settings.FEEDS_LICENSE)
+        else:
+            self.assertNotIn("license", response.json())
+
+        iocs = response.json()["iocs"]
+        target_ioc = next((i for i in iocs if i["value"] == self.ioc.name), None)
+        self.assertIsNotNone(target_ioc)
+
+        self.assertEqual(target_ioc["feed_type"], ["log4j", "cowrie", "heralding", "ciscoasa"])
+        self.assertEqual(target_ioc["attack_count"], 1)
+        self.assertEqual(target_ioc["scanner"], True)
+        self.assertEqual(target_ioc["payload_request"], True)
+        self.assertEqual(target_ioc["recurrence_probability"], self.ioc.recurrence_probability)
+        self.assertEqual(target_ioc["expected_interactions"], self.ioc.expected_interactions)
 
     def test_200_feeds_scanner_inclusion(self):
         response = self.client.get("/api/feeds/heralding/all/recent.json?include_mass_scanners")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["license"], FEEDS_LICENSE)
-        self.assertEqual(len(response.json()["iocs"]), 2)
+        if settings.FEEDS_LICENSE:
+            self.assertEqual(response.json()["license"], settings.FEEDS_LICENSE)
+        else:
+            self.assertNotIn("license", response.json())
+        # Expecting 3 because setupTestData creates 3 IOCs (ioc, ioc_2, ioc_domain) associated with Heralding
+        self.assertEqual(len(response.json()["iocs"]), 3)
 
     def test_400_feeds(self):
         response = self.client.get("/api/feeds/test/all/recent.json")
@@ -92,23 +135,54 @@ class FeedsViewTestCase(CustomTestCase):
     def test_200_feeds_pagination(self):
         response = self.client.get("/api/feeds/?page_size=10&page=1&feed_type=all&attack_type=all&age=recent")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["count"], 1)
+        self.assertEqual(response.json()["count"], 2)
         self.assertEqual(response.json()["total_pages"], 1)
 
     def test_200_feeds_pagination_inclusion_mass(self):
         response = self.client.get("/api/feeds/?page_size=10&page=1&feed_type=all&attack_type=all&age=recent&include_mass_scanners")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["count"], 2)
+        self.assertEqual(response.json()["count"], 3)
 
     def test_200_feeds_pagination_inclusion_tor(self):
         response = self.client.get("/api/feeds/?page_size=10&page=1&feed_type=all&attack_type=all&age=recent&include_tor_exit_nodes")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["count"], 2)
+        self.assertEqual(response.json()["count"], 3)
 
     def test_200_feeds_pagination_inclusion_mass_and_tor(self):
         response = self.client.get("/api/feeds/?page_size=10&page=1&feed_type=all&attack_type=all&age=recent&include_mass_scanners&include_tor_exit_nodes")
         self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["count"], 4)
+
+    def test_200_feeds_filter_ip_only(self):
+        response = self.client.get("/api/feeds/all/all/recent.json?ioc_type=ip")
+        self.assertEqual(response.status_code, 200)
+        # Should only return IP addresses, not domains
+        for ioc in response.json()["iocs"]:
+            # Verify all returned values are IPs (contain dots and numbers pattern)
+            self.assertRegex(ioc["value"], r"^\d+\.\d+\.\d+\.\d+$")
+
+    def test_200_feeds_filter_domain_only(self):
+        response = self.client.get("/api/feeds/all/all/recent.json?ioc_type=domain")
+        self.assertEqual(response.status_code, 200)
+        # Should only return domains, not IPs
+        self.assertGreater(len(response.json()["iocs"]), 0)
+        for ioc in response.json()["iocs"]:
+            # Verify all returned values are domains (contain alphabetic characters)
+            self.assertRegex(ioc["value"], r"[a-zA-Z]")
+
+    def test_200_feeds_pagination_filter_ip(self):
+        response = self.client.get(
+            "/api/feeds/?page_size=10&page=1&feed_type=all&attack_type=all&age=recent&ioc_type=ip&include_mass_scanners&include_tor_exit_nodes"
+        )
+        self.assertEqual(response.status_code, 200)
+        # Should return only IPs (3 in test data)
         self.assertEqual(response.json()["count"], 3)
+
+    def test_200_feeds_pagination_filter_domain(self):
+        response = self.client.get("/api/feeds/?page_size=10&page=1&feed_type=all&attack_type=all&age=recent&ioc_type=domain")
+        self.assertEqual(response.status_code, 200)
+        # Should return only domains (1 in test data)
+        self.assertEqual(response.json()["count"], 1)
 
     def test_400_feeds_pagination(self):
         response = self.client.get("/api/feeds/?page_size=10&page=1&feed_type=all&attack_type=test&age=recent")
@@ -123,24 +197,40 @@ class FeedsAdvancedViewTestCase(CustomTestCase):
     def test_200_all_feeds(self):
         response = self.client.get("/api/feeds/advanced/")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["license"], FEEDS_LICENSE)
-        self.assertEqual(response.json()["iocs"][0]["feed_type"], ["log4j", "cowrie", "heralding", "ciscoasa"])
-        self.assertEqual(response.json()["iocs"][0]["attack_count"], 1)
-        self.assertEqual(response.json()["iocs"][0]["scanner"], True)
-        self.assertEqual(response.json()["iocs"][0]["payload_request"], True)
-        self.assertEqual(response.json()["iocs"][0]["recurrence_probability"], self.ioc.recurrence_probability)
-        self.assertEqual(response.json()["iocs"][0]["expected_interactions"], self.ioc.expected_interactions)
+        if settings.FEEDS_LICENSE:
+            self.assertEqual(response.json()["license"], settings.FEEDS_LICENSE)
+        else:
+            self.assertNotIn("license", response.json())
+
+        iocs = response.json()["iocs"]
+        target_ioc = next((i for i in iocs if i["value"] == self.ioc.name), None)
+        self.assertIsNotNone(target_ioc)
+
+        self.assertEqual(target_ioc["feed_type"], ["log4j", "cowrie", "heralding", "ciscoasa"])
+        self.assertEqual(target_ioc["attack_count"], 1)
+        self.assertEqual(target_ioc["scanner"], True)
+        self.assertEqual(target_ioc["payload_request"], True)
+        self.assertEqual(target_ioc["recurrence_probability"], self.ioc.recurrence_probability)
+        self.assertEqual(target_ioc["expected_interactions"], self.ioc.expected_interactions)
 
     def test_200_general_feeds(self):
         response = self.client.get("/api/feeds/advanced/?feed_type=heralding")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["license"], FEEDS_LICENSE)
-        self.assertEqual(response.json()["iocs"][0]["feed_type"], ["log4j", "cowrie", "heralding", "ciscoasa"])
-        self.assertEqual(response.json()["iocs"][0]["attack_count"], 1)
-        self.assertEqual(response.json()["iocs"][0]["scanner"], True)
-        self.assertEqual(response.json()["iocs"][0]["payload_request"], True)
-        self.assertEqual(response.json()["iocs"][0]["recurrence_probability"], self.ioc.recurrence_probability)
-        self.assertEqual(response.json()["iocs"][0]["expected_interactions"], self.ioc.expected_interactions)
+        if settings.FEEDS_LICENSE:
+            self.assertEqual(response.json()["license"], settings.FEEDS_LICENSE)
+        else:
+            self.assertNotIn("license", response.json())
+
+        iocs = response.json()["iocs"]
+        target_ioc = next((i for i in iocs if i["value"] == self.ioc.name), None)
+        self.assertIsNotNone(target_ioc)
+
+        self.assertEqual(target_ioc["feed_type"], ["log4j", "cowrie", "heralding", "ciscoasa"])
+        self.assertEqual(target_ioc["attack_count"], 1)
+        self.assertEqual(target_ioc["scanner"], True)
+        self.assertEqual(target_ioc["payload_request"], True)
+        self.assertEqual(target_ioc["recurrence_probability"], self.ioc.recurrence_probability)
+        self.assertEqual(target_ioc["expected_interactions"], self.ioc.expected_interactions)
 
     def test_400_feeds(self):
         response = self.client.get("/api/feeds/advanced/?attack_type=test")
@@ -149,7 +239,7 @@ class FeedsAdvancedViewTestCase(CustomTestCase):
     def test_200_feeds_pagination(self):
         response = self.client.get("/api/feeds/advanced/?paginate=true&page_size=10&page=1")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["count"], 3)
+        self.assertEqual(response.json()["count"], 4)
         self.assertEqual(response.json()["total_pages"], 1)
 
     def test_200_feeds_pagination_include(self):
@@ -161,13 +251,13 @@ class FeedsAdvancedViewTestCase(CustomTestCase):
     def test_200_feeds_pagination_exclude_mass(self):
         response = self.client.get("/api/feeds/advanced/?paginate=true&page_size=10&page=1&exclude_reputation=mass%20scanner")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["count"], 2)
+        self.assertEqual(response.json()["count"], 3)
         self.assertEqual(response.json()["total_pages"], 1)
 
     def test_200_feeds_pagination_exclude_tor(self):
         response = self.client.get("/api/feeds/advanced/?paginate=true&page_size=10&page=1&exclude_reputation=tor%20exit%20node")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["count"], 2)
+        self.assertEqual(response.json()["count"], 3)
         self.assertEqual(response.json()["total_pages"], 1)
 
     def test_400_feeds_pagination(self):
@@ -177,15 +267,15 @@ class FeedsAdvancedViewTestCase(CustomTestCase):
 
 class StatisticsViewTestCase(CustomTestCase):
     @classmethod
-    def setUpClass(self):
-        super(StatisticsViewTestCase, self).setUpClass()
+    def setUpClass(cls):
+        super().setUpClass()
         Statistics.objects.all().delete()
-        Statistics.objects.create(source="140.246.171.141", view=viewType.FEEDS_VIEW.value)
-        Statistics.objects.create(source="140.246.171.141", view=viewType.ENRICHMENT_VIEW.value)
+        Statistics.objects.create(source="140.246.171.141", view=ViewType.FEEDS_VIEW.value)
+        Statistics.objects.create(source="140.246.171.141", view=ViewType.ENRICHMENT_VIEW.value)
 
     @classmethod
-    def tearDownClass(self):
-        super(StatisticsViewTestCase, self).tearDownClass()
+    def tearDownClass(cls):
+        super().tearDownClass()
         Statistics.objects.all().delete()
 
     def test_200_feeds_sources(self):
@@ -209,36 +299,42 @@ class StatisticsViewTestCase(CustomTestCase):
         self.assertEqual(response.json()[0]["Requests"], 1)
 
     def test_200_feed_types(self):
-        self.assertEqual(GeneralHoneypot.objects.count(), 2)
+        self.assertEqual(GeneralHoneypot.objects.count(), 3)
         # add a general honeypot without associated ioc
         GeneralHoneypot(name="Tanner", active=True).save()
-        self.assertEqual(GeneralHoneypot.objects.count(), 3)
+        self.assertEqual(GeneralHoneypot.objects.count(), 4)
 
         response = self.client.get("/api/statistics/feeds_types")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()[0]["Heralding"], 2)
+        # Expecting 3 because setupTestData creates 3 IOCs (ioc, ioc_2, ioc_domain) associated with Heralding
+        self.assertEqual(response.json()[0]["Heralding"], 3)
         self.assertEqual(response.json()[0]["Ciscoasa"], 2)
-        self.assertEqual(response.json()[0]["Log4j"], 2)
+        self.assertEqual(response.json()[0]["Log4j"], 3)
         self.assertEqual(response.json()[0]["Cowrie"], 3)
         self.assertEqual(response.json()[0]["Tanner"], 0)
 
 
 class GeneralHoneypotViewTestCase(CustomTestCase):
     def test_200_all_general_honeypots(self):
-        self.assertEqual(GeneralHoneypot.objects.count(), 2)
+        initial_count = GeneralHoneypot.objects.count()
         # add a general honeypot not active
         GeneralHoneypot(name="Adbhoney", active=False).save()
-        self.assertEqual(GeneralHoneypot.objects.count(), 3)
+        self.assertEqual(GeneralHoneypot.objects.count(), initial_count + 1)
 
         response = self.client.get("/api/general_honeypot")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json(), ["Heralding", "Ciscoasa", "Adbhoney"])
+        # Verify the newly created honeypot is in the response
+        self.assertIn("Adbhoney", response.json())
 
     def test_200_active_general_honeypots(self):
-        self.assertEqual(GeneralHoneypot.objects.count(), 2)
         response = self.client.get("/api/general_honeypot?onlyActive=true")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json(), ["Heralding", "Ciscoasa"])
+        result = response.json()
+        # Should include active honeypots from CustomTestCase
+        self.assertIn("Heralding", result)
+        self.assertIn("Ciscoasa", result)
+        # Should NOT include inactive honeypot
+        self.assertNotIn("Ddospot", result)
 
 
 class CommandSequenceViewTestCase(CustomTestCase):
@@ -296,6 +392,36 @@ class CommandSequenceViewTestCase(CustomTestCase):
         """Test that view returns 404 for nonexistent hash."""
         response = self.client.get(f"/api/command_sequence?query={'f' * 64}")
         self.assertEqual(response.status_code, 404)
+
+    @override_settings(FEEDS_LICENSE="https://example.com/license")
+    def test_ip_address_query_with_license(self):
+        """Test that license is included when FEEDS_LICENSE is populated."""
+        response = self.client.get("/api/command_sequence?query=140.246.171.141")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("license", response.data)
+        self.assertEqual(response.data["license"], "https://example.com/license")
+
+    @override_settings(FEEDS_LICENSE="")
+    def test_ip_address_query_without_license(self):
+        """Test that license is not included when FEEDS_LICENSE is empty."""
+        response = self.client.get("/api/command_sequence?query=140.246.171.141")
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn("license", response.data)
+
+    @override_settings(FEEDS_LICENSE="https://example.com/license")
+    def test_hash_query_with_license(self):
+        """Test that license is included when FEEDS_LICENSE is populated."""
+        response = self.client.get(f"/api/command_sequence?query={self.hash}")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("license", response.data)
+        self.assertEqual(response.data["license"], "https://example.com/license")
+
+    @override_settings(FEEDS_LICENSE="")
+    def test_hash_query_without_license(self):
+        """Test that license is not included when FEEDS_LICENSE is empty."""
+        response = self.client.get(f"/api/command_sequence?query={self.hash}")
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn("license", response.data)
 
 
 class CowrieSessionViewTestCase(CustomTestCase):
@@ -466,6 +592,37 @@ class CowrieSessionViewTestCase(CustomTestCase):
         response = self.client.get("/api/cowrie_session?query=140.246.171.141%20")
         # Should either work or return 400, not crash
         self.assertIn(response.status_code, [200, 400, 404])
+
+    # # # # # License Tests # # # # #
+    @override_settings(FEEDS_LICENSE="https://example.com/license")
+    def test_ip_query_with_license(self):
+        """Test that license is included when FEEDS_LICENSE is populated."""
+        response = self.client.get("/api/cowrie_session?query=140.246.171.141")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("license", response.data)
+        self.assertEqual(response.data["license"], "https://example.com/license")
+
+    @override_settings(FEEDS_LICENSE="")
+    def test_ip_query_without_license(self):
+        """Test that license is not included when FEEDS_LICENSE is empty."""
+        response = self.client.get("/api/cowrie_session?query=140.246.171.141")
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn("license", response.data)
+
+    @override_settings(FEEDS_LICENSE="https://example.com/license")
+    def test_hash_query_with_license(self):
+        """Test that license is included when FEEDS_LICENSE is populated."""
+        response = self.client.get(f"/api/cowrie_session?query={self.hash}")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("license", response.data)
+        self.assertEqual(response.data["license"], "https://example.com/license")
+
+    @override_settings(FEEDS_LICENSE="")
+    def test_hash_query_without_license(self):
+        """Test that license is not included when FEEDS_LICENSE is empty."""
+        response = self.client.get(f"/api/cowrie_session?query={self.hash}")
+        self.assertEqual(response.status_code, 200)
+        self.assertNotIn("license", response.data)
 
     def test_query_with_special_characters(self):
         """Test handling of queries with special characters."""

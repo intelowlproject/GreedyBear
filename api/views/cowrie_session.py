@@ -4,15 +4,21 @@ import itertools
 import logging
 import socket
 
-from api.views.utils import is_ip_address, is_sha256hash
 from certego_saas.apps.auth.backend import CookieTokenAuthentication
+from django.conf import settings
 from django.http import Http404, HttpResponseBadRequest
-from greedybear.consts import FEEDS_LICENSE, GET
-from greedybear.models import IOC, CommandSequence, CowrieSession, Statistics, viewType
 from rest_framework import status
-from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.decorators import (
+    api_view,
+    authentication_classes,
+    permission_classes,
+)
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+
+from api.views.utils import is_ip_address, is_sha256hash
+from greedybear.consts import GET
+from greedybear.models import CommandSequence, CowrieSession, Statistics, ViewType
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +73,7 @@ def cowrie_session_view(request):
 
     logger.info(f"Cowrie view requested by {request.user} for {observable}")
     source_ip = str(request.META["REMOTE_ADDR"])
-    request_source = Statistics(source=source_ip, view=viewType.COWRIE_SESSION_VIEW.value)
+    request_source = Statistics(source=source_ip, view=ViewType.COWRIE_SESSION_VIEW.value)
     request_source.save()
 
     if not observable:
@@ -88,19 +94,20 @@ def cowrie_session_view(request):
         return HttpResponseBadRequest("Query must be a valid IP address or SHA-256 hash")
 
     if include_similar:
-        commands = set(s.commands for s in sessions if s.commands)
-        clusters = set(cmd.cluster for cmd in commands if cmd.cluster is not None)
+        commands = {s.commands for s in sessions if s.commands}
+        clusters = {cmd.cluster for cmd in commands if cmd.cluster is not None}
         related_sessions = CowrieSession.objects.filter(commands__cluster__in=clusters).prefetch_related("source", "commands")
         sessions = sessions.union(related_sessions)
 
     response_data = {
-        "license": FEEDS_LICENSE,
         "query": observable,
     }
+    if settings.FEEDS_LICENSE:
+        response_data["license"] = settings.FEEDS_LICENSE
 
-    unique_commands = set(s.commands for s in sessions if s.commands)
+    unique_commands = {s.commands for s in sessions if s.commands}
     response_data["commands"] = sorted("\n".join(cmd.commands) for cmd in unique_commands)
-    response_data["sources"] = sorted(set(s.source.name for s in sessions), key=socket.inet_aton)
+    response_data["sources"] = sorted({s.source.name for s in sessions}, key=socket.inet_aton)
     if include_credentials:
         response_data["credentials"] = sorted(set(itertools.chain(*[s.credentials for s in sessions])))
     if include_session_data:

@@ -6,7 +6,7 @@ import os
 from datetime import timedelta
 
 from django.core.management.utils import get_random_secret_key
-from elasticsearch8 import Elasticsearch
+from elasticsearch import Elasticsearch
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BASE_STATIC_PATH = os.path.join(BASE_DIR, "static/")
@@ -19,6 +19,7 @@ DEBUG = os.environ.get("DEBUG", "False") == "True"
 
 DJANGO_LOG_DIRECTORY = "/var/log/greedybear/django"
 ML_MODEL_DIRECTORY = os.path.join(BASE_DIR, "mlmodels/")  # "/opt/deploy/greedybear/mlmodels"
+ML_CONFIG_FILE = os.path.join(BASE_DIR, "configuration/ml_config.json")
 MOCK_CONNECTIONS = os.environ.get("MOCK_CONNECTIONS", "False") == "True"
 STAGE = os.environ.get("ENVIRONMENT", "production")
 STAGE_PRODUCTION = STAGE == "production"
@@ -50,6 +51,7 @@ else:
 
 SLACK_TOKEN = os.environ.get("SLACK_TOKEN", "")
 DEFAULT_SLACK_CHANNEL = os.environ.get("DEFAULT_SLACK_CHANNEL", "")
+NTFY_URL = os.environ.get("NTFY_URL", "")
 
 VERSION = os.environ.get("REACT_APP_GREEDYBEAR_VERSION", "")
 
@@ -408,6 +410,7 @@ else:
 
 LEGACY_EXTRACTION = os.environ.get("LEGACY_EXTRACTION", "False") == "True"
 EXTRACTION_INTERVAL = int(os.environ.get("EXTRACTION_INTERVAL", 10))
+INITIAL_EXTRACTION_TIMESPAN = int(os.environ.get("INITIAL_EXTRACTION_TIMESPAN", 60 * 24 * 3))  # 3 days
 CLUSTER_COWRIE_COMMAND_SEQUENCES = os.environ.get("CLUSTER_COWRIE_COMMAND_SEQUENCES", "False") == "True"
 
 IOC_RETENTION = int(os.environ.get("IOC_RETENTION", "3650"))
@@ -415,3 +418,7 @@ COWRIE_SESSION_RETENTION = int(os.environ.get("COWRIE_SESSION_RETENTION", "365")
 COMMAND_SEQUENCE_RETENTION = int(os.environ.get("COMMAND_SEQUENCE_RETENTION", "365"))
 
 THREATFOX_API_KEY = os.environ.get("THREATFOX_API_KEY", "")
+
+# Optional feed license URL to include in API responses
+# If not set, no license information will be included in feeds
+FEEDS_LICENSE = os.environ.get("FEEDS_LICENSE", "")
