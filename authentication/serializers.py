@@ -10,6 +10,7 @@ from certego_saas.settings import certego_apps_settings
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import DatabaseError, transaction
+from django.db.models import Q
 from rest_framework import serializers as rfs
 from rest_framework.authtoken.serializers import AuthTokenSerializer
 from slack_sdk.errors import SlackApiError
@@ -140,11 +141,21 @@ class EmailVerificationSerializer(rest_email_auth.serializers.EmailVerificationS
 
 class LoginSerializer(AuthTokenSerializer):
     def validate(self, attrs):
+        login_value = attrs.get("username")
+        # If user has entered email we try email->username mapping
+        try:
+            user = User.objects.get(email__iexact=login_value)
+            attrs["username"] = user.username
+        except User.DoesNotExist:
+            # Either user has entered username, or email entered doesn't exist
+            pass
+
         try:
             return super().validate(attrs)
         except rfs.ValidationError as exc:
             try:
-                user = User.objects.get(username=attrs["username"])
+                # Check if either of the two, username or email exists
+                user = User.objects.get(Q(username=login_value) | Q(email__iexact=login_value))
             except User.DoesNotExist:
                 # we do not want to leak info
                 # so just raise the original exception without context
@@ -159,5 +170,4 @@ class LoginSerializer(AuthTokenSerializer):
                     elif user.approved is False:
                         exc.detail = "Your account was declined."
                     logger.info(f"User {user} is not active. Error message: {exc.detail}")
-            # else
             raise exc from None
