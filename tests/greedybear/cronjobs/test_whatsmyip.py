@@ -16,9 +16,7 @@ class WhatsMyIPTestCase(CustomTestCase):
         """Test adding new domains from MISP warning list"""
         # Mock the HTTP response
         mock_response = MagicMock()
-        mock_response.json.return_value = {
-            "list": ["test-domain-1.com", "test-domain-2.com"]
-        }
+        mock_response.json.return_value = {"list": ["test-domain-1.com", "test-domain-2.com"]}
         mock_get.return_value = mock_response
 
         # Run the cronjob
@@ -27,12 +25,8 @@ class WhatsMyIPTestCase(CustomTestCase):
 
         # Verify domains were added
         self.assertEqual(WhatsMyIPDomain.objects.count(), 2)
-        self.assertTrue(
-            WhatsMyIPDomain.objects.filter(domain="test-domain-1.com").exists()
-        )
-        self.assertTrue(
-            WhatsMyIPDomain.objects.filter(domain="test-domain-2.com").exists()
-        )
+        self.assertTrue(WhatsMyIPDomain.objects.filter(domain="test-domain-1.com").exists())
+        self.assertTrue(WhatsMyIPDomain.objects.filter(domain="test-domain-2.com").exists())
 
     @patch("greedybear.cronjobs.whatsmyip.requests.get")
     def test_skip_existing_domains(self, mock_get):
@@ -42,9 +36,7 @@ class WhatsMyIPTestCase(CustomTestCase):
 
         # Mock the HTTP response with existing and new domains
         mock_response = MagicMock()
-        mock_response.json.return_value = {
-            "list": ["existing-domain.com", "new-domain.com"]
-        }
+        mock_response.json.return_value = {"list": ["existing-domain.com", "new-domain.com"]}
         mock_get.return_value = mock_response
 
         # Run the cronjob
@@ -53,12 +45,8 @@ class WhatsMyIPTestCase(CustomTestCase):
 
         # Verify only new domain was added
         self.assertEqual(WhatsMyIPDomain.objects.count(), 2)
-        self.assertEqual(
-            WhatsMyIPDomain.objects.get(domain="existing-domain.com").id, existing_domain.id
-        )
-        self.assertTrue(
-            WhatsMyIPDomain.objects.filter(domain="new-domain.com").exists()
-        )
+        self.assertEqual(WhatsMyIPDomain.objects.get(domain="existing-domain.com").id, existing_domain.id)
+        self.assertTrue(WhatsMyIPDomain.objects.filter(domain="new-domain.com").exists())
 
     @patch("greedybear.cronjobs.whatsmyip.requests.get")
     def test_remove_old_ioc_records(self, mock_get):
@@ -78,9 +66,7 @@ class WhatsMyIPTestCase(CustomTestCase):
 
         # Verify IOC record was deleted
         self.assertFalse(IOC.objects.filter(id=ioc.id).exists())
-        self.assertTrue(
-            WhatsMyIPDomain.objects.filter(domain=domain_name).exists()
-        )
+        self.assertTrue(WhatsMyIPDomain.objects.filter(domain=domain_name).exists())
 
     @patch("greedybear.cronjobs.whatsmyip.requests.get")
     def test_handle_missing_ioc_gracefully(self, mock_get):
@@ -95,9 +81,7 @@ class WhatsMyIPTestCase(CustomTestCase):
         cron.run()
 
         # Verify domain was added
-        self.assertTrue(
-            WhatsMyIPDomain.objects.filter(domain="domain-with-no-ioc.com").exists()
-        )
+        self.assertTrue(WhatsMyIPDomain.objects.filter(domain="domain-with-no-ioc.com").exists())
 
     @patch("greedybear.cronjobs.whatsmyip.requests.get")
     def test_empty_domain_list(self, mock_get):
