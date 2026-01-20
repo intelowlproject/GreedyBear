@@ -10,6 +10,7 @@ TEST_LOGGING = {
     "disable_existing_loggers": True,
 }
 
+
 @override_settings(LOGGING=TEST_LOGGING)
 class SendNtfyMessageTests(CustomTestCase):
     @override_settings(NTFY_URL="https://ntfy.sh/greedybear")
