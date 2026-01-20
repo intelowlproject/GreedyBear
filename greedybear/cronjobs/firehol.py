@@ -1,6 +1,7 @@
 import requests
 
 from greedybear.cronjobs.base import Cronjob
+from greedybear.cronjobs.extraction.utils import is_valid_cidr, is_valid_ipv4
 from greedybear.cronjobs.repositories import FireHolRepository
 
 
@@ -52,6 +53,12 @@ class FireHolCron(Cronjob):
                 for line in lines:
                     line = line.strip()
                     if not line or line.startswith("#"):
+                        continue
+
+                    # Validate the extracted candidate
+                    if not (is_valid_ipv4(line)[0] or is_valid_cidr(line)[0]):
+                        # Not a valid IPv4 or CIDR, log at DEBUG level
+                        self.log.debug(f"Invalid IPv4 address or CIDR in line: {line}")
                         continue
 
                     # FireHol .ipset and .netset files contain IPs or CIDRs, one per line
