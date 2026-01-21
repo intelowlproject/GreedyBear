@@ -38,11 +38,16 @@ jest.mock("@certego/certego-ui", () => {
     ...originalModule,
 
     useAxiosComponentLoader: jest.fn(() => [
-      ["Honeytrap", "Glutton", "CitrixHoneypot"],
+      ["Honeytrap", "Glutton", "CitrixHoneypot", "Log4j", "Cowrie"],
       loader,
     ]),
 
-    useDataTable: jest.fn(() => [feeds, <MockTableComponent />, jest.fn()]),
+    useDataTable: jest.fn(() => [
+      feeds,
+      <MockTableComponent />,
+      jest.fn(),
+      jest.fn(),
+    ]),
   };
 });
 
