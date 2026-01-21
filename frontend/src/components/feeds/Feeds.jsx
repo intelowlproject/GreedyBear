@@ -16,8 +16,6 @@ import { FEEDS_LICENSE } from "../../constants";
 // costants
 const feedTypeChoices = [
   { label: "All", value: "all" },
-  { label: "Log4j", value: "log4j" },
-  { label: "Cowrie", value: "cowrie" },
 ];
 
 const attackTypeChoices = [

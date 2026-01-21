@@ -13,7 +13,6 @@ from django.http import HttpResponse, HttpResponseBadRequest, StreamingHttpRespo
 from rest_framework import status
 from rest_framework.response import Response
 
-from api.enums import Honeypots
 from api.serializers import FeedsRequestSerializer
 from greedybear.models import IOC, GeneralHoneypot, Statistics
 
@@ -113,12 +112,17 @@ class FeedRequestParams:
 def get_valid_feed_types() -> frozenset[str]:
     """
     Retrieve all valid feed types, combining predefined types with active general honeypot names.
+    Includes both 'log4j' and 'log4pot' as aliases for Log4pot honeypot.
 
     Returns:
         frozenset[str]: An immutable set of valid feed type strings
     """
     general_honeypots = GeneralHoneypot.objects.all().filter(active=True)
-    return frozenset([Honeypots.LOG4J.value, Honeypots.COWRIE.value, "all"] + [hp.name.lower() for hp in general_honeypots])
+    feed_types = ["all"] + [hp.name.lower() for hp in general_honeypots]
+    # Add log4j as an alias for log4pot for backward compatibility
+    if "log4pot" in feed_types:
+        feed_types.append("log4j")
+    return frozenset(feed_types)
 
 
 def get_queryset(request, feed_params, valid_feed_types):
@@ -147,11 +151,10 @@ def get_queryset(request, feed_params, valid_feed_types):
 
     query_dict = {}
     if feed_params.feed_type != "all":
-        if feed_params.feed_type in (Honeypots.LOG4J.value, Honeypots.COWRIE.value):
-            query_dict[feed_params.feed_type] = True
-        else:
-            # accept feed_type if it is in the general honeypots list
-            query_dict["general_honeypot__name__iexact"] = feed_params.feed_type
+        # Normalize log4j to Log4pot for database query (backward compatibility)
+        feed_type_for_query = "Log4pot" if feed_params.feed_type.lower() == "log4j" else feed_params.feed_type
+        # Treat feed_type as a honeypot name (case-insensitive)
+        query_dict["general_honeypot__name__iexact"] = feed_type_for_query
 
     if feed_params.attack_type != "all":
         query_dict[feed_params.attack_type] = True
@@ -167,10 +170,11 @@ def get_queryset(request, feed_params, valid_feed_types):
 
     iocs = (
         IOC.objects.filter(**query_dict)
-        .filter(Q(cowrie=True) | Q(log4j=True) | Q(general_honeypot__active=True))
+        .filter(Q(general_honeypot__active=True))
         .exclude(ip_reputation__in=feed_params.exclude_reputation)
         .annotate(value=F("name"))
         .annotate(honeypots=ArrayAgg("general_honeypot__name"))
+        .distinct()
         .order_by(feed_params.ordering)[: int(feed_params.feed_size)]
     )
 
@@ -236,8 +240,6 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
                 "last_seen",
                 "attack_count",
                 "interaction_count",
-                "log4j",
-                "cowrie",
                 "scanner",
                 "payload_request",
                 "ip_reputation",
@@ -250,15 +252,21 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
                 "recurrence_probability",
                 "expected_interactions",
             }
+
+            # Collect values; `honeypots` will contain the list of associated honeypot names
             iocs = (ioc_as_dict(ioc, required_fields) for ioc in iocs) if isinstance(iocs, list) else iocs.values(*required_fields)
             for ioc in iocs:
                 ioc_feed_type = []
-                if ioc[Honeypots.LOG4J.value]:
-                    ioc_feed_type.append(Honeypots.LOG4J.value)
-                if ioc[Honeypots.COWRIE.value]:
-                    ioc_feed_type.append(Honeypots.COWRIE.value)
-                if len(ioc["honeypots"]):
-                    ioc_feed_type.extend([hp.lower() for hp in ioc["honeypots"] if hp is not None])
+                # Add feed types from associated honeypots (case-insensitive)
+                if ioc.get("honeypots"):
+                    for hp in ioc["honeypots"]:
+                        if hp:
+                            name = hp.lower()
+                            # Normalize legacy Log4pot name to 'log4j' for API compatibility
+                            if name == "log4pot":
+                                ioc_feed_type.append("log4j")
+                            else:
+                                ioc_feed_type.append(name)
 
                 data_ = ioc | {
                     "first_seen": ioc["first_seen"].strftime("%Y-%m-%d"),

@@ -80,8 +80,7 @@ class StatisticsViewSet(viewsets.ViewSet):
     @action(detail=False, methods=["get"])
     def feeds_types(self, request):
         """
-        Retrieve statistics for different types of feeds, including Log4j, Cowrie,
-        and general honeypots.
+        Retrieve statistics for different types of feeds using GeneralHoneypot M2M relationship.
 
         Args:
             request: The incoming request object.
@@ -89,15 +88,12 @@ class StatisticsViewSet(viewsets.ViewSet):
         Returns:
             Response: A JSON response containing the feed type statistics.
         """
-        # FEEDS
-        annotations = {
-            "Log4j": Count("name", distinct=True, filter=Q(log4j=True)),
-            "Cowrie": Count("name", distinct=True, filter=Q(cowrie=True)),
-        }
-        # feed_type for each general honeypot in the list
+        # Build annotations for each active general honeypot
+        annotations = {}
         general_honeypots = GeneralHoneypot.objects.all().filter(active=True)
         for hp in general_honeypots:
-            annotations[hp.name] = Count("name", Q(general_honeypot__name__iexact=hp.name.lower()))
+            # Use M2M relationship instead of boolean fields
+            annotations[hp.name] = Count("name", distinct=True, filter=Q(general_honeypot__name__iexact=hp.name))
         return self.__aggregation_response_static_ioc(annotations)
 
     def __aggregation_response_static_statistics(self, annotations: dict) -> Response:

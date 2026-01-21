@@ -15,13 +15,10 @@ class IocRepository:
     and updated when new honeypots are created.
     """
 
-    SPECIAL_HONEYPOTS = frozenset({"Cowrie", "Log4pot"})
-
     def __init__(self):
         """Initialize the repository and populate the honeypot cache from the database."""
         self.log = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
         self._honeypot_cache = {self._normalize_name(hp.name): hp.active for hp in GeneralHoneypot.objects.all()}
-        self._honeypot_cache.update({self._normalize_name(name): True for name in self.SPECIAL_HONEYPOTS})
 
     def _normalize_name(self, name: str) -> str:
         """Normalize honeypot names for consistent cache and DB usage."""
@@ -123,7 +120,6 @@ class IocRepository:
     def is_enabled(self, honeypot_name: str) -> bool:
         """
         Check if a honeypot is enabled.
-        Special honeypots (Cowrie, Log4pot) are always enabled.
         General honeypots are enabled based on their active flag.
 
         Args:
@@ -178,7 +174,7 @@ class IocRepository:
         Returns:
             QuerySet of IOC objects with only name and score fields loaded.
         """
-        return IOC.objects.filter(Q(cowrie=True) | Q(log4j=True) | Q(general_honeypot__active=True)).filter(scanner=True).distinct().only("name", *score_fields)
+        return IOC.objects.filter(Q(general_honeypot__active=True)).filter(scanner=True).distinct().only("name", *score_fields)
 
     def get_scanners_by_pks(self, primary_keys: set[int]):
         """
@@ -214,7 +210,7 @@ class IocRepository:
             QuerySet of IOC objects with prefetched relationships and annotations.
         """
         return (
-            IOC.objects.filter(Q(cowrie=True) | Q(log4j=True) | Q(general_honeypot__active=True))
+            IOC.objects.filter(Q(general_honeypot__active=True))
             .filter(last_seen__gte=cutoff_date, scanner=True)
             .prefetch_related("general_honeypot")
             .annotate(value=F("name"))

@@ -216,10 +216,6 @@ def threatfox_submission(ioc_record: IOC, related_urls: list, log: Logger) -> No
     log.info(f"submitting IOC {urls_to_submit} to Threatfox")
 
     seen_honeypots = []
-    if ioc_record.cowrie:
-        seen_honeypots.append("cowrie")
-    if ioc_record.log4j:
-        seen_honeypots.append("log4pot")
     for honeypot in ioc_record.general_honeypot.all():
         seen_honeypots.append(honeypot.name)
     seen_honeypots_str = ", ".join(seen_honeypots)

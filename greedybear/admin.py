@@ -113,8 +113,6 @@ class IOCModelAdmin(admin.ModelAdmin):
         "related_urls",
         "scanner",
         "payload_request",
-        "log4j",
-        "cowrie",
         "general_honeypots",
         "ip_reputation",
         "firehol_categories",
@@ -124,8 +122,6 @@ class IOCModelAdmin(admin.ModelAdmin):
     ]
     list_filter = [
         "type",
-        "log4j",
-        "cowrie",
         "scanner",
         "payload_request",
         "ip_reputation",
