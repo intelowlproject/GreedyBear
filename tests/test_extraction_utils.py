@@ -6,6 +6,7 @@ from greedybear.cronjobs.extraction.utils import (
     correct_ip_reputation,
     get_ioc_type,
     iocs_from_hits,
+    is_valid_cidr,
     is_valid_ipv4,
     is_whatsmyip_domain,
     threatfox_submission,
@@ -161,6 +162,126 @@ class TestIsValidIpv4(CustomTestCase):
         is_valid, ip = is_valid_ipv4("1.-2.3.4")
         self.assertFalse(is_valid)
         self.assertIsNone(ip)
+
+
+class TestIsValidCIDR(CustomTestCase):
+    def test_valid_cidr_returns_true_and_cleaned_cidr(self):
+        is_valid, cidr = is_valid_cidr("192.168.1.0/24")
+        self.assertTrue(is_valid)
+        self.assertEqual(cidr, "192.168.1.0/24")
+
+    def test_valid_cidr_edge_cases(self):
+        is_valid, cidr = is_valid_cidr("0.0.0.0/0")
+        self.assertTrue(is_valid)
+        self.assertEqual(cidr, "0.0.0.0/0")
+
+        is_valid, cidr = is_valid_cidr("255.255.255.255/32")
+        self.assertTrue(is_valid)
+        self.assertEqual(cidr, "255.255.255.255/32")
+
+        is_valid, cidr = is_valid_cidr("10.0.0.0/8")
+        self.assertTrue(is_valid)
+        self.assertEqual(cidr, "10.0.0.0/8")
+
+    def test_cidr_with_whitespace_strips_and_validates(self):
+        is_valid, cidr = is_valid_cidr("  192.168.1.0/24")
+        self.assertTrue(is_valid)
+        self.assertEqual(cidr, "192.168.1.0/24")
+
+        is_valid, cidr = is_valid_cidr("192.168.1.0/24  ")
+        self.assertTrue(is_valid)
+        self.assertEqual(cidr, "192.168.1.0/24")
+
+        is_valid, cidr = is_valid_cidr("  192.168.1.0/24  ")
+        self.assertTrue(is_valid)
+        self.assertEqual(cidr, "192.168.1.0/24")
+
+    def test_invalid_cidr_out_of_range_octets(self):
+        invalid = [
+            "256.1.1.0/24",
+            "1.256.1.0/24",
+            "1.1.256.0/24",
+            "999.999.999.999/24",
+        ]
+
+        for value in invalid:
+            is_valid, cidr = is_valid_cidr(value)
+            self.assertFalse(is_valid)
+            self.assertIsNone(cidr)
+
+    def test_invalid_cidr_incomplete_format(self):
+        invalid = [
+            "192.168.1/24",
+            "192.168/24",
+            "192/24",
+            "/24",
+        ]
+
+        for value in invalid:
+            is_valid, cidr = is_valid_cidr(value)
+            self.assertFalse(is_valid)
+            self.assertIsNone(cidr)
+
+    def test_invalid_cidr_too_many_octets(self):
+        is_valid, cidr = is_valid_cidr("1.2.3.4.5/24")
+        self.assertFalse(is_valid)
+        self.assertIsNone(cidr)
+
+    def test_invalid_cidr_domains(self):
+        is_valid, cidr = is_valid_cidr("example.com/24")
+        self.assertFalse(is_valid)
+        self.assertIsNone(cidr)
+
+        is_valid, cidr = is_valid_cidr("sub.example.com/16")
+        self.assertFalse(is_valid)
+        self.assertIsNone(cidr)
+
+    def test_invalid_cidr_ipv6_addresses(self):
+        is_valid, cidr = is_valid_cidr("2001:db8::/32")
+        self.assertFalse(is_valid)
+        self.assertIsNone(cidr)
+
+        is_valid, cidr = is_valid_cidr("::1/128")
+        self.assertFalse(is_valid)
+        self.assertIsNone(cidr)
+
+    def test_invalid_cidr_random_strings(self):
+        is_valid, cidr = is_valid_cidr("/w00tw00t.at.ISC.SANS.DFind:)")
+        self.assertFalse(is_valid)
+        self.assertIsNone(cidr)
+
+        is_valid, cidr = is_valid_cidr("not a cidr")
+        self.assertFalse(is_valid)
+        self.assertIsNone(cidr)
+
+        is_valid, cidr = is_valid_cidr("")
+        self.assertFalse(is_valid)
+        self.assertIsNone(cidr)
+
+    def test_invalid_cidr_special_characters(self):
+        is_valid, cidr = is_valid_cidr("192.168.1.0/24#comment")
+        self.assertFalse(is_valid)
+        self.assertIsNone(cidr)
+
+        is_valid, cidr = is_valid_cidr("192.168.1.0/24 # comment")
+        self.assertFalse(is_valid)
+        self.assertIsNone(cidr)
+
+        is_valid, cidr = is_valid_cidr("10.0.0.0/8 some text")
+        self.assertFalse(is_valid)
+        self.assertIsNone(cidr)
+
+    def test_invalid_cidr_negative_numbers(self):
+        invalid = [
+            "-1.1.1.1/24",
+            "192.168.1.0/-1",
+            "192.168.1.0/33",
+        ]
+
+        for value in invalid:
+            is_valid, cidr = is_valid_cidr(value)
+            self.assertFalse(is_valid)
+            self.assertIsNone(cidr)
 
 
 class TestIsWhatsmyipDomain(CustomTestCase):
@@ -426,11 +547,9 @@ class ThreatfoxSubmissionTestCase(ExtractionTestCase):
     def setUp(self):
         self.mock_log = Mock()
 
-    def _create_mock_payload_request(self, cowrie=False, log4j=False):
+    def _create_mock_payload_request(self):
         mock = self._create_mock_ioc()
         mock.payload_request = True
-        mock.cowrie = cowrie
-        mock.log4j = log4j
         mock.general_honeypot.all.return_value = []
         return mock
 
@@ -458,7 +577,10 @@ class ThreatfoxSubmissionTestCase(ExtractionTestCase):
     def test_submits_urls_with_path(self, mock_settings, mock_post):
         mock_settings.THREATFOX_API_KEY = "test-key"
         mock_post.return_value = Mock(text='{"status": "ok"}')
-        ioc_record = self._create_mock_payload_request(cowrie=True)
+        mock_honeypot_cowrie = Mock()
+        mock_honeypot_cowrie.name = "Cowrie"
+        ioc_record = self._create_mock_payload_request()
+        ioc_record.general_honeypot.all.return_value = [mock_honeypot_cowrie]
         threatfox_submission(ioc_record, ["http://malicious.com/payload.sh"], self.mock_log)
         mock_post.assert_called_once()
         call_kwargs = mock_post.call_args[1]
@@ -470,15 +592,19 @@ class ThreatfoxSubmissionTestCase(ExtractionTestCase):
     def test_includes_honeypot_names_in_comment(self, mock_settings, mock_post):
         mock_settings.THREATFOX_API_KEY = "test-key"
         mock_post.return_value = Mock(text='{"status": "ok"}')
-        ioc_record = self._create_mock_payload_request(cowrie=True, log4j=True)
-        mock_honeypot = Mock()
-        mock_honeypot.name = "Dionaea"
-        ioc_record.general_honeypot.all.return_value = [mock_honeypot]
+        ioc_record = self._create_mock_payload_request()
+        mock_honeypot_cowrie = Mock()
+        mock_honeypot_cowrie.name = "Cowrie"
+        mock_honeypot_log4pot = Mock()
+        mock_honeypot_log4pot.name = "Log4pot"
+        mock_honeypot_dionaea = Mock()
+        mock_honeypot_dionaea.name = "Dionaea"
+        ioc_record.general_honeypot.all.return_value = [mock_honeypot_cowrie, mock_honeypot_log4pot, mock_honeypot_dionaea]
         threatfox_submission(ioc_record, ["http://malicious.com/payload.sh"], self.mock_log)
         call_kwargs = mock_post.call_args[1]
         comment = call_kwargs["json"]["comment"]
-        self.assertIn("cowrie", comment)
-        self.assertIn("log4pot", comment)
+        self.assertIn("Cowrie", comment)
+        self.assertIn("Log4pot", comment)
         self.assertIn("Dionaea", comment)
 
     @patch("greedybear.cronjobs.extraction.utils.requests.post")

@@ -24,6 +24,11 @@ class CustomTestCase(TestCase):
         cls.ddospot = GeneralHoneypot.objects.get_or_create(name="Ddospot", defaults={"active": False})[0]
 
         cls.current_time = datetime.now()
+
+        # Create honeypots for Cowrie and Log4pot (replacing boolean fields)
+        cls.cowrie_hp = GeneralHoneypot.objects.get_or_create(name="Cowrie", defaults={"active": True})[0]
+        cls.log4pot_hp = GeneralHoneypot.objects.get_or_create(name="Log4pot", defaults={"active": True})[0]
+
         cls.ioc = IOC.objects.create(
             name="140.246.171.141",
             type=IocType.IP.value,
@@ -33,8 +38,6 @@ class CustomTestCase(TestCase):
             number_of_days_seen=1,
             attack_count=1,
             interaction_count=1,
-            log4j=True,
-            cowrie=True,
             scanner=True,
             payload_request=True,
             related_urls=[],
@@ -55,8 +58,6 @@ class CustomTestCase(TestCase):
             number_of_days_seen=1,
             attack_count=1,
             interaction_count=1,
-            log4j=True,
-            cowrie=True,
             scanner=True,
             payload_request=True,
             related_urls=[],
@@ -77,8 +78,6 @@ class CustomTestCase(TestCase):
             number_of_days_seen=1,
             attack_count=1,
             interaction_count=1,
-            log4j=False,
-            cowrie=True,
             scanner=True,
             payload_request=True,
             related_urls=[],
@@ -99,8 +98,6 @@ class CustomTestCase(TestCase):
             number_of_days_seen=1,
             attack_count=1,
             interaction_count=1,
-            log4j=True,
-            cowrie=False,
             scanner=False,
             payload_request=True,
             related_urls=[],
@@ -114,11 +111,18 @@ class CustomTestCase(TestCase):
 
         cls.ioc.general_honeypot.add(cls.heralding)  # FEEDS
         cls.ioc.general_honeypot.add(cls.ciscoasa)  # FEEDS
+        cls.ioc.general_honeypot.add(cls.cowrie_hp)  # Cowrie honeypot
+        cls.ioc.general_honeypot.add(cls.log4pot_hp)  # Log4pot honeypot
         cls.ioc.save()
         cls.ioc_2.general_honeypot.add(cls.heralding)  # FEEDS
         cls.ioc_2.general_honeypot.add(cls.ciscoasa)  # FEEDS
+        cls.ioc_2.general_honeypot.add(cls.cowrie_hp)  # Cowrie honeypot
+        cls.ioc_2.general_honeypot.add(cls.log4pot_hp)  # Log4pot honeypot
         cls.ioc_2.save()
+        cls.ioc_3.general_honeypot.add(cls.cowrie_hp)  # Cowrie honeypot
+        cls.ioc_3.save()
         cls.ioc_domain.general_honeypot.add(cls.heralding)  # FEEDS
+        cls.ioc_domain.general_honeypot.add(cls.log4pot_hp)  # Log4pot honeypot
         cls.ioc_domain.save()
 
         cls.cmd_seq = ["cd foo", "ls -la"]

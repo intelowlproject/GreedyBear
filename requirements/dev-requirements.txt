@@ -1,0 +1,4 @@
+# Development requirements
+# Installed conditionally in Docker: INSTALL_DEV=true
+# For manual installation: pip install -r requirements/dev-requirements.txt
+coverage>=7.3.2

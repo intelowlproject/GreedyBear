@@ -543,6 +543,7 @@ jobs:
         env: ${{ secrets }}
         shell: bash
 
+
       - name: Create coverage output
         if: inputs.use_coverage && inputs.upload_coverage
         id: coverage-output
@@ -551,3 +552,17 @@ jobs:
           echo "## Coverage.py report" >> $GITHUB_STEP_SUMMARY
           echo "$(coverage report -m --format=markdown)" >> $GITHUB_STEP_SUMMARY
         working-directory: ${{ inputs.working_directory }}
+
+      - name: Generate coverage XML
+        if: inputs.use_coverage && inputs.upload_coverage
+        run: |
+          coverage xml
+        working-directory: ${{ inputs.working_directory }}
+
+      - name: Upload coverage report as artifact
+        if: inputs.use_coverage && inputs.upload_coverage
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report-py${{ matrix.python_version }}
+          path: ${{ inputs.working_directory }}/coverage.xml
+          retention-days: 30

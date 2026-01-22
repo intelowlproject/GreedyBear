@@ -2,7 +2,6 @@
 Tests for Cowrie extraction helper functions and strategy.
 """
 
-from unittest import TestCase
 from unittest.mock import MagicMock, Mock, patch
 
 from greedybear.cronjobs.extraction.strategies.cowrie import (
@@ -12,9 +11,10 @@ from greedybear.cronjobs.extraction.strategies.cowrie import (
     parse_url_hostname,
 )
 from greedybear.models import CommandSequence
+from tests import ExtractionTestCase
 
 
-class TestHelperFunctions(TestCase):
+class TestHelperFunctions(ExtractionTestCase):
     """Test standalone helper functions."""
 
     def test_parse_url_hostname_valid_http(self):
@@ -75,7 +75,7 @@ class TestHelperFunctions(TestCase):
         self.assertEqual(result, "admin")
 
 
-class TestCowrieExtractionStrategy(TestCase):
+class TestCowrieExtractionStrategy(ExtractionTestCase):
     """Test CowrieExtractionStrategy class."""
 
     def setUp(self):
@@ -117,8 +117,9 @@ class TestCowrieExtractionStrategy(TestCase):
         ioc_arg = call_args[0][0]
 
         self.assertEqual(ioc_arg.name, "evil.com")
-        self.assertTrue(ioc_arg.cowrie)
         self.assertIn("http://evil.com/malware.exe", ioc_arg.related_urls)
+        # Verify honeypot is set via general_honeypot_name argument
+        self.assertEqual(call_args.kwargs.get("general_honeypot_name"), "Cowrie")
 
     def test_extract_payload_in_messages_no_url(self):
         """Test extraction when message has no URL."""
@@ -331,7 +332,6 @@ class TestCowrieExtractionStrategy(TestCase):
     def test_extract_from_hits_integration(self, mock_iocs_from_hits):
         """Test the main extract_from_hits coordination."""
         mock_ioc = Mock(name="1.2.3.4")
-        mock_ioc.cowrie = False
         mock_iocs_from_hits.return_value = [mock_ioc]
 
         mock_ioc_record = Mock()
@@ -343,6 +343,7 @@ class TestCowrieExtractionStrategy(TestCase):
             with patch.object(self.strategy, "_extract_possible_payload_in_messages"):
                 self.strategy.extract_from_hits(hits)
 
-        # Verify scanner was processed
-        self.assertTrue(mock_ioc.cowrie)
+        # Verify scanner was processed with Cowrie as honeypot
         self.strategy.ioc_processor.add_ioc.assert_called()
+        call_args = self.strategy.ioc_processor.add_ioc.call_args
+        self.assertEqual(call_args.kwargs.get("general_honeypot_name"), "Cowrie")

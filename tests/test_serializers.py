@@ -1,30 +1,25 @@
 import random
 from itertools import product
 
-from django.test import TestCase
 from rest_framework.serializers import ValidationError
 
 from api.serializers import FeedsRequestSerializer, FeedsResponseSerializer
 from greedybear.consts import PAYLOAD_REQUEST, SCANNER
 from greedybear.models import IOC, GeneralHoneypot
+from tests import CustomTestCase
 
 
-class FeedsRequestSerializersTestCase(TestCase):
+class FeedsRequestSerializersTestCase(CustomTestCase):
     @classmethod
-    def setUpClass(cls):
-        GeneralHoneypot.objects.create(
-            name="adbhoney",
-            active=True,
-        )
-
-    @classmethod
-    def tearDownClass(cls):
-        # db clean
-        GeneralHoneypot.objects.all().delete()
+    def setUpTestData(cls):
+        super().setUpTestData()
+        cls.adbhoney = GeneralHoneypot.objects.filter(name__iexact="adbhoney").first()
+        if not cls.adbhoney:
+            cls.adbhoney = GeneralHoneypot.objects.create(name="Adbhoney", active=True)
 
     def test_valid_fields(self):
         choices = {
-            "feed_type": ["all", "log4j", "cowrie", "adbhoney"],
+            "feed_type": ["all", "log4pot", "cowrie", "adbhoney"],
             "attack_type": ["all", "scanner", "payload_request"],
             "ioc_type": ["ip", "domain", "all"],
             "max_age": [str(n) for n in [1, 2, 4, 8, 16]],
@@ -58,7 +53,7 @@ class FeedsRequestSerializersTestCase(TestCase):
             self.assertEqual(valid, True)
 
     def test_invalid_fields(self):
-        valid_feed_types = frozenset(["all", "log4j", "cowrie", "adbhoney"])
+        valid_feed_types = frozenset(["all", "log4pot", "cowrie", "adbhoney"])
         data_ = {
             "feed_type": "invalid_feed_type",
             "attack_type": "invalid_attack_type",
@@ -92,23 +87,18 @@ class FeedsRequestSerializersTestCase(TestCase):
             self.assertIn("format", serializer.errors)
 
 
-class FeedsResponseSerializersTestCase(TestCase):
+class FeedsResponseSerializersTestCase(CustomTestCase):
     @classmethod
-    def setUpClass(cls):
-        GeneralHoneypot.objects.create(
-            name="adbhoney",
-            active=True,
-        )
-
-    @classmethod
-    def tearDownClass(cls):
-        # db clean
-        GeneralHoneypot.objects.all().delete()
+    def setUpTestData(cls):
+        super().setUpTestData()
+        cls.adbhoney = GeneralHoneypot.objects.filter(name__iexact="adbhoney").first()
+        if not cls.adbhoney:
+            cls.adbhoney = GeneralHoneypot.objects.create(name="Adbhoney", active=True)
 
     def test_valid_fields(self):
         scanner_choices = [True, False]
         payload_request_choices = [True, False]
-        feed_type_choices = ["all", "log4j", "cowrie", "adbhoney"]
+        feed_type_choices = ["all", "log4pot", "cowrie", "adbhoney"]
 
         # generete all possible valid input data using cartesian product
         valid_data_choices = product(scanner_choices, payload_request_choices, feed_type_choices)
@@ -139,7 +129,7 @@ class FeedsResponseSerializersTestCase(TestCase):
             self.assertEqual(valid, True)
 
     def test_invalid_fields(self):
-        valid_feed_types = frozenset(["all", "log4j", "cowrie", "adbhoney"])
+        valid_feed_types = frozenset(["all", "log4pot", "cowrie", "adbhoney"])
         data_ = {
             "feed_type": "invalid_feed_type",
             "value": True,

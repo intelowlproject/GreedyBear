@@ -1,6 +1,6 @@
 from collections import defaultdict
 from datetime import datetime
-from ipaddress import IPv4Address, ip_address, ip_network
+from ipaddress import IPv4Address, IPv4Network, ip_address, ip_network
 from logging import Logger
 from urllib.parse import urlparse
 
@@ -149,6 +149,23 @@ def is_valid_ipv4(candidate: str) -> tuple[bool, str | None]:
         return False, None
 
 
+def is_valid_cidr(candidate: str) -> tuple[bool, str | None]:
+    """
+    Validate if a string is a valid CIDR notation.
+
+    Args:
+        candidate: String to validate as CIDR.
+
+    Returns:
+        True if valid CIDR, False otherwise.
+    """
+    try:
+        IPv4Network(candidate.strip(), strict=False)
+        return True, candidate.strip()
+    except ValueError:
+        return False, None
+
+
 def get_ioc_type(ioc: str) -> str:
     """
     Determine the type of an IOC based on its format.
@@ -198,13 +215,7 @@ def threatfox_submission(ioc_record: IOC, related_urls: list, log: Logger) -> No
     headers = {"Auth-Key": settings.THREATFOX_API_KEY}
     log.info(f"submitting IOC {urls_to_submit} to Threatfox")
 
-    seen_honeypots = []
-    if ioc_record.cowrie:
-        seen_honeypots.append("cowrie")
-    if ioc_record.log4j:
-        seen_honeypots.append("log4pot")
-    for honeypot in ioc_record.general_honeypot.all():
-        seen_honeypots.append(honeypot.name)
+    seen_honeypots = [hp.name for hp in ioc_record.general_honeypot.all()]
     seen_honeypots_str = ", ".join(seen_honeypots)
 
     json_data = {

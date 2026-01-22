@@ -9,4 +9,10 @@ mlmodels/
 .idea/
 # Ruff cache
 .ruff_cache/
+# Coverage reports
+htmlcov/
+.coverage
+coverage.xml
+*.cover
+.coverage.*
 
