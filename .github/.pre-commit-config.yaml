@@ -1,4 +1,5 @@
 repos:
+# Python linting with Ruff
 -   repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.12.7
     hooks:
@@ -7,3 +8,25 @@ repos:
         args: ["--fix", "--config", "./.github/configurations/python_linters/.ruff.toml"]
       - id: ruff-format
         args: ["--config", "./.github/configurations/python_linters/.ruff.toml"]
+
+# Frontend formatting with Prettier (using local npm)
+-   repo: local
+    hooks:
+      - id: prettier
+        name: prettier
+        entry: bash -c 'cd frontend && npm run formatter'
+        language: system
+        files: ^frontend/src/.*\.(js|jsx)$|^frontend/tests/.*\.(js|jsx)$|^frontend/src/styles/.*\.(css|scss)$
+        pass_filenames: false
+
+# Frontend linting with ESLint (using local npm)
+# Note: Run 'npm run lint-config-install' in frontend/ once before using this hook
+-   repo: local
+    hooks:
+      - id: eslint
+        name: eslint
+        entry: bash -c 'cd frontend && npm run lint'
+        language: system
+        files: ^frontend/src/.*\.(js|jsx)$|^frontend/tests/.*\.(js|jsx)$
+        pass_filenames: false
+
