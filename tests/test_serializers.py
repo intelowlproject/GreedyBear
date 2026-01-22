@@ -19,7 +19,7 @@ class FeedsRequestSerializersTestCase(CustomTestCase):
 
     def test_valid_fields(self):
         choices = {
-            "feed_type": ["all", "log4j", "cowrie", "adbhoney"],
+            "feed_type": ["all", "log4pot", "cowrie", "adbhoney"],
             "attack_type": ["all", "scanner", "payload_request"],
             "ioc_type": ["ip", "domain", "all"],
             "max_age": [str(n) for n in [1, 2, 4, 8, 16]],
@@ -53,7 +53,7 @@ class FeedsRequestSerializersTestCase(CustomTestCase):
             self.assertEqual(valid, True)
 
     def test_invalid_fields(self):
-        valid_feed_types = frozenset(["all", "log4j", "cowrie", "adbhoney"])
+        valid_feed_types = frozenset(["all", "log4pot", "cowrie", "adbhoney"])
         data_ = {
             "feed_type": "invalid_feed_type",
             "attack_type": "invalid_attack_type",
@@ -98,7 +98,7 @@ class FeedsResponseSerializersTestCase(CustomTestCase):
     def test_valid_fields(self):
         scanner_choices = [True, False]
         payload_request_choices = [True, False]
-        feed_type_choices = ["all", "log4j", "cowrie", "adbhoney"]
+        feed_type_choices = ["all", "log4pot", "cowrie", "adbhoney"]
 
         # generete all possible valid input data using cartesian product
         valid_data_choices = product(scanner_choices, payload_request_choices, feed_type_choices)
@@ -129,7 +129,7 @@ class FeedsResponseSerializersTestCase(CustomTestCase):
             self.assertEqual(valid, True)
 
     def test_invalid_fields(self):
-        valid_feed_types = frozenset(["all", "log4j", "cowrie", "adbhoney"])
+        valid_feed_types = frozenset(["all", "log4pot", "cowrie", "adbhoney"])
         data_ = {
             "feed_type": "invalid_feed_type",
             "value": True,

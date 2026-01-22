@@ -67,8 +67,8 @@ class EnrichmentViewTestCase(CustomTestCase):
 
 
 class FeedsViewTestCase(CustomTestCase):
-    def test_200_log4j_feeds(self):
-        response = self.client.get("/api/feeds/log4j/all/recent.json")
+    def test_200_log4pot_feeds(self):
+        response = self.client.get("/api/feeds/log4pot/all/recent.json")
         self.assertEqual(response.status_code, 200)
         if settings.FEEDS_LICENSE:
             self.assertEqual(response.json()["license"], settings.FEEDS_LICENSE)
@@ -79,8 +79,8 @@ class FeedsViewTestCase(CustomTestCase):
         target_ioc = next((i for i in iocs if i["value"] == self.ioc.name), None)
         self.assertIsNotNone(target_ioc)
 
-        # feed_type now derived from general_honeypot M2M; "log4pot" normalized to "log4j"
-        self.assertIn("log4j", target_ioc["feed_type"])
+        # feed_type now derived from general_honeypot M2M
+        self.assertIn("log4pot", target_ioc["feed_type"])
         self.assertIn("cowrie", target_ioc["feed_type"])
         self.assertIn("heralding", target_ioc["feed_type"])
         self.assertIn("ciscoasa", target_ioc["feed_type"])
@@ -117,7 +117,7 @@ class FeedsViewTestCase(CustomTestCase):
         target_ioc = next((i for i in iocs if i["value"] == self.ioc.name), None)
         self.assertIsNotNone(target_ioc)
 
-        self.assertEqual(set(target_ioc["feed_type"]), {"log4j", "cowrie", "heralding", "ciscoasa"})
+        self.assertEqual(set(target_ioc["feed_type"]), {"log4pot", "cowrie", "heralding", "ciscoasa"})
         self.assertEqual(target_ioc["attack_count"], 1)
         self.assertEqual(target_ioc["scanner"], True)
         self.assertEqual(target_ioc["payload_request"], True)
@@ -212,7 +212,7 @@ class FeedsAdvancedViewTestCase(CustomTestCase):
         target_ioc = next((i for i in iocs if i["value"] == self.ioc.name), None)
         self.assertIsNotNone(target_ioc)
 
-        self.assertEqual(set(target_ioc["feed_type"]), {"log4j", "cowrie", "heralding", "ciscoasa"})
+        self.assertEqual(set(target_ioc["feed_type"]), {"log4pot", "cowrie", "heralding", "ciscoasa"})
         self.assertEqual(target_ioc["attack_count"], 1)
         self.assertEqual(target_ioc["scanner"], True)
         self.assertEqual(target_ioc["payload_request"], True)
@@ -231,7 +231,7 @@ class FeedsAdvancedViewTestCase(CustomTestCase):
         target_ioc = next((i for i in iocs if i["value"] == self.ioc.name), None)
         self.assertIsNotNone(target_ioc)
 
-        self.assertEqual(set(target_ioc["feed_type"]), {"log4j", "cowrie", "heralding", "ciscoasa"})
+        self.assertEqual(set(target_ioc["feed_type"]), {"log4pot", "cowrie", "heralding", "ciscoasa"})
         self.assertEqual(target_ioc["attack_count"], 1)
         self.assertEqual(target_ioc["scanner"], True)
         self.assertEqual(target_ioc["payload_request"], True)

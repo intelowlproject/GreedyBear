@@ -215,9 +215,7 @@ def threatfox_submission(ioc_record: IOC, related_urls: list, log: Logger) -> No
     headers = {"Auth-Key": settings.THREATFOX_API_KEY}
     log.info(f"submitting IOC {urls_to_submit} to Threatfox")
 
-    seen_honeypots = []
-    for honeypot in ioc_record.general_honeypot.all():
-        seen_honeypots.append(honeypot.name)
+    seen_honeypots = [hp.name for hp in ioc_record.general_honeypot.all()]
     seen_honeypots_str = ", ".join(seen_honeypots)
 
     json_data = {

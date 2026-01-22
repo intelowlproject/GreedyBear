@@ -29,9 +29,9 @@ class FeedTypeAPITestCase(CustomTestCase):
         target_ioc = next((i for i in iocs if i["value"] == self.ioc.name), None)
         self.assertIsNotNone(target_ioc)
 
-        # Feed types should be derived from M2M, with Log4pot normalized to log4j
+        # Feed types should be derived from M2M
         feed_types = set(target_ioc["feed_type"])
-        self.assertIn("log4j", feed_types)  # Log4pot normalized to log4j
+        self.assertIn("log4pot", feed_types)
         self.assertIn("cowrie", feed_types)
         self.assertIn("heralding", feed_types)
         self.assertIn("ciscoasa", feed_types)
@@ -50,21 +50,8 @@ class FeedTypeAPITestCase(CustomTestCase):
         self.assertIn(self.ioc_2.name, ioc_names)
         self.assertIn(self.ioc_3.name, ioc_names)
 
-    def test_feed_filter_by_log4j(self):
-        """Verify filtering by log4j (Log4pot) feed type works via M2M."""
-        # Include mass scanners since ioc_2 has that reputation
-        response = self.client.get("/api/feeds/log4j/all/recent.json?include_mass_scanners=true")
-        self.assertEqual(response.status_code, 200)
-
-        iocs = response.json()["iocs"]
-        ioc_names = [ioc["value"] for ioc in iocs]
-
-        # Should include IOCs associated with Log4pot honeypot
-        self.assertIn(self.ioc.name, ioc_names)
-        self.assertIn(self.ioc_2.name, ioc_names)
-
-    def test_feed_filter_by_log4pot_alternative_name(self):
-        """Verify filtering by 'log4pot' (not normalized) also works."""
+    def test_feed_filter_by_log4pot(self):
+        """Verify filtering by log4pot feed type works via M2M."""
         # Include mass scanners since ioc_2 has that reputation
         response = self.client.get("/api/feeds/log4pot/all/recent.json?include_mass_scanners=true")
         self.assertEqual(response.status_code, 200)
@@ -72,7 +59,7 @@ class FeedTypeAPITestCase(CustomTestCase):
         iocs = response.json()["iocs"]
         ioc_names = [ioc["value"] for ioc in iocs]
 
-        # Should work the same as log4j filter
+        # Should include IOCs associated with Log4pot honeypot
         self.assertIn(self.ioc.name, ioc_names)
         self.assertIn(self.ioc_2.name, ioc_names)
 
@@ -105,8 +92,8 @@ class FeedTypeAPITestCase(CustomTestCase):
         self.assertNotIn("ddospot", valid_types_before)
         self.assertNotIn("ddospot", valid_types_after)
 
-    def test_feed_type_normalization_log4pot_to_log4j(self):
-        """Verify Log4pot is normalized to log4j in feed output."""
+    def test_feed_type_no_normalization_log4pot(self):
+        """Verify Log4pot is NOT normalized to log4j in feed output."""
         # Create an IOC with only Log4pot
         ioc = IOC.objects.create(
             name="100.200.100.200",
@@ -122,9 +109,9 @@ class FeedTypeAPITestCase(CustomTestCase):
         target_ioc = next((i for i in iocs if i["value"] == ioc.name), None)
         self.assertIsNotNone(target_ioc)
 
-        # Should contain "log4j" not "log4pot" due to normalization
-        self.assertIn("log4j", target_ioc["feed_type"])
-        self.assertNotIn("log4pot", target_ioc["feed_type"])
+        # Should contain "log4pot" and NOT "log4j"
+        self.assertIn("log4pot", target_ioc["feed_type"])
+        self.assertNotIn("log4j", target_ioc["feed_type"])
 
     def test_feed_output_without_boolean_fields(self):
         """Verify feed output doesn't contain legacy boolean fields."""

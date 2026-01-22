@@ -100,7 +100,7 @@ class TestFeatExtraction(CustomTestCase):
             self.assertEqual(str(feature["days_seen"][0]), today)
             self.assertEqual(feature["asn"], "12345")
             self.assertTrue(len(feature["honeypots"]) > 0)
-            self.assertTrue(set(feature["honeypots"]).issubset({"heralding", "ciscoasa", "log4j", "cowrie"}))
+            self.assertTrue(set(feature["honeypots"]).issubset({"heralding", "ciscoasa", "log4pot", "cowrie"}))
             self.assertEqual(feature["honeypot_count"], len(feature["honeypots"]))
             self.assertEqual(feature["destination_port_count"], 3)
             self.assertEqual(feature["days_seen_count"], 1)
@@ -124,7 +124,7 @@ class TestMultiLabelEncode(CustomTestCase):
         features = get_features(data, today)
         features = multi_label_encode(features, "honeypots").to_dict("records")
         features.sort(key=lambda d: d["value"], reverse=True)
-        for h in ["heralding", "ciscoasa", "log4j", "cowrie"]:
+        for h in ["heralding", "ciscoasa", "log4pot", "cowrie"]:
             self.assertEqual(features[1][f"has_{h}"], 1)
 
     def test_multi_label_encode_sample(self):
