@@ -2,6 +2,7 @@ import logging
 from datetime import datetime, timedelta
 
 from django.conf import settings
+from elasticsearch import exceptions as es_exceptions
 from elasticsearch.dsl import Q, Search
 
 from greedybear.consts import REQUIRED_FIELDS
@@ -94,6 +95,101 @@ class ElasticRepository:
         result.sort(key=lambda hit: hit["@timestamp"])
         self.search_cache[minutes_back_to_lookup] = result
         return result
+
+    def group_hits_by_honeypot(self, minutes_back_to_lookup: int) -> dict[str, list[dict]]:
+        """
+        Use Elasticsearch aggregations to group hits by honeypot type.
+
+        Returns:
+            dict[str, list[dict]]: Mapping honeypot type -> list of hit _source dicts.
+        """
+        self._healthcheck()
+        self.log.debug("grouping hits by honeypot using Elasticsearch aggregations")
+        window_start, window_end = get_time_window(datetime.now(), minutes_back_to_lookup)
+        self.log.debug(f"time window for aggregation: {window_start} - {window_end}")
+
+        # Build the query part (same semantics as _standard_query)
+        query = {
+            "range": {
+                "@timestamp": {
+                    "gte": window_start.isoformat(),
+                    "lt": window_end.isoformat(),
+                }
+            }
+        }
+
+        # Build aggregation body
+        body = {
+            "query": query,
+            "size": 0,
+            "aggs": {
+                "by_type": {
+                    "terms": {
+                        # adjust field name if needed (e.g. just "type")
+                        "field": "type.keyword",
+                        # upper bound on distinct honeypot types
+                        "size": 100,
+                    },
+                    "aggs": {
+                        "hits_per_type": {
+                            "top_hits": {
+                                # this limits per-honeypot hits returned;
+                                # increase if your volumes demand it
+                                "size": 10000,
+                                "_source": REQUIRED_FIELDS,
+                                "sort": [{"@timestamp": {"order": "asc"}}],
+                            }
+                        }
+                    },
+                }
+            },
+        }
+
+        try:
+            response = self.elastic_client.search(
+                index="logstash-*",
+                body=body,
+            )
+        except es_exceptions.ConnectionError as exc:
+            raise self.ElasticServerDownError(f"elastic server is not reachable, could be down: {exc}") from exc
+
+        buckets = response.get("aggregations", {}).get("by_type", {}).get("buckets", [])
+
+        grouped: dict[str, list[dict]] = {}
+
+        for bucket in buckets:
+            honeypot_type = bucket.get("key")
+            if honeypot_type is None:
+                continue
+
+            hits_wrapper = bucket.get("hits_per_type", {}).get("hits", {})
+            hits = hits_wrapper.get("hits", [])
+            docs: list[dict] = []
+
+            for hit in hits:
+                source = hit.get("_source", {})
+
+                # skip hits with non-existing or empty sources
+                src_ip = source.get("src_ip", "")
+                if not isinstance(src_ip, str) or not src_ip.strip():
+                    continue
+
+                # skip hits with non-existing or empty types (=honeypots)
+                hit_type = source.get("type", "")
+                if not isinstance(hit_type, str) or not hit_type.strip():
+                    continue
+
+                docs.append(source)
+
+            if docs:
+                grouped[honeypot_type] = docs
+
+        self.log.debug(
+            "aggregation produced %d honeypots and %d total hits",
+            len(grouped),
+            sum(len(v) for v in grouped.values()),
+        )
+        return grouped
 
     def _standard_query(self, minutes_back_to_lookup: int) -> Q:
         """
