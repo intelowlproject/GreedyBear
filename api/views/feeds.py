@@ -12,9 +12,10 @@ from rest_framework.decorators import (
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from api.serializers import ASNFeedsOrderingSerializer
 from api.views.utils import (
     FeedRequestParams,
-    aggregate_iocs_by_asn,
+    asn_aggregated_queryset,
     feeds_response,
     get_queryset,
     get_valid_feed_types,
@@ -125,24 +126,17 @@ def feeds_advanced(request):
 @permission_classes([IsAuthenticated])
 def feeds_asn(request):
     """
-    Handle requests for IOC feeds aggregated by ASN, calculating summary statistics.
-
-    This endpoint groups IOC data by ASN and returns aggregated metrics for each ASN, including counts, sums,
-    and unique honeypots.
+    Retrieve aggregated IOC feed data grouped by ASN (Autonomous System Number).
 
     Args:
-        request: The incoming request object.
-        feed_type (str): Type of feed to retrieve. Supported: `cowrie`, `log4j`, general honeypot names, or `all`. Default: `all`.
-        attack_type (str): Type of attack to filter. Supported: `scanner`, `payload_request`, or `all`. Default: `all`.
-        max_age (int): Maximum number of days since last occurrence. Default: 3.
-        min_days_seen (int): Minimum number of days an IOC must have been seen. Default: 1.
-        include_reputation (str): `;`-separated list of reputations to include, e.g., `known attacker;`. Default: include all.
-        exclude_reputation (str): `;`-separated list of reputations to exclude, e.g., `mass scanner;bot`. Default: exclude none.
-        feed_size (int): Maximum number of IOC items considered for aggregation. Default: 5000.
-        ordering (str): Field to order results by, with optional `-` prefix for descending. Default: `-last_seen`.
-        verbose (bool): Not used in this endpoint; included for consistency with Advanced Feeds API. Default: `false`.
-        paginate (bool): Not supported in this endpoint; ignored if provided. Default: `false`.
-        format (str): Response format type; only `json` is supported. Default: `json`.
+        request: The HTTP request object.
+        feed_type (str): Filter by feed type (e.g., 'cowrie', 'log4j'). Default: 'all'.
+        attack_type (str): Filter by attack type (e.g., 'scanner', 'payload_request'). Default: 'all'.
+        max_age (int): Maximum age of IOCs in days. Default: 3.
+        min_days_seen (int): Minimum days an IOC must have been observed. Default: 1.
+        exclude_reputation (str): ';'-separated reputations to exclude (e.g., 'mass scanner'). Default: none.
+        ordering (str): Aggregation ordering field (e.g., 'total_attack_count', 'asn'). Default: '-ioc_count'.
+        asn (str, optional): Filter results to a single ASN.
 
     Returns:
      Response: HTTP response with a JSON list of ASN aggregation objects.
@@ -155,10 +149,15 @@ def feeds_asn(request):
             honeypots (List[str]): Sorted list of unique honeypots that observed these IOCs.
             expected_ioc_count (float): Sum of recurrence_probability for all IOCs, rounded to 4 decimals.
             expected_interactions (float): Sum of expected_interactions for all IOCs, rounded to 4 decimals.
+            first_seen (DateTime): Earliest first_seen timestamp among IOCs.
+            last_seen (DateTime): Latest last_seen timestamp among IOCs.
     """
     logger.info(f"request /api/feeds/asn/ with params: {request.query_params}")
     feed_params = FeedRequestParams(request.query_params)
     valid_feed_types = get_valid_feed_types()
-    iocs_queryset = get_queryset(request, feed_params, valid_feed_types)
-    response_data = aggregate_iocs_by_asn(iocs_queryset)
-    return Response(response_data)
+
+    iocs_qs = get_queryset(request, feed_params, valid_feed_types, is_aggregated=True, serializer_class=ASNFeedsOrderingSerializer)
+
+    asn_aggregates = asn_aggregated_queryset(iocs_qs, request, feed_params)
+    data = list(asn_aggregates)
+    return Response(data)

@@ -3,13 +3,12 @@
 import csv
 import logging
 import re
-from collections import defaultdict
 from datetime import datetime, timedelta
 from ipaddress import ip_address
 
 from django.conf import settings
 from django.contrib.postgres.aggregates import ArrayAgg
-from django.db.models import F, Q
+from django.db.models import Count, F, Max, Min, Q, Sum
 from django.http import HttpResponse, HttpResponseBadRequest, StreamingHttpResponse
 from rest_framework import status
 from rest_framework.response import Response
@@ -329,55 +328,72 @@ def is_sha256hash(string: str) -> bool:
     return bool(re.fullmatch(r"^[A-Fa-f0-9]{64}$", string))
 
 
-def aggregate_iocs_by_asn(iocs):
+def resolve_aggregation_ordering(ordering, *, default, fallback_fields=None):
     """
-    Aggregate IOC objects by ASN, computing counts, sums, and unique honeypots.
+    Resolve effective ordering for aggregated endpoints.
 
-    Args:
-        iocs (Iterable[IOC]): QuerySet or list of IOC objects to aggregate.
+    Args
+        ordering (str or None): The user-provided ordering string from query params.
+        default (str): The default ordering to use if `ordering` is None or in fallback_fields.
+        fallback_fields (set[str], optional): A set of orderings that are allowed in other
+            contexts but should be overridden here. Defaults to None.
 
-    Returns:
-        List[dict]: Each dictionary contains ASN-level statistics:
+    Returns
+        str: A safe ordering string to use directly in the aggregation query.
     """
-    aggregated = defaultdict(
-        lambda: {
-            "ioc_count": 0,
-            "attack": 0,
-            "interactions": 0,
-            "logins": 0,
-            "honeypots": set(),
-            "exp_ioc": 0.0,
-            "exp_inter": 0.0,
-        }
+    fallback_fields = fallback_fields or set()
+
+    if not ordering or ordering in fallback_fields:
+        return default
+
+    return ordering
+
+
+def asn_aggregated_queryset(iocs_qs, request, feed_params):
+    """
+    Perform DB-level aggregation grouped by ASN.
+
+    Args
+        iocs_qs (QuerySet): Filtered IOC queryset from get_queryset;
+        request (Request): The API request object;
+        feed_params (FeedRequestParams): Validated parameter object
+
+    Returns: A values-grouped queryset with annotated  metrics and honeypot arrays.
+    """
+    # optional asn params for single asn filter
+    asn_filter = request.query_params.get("asn")
+    if asn_filter:
+        iocs_qs = iocs_qs.filter(asn=asn_filter)
+
+    aggregated = (
+        iocs_qs.exclude(asn__isnull=True)
+        .values("asn")
+        .annotate(
+            ioc_count=Count("id", distinct=True),
+            total_attack_count=Sum("attack_count", distinct=True),
+            total_interaction_count=Sum("interaction_count", distinct=True),
+            total_login_attempts=Sum("login_attempts", distinct=True),
+            expected_ioc_count=Sum("recurrence_probability", distinct=True),
+            expected_interactions=Sum("expected_interactions", distinct=True),
+            honeypots=ArrayAgg(
+                "general_honeypot__name",
+                filter=Q(general_honeypot__name__isnull=False),
+                distinct=True,
+            ),
+            first_seen=Min("first_seen"),
+            last_seen=Max("last_seen"),
+        )
     )
 
-    for ioc in iocs:
-        asn = ioc.asn
-        if asn is None:
-            continue
+    resolved_ordering = resolve_aggregation_ordering(
+        ordering=feed_params.ordering,
+        default="-ioc_count",
+        fallback_fields={"-last_seen"},
+    )
 
-        e = aggregated[asn]
+    direction = "-" if resolved_ordering.startswith("-") else ""
+    field = resolved_ordering.lstrip("-").strip()
 
-        e["ioc_count"] += 1
-        e["attack"] += ioc.attack_count or 0
-        e["interactions"] += ioc.interaction_count or 0
-        e["logins"] += ioc.login_attempts or 0
-        e["exp_ioc"] += ioc.recurrence_probability or 0.0
-        e["exp_inter"] += ioc.expected_interactions or 0.0
+    aggregated = aggregated.order_by(f"{direction}{field}")
 
-        if getattr(ioc, "honeypots", None):
-            e["honeypots"].update(ioc.honeypots)
-
-    return [
-        {
-            "asn": asn,
-            "ioc_count": e["ioc_count"],
-            "total_attack_count": e["attack"],
-            "total_interaction_count": e["interactions"],
-            "total_login_attempts": e["logins"],
-            "honeypots": sorted(filter(None, e["honeypots"])),
-            "expected_ioc_count": round(e["exp_ioc"], 4),
-            "expected_interactions": round(e["exp_inter"], 4),
-        }
-        for asn, e in aggregated.items()
-    ]
+    return aggregated
