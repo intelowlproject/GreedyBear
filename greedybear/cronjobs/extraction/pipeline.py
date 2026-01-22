@@ -55,24 +55,18 @@ class ExtractionPipeline:
         Returns:
             Number of IOC records processed.
         """
-        # 1. Search
-        self.log.info("Getting honeypot hits from Elasticsearch")
-        search_result = self.elastic_repo.search(self._minutes_back_to_lookup)
-        hits_by_honeypot = defaultdict(list)
+        # 1. Search + group by honeypot (now done in ES)
+        self.log.info("Getting honeypot hits from Elasticsearch (via aggregations)")
+        hits_by_honeypot_dict = self.elastic_repo.group_hits_by_honeypot(self._minutes_back_to_lookup)
 
-        # 2. Group by honeypot
-        self.log.info("Grouping hits by honeypot type")
-        for hit in search_result:
-            # skip hits with non-existing or empty sources
-            if "src_ip" not in hit or not hit["src_ip"].strip():
-                continue
-            # skip hits with non-existing or empty types (=honeypots)
-            if "type" not in hit or not hit["type"].strip():
-                continue
-            # extract sensor
-            if "t-pot_ip_ext" in hit:
-                self.sensor_repo.add_sensor(hit["t-pot_ip_ext"])
-            hits_by_honeypot[hit["type"]].append(hit.to_dict())
+        # Convert to defaultdict(list) to keep type expectations in the rest of the code
+        hits_by_honeypot = defaultdict(list)
+        for honeypot, hits in hits_by_honeypot_dict.items():
+            # Extract sensor information here to preserve previous behaviour
+            for hit in hits:
+                if "t-pot_ip_ext" in hit:
+                    self.sensor_repo.add_sensor(hit["t-pot_ip_ext"])
+                hits_by_honeypot[honeypot].append(hit)
 
         # 3. Extract using strategies
         ioc_records = []
