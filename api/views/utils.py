@@ -121,7 +121,7 @@ def get_valid_feed_types() -> frozenset[str]:
     return frozenset([Honeypots.LOG4J.value, Honeypots.COWRIE.value, "all"] + [hp.name.lower() for hp in general_honeypots])
 
 
-def get_queryset(request, feed_params, valid_feed_types):
+def get_queryset(request, feed_params, valid_feed_types, is_aggregated=False, serializer_class=FeedsRequestSerializer):
     """
     Build a queryset to filter IOC data based on the request parameters.
 
@@ -129,6 +129,15 @@ def get_queryset(request, feed_params, valid_feed_types):
         request: The incoming request object.
         feed_params: A FeedRequestParams instance.
         valid_feed_types (frozenset): The set of all valid feed types.
+        is_aggregated (bool, optional):
+            - If True, disables slicing (`feed_size`) and model-level ordering.
+            - Ensures full dataset is available for aggregation or specialized computation.
+            - Default: False.
+        serializer_class (class, optional):
+            - Serializer class used to validate request parameters.
+            - Allows injecting a custom serializer to enforce rules for specific feed types
+              (e.g., to restrict ordering fields or validation for specialized feeds).
+            - Default: `FeedsRequestSerializer`.
 
     Returns:
         QuerySet: The filtered queryset of IOC data.
@@ -139,7 +148,7 @@ def get_queryset(request, feed_params, valid_feed_types):
         f"Age: {feed_params.max_age}, format: {feed_params.format}"
     )
 
-    serializer = FeedsRequestSerializer(
+    serializer = serializer_class(
         data=vars(feed_params),
         context={"valid_feed_types": valid_feed_types},
     )
@@ -171,8 +180,13 @@ def get_queryset(request, feed_params, valid_feed_types):
         .exclude(ip_reputation__in=feed_params.exclude_reputation)
         .annotate(value=F("name"))
         .annotate(honeypots=ArrayAgg("general_honeypot__name"))
-        .order_by(feed_params.ordering)[: int(feed_params.feed_size)]
     )
+
+    # aggregated endpoints should operate on the full queryset
+    # to compute sums, counts, and other metrics correctly.
+    if not is_aggregated:
+        iocs = iocs.order_by(feed_params.ordering)
+        iocs = iocs[: int(feed_params.feed_size)]
 
     # save request source for statistics
     source_ip = str(request.META["REMOTE_ADDR"])
