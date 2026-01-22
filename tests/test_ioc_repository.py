@@ -134,13 +134,13 @@ class TestIocRepository(CustomTestCase):
         self.assertTrue(GeneralHoneypot.objects.filter(name="FooPot").exists())
 
     def test_is_ready_for_extraction_case_insensitive(self):
-        GeneralHoneypot.objects.create(name="Cowrie", active=True)
+        GeneralHoneypot.objects.get_or_create(name="Cowrie", defaults={"active": True})
         result = self.repo.is_ready_for_extraction("cowrie")
         self.assertTrue(result)
         self.assertEqual(GeneralHoneypot.objects.filter(name__iexact="cowrie").count(), 1)
 
     def test_get_hp_by_name_insensitive(self):
-        GeneralHoneypot.objects.create(name="Cowrie", active=True)
+        GeneralHoneypot.objects.get_or_create(name="Cowrie", defaults={"active": True})
         result = self.repo.get_hp_by_name("cowrie")
         self.assertIsNotNone(result)
 
@@ -212,8 +212,12 @@ class TestIocRepository(CustomTestCase):
 
     def test_get_scanners_for_scoring_returns_scanners(self):
         # Create scanners
-        IOC.objects.create(name="1.2.3.4", type="ip", scanner=True, cowrie=True)
-        IOC.objects.create(name="5.6.7.8", type="ip", scanner=True, log4j=True)
+        cowrie_hp = GeneralHoneypot.objects.get_or_create(name="Cowrie", defaults={"active": True})[0]
+        log4pot_hp = GeneralHoneypot.objects.get_or_create(name="Log4pot", defaults={"active": True})[0]
+        ioc1 = IOC.objects.create(name="1.2.3.4", type="ip", scanner=True)
+        ioc1.general_honeypot.add(cowrie_hp)
+        ioc2 = IOC.objects.create(name="5.6.7.8", type="ip", scanner=True)
+        ioc2.general_honeypot.add(log4pot_hp)
 
         result = self.repo.get_scanners_for_scoring(["recurrence_probability", "expected_interactions"])
 
@@ -222,7 +226,9 @@ class TestIocRepository(CustomTestCase):
         self.assertIn("5.6.7.8", names)
 
     def test_get_scanners_for_scoring_excludes_non_scanners(self):
-        IOC.objects.create(name="1.2.3.4", type="ip", scanner=False, cowrie=True)
+        cowrie_hp = GeneralHoneypot.objects.get_or_create(name="Cowrie", defaults={"active": True})[0]
+        ioc = IOC.objects.create(name="1.2.3.4", type="ip", scanner=False)
+        ioc.general_honeypot.add(cowrie_hp)
 
         result = self.repo.get_scanners_for_scoring(["recurrence_probability"])
 
@@ -230,7 +236,9 @@ class TestIocRepository(CustomTestCase):
         self.assertNotIn("1.2.3.4", names)
 
     def test_get_scanners_for_scoring_only_loads_specified_fields(self):
-        IOC.objects.create(name="1.2.3.4", type="ip", scanner=True, cowrie=True, attack_count=100)
+        cowrie_hp = GeneralHoneypot.objects.get_or_create(name="Cowrie", defaults={"active": True})[0]
+        ioc = IOC.objects.create(name="1.2.3.4", type="ip", scanner=True, attack_count=100)
+        ioc.general_honeypot.add(cowrie_hp)
 
         result = list(self.repo.get_scanners_for_scoring(["recurrence_probability"]))
 
@@ -268,8 +276,11 @@ class TestIocRepository(CustomTestCase):
         recent_date = datetime.now() - timedelta(days=5)
         old_date = datetime.now() - timedelta(days=40)
 
-        IOC.objects.create(name="1.2.3.4", type="ip", scanner=True, cowrie=True, last_seen=recent_date)
-        IOC.objects.create(name="5.6.7.8", type="ip", scanner=True, cowrie=True, last_seen=old_date)
+        cowrie_hp = GeneralHoneypot.objects.get_or_create(name="Cowrie", defaults={"active": True})[0]
+        ioc1 = IOC.objects.create(name="1.2.3.4", type="ip", scanner=True, last_seen=recent_date)
+        ioc1.general_honeypot.add(cowrie_hp)
+        ioc2 = IOC.objects.create(name="5.6.7.8", type="ip", scanner=True, last_seen=old_date)
+        ioc2.general_honeypot.add(cowrie_hp)
 
         cutoff = datetime.now() - timedelta(days=30)
         result = list(self.repo.get_recent_scanners(cutoff, days_lookback=30))
@@ -280,7 +291,9 @@ class TestIocRepository(CustomTestCase):
 
     def test_get_recent_scanners_excludes_non_scanners(self):
         recent_date = datetime.now() - timedelta(days=5)
-        IOC.objects.create(name="1.2.3.4", type="ip", scanner=False, cowrie=True, last_seen=recent_date)
+        cowrie_hp = GeneralHoneypot.objects.get_or_create(name="Cowrie", defaults={"active": True})[0]
+        ioc = IOC.objects.create(name="1.2.3.4", type="ip", scanner=False, last_seen=recent_date)
+        ioc.general_honeypot.add(cowrie_hp)
 
         cutoff = datetime.now() - timedelta(days=30)
         result = list(self.repo.get_recent_scanners(cutoff))
@@ -371,7 +384,9 @@ class TestIocRepository(CustomTestCase):
 
     def test_get_recent_scanners_all_iocs_older_than_cutoff(self):
         old_date = datetime.now() - timedelta(days=40)
-        IOC.objects.create(name="1.2.3.4", type="ip", scanner=True, cowrie=True, last_seen=old_date)
+        cowrie_hp = GeneralHoneypot.objects.get_or_create(name="Cowrie", defaults={"active": True})[0]
+        ioc = IOC.objects.create(name="1.2.3.4", type="ip", scanner=True, last_seen=old_date)
+        ioc.general_honeypot.add(cowrie_hp)
 
         cutoff = datetime.now() - timedelta(days=30)
         result = list(self.repo.get_recent_scanners(cutoff))
@@ -420,8 +435,12 @@ class TestScoringIntegration(CustomTestCase):
         from greedybear.cronjobs.scoring.scoring_jobs import UpdateScores
 
         # Create test data
-        IOC.objects.create(name="10.1.2.3", type="ip", scanner=True, cowrie=True, recurrence_probability=0.0)
-        IOC.objects.create(name="10.5.6.7", type="ip", scanner=True, log4j=True, recurrence_probability=0.0)
+        cowrie_hp = GeneralHoneypot.objects.get_or_create(name="Cowrie", defaults={"active": True})[0]
+        log4pot_hp = GeneralHoneypot.objects.get_or_create(name="Log4pot", defaults={"active": True})[0]
+        ioc1 = IOC.objects.create(name="10.1.2.3", type="ip", scanner=True, recurrence_probability=0.0)
+        ioc1.general_honeypot.add(cowrie_hp)
+        ioc2 = IOC.objects.create(name="10.5.6.7", type="ip", scanner=True, recurrence_probability=0.0)
+        ioc2.general_honeypot.add(log4pot_hp)
 
         # Create score dataframe
         df = pd.DataFrame(
@@ -450,8 +469,12 @@ class TestScoringIntegration(CustomTestCase):
         from greedybear.cronjobs.scoring.scoring_jobs import UpdateScores
 
         # Create test data - one IOC will be missing from df
-        IOC.objects.create(name="10.2.3.4", type="ip", scanner=True, cowrie=True, recurrence_probability=0.9)
-        IOC.objects.create(name="10.6.7.8", type="ip", scanner=True, log4j=True, recurrence_probability=0.8)
+        cowrie_hp = GeneralHoneypot.objects.get_or_create(name="Cowrie", defaults={"active": True})[0]
+        log4pot_hp = GeneralHoneypot.objects.get_or_create(name="Log4pot", defaults={"active": True})[0]
+        ioc1 = IOC.objects.create(name="10.2.3.4", type="ip", scanner=True, recurrence_probability=0.9)
+        ioc1.general_honeypot.add(cowrie_hp)
+        ioc2 = IOC.objects.create(name="10.6.7.8", type="ip", scanner=True, recurrence_probability=0.8)
+        ioc2.general_honeypot.add(log4pot_hp)
 
         # DataFrame only has one IOC
         df = pd.DataFrame({"value": ["10.2.3.4"], "recurrence_probability": [0.75], "expected_interactions": [10.0]})
@@ -470,7 +493,9 @@ class TestScoringIntegration(CustomTestCase):
         from greedybear.cronjobs.scoring.utils import get_current_data
 
         recent_date = datetime.now() - timedelta(days=5)
-        IOC.objects.create(name="1.2.3.4", type="ip", scanner=True, cowrie=True, last_seen=recent_date)
+        cowrie_hp = GeneralHoneypot.objects.get_or_create(name="Cowrie", defaults={"active": True})[0]
+        ioc = IOC.objects.create(name="1.2.3.4", type="ip", scanner=True, last_seen=recent_date)
+        ioc.general_honeypot.add(cowrie_hp)
 
         result = get_current_data(days_lookback=30, ioc_repo=self.repo)
 

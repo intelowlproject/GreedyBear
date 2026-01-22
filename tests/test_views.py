@@ -42,10 +42,12 @@ class EnrichmentViewTestCase(CustomTestCase):
         )
         self.assertEqual(response.json()["ioc"]["number_of_days_seen"], self.ioc.number_of_days_seen)
         self.assertEqual(response.json()["ioc"]["attack_count"], self.ioc.attack_count)
-        self.assertEqual(response.json()["ioc"]["log4j"], self.ioc.log4j)
-        self.assertEqual(response.json()["ioc"]["cowrie"], self.ioc.cowrie)
-        self.assertEqual(response.json()["ioc"]["general_honeypot"][0], self.heralding.name)  # FEEDS
-        self.assertEqual(response.json()["ioc"]["general_honeypot"][1], self.ciscoasa.name)  # FEEDS
+        # Honeypots are now via M2M relationship (serialized as list of strings)
+        honeypot_names = response.json()["ioc"]["general_honeypot"]
+        self.assertIn(self.heralding.name, honeypot_names)
+        self.assertIn(self.ciscoasa.name, honeypot_names)
+        self.assertIn(self.cowrie_hp.name, honeypot_names)
+        self.assertIn(self.log4pot_hp.name, honeypot_names)
         self.assertEqual(response.json()["ioc"]["scanner"], self.ioc.scanner)
         self.assertEqual(response.json()["ioc"]["payload_request"], self.ioc.payload_request)
         self.assertEqual(
@@ -65,8 +67,8 @@ class EnrichmentViewTestCase(CustomTestCase):
 
 
 class FeedsViewTestCase(CustomTestCase):
-    def test_200_log4j_feeds(self):
-        response = self.client.get("/api/feeds/log4j/all/recent.json")
+    def test_200_log4pot_feeds(self):
+        response = self.client.get("/api/feeds/log4pot/all/recent.json")
         self.assertEqual(response.status_code, 200)
         if settings.FEEDS_LICENSE:
             self.assertEqual(response.json()["license"], settings.FEEDS_LICENSE)
@@ -77,7 +79,11 @@ class FeedsViewTestCase(CustomTestCase):
         target_ioc = next((i for i in iocs if i["value"] == self.ioc.name), None)
         self.assertIsNotNone(target_ioc)
 
-        self.assertEqual(target_ioc["feed_type"], ["log4j", "cowrie", "heralding", "ciscoasa"])
+        # feed_type now derived from general_honeypot M2M
+        self.assertIn("log4pot", target_ioc["feed_type"])
+        self.assertIn("cowrie", target_ioc["feed_type"])
+        self.assertIn("heralding", target_ioc["feed_type"])
+        self.assertIn("ciscoasa", target_ioc["feed_type"])
         self.assertEqual(target_ioc["attack_count"], 1)
         self.assertEqual(target_ioc["scanner"], True)
         self.assertEqual(target_ioc["payload_request"], True)
@@ -111,7 +117,7 @@ class FeedsViewTestCase(CustomTestCase):
         target_ioc = next((i for i in iocs if i["value"] == self.ioc.name), None)
         self.assertIsNotNone(target_ioc)
 
-        self.assertEqual(target_ioc["feed_type"], ["log4j", "cowrie", "heralding", "ciscoasa"])
+        self.assertEqual(set(target_ioc["feed_type"]), {"log4pot", "cowrie", "heralding", "ciscoasa"})
         self.assertEqual(target_ioc["attack_count"], 1)
         self.assertEqual(target_ioc["scanner"], True)
         self.assertEqual(target_ioc["payload_request"], True)
@@ -206,7 +212,7 @@ class FeedsAdvancedViewTestCase(CustomTestCase):
         target_ioc = next((i for i in iocs if i["value"] == self.ioc.name), None)
         self.assertIsNotNone(target_ioc)
 
-        self.assertEqual(target_ioc["feed_type"], ["log4j", "cowrie", "heralding", "ciscoasa"])
+        self.assertEqual(set(target_ioc["feed_type"]), {"log4pot", "cowrie", "heralding", "ciscoasa"})
         self.assertEqual(target_ioc["attack_count"], 1)
         self.assertEqual(target_ioc["scanner"], True)
         self.assertEqual(target_ioc["payload_request"], True)
@@ -225,7 +231,7 @@ class FeedsAdvancedViewTestCase(CustomTestCase):
         target_ioc = next((i for i in iocs if i["value"] == self.ioc.name), None)
         self.assertIsNotNone(target_ioc)
 
-        self.assertEqual(target_ioc["feed_type"], ["log4j", "cowrie", "heralding", "ciscoasa"])
+        self.assertEqual(set(target_ioc["feed_type"]), {"log4pot", "cowrie", "heralding", "ciscoasa"})
         self.assertEqual(target_ioc["attack_count"], 1)
         self.assertEqual(target_ioc["scanner"], True)
         self.assertEqual(target_ioc["payload_request"], True)
@@ -299,17 +305,18 @@ class StatisticsViewTestCase(CustomTestCase):
         self.assertEqual(response.json()[0]["Requests"], 1)
 
     def test_200_feed_types(self):
-        self.assertEqual(GeneralHoneypot.objects.count(), 3)
+        # Count honeypots before adding new one
+        initial_count = GeneralHoneypot.objects.count()
         # add a general honeypot without associated ioc
         GeneralHoneypot(name="Tanner", active=True).save()
-        self.assertEqual(GeneralHoneypot.objects.count(), 4)
+        self.assertEqual(GeneralHoneypot.objects.count(), initial_count + 1)
 
         response = self.client.get("/api/statistics/feeds_types")
         self.assertEqual(response.status_code, 200)
         # Expecting 3 because setupTestData creates 3 IOCs (ioc, ioc_2, ioc_domain) associated with Heralding
         self.assertEqual(response.json()[0]["Heralding"], 3)
         self.assertEqual(response.json()[0]["Ciscoasa"], 2)
-        self.assertEqual(response.json()[0]["Log4j"], 3)
+        self.assertEqual(response.json()[0]["Log4pot"], 3)
         self.assertEqual(response.json()[0]["Cowrie"], 3)
         self.assertEqual(response.json()[0]["Tanner"], 0)
 
