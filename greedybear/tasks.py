@@ -7,11 +7,6 @@ from greedybear.settings import CLUSTER_COWRIE_COMMAND_SEQUENCES
 
 
 @shared_task()
-def extract_log4pot():
-    from greedybear.cronjobs.log4pot import ExtractLog4Pot
-
-    ExtractLog4Pot().execute()
-
 
 @shared_task()
 def extract_cowrie():
