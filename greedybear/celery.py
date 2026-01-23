@@ -58,11 +58,6 @@ def setup_loggers(*args, **kwargs):
 
 hp_extraction_interval = 10 if LEGACY_EXTRACTION else EXTRACTION_INTERVAL
 app.conf.beat_schedule = {
-    # every 10 minutes or according to EXTRACTION_INTERVAL
-    "extract_log4pot": {
-        "task": "greedybear.tasks.extract_log4pot",
-        "schedule": crontab(minute=f"*/{hp_extraction_interval}"),
-        "options": {"queue": "default", "countdown": 10},
     },
     # every 10 minutes or according to EXTRACTION_INTERVAL
     "extract_cowrie": {
