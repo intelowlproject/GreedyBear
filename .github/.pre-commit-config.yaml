@@ -10,23 +10,23 @@ repos:
         args: ["--config", "./.github/configurations/python_linters/.ruff.toml"]
 
 # Frontend formatting with Prettier (using local npm)
+# Skips if frontend/node_modules doesn't exist (for backend-only contributors)
 -   repo: local
     hooks:
       - id: prettier
         name: prettier
-        entry: bash -c 'cd frontend && npm run formatter'
+        entry: bash -c 'if [ -d frontend/node_modules ]; then cd frontend && npm run formatter; else echo "Skipping prettier - run npm install in frontend/ to enable"; fi'
         language: system
         files: ^frontend/src/.*\.(js|jsx)$|^frontend/tests/.*\.(js|jsx)$|^frontend/src/styles/.*\.(css|scss)$
         pass_filenames: false
 
 # Frontend linting with ESLint (using local npm)
-# Note: Run 'npm run lint-config-install' in frontend/ once before using this hook
+# Skips if frontend/node_modules doesn't exist (for backend-only contributors)
 -   repo: local
     hooks:
       - id: eslint
         name: eslint
-        entry: bash -c 'cd frontend && npm run lint'
+        entry: bash -c 'if [ -d frontend/node_modules ]; then cd frontend && npm run lint; else echo "Skipping eslint - run npm install in frontend/ to enable"; fi'
         language: system
         files: ^frontend/src/.*\.(js|jsx)$|^frontend/tests/.*\.(js|jsx)$
         pass_filenames: false
-
