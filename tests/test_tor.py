@@ -1,13 +1,13 @@
-import unittest
 from unittest.mock import Mock, patch
 
 import requests
 
 from greedybear.cronjobs.repositories.tor import TorRepository
 from greedybear.cronjobs.tor_exit_nodes import TorExitNodesCron
+from tests import CustomTestCase
 
 
-class TestTorRepository(unittest.TestCase):
+class TestTorRepository(CustomTestCase):
     """Test cases for TorRepository."""
 
     def setUp(self):
@@ -42,7 +42,7 @@ class TestTorRepository(unittest.TestCase):
         self.assertFalse(created)
 
 
-class TestTorExitNodesCron(unittest.TestCase):
+class TestTorExitNodesCron(CustomTestCase):
     """Test cases for TorExitNodesCron."""
 
     def setUp(self):
@@ -95,7 +95,3 @@ class TestTorExitNodesCron(unittest.TestCase):
 
         # Assert
         self.mock_ioc_repo.update_ioc_reputation.assert_called_once_with("1.2.3.4", "Tor Exit Node")
-
-
-if __name__ == "__main__":
-    unittest.main()
