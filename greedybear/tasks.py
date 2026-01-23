@@ -7,7 +7,6 @@ from greedybear.settings import CLUSTER_COWRIE_COMMAND_SEQUENCES
 
 
 @shared_task()
-
 @shared_task()
 def extract_cowrie():
     from greedybear.cronjobs.cowrie import ExtractCowrie
