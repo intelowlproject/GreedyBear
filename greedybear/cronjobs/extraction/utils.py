@@ -110,6 +110,16 @@ def iocs_from_hits(hits: list[dict]) -> list[IOC]:
 
         firehol_categories = get_firehol_categories(ip, extracted_ip)
 
+        # Extract attacker location from geoip
+        geoip_data = hits[0].get("geoip", {})
+        attacker_country_code = geoip_data.get("country_code2") or geoip_data.get("country_iso_code")
+        attacker_country_name = geoip_data.get("country_name")
+
+        # Extract sensor location from geoip_ext
+        geoip_ext_data = hits[0].get("geoip_ext", {})
+        sensor_country_code = geoip_ext_data.get("country_code2") or geoip_ext_data.get("country_iso_code")
+        sensor_country_name = geoip_ext_data.get("country_name")
+
         ioc = IOC(
             name=ip,
             type=get_ioc_type(ip),
@@ -119,6 +129,10 @@ def iocs_from_hits(hits: list[dict]) -> list[IOC]:
             destination_ports=sorted(set(dest_ports)),
             login_attempts=len(hits) if hits[0].get("type", "") == "Heralding" else 0,
             firehol_categories=firehol_categories,
+            attacker_country_code=attacker_country_code,
+            attacker_country_name=attacker_country_name,
+            sensor_country_code=sensor_country_code,
+            sensor_country_name=sensor_country_name,
         )
         timestamps = [hit["@timestamp"] for hit in hits if "@timestamp" in hit]
         if timestamps:
