@@ -57,7 +57,7 @@ class ExtractionPipeline:
         """
         # 1. Stream hits grouped by honeypot type
         self.log.info("Streaming honeypot hits from Elasticsearch")
-        
+
         # Consume generator and build defaultdict for subsequent processing
         hits_by_honeypot = defaultdict(list)
         for honeypot, hits in self.elastic_repo.group_hits_by_honeypot(self._minutes_back_to_lookup):

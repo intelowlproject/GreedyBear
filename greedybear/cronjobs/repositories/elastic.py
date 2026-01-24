@@ -149,9 +149,7 @@ class ElasticRepository:
                 body=agg_body,
             )
         except es_exceptions.ConnectionError as exc:
-            raise self.ElasticServerDownError(
-                f"elastic server is not reachable, could be down: {exc}"
-            ) from exc
+            raise self.ElasticServerDownError(f"elastic server is not reachable, could be down: {exc}") from exc
 
         buckets = response.get("aggregations", {}).get("honeypot_types", {}).get("buckets", [])
         honeypot_types = [bucket["key"] for bucket in buckets if "key" in bucket]
