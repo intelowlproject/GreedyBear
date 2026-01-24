@@ -62,6 +62,10 @@ class IOC(models.Model):
     firehol_categories = pg_fields.ArrayField(models.CharField(max_length=64, blank=True), blank=True, default=list)
     asn = models.IntegerField(blank=True, null=True)
     destination_ports = pg_fields.ArrayField(models.IntegerField(), blank=False, null=False, default=list)
+    attacker_country_code = models.CharField(max_length=3, blank=True, null=True)
+    attacker_country_name = models.CharField(max_length=64, blank=True, null=True)
+    sensor_country_code = models.CharField(max_length=3, blank=True, null=True)
+    sensor_country_name = models.CharField(max_length=64, blank=True, null=True)
     login_attempts = models.IntegerField(blank=False, null=False, default=0)
     # SCORES
     recurrence_probability = models.FloatField(blank=False, null=True, default=0)
