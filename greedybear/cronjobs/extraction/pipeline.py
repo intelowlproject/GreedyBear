@@ -55,13 +55,12 @@ class ExtractionPipeline:
         Returns:
             Number of IOC records processed.
         """
-        # 1. Search + group by honeypot (now done in ES)
-        self.log.info("Getting honeypot hits from Elasticsearch (via aggregations)")
-        hits_by_honeypot_dict = self.elastic_repo.group_hits_by_honeypot(self._minutes_back_to_lookup)
-
-        # Convert to defaultdict(list) to keep type expectations in the rest of the code
+        # 1. Stream hits grouped by honeypot type
+        self.log.info("Streaming honeypot hits from Elasticsearch")
+        
+        # Consume generator and build defaultdict for subsequent processing
         hits_by_honeypot = defaultdict(list)
-        for honeypot, hits in hits_by_honeypot_dict.items():
+        for honeypot, hits in self.elastic_repo.group_hits_by_honeypot(self._minutes_back_to_lookup):
             # Extract sensor information here to preserve previous behaviour
             for hit in hits:
                 if "t-pot_ip_ext" in hit:
@@ -75,6 +74,7 @@ class ExtractionPipeline:
             if not self.ioc_repo.is_ready_for_extraction(honeypot):
                 self.log.info(f"Skipping honeypot {honeypot}")
                 continue
+
             self.log.info(f"Extracting hits from honeypot {honeypot}")
             strategy = factory.get_strategy(honeypot)
             try:
@@ -87,4 +87,5 @@ class ExtractionPipeline:
         self.log.info("Updating scores")
         if ioc_records:
             UpdateScores().score_only(ioc_records)
+
         return len(ioc_records)
