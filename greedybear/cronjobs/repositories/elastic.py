@@ -37,7 +37,7 @@ class ElasticRepository:
         Args:
             minutes_back_to_lookup: Number of minutes to look back from the current
                 time when searching for honeypot hits.
-            honeypot_name: The  name/type of the honeypot to check for hits.
+            honeypot_name: The name/type of the honeypot to check for hits.
 
         Returns:
             True if at least one hit was recorded for the specified honeypot within
@@ -86,7 +86,6 @@ class ElasticRepository:
             )
         else:
             q = self._standard_query(minutes_back_to_lookup)
-
         search = search.query(q)
         search.source(REQUIRED_FIELDS)
         result = list(search.scan())
@@ -96,19 +95,32 @@ class ElasticRepository:
         self.search_cache[minutes_back_to_lookup] = result
         return result
 
-    def group_hits_by_honeypot(self, minutes_back_to_lookup: int) -> dict[str, list[dict]]:
+    def group_hits_by_honeypot(self, minutes_back_to_lookup: int):
         """
-        Use Elasticsearch aggregations to group hits by honeypot type.
+        Stream hits grouped by honeypot type without loading all data into memory.
 
-        Returns:
-            dict[str, list[dict]]: Mapping honeypot type -> list of hit _source dicts.
+        This generator yields (honeypot_type, hits_list) tuples one at a time,
+        ensuring that only one honeypot's data is in memory at any given moment.
+
+        Uses a two-phase approach:
+        1. Get list of honeypot types using a lightweight terms aggregation
+        2. For each type, stream hits using scan() API
+
+        Args:
+            minutes_back_to_lookup: Number of minutes to look back from current time.
+
+        Yields:
+            tuple: (honeypot_type: str, hits: list[dict]) for each honeypot type.
+
+        Raises:
+            ElasticServerDownError: If Elasticsearch is unreachable.
         """
         self._healthcheck()
-        self.log.debug("grouping hits by honeypot using Elasticsearch aggregations")
+        self.log.debug("streaming hits by honeypot using Elasticsearch scan API")
         window_start, window_end = get_time_window(datetime.now(), minutes_back_to_lookup)
-        self.log.debug(f"time window for aggregation: {window_start} - {window_end}")
+        self.log.debug(f"time window: {window_start} - {window_end}")
 
-        # Build the query part (same semantics as _standard_query)
+        # Phase 1: Get list of honeypot types (lightweight aggregation)
         query = {
             "range": {
                 "@timestamp": {
@@ -118,29 +130,15 @@ class ElasticRepository:
             }
         }
 
-        # Build aggregation body
-        body = {
+        agg_body = {
             "query": query,
             "size": 0,
             "aggs": {
-                "by_type": {
+                "honeypot_types": {
                     "terms": {
-                        # adjust field name if needed (e.g. just "type")
                         "field": "type.keyword",
-                        # upper bound on distinct honeypot types
-                        "size": 100,
-                    },
-                    "aggs": {
-                        "hits_per_type": {
-                            "top_hits": {
-                                # this limits per-honeypot hits returned;
-                                # increase if your volumes demand it
-                                "size": 10000,
-                                "_source": REQUIRED_FIELDS,
-                                "sort": [{"@timestamp": {"order": "asc"}}],
-                            }
-                        }
-                    },
+                        "size": 100,  # Max distinct honeypot types
+                    }
                 }
             },
         }
@@ -148,48 +146,50 @@ class ElasticRepository:
         try:
             response = self.elastic_client.search(
                 index="logstash-*",
-                body=body,
+                body=agg_body,
             )
         except es_exceptions.ConnectionError as exc:
-            raise self.ElasticServerDownError(f"elastic server is not reachable, could be down: {exc}") from exc
+            raise self.ElasticServerDownError(
+                f"elastic server is not reachable, could be down: {exc}"
+            ) from exc
 
-        buckets = response.get("aggregations", {}).get("by_type", {}).get("buckets", [])
+        buckets = response.get("aggregations", {}).get("honeypot_types", {}).get("buckets", [])
+        honeypot_types = [bucket["key"] for bucket in buckets if "key" in bucket]
 
-        grouped: dict[str, list[dict]] = {}
+        self.log.debug(f"found {len(honeypot_types)} honeypot types")
 
-        for bucket in buckets:
-            honeypot_type = bucket.get("key")
-            if honeypot_type is None:
-                continue
+        # Phase 2: For each honeypot type, stream hits using scan()
+        for honeypot_type in honeypot_types:
+            self.log.debug(f"streaming hits for honeypot type: {honeypot_type}")
 
-            hits_wrapper = bucket.get("hits_per_type", {}).get("hits", {})
-            hits = hits_wrapper.get("hits", [])
-            docs: list[dict] = []
+            # Create search filtered by honeypot type
+            search = Search(using=self.elastic_client, index="logstash-*")
+            q = Q("range", **{"@timestamp": {"gte": window_start, "lt": window_end}})
+            search = search.query(q)
+            search = search.filter("term", **{"type.keyword": honeypot_type})
+            search = search.source(REQUIRED_FIELDS)
+            search = search.sort("@timestamp")
 
-            for hit in hits:
-                source = hit.get("_source", {})
+            # Stream hits and collect them for this honeypot type
+            hits = []
+            for hit in search.scan():
+                source = hit.to_dict()
 
-                # skip hits with non-existing or empty sources
+                # Skip hits with invalid src_ip
                 src_ip = source.get("src_ip", "")
                 if not isinstance(src_ip, str) or not src_ip.strip():
                     continue
 
-                # skip hits with non-existing or empty types (=honeypots)
+                # Skip hits with invalid type
                 hit_type = source.get("type", "")
                 if not isinstance(hit_type, str) or not hit_type.strip():
                     continue
 
-                docs.append(source)
+                hits.append(source)
 
-            if docs:
-                grouped[honeypot_type] = docs
-
-        self.log.debug(
-            "aggregation produced %d honeypots and %d total hits",
-            len(grouped),
-            sum(len(v) for v in grouped.values()),
-        )
-        return grouped
+            if hits:
+                self.log.debug(f"yielding {len(hits)} hits for {honeypot_type}")
+                yield (honeypot_type, hits)
 
     def _standard_query(self, minutes_back_to_lookup: int) -> Q:
         """
@@ -198,13 +198,12 @@ class ElasticRepository:
         specified number of minutes.
 
         Args:
-            minutes_back_to_lookup: Number of minutes to look back from the
-                current time. Defines the size of the time window to search.
+            minutes_back_to_lookup: Number of minutes to look back from the current time.
+                Defines the size of the time window to search.
 
         Returns:
-            Q: An elasticsearch-dsl Query object with a range filter on the
-            @timestamp field. The range spans from (now - minutes_back_to_lookup)
-            to now.
+            Q: An elasticsearch-dsl Query object with a range filter on the @timestamp field.
+                The range spans from (now - minutes_back_to_lookup) to now.
         """
         self.log.debug("querying elastic using standard method")
         window_start, window_end = get_time_window(datetime.now(), minutes_back_to_lookup)
@@ -230,7 +229,8 @@ def get_time_window(
     extraction_interval: int = EXTRACTION_INTERVAL,
 ) -> tuple[datetime, datetime]:
     """
-    Calculates a time window that ends at the last completed extraction interval and looks back a specified number of minutes.
+    Calculates a time window that ends at the last completed extraction interval
+    and looks back a specified number of minutes.
 
     Args:
         reference_time (datetime): Reference point in time
