@@ -9,6 +9,7 @@ from django_test_migrations.migrator import Migrator
 from greedybear.models import (
     IOC,
     CommandSequence,
+    CowrieCredential,
     CowrieSession,
     GeneralHoneypot,
     IocType,
@@ -149,6 +150,8 @@ class CustomTestCase(TestCase):
             commands=cls.command_sequence,
         )
         cls.cowrie_session.save()
+        # Create normalized credential record
+        CowrieCredential.objects.create(session=cls.cowrie_session, username="root", password="root")
 
         cls.cmd_seq_2 = ["cd bar", "ls -la"]
         cls.command_sequence_2 = CommandSequence.objects.create(
@@ -172,6 +175,8 @@ class CustomTestCase(TestCase):
             commands=cls.command_sequence_2,
         )
         cls.cowrie_session_2.save()
+        # Create normalized credential record
+        CowrieCredential.objects.create(session=cls.cowrie_session_2, username="user", password="user")
 
         try:
             cls.superuser = User.objects.get(is_superuser=True)
@@ -188,6 +193,7 @@ class CustomTestCase(TestCase):
         GeneralHoneypot.objects.all().delete()
         IOC.objects.all().delete()
         CowrieSession.objects.all().delete()
+        CowrieCredential.objects.all().delete()
         CommandSequence.objects.all().delete()
 
 

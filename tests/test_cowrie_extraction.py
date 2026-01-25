@@ -234,11 +234,35 @@ class TestCowrieExtractionStrategy(ExtractionTestCase):
         }
         ioc = Mock(name="1.2.3.4")
 
-        self.strategy._process_session_hit(session_record, hit, ioc)
+        result = self.strategy._process_session_hit(session_record, hit, ioc)
 
         self.assertTrue(session_record.login_attempt)
-        self.assertIn("root | password123", session_record.credentials)
+        # ArrayField is no longer populated
+        self.assertEqual(len(session_record.credentials), 0)
         self.assertEqual(session_record.source.login_attempts, 1)
+        # Check returned credentials
+        self.assertEqual(result, ("root", "password123"))
+
+    def test_process_session_hit_truncation(self):
+        """Test that excessive credential length is truncated."""
+        session_record = Mock()
+        session_record.credentials = []
+        session_record.source = Mock(login_attempts=0)
+
+        hit = {
+            "eventid": "cowrie.login.failed",
+            "timestamp": "2023-01-01T10:00:01",
+            "username": "u" * 300,
+            "password": "p" * 300,
+        }
+        ioc = Mock(name="1.2.3.4")
+
+        username, password = self.strategy._process_session_hit(session_record, hit, ioc)
+
+        self.assertEqual(len(username), 256)
+        self.assertEqual(len(password), 256)
+        self.assertTrue(username.startswith("uuuu"))
+        self.assertTrue(password.startswith("pppp"))
 
     def test_process_session_hit_command_input(self):
         """Test processing of command input event."""

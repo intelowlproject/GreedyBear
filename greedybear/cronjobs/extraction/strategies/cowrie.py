@@ -17,7 +17,7 @@ from greedybear.cronjobs.repositories import (
     IocRepository,
     SensorRepository,
 )
-from greedybear.models import IOC, CommandSequence, CowrieSession
+from greedybear.models import IOC, CommandSequence, CowrieCredential, CowrieSession
 from greedybear.regex import REGEX_URL_PROTOCOL
 
 
@@ -212,8 +212,11 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
         for sid, session_hits in hits_per_session.items():
             session_record = self.session_repo.get_or_create_session(session_id=sid, source=ioc)
 
+            credentials_to_create = []
             for hit in sorted(session_hits, key=lambda hit: hit["timestamp"]):
-                self._process_session_hit(session_record, hit, ioc)
+                cred = self._process_session_hit(session_record, hit, ioc)
+                if cred:
+                    credentials_to_create.append(cred)
 
             if session_record.commands is not None:
                 self._deduplicate_command_sequence(session_record)
@@ -223,9 +226,17 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
             self.ioc_repo.save(session_record.source)
             self.session_repo.save_session(session_record)
 
+            # Create normalized credential records after session is saved
+            for username, password in credentials_to_create:
+                CowrieCredential.objects.get_or_create(
+                    session=session_record,
+                    username=username[:256],
+                    password=password[:256],
+                )
+
         self.log.info(f"{len(hits_per_session)} sessions added")
 
-    def _process_session_hit(self, session_record: CowrieSession, hit: dict, ioc: IOC) -> None:
+    def _process_session_hit(self, session_record: CowrieSession, hit: dict, ioc: IOC) -> tuple[str, str] | None:
         """
         Process a single hit and update the session record.
 
@@ -242,10 +253,11 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
 
             case "cowrie.login.failed" | "cowrie.login.success":
                 session_record.login_attempt = True
-                username = normalize_credential_field(hit["username"])
-                password = normalize_credential_field(hit["password"])
-                session_record.credentials.append(f"{username} | {password}")
+                username = normalize_credential_field(hit["username"])[:256]
+                password = normalize_credential_field(hit["password"])[:256]
+                # Legacy ArrayField population removed to avoid duplication
                 session_record.source.login_attempts += 1
+                return username, password
 
             case "cowrie.command.input":
                 self.log.info(f"found a command execution from {ioc.name}")
@@ -263,6 +275,7 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
                 session_record.duration = hit["duration"]
 
         session_record.interaction_count += 1
+        return None
 
     def _add_fks(self, scanner_ip: str, hostname: str) -> None:
         """

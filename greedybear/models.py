@@ -3,6 +3,7 @@
 from datetime import datetime
 
 from django.contrib.postgres import fields as pg_fields
+from django.contrib.postgres.indexes import GinIndex
 from django.db import models
 from django.db.models.functions import Lower
 
@@ -122,10 +123,49 @@ class CowrieSession(models.Model):
     class Meta:
         indexes = [
             models.Index(fields=["source"]),
+            GinIndex(fields=["credentials"], name="greedybear_credentials_gin_idx"),
         ]
 
     def __str__(self):
         return f"Session {hex(self.session_id)[2:]} from {self.source.name}"
+
+
+class CowrieCredential(models.Model):
+    """
+    Stores individual credentials associated with Cowrie sessions.
+
+    Each credential is stored as a separate row, allowing efficient
+    querying and indexing on username/password fields.
+    """
+
+    id = models.AutoField(primary_key=True)
+    session = models.ForeignKey(
+        CowrieSession,
+        on_delete=models.CASCADE,
+        related_name="credential_set",
+        db_index=True,
+        null=False,
+        blank=False,
+    )
+    username = models.CharField(max_length=256, blank=True, null=False)
+    password = models.CharField(max_length=256, blank=True, null=False)
+
+    class Meta:
+        db_table = "greedybear_cowriecredential"
+        # Index Strategy:
+        # 1. cowriecred_pass_idx: Essential for exact password searches which are the primary query pattern.
+        # 2. cowriecred_user_pass_idx: Composite index covers queries filtering by both fields and enforces uniqueness.
+        # 3. functional index (LOWER(password)): Created via RunSQL for potential case-insensitive lookups.
+        indexes = [
+            models.Index(fields=["password"], name="cowriecred_pass_idx"),
+            models.Index(fields=["username", "password"], name="cowriecred_user_pass_idx"),
+        ]
+        # unique_together prevents duplicate credential pairs for the same session.
+        # We generally don't need timestamp granularity for credentials within a single session.
+        unique_together = [["session", "username", "password"]]
+
+    def __str__(self):
+        return f"{self.username} | {self.password}"
 
 
 class Statistics(models.Model):
