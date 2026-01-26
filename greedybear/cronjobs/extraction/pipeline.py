@@ -56,16 +56,16 @@ class ExtractionPipeline:
         """
         # 1. Stream hits grouped by honeypot type and process immediately
         self.log.info("Streaming honeypot hits from Elasticsearch")
-        
+
         ioc_records = []
-        
+
         # Process each honeypot type as it's yielded - no intermediate storage
         for honeypot, hits in self.elastic_repo.group_hits_by_honeypot(self._minutes_back_to_lookup):
             # Extract sensor information for this batch
             for hit in hits:
                 if "t-pot_ip_ext" in hit:
                     self.sensor_repo.add_sensor(hit["t-pot_ip_ext"])
-            
+
             # 2. Extract IOCs immediately for this honeypot type
             if not self.ioc_repo.is_ready_for_extraction(honeypot):
                 self.log.info(f"Skipping honeypot {honeypot}")
