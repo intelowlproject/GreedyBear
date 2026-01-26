@@ -47,30 +47,26 @@ class ExtractionPipeline:
         Execute the extraction pipeline.
 
         Performs the following steps:
-        1. Search Elasticsearch for honeypot log entries
-        2. Group hits by honeypot type and extract sensors
-        3. Apply honeypot-specific extraction strategies
-        4. Update IOC scores
+        1. Stream hits grouped by honeypot type from Elasticsearch
+        2. Extract IOCs immediately for each honeypot type (no intermediate storage)
+        3. Update scores for all extracted IOCs
 
         Returns:
             Number of IOC records processed.
         """
-        # 1. Stream hits grouped by honeypot type
+        # 1. Stream hits grouped by honeypot type and process immediately
         self.log.info("Streaming honeypot hits from Elasticsearch")
-
-        # Consume generator and build defaultdict for subsequent processing
-        hits_by_honeypot = defaultdict(list)
+        
+        ioc_records = []
+        
+        # Process each honeypot type as it's yielded - no intermediate storage
         for honeypot, hits in self.elastic_repo.group_hits_by_honeypot(self._minutes_back_to_lookup):
-            # Extract sensor information here to preserve previous behaviour
+            # Extract sensor information for this batch
             for hit in hits:
                 if "t-pot_ip_ext" in hit:
                     self.sensor_repo.add_sensor(hit["t-pot_ip_ext"])
-                hits_by_honeypot[honeypot].append(hit)
-
-        # 3. Extract using strategies
-        ioc_records = []
-        factory = ExtractionStrategyFactory(self.ioc_repo, self.sensor_repo)
-        for honeypot, hits in sorted(hits_by_honeypot.items()):
+            
+            # 2. Extract IOCs immediately for this honeypot type
             if not self.ioc_repo.is_ready_for_extraction(honeypot):
                 self.log.info(f"Skipping honeypot {honeypot}")
                 continue
@@ -78,12 +74,14 @@ class ExtractionPipeline:
             self.log.info(f"Extracting hits from honeypot {honeypot}")
             strategy = factory.get_strategy(honeypot)
             try:
-                strategy.extract_from_hits(hits)
-                ioc_records += strategy.ioc_records
-            except Exception as exc:
-                self.log.error(f"Extraction failed for honeypot {honeypot}: {exc}")
+                # Process these hits immediately and discard them
+                extracted = strategy.extract_all(hits)
+                ioc_records.extend(extracted)
+                self.log.info(f"Extracted {len(extracted)} IOCs from {honeypot}")
+            except Exception as e:
+                self.log.error(f"Failed extracting from {honeypot}: {e}")
 
-        # 4. Update scores
+        # 3. Update scores
         self.log.info("Updating scores")
         if ioc_records:
             UpdateScores().score_only(ioc_records)

@@ -99,18 +99,18 @@ class ElasticRepository:
         """
         Stream hits grouped by honeypot type without loading all data into memory.
 
-        This generator yields (honeypot_type, hits_list) tuples one at a time,
-        ensuring that only one honeypot's data is in memory at any given moment.
+        This generator yields (honeypot_type, hits_list) tuples in chunks,
+        ensuring that only a small batch of hits is in memory at any given moment.
 
         Uses a two-phase approach:
         1. Get list of honeypot types using a lightweight terms aggregation
-        2. For each type, stream hits using scan() API
+        2. For each type, stream hits using scan() API in chunks
 
         Args:
             minutes_back_to_lookup: Number of minutes to look back from current time.
 
         Yields:
-            tuple: (honeypot_type: str, hits: list[dict]) for each honeypot type.
+            tuple: (honeypot_type: str, hits: list[dict]) for each chunk of each honeypot type.
 
         Raises:
             ElasticServerDownError: If Elasticsearch is unreachable.
@@ -156,7 +156,9 @@ class ElasticRepository:
 
         self.log.debug(f"found {len(honeypot_types)} honeypot types")
 
-        # Phase 2: For each honeypot type, stream hits using scan()
+        # Phase 2: For each honeypot type, stream hits in chunks using scan()
+        CHUNK_SIZE = 1000  # Process 1000 hits at a time to limit memory usage
+        
         for honeypot_type in honeypot_types:
             self.log.debug(f"streaming hits for honeypot type: {honeypot_type}")
 
@@ -168,8 +170,10 @@ class ElasticRepository:
             search = search.source(REQUIRED_FIELDS)
             search = search.sort("@timestamp")
 
-            # Stream hits and collect them for this honeypot type
-            hits = []
+            # Stream hits and collect them in chunks
+            chunk = []
+            total_for_type = 0
+            
             for hit in search.scan():
                 source = hit.to_dict()
 
@@ -183,11 +187,22 @@ class ElasticRepository:
                 if not isinstance(hit_type, str) or not hit_type.strip():
                     continue
 
-                hits.append(source)
+                chunk.append(source)
+                
+                # Yield when chunk is full
+                if len(chunk) >= CHUNK_SIZE:
+                    total_for_type += len(chunk)
+                    self.log.debug(f"yielding chunk of {len(chunk)} hits for {honeypot_type}")
+                    yield (honeypot_type, chunk)
+                    chunk = []  # Clear chunk after yielding
 
-            if hits:
-                self.log.debug(f"yielding {len(hits)} hits for {honeypot_type}")
-                yield (honeypot_type, hits)
+            # Yield remaining hits in final chunk
+            if chunk:
+                total_for_type += len(chunk)
+                self.log.debug(f"yielding final chunk of {len(chunk)} hits for {honeypot_type}")
+                yield (honeypot_type, chunk)
+            
+            self.log.debug(f"finished streaming {total_for_type} total hits for {honeypot_type}")
 
     def _standard_query(self, minutes_back_to_lookup: int) -> Q:
         """
