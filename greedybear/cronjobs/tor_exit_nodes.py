@@ -50,6 +50,6 @@ class TorExitNodesCron(Cronjob):
 
     def _update_old_ioc(self, ip_address: str):
         """Update the IP reputation of an existing IOC to mark it as a Tor exit node."""
-        updated = self.ioc_repo.update_ioc_reputation(ip_address, "Tor Exit Node")
+        updated = self.ioc_repo.update_ioc_reputation(ip_address, "tor exit node")
         if updated:
-            self.log.debug(f"Updated IOC {ip_address} reputation to 'Tor Exit Node'")
+            self.log.debug(f"Updated IOC {ip_address} reputation to 'tor exit node'")

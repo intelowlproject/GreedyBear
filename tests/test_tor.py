@@ -26,7 +26,7 @@ class TestTorRepository(CustomTestCase):
 
         # Assert
         self.assertTrue(created)
-        mock_get_or_create.assert_called_once_with(ip_address="1.2.3.4", defaults={"reason": "Tor Exit Node"})
+        mock_get_or_create.assert_called_once_with(ip_address="1.2.3.4", defaults={"reason": "tor exit node"})
 
     @patch("greedybear.models.TorExitNode.objects.get_or_create")
     def test_get_or_create_existing_tor_node(self, mock_get_or_create):
@@ -94,4 +94,4 @@ class TestTorExitNodesCron(CustomTestCase):
         self.cron._update_old_ioc("1.2.3.4")
 
         # Assert
-        self.mock_ioc_repo.update_ioc_reputation.assert_called_once_with("1.2.3.4", "Tor Exit Node")
+        self.mock_ioc_repo.update_ioc_reputation.assert_called_once_with("1.2.3.4", "tor exit node")

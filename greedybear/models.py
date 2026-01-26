@@ -159,7 +159,7 @@ class MassScanner(models.Model):
 class TorExitNode(models.Model):
     ip_address = models.CharField(max_length=256, blank=False, unique=True)
     added = models.DateTimeField(blank=False, default=datetime.now)
-    reason = models.CharField(max_length=64, blank=True, default="Tor Exit Node")
+    reason = models.CharField(max_length=64, blank=True, default="tor exit node")
 
     class Meta:
         indexes = [
@@ -167,7 +167,7 @@ class TorExitNode(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.ip_address} (Tor Exit Node)"
+        return f"{self.ip_address} (tor exit node)"
 
 
 class WhatsMyIPDomain(models.Model):
