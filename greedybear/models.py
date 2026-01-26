@@ -154,6 +154,20 @@ class MassScanner(models.Model):
         return f"{self.ip_address}{f' ({self.reason})' if self.reason else ''}"
 
 
+class TorExitNode(models.Model):
+    ip_address = models.CharField(max_length=256, blank=False, unique=True)
+    added = models.DateTimeField(blank=False, default=datetime.now)
+    reason = models.CharField(max_length=64, blank=True, default="tor exit node")
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["ip_address"]),
+        ]
+
+    def __str__(self):
+        return f"{self.ip_address} (tor exit node)"
+
+
 class WhatsMyIPDomain(models.Model):
     domain = models.CharField(max_length=256, blank=False)
     added = models.DateTimeField(blank=False, default=datetime.now)

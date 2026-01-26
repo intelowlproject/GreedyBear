@@ -117,4 +117,9 @@ app.conf.beat_schedule = {
         "schedule": crontab(hour=4, minute=15, day_of_week=0),
         "options": {"queue": "default"},
     },
+    "get_tor_exit_nodes": {
+        "task": "greedybear.tasks.get_tor_exit_nodes",
+        "schedule": crontab(hour=4, minute=30, day_of_week=0),
+        "options": {"queue": "default"},
+    },
 }

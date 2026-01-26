@@ -15,10 +15,18 @@ from greedybear.models import (
     MassScanner,
     Sensor,
     Statistics,
+    TorExitNode,
     WhatsMyIPDomain,
 )
 
 logger = logging.getLogger(__name__)
+
+
+@admin.register(TorExitNode)
+class TorExitNodeModelAdmin(admin.ModelAdmin):
+    list_display = ["ip_address", "added", "reason"]
+    search_fields = ["ip_address"]
+    search_help_text = ["search for the IP address"]
 
 
 @admin.register(Sensor)
