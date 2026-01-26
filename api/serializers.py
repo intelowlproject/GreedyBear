@@ -118,8 +118,6 @@ class FeedsRequestSerializer(serializers.Serializer):
         return ordering_validation(ordering)
 
 
-# NOTE: While the FeedsRequestSerializer enforces ordering on db
-# Model fields, aggregation requires ordering by non-model, which is annotated fields
 class ASNFeedsOrderingSerializer(FeedsRequestSerializer):
     ALLOWED_ORDERING_FIELDS = frozenset(
         {
@@ -140,7 +138,10 @@ class ASNFeedsOrderingSerializer(FeedsRequestSerializer):
 
         if field_name not in self.ALLOWED_ORDERING_FIELDS:
             raise serializers.ValidationError(
-                {f"Invalid ordering field for ASN aggregated feed: '{field_name}'. Allowed fields: {', '.join(sorted(self.ALLOWED_ORDERING_FIELDS))}"}
+                f"""
+                 Invalid ordering field for ASN aggregated feed: '{field_name}'.
+                 Allowed fields: {", ".join(sorted(self.ALLOWED_ORDERING_FIELDS))}
+                """
             )
 
         return ordering

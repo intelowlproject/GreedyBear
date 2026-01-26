@@ -170,18 +170,12 @@ def get_queryset(request, feed_params, valid_feed_types, is_aggregated=False, se
     if feed_params.include_reputation:
         query_dict["ip_reputation__in"] = feed_params.include_reputation
 
-    iocs = (
-        IOC.objects.filter(**query_dict)
-        .filter(general_honeypot__active=True)
-        .exclude(ip_reputation__in=feed_params.exclude_reputation)
-        .annotate(value=F("name"))
-        .annotate(honeypots=ArrayAgg("general_honeypot__name"))
-        .distinct()
-    )
+    iocs = IOC.objects.filter(**query_dict).exclude(ip_reputation__in=feed_params.exclude_reputation).annotate(value=F("name")).distinct()
 
-    # aggregated endpoints should operate on the full queryset
-    # to compute sums, counts, and other metrics correctly.
+    # aggregated feeds calculate metrics differently and need all rows to be accurate.
     if not is_aggregated:
+        iocs = iocs.filter(general_honeypot__active=True)
+        iocs = iocs.annotate(honeypots=ArrayAgg("general_honeypot__name"))
         iocs = iocs.order_by(feed_params.ordering)
         iocs = iocs[: int(feed_params.feed_size)]
 
@@ -333,27 +327,6 @@ def is_sha256hash(string: str) -> bool:
     return bool(re.fullmatch(r"^[A-Fa-f0-9]{64}$", string))
 
 
-def resolve_aggregation_ordering(ordering, *, default, fallback_fields=None):
-    """
-    Resolve effective ordering for aggregated endpoints.
-
-    Args
-        ordering (str or None): The user-provided ordering string from query params.
-        default (str): The default ordering to use if `ordering` is None or in fallback_fields.
-        fallback_fields (set[str], optional): A set of orderings that are allowed in other
-            contexts but should be overridden here. Defaults to None.
-
-    Returns
-        str: A safe ordering string to use directly in the aggregation query.
-    """
-    fallback_fields = fallback_fields or set()
-
-    if not ordering or ordering in fallback_fields:
-        return default
-
-    return ordering
-
-
 def asn_aggregated_queryset(iocs_qs, request, feed_params):
     """
     Perform DB-level aggregation grouped by ASN.
@@ -365,40 +338,52 @@ def asn_aggregated_queryset(iocs_qs, request, feed_params):
 
     Returns: A values-grouped queryset with annotated  metrics and honeypot arrays.
     """
-    # optional asn params for single asn filter
     asn_filter = request.query_params.get("asn")
     if asn_filter:
         iocs_qs = iocs_qs.filter(asn=asn_filter)
 
-    aggregated = (
+    # default ordering is overridden here because of serializer default(-last-seen) behaviour
+    ordering = feed_params.ordering
+    if not ordering or ordering.strip() in {"", "-last_seen", "last_seen"}:
+        ordering = "-ioc_count"
+
+    numeric_agg = (
         iocs_qs.exclude(asn__isnull=True)
         .values("asn")
         .annotate(
-            ioc_count=Count("id", distinct=True),
-            total_attack_count=Sum("attack_count", distinct=True),
-            total_interaction_count=Sum("interaction_count", distinct=True),
-            total_login_attempts=Sum("login_attempts", distinct=True),
-            expected_ioc_count=Sum("recurrence_probability", distinct=True),
-            expected_interactions=Sum("expected_interactions", distinct=True),
-            honeypots=ArrayAgg(
-                "general_honeypot__name",
-                filter=Q(general_honeypot__name__isnull=False),
-                distinct=True,
-            ),
+            ioc_count=Count("id"),
+            total_attack_count=Sum("attack_count"),
+            total_interaction_count=Sum("interaction_count"),
+            total_login_attempts=Sum("login_attempts"),
+            expected_ioc_count=Sum("recurrence_probability"),
+            expected_interactions=Sum("expected_interactions"),
             first_seen=Min("first_seen"),
             last_seen=Max("last_seen"),
         )
+        .order_by(ordering)
     )
 
-    resolved_ordering = resolve_aggregation_ordering(
-        ordering=feed_params.ordering,
-        default="-ioc_count",
-        fallback_fields={"-last_seen"},
+    honeypot_agg = (
+        iocs_qs.exclude(asn__isnull=True)
+        .filter(general_honeypot__active=True)
+        .values("asn")
+        .annotate(
+            honeypots=ArrayAgg(
+                "general_honeypot__name",
+                distinct=True,
+                filter=Q(general_honeypot__active=True),
+            )
+        )
     )
 
-    direction = "-" if resolved_ordering.startswith("-") else ""
-    field = resolved_ordering.lstrip("-").strip()
+    hp_lookup = {row["asn"]: row["honeypots"] or [] for row in honeypot_agg}
 
-    aggregated = aggregated.order_by(f"{direction}{field}")
+    # merging numeric aggregate with honeypot names for each asn
+    result = []
+    for row in numeric_agg:
+        asn = row["asn"]
+        row_dict = dict(row)
+        row_dict["honeypots"] = sorted(hp_lookup.get(asn, []))
+        result.append(row_dict)
 
-    return aggregated
+    return result
