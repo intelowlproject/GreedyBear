@@ -30,7 +30,7 @@ docstring-code-format = true
 
 indent-style = "space"
 
-line-ending = "native"
+line-ending = "lf"
 
 quote-style = "double"
 
