@@ -7,50 +7,15 @@ Tests the complete extraction workflow from Elasticsearch hits
 through strategy selection, IOC extraction, and scoring.
 """
 
-from datetime import datetime
 from unittest.mock import MagicMock, patch
 
-from greedybear.models import IOC
-from tests import CustomTestCase
+from tests import ExtractionTestCase
 
 
-class ExtractionPipelineTestCase(CustomTestCase):
-    def setUp(self):
-        super().setUp()
-        self.mock_ioc_repo = MagicMock()
-        self.mock_sensor_repo = MagicMock()
-        self.mock_session_repo = MagicMock()
+class ExtractionPipelineTestCase(ExtractionTestCase):
+    """Base test case for extraction pipeline tests, reusing common extraction helpers."""
 
-    def _create_mock_ioc(
-        self,
-        name="1.2.3.4",
-        ioc_type="ip",
-        attack_count=1,
-        interaction_count=1,
-        related_urls=None,
-        destination_ports=None,
-        login_attempts=0,
-        days_seen=None,
-        last_seen=None,
-        ip_reputation="",
-        asn=1234,
-    ):
-        mock = MagicMock(spec=IOC)
-        mock.name = name
-        mock.type = ioc_type
-        mock.scanner = False
-        mock.payload_request = False
-        mock.attack_count = attack_count
-        mock.interaction_count = interaction_count
-        mock.related_urls = related_urls if related_urls is not None else []
-        mock.destination_ports = destination_ports if destination_ports is not None else []
-        mock.days_seen = days_seen if days_seen is not None else []
-        mock.login_attempts = login_attempts
-        mock.last_seen = last_seen if last_seen is not None else datetime.now()
-        mock.ip_reputation = ip_reputation
-        mock.asn = asn
-        mock.number_of_days_seen = len(mock.days_seen)
-        return mock
+    pass
 
 
 class MockElasticHit:
