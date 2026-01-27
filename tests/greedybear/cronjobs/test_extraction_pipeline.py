@@ -439,16 +439,23 @@ class TestExecuteScoring(ExtractionPipelineTestCase):
 class TestExecuteEmptyResponse(ExtractionPipelineTestCase):
     """Tests for empty Elasticsearch response handling."""
 
+    def _create_pipeline_with_mocks(self):
+        """Helper to create a pipeline with mocked dependencies."""
+        with (
+            patch("greedybear.cronjobs.extraction.pipeline.SensorRepository"),
+            patch("greedybear.cronjobs.extraction.pipeline.IocRepository"),
+            patch("greedybear.cronjobs.extraction.pipeline.ElasticRepository"),
+        ):
+            from greedybear.cronjobs.extraction.pipeline import ExtractionPipeline
+
+            pipeline = ExtractionPipeline()
+            return pipeline
+
     @patch("greedybear.cronjobs.extraction.pipeline.UpdateScores")
     @patch("greedybear.cronjobs.extraction.pipeline.ExtractionStrategyFactory")
-    @patch("greedybear.cronjobs.extraction.pipeline.SensorRepository")
-    @patch("greedybear.cronjobs.extraction.pipeline.IocRepository")
-    @patch("greedybear.cronjobs.extraction.pipeline.ElasticRepository")
-    def test_handles_empty_search_result(self, mock_elastic, mock_ioc, mock_sensor, mock_factory, mock_scores):
+    def test_handles_empty_search_result(self, mock_factory, mock_scores):
         """Should handle empty Elasticsearch response gracefully."""
-        from greedybear.cronjobs.extraction.pipeline import ExtractionPipeline
-
-        pipeline = ExtractionPipeline()
+        pipeline = self._create_pipeline_with_mocks()
         pipeline.elastic_repo.search.return_value = []
         pipeline.ioc_repo.is_empty.return_value = False
 
