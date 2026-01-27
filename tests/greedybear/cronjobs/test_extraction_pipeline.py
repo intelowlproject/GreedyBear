@@ -317,6 +317,8 @@ class TestExecuteStrategySelection(ExtractionPipelineTestCase):
     def test_handles_strategy_exception_gracefully(self, mock_factory, mock_scores):
         """Strategy exceptions should be caught and logged, not crash pipeline."""
         pipeline = self._create_pipeline_with_mocks()
+        pipeline.log = MagicMock()
+
         pipeline.elastic_repo.search.return_value = [
             MockElasticHit({"src_ip": "1.2.3.4", "type": "Cowrie"}),
             MockElasticHit({"src_ip": "5.6.7.8", "type": "Log4pot"}),
@@ -337,6 +339,7 @@ class TestExecuteStrategySelection(ExtractionPipelineTestCase):
         result = pipeline.execute()
 
         self.assertEqual(result, 1)
+        pipeline.log.error.assert_called_once()
 
 
 class TestExecuteScoring(ExtractionPipelineTestCase):
