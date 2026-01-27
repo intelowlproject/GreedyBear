@@ -138,10 +138,7 @@ class ASNFeedsOrderingSerializer(FeedsRequestSerializer):
 
         if field_name not in self.ALLOWED_ORDERING_FIELDS:
             raise serializers.ValidationError(
-                f"""
-                 Invalid ordering field for ASN aggregated feed: '{field_name}'.
-                 Allowed fields: {", ".join(sorted(self.ALLOWED_ORDERING_FIELDS))}
-                """
+                f"Invalid ordering field for ASN aggregated feed: '{field_name}'. Allowed fields: {', '.join(sorted(self.ALLOWED_ORDERING_FIELDS))}"
             )
 
         return ordering

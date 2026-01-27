@@ -8,7 +8,7 @@ from ipaddress import ip_address
 
 from django.conf import settings
 from django.contrib.postgres.aggregates import ArrayAgg
-from django.db.models import Count, F, Max, Min, Q, Sum
+from django.db.models import Count, F, Max, Min, Sum
 from django.http import HttpResponse, HttpResponseBadRequest, StreamingHttpResponse
 from rest_framework import status
 from rest_framework.response import Response
@@ -371,7 +371,6 @@ def asn_aggregated_queryset(iocs_qs, request, feed_params):
             honeypots=ArrayAgg(
                 "general_honeypot__name",
                 distinct=True,
-                filter=Q(general_honeypot__active=True),
             )
         )
     )
