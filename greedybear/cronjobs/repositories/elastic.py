@@ -157,7 +157,7 @@ class ElasticRepository:
         self.log.debug(f"found {len(honeypot_types)} honeypot types")
 
         # Phase 2: For each honeypot type, stream hits in chunks using scan()
-        CHUNK_SIZE = 1000  # Process 1000 hits at a time to limit memory usage
+        chunk_size = 1000  # Process 1000 hits at a time to limit memory usage
 
         for honeypot_type in honeypot_types:
             self.log.debug(f"streaming hits for honeypot type: {honeypot_type}")
@@ -190,7 +190,7 @@ class ElasticRepository:
                 chunk.append(source)
 
                 # Yield when chunk is full
-                if len(chunk) >= CHUNK_SIZE:
+                if len(chunk) >= chunk_size:
                     total_for_type += len(chunk)
                     self.log.debug(f"yielding chunk of {len(chunk)} hits for {honeypot_type}")
                     yield (honeypot_type, chunk)

@@ -1,7 +1,6 @@
 import logging
-from collections import defaultdict
 
-from greedybear.cronjobs.extraction.strategies.factory import ExtractionStrategyFactory
+from greedybear.cronjobs.extraction.strategies.factory import factory
 from greedybear.cronjobs.repositories import (
     ElasticRepository,
     IocRepository,
