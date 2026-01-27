@@ -194,10 +194,14 @@ class TestExecuteHitGrouping(ExtractionPipelineTestCase):
         self.assertEqual(result, 0)
         mock_factory.return_value.get_strategy.assert_not_called()
 
+    @patch("greedybear.cronjobs.extraction.pipeline.EXTRACTION_INTERVAL", 10)
     @patch("greedybear.cronjobs.extraction.pipeline.UpdateScores")
     @patch("greedybear.cronjobs.extraction.pipeline.ExtractionStrategyFactory")
     def test_extracts_sensor_from_hits(self, mock_factory, mock_scores):
-        """Should extract and register sensors from t-pot_ip_ext field."""
+        """
+        Should extract and register sensors from t-pot_ip_ext field.
+        Also verifies correct time window is passed to search().
+        """
         pipeline = self._create_pipeline_with_mocks()
         pipeline.elastic_repo.search.return_value = [
             MockElasticHit({"src_ip": "1.2.3.4", "type": "Cowrie", "t-pot_ip_ext": "10.0.0.1"}),
@@ -208,6 +212,7 @@ class TestExecuteHitGrouping(ExtractionPipelineTestCase):
         pipeline.execute()
 
         pipeline.sensor_repo.add_sensor.assert_called_once_with("10.0.0.1")
+        pipeline.elastic_repo.search.assert_called_once_with(10)
 
     @patch("greedybear.cronjobs.extraction.pipeline.UpdateScores")
     @patch("greedybear.cronjobs.extraction.pipeline.ExtractionStrategyFactory")
