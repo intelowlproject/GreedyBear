@@ -8,7 +8,7 @@ from ipaddress import ip_address
 
 from django.conf import settings
 from django.contrib.postgres.aggregates import ArrayAgg
-from django.db.models import F
+from django.db.models import Count, F, Max, Min, Sum
 from django.http import HttpResponse, HttpResponseBadRequest, StreamingHttpResponse
 from rest_framework import status
 from rest_framework.response import Response
@@ -121,7 +121,7 @@ def get_valid_feed_types() -> frozenset[str]:
     return frozenset(feed_types)
 
 
-def get_queryset(request, feed_params, valid_feed_types):
+def get_queryset(request, feed_params, valid_feed_types, is_aggregated=False, serializer_class=FeedsRequestSerializer):
     """
     Build a queryset to filter IOC data based on the request parameters.
 
@@ -129,6 +129,15 @@ def get_queryset(request, feed_params, valid_feed_types):
         request: The incoming request object.
         feed_params: A FeedRequestParams instance.
         valid_feed_types (frozenset): The set of all valid feed types.
+        is_aggregated (bool, optional):
+            - If True, disables slicing (`feed_size`) and model-level ordering.
+            - Ensures full dataset is available for aggregation or specialized computation.
+            - Default: False.
+        serializer_class (class, optional):
+            - Serializer class used to validate request parameters.
+            - Allows injecting a custom serializer to enforce rules for specific feed types
+              (e.g., to restrict ordering fields or validation for specialized feeds).
+            - Default: `FeedsRequestSerializer`.
 
     Returns:
         QuerySet: The filtered queryset of IOC data.
@@ -139,7 +148,7 @@ def get_queryset(request, feed_params, valid_feed_types):
         f"Age: {feed_params.max_age}, format: {feed_params.format}"
     )
 
-    serializer = FeedsRequestSerializer(
+    serializer = serializer_class(
         data=vars(feed_params),
         context={"valid_feed_types": valid_feed_types},
     )
@@ -161,15 +170,14 @@ def get_queryset(request, feed_params, valid_feed_types):
     if feed_params.include_reputation:
         query_dict["ip_reputation__in"] = feed_params.include_reputation
 
-    iocs = (
-        IOC.objects.filter(**query_dict)
-        .filter(general_honeypot__active=True)
-        .exclude(ip_reputation__in=feed_params.exclude_reputation)
-        .annotate(value=F("name"))
-        .annotate(honeypots=ArrayAgg("general_honeypot__name"))
-        .distinct()
-        .order_by(feed_params.ordering)[: int(feed_params.feed_size)]
-    )
+    iocs = IOC.objects.filter(**query_dict).exclude(ip_reputation__in=feed_params.exclude_reputation).annotate(value=F("name")).distinct()
+
+    # aggregated feeds calculate metrics differently and need all rows to be accurate.
+    if not is_aggregated:
+        iocs = iocs.filter(general_honeypot__active=True)
+        iocs = iocs.annotate(honeypots=ArrayAgg("general_honeypot__name"))
+        iocs = iocs.order_by(feed_params.ordering)
+        iocs = iocs[: int(feed_params.feed_size)]
 
     # save request source for statistics
     source_ip = str(request.META["REMOTE_ADDR"])
@@ -317,3 +325,64 @@ def is_sha256hash(string: str) -> bool:
         bool: True if the string is a valid SHA-256 hash, False otherwise
     """
     return bool(re.fullmatch(r"^[A-Fa-f0-9]{64}$", string))
+
+
+def asn_aggregated_queryset(iocs_qs, request, feed_params):
+    """
+    Perform DB-level aggregation grouped by ASN.
+
+    Args
+        iocs_qs (QuerySet): Filtered IOC queryset from get_queryset;
+        request (Request): The API request object;
+        feed_params (FeedRequestParams): Validated parameter object
+
+    Returns: A values-grouped queryset with annotated  metrics and honeypot arrays.
+    """
+    asn_filter = request.query_params.get("asn")
+    if asn_filter:
+        iocs_qs = iocs_qs.filter(asn=asn_filter)
+
+    # default ordering is overridden here because of serializer default(-last-seen) behaviour
+    ordering = feed_params.ordering
+    if not ordering or ordering.strip() in {"", "-last_seen", "last_seen"}:
+        ordering = "-ioc_count"
+
+    numeric_agg = (
+        iocs_qs.exclude(asn__isnull=True)
+        .values("asn")
+        .annotate(
+            ioc_count=Count("id"),
+            total_attack_count=Sum("attack_count"),
+            total_interaction_count=Sum("interaction_count"),
+            total_login_attempts=Sum("login_attempts"),
+            expected_ioc_count=Sum("recurrence_probability"),
+            expected_interactions=Sum("expected_interactions"),
+            first_seen=Min("first_seen"),
+            last_seen=Max("last_seen"),
+        )
+        .order_by(ordering)
+    )
+
+    honeypot_agg = (
+        iocs_qs.exclude(asn__isnull=True)
+        .filter(general_honeypot__active=True)
+        .values("asn")
+        .annotate(
+            honeypots=ArrayAgg(
+                "general_honeypot__name",
+                distinct=True,
+            )
+        )
+    )
+
+    hp_lookup = {row["asn"]: row["honeypots"] or [] for row in honeypot_agg}
+
+    # merging numeric aggregate with honeypot names for each asn
+    result = []
+    for row in numeric_agg:
+        asn = row["asn"]
+        row_dict = dict(row)
+        row_dict["honeypots"] = sorted(hp_lookup.get(asn, []))
+        result.append(row_dict)
+
+    return result
