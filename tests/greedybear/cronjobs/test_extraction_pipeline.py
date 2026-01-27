@@ -236,6 +236,19 @@ class TestExecuteHitGrouping(ExtractionPipelineTestCase):
         # Should be called for both honeypot types
         self.assertEqual(mock_factory.return_value.get_strategy.call_count, 2)
 
+        # Verify strategy is called with correct honeypot types
+        calls = mock_factory.return_value.get_strategy.call_args_list
+        honeypot_names = {call[0][0] for call in calls}
+        self.assertEqual(honeypot_names, {"Cowrie", "Log4pot"})
+
+        # Verify extract_from_hits is called twice
+        self.assertEqual(mock_strategy.extract_from_hits.call_count, 2)
+
+        # Verify each strategy received correct number of hits
+        extraction_calls = mock_strategy.extract_from_hits.call_args_list
+        hits_counts = sorted([len(call[0][0]) for call in extraction_calls])
+        self.assertEqual(hits_counts, [1, 2])  # 1 Log4pot hit, 2 Cowrie hits
+
 
 class TestExecuteStrategySelection(ExtractionPipelineTestCase):
     """Tests for strategy selection and execution in execute()."""
