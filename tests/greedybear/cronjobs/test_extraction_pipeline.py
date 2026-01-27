@@ -148,6 +148,7 @@ class TestExecuteHitGrouping(ExtractionPipelineTestCase):
         pipeline.elastic_repo.search.return_value = [
             MockElasticHit({"src_ip": "1.2.3.4"}),  # missing type
             MockElasticHit({"src_ip": "1.2.3.4", "type": ""}),  # empty type
+            MockElasticHit({"src_ip": "1.2.3.4", "type": "   "}),  # whitespace-only type
         ]
         pipeline.ioc_repo.is_empty.return_value = False
 
