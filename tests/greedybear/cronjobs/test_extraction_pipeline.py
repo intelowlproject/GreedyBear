@@ -321,6 +321,46 @@ class TestExecuteStrategySelection(ExtractionPipelineTestCase):
 
     @patch("greedybear.cronjobs.extraction.pipeline.UpdateScores")
     @patch("greedybear.cronjobs.extraction.pipeline.ExtractionStrategyFactory")
+    def test_accumulates_iocs_from_multiple_strategies(self, mock_factory, mock_scores):
+        """Should accumulate IOC records from multiple successful strategies."""
+        pipeline = self._create_pipeline_with_mocks()
+        pipeline.elastic_repo.search.return_value = [
+            MockElasticHit({"src_ip": "1.2.3.4", "type": "Cowrie"}),
+            MockElasticHit({"src_ip": "5.6.7.8", "type": "Log4pot"}),
+        ]
+        pipeline.ioc_repo.is_empty.return_value = False
+        pipeline.ioc_repo.is_ready_for_extraction.return_value = True
+
+        # Mock two different strategies
+        mock_cowrie_strategy = MagicMock()
+        mock_cowrie_ioc = self._create_mock_ioc("1.2.3.4")
+        mock_cowrie_strategy.ioc_records = [mock_cowrie_ioc]
+
+        mock_log4pot_strategy = MagicMock()
+        mock_log4pot_ioc = self._create_mock_ioc("5.6.7.8")
+        mock_log4pot_strategy.ioc_records = [mock_log4pot_ioc]
+
+        # Return strategies in sequence
+        mock_factory.return_value.get_strategy.side_effect = [mock_cowrie_strategy, mock_log4pot_strategy]
+
+        result = pipeline.execute()
+
+        # Should return total count (1 + 1 = 2)
+        self.assertEqual(result, 2)
+
+        # Verify both strategies were executed
+        self.assertEqual(mock_cowrie_strategy.extract_from_hits.call_count, 1)
+        self.assertEqual(mock_log4pot_strategy.extract_from_hits.call_count, 1)
+
+        # Verify data flow to scoring
+        mock_scores.return_value.score_only.assert_called_once()
+        collected_iocs = mock_scores.return_value.score_only.call_args[0][0]
+        self.assertEqual(len(collected_iocs), 2)
+        self.assertIn(mock_cowrie_ioc, collected_iocs)
+        self.assertIn(mock_log4pot_ioc, collected_iocs)
+
+    @patch("greedybear.cronjobs.extraction.pipeline.UpdateScores")
+    @patch("greedybear.cronjobs.extraction.pipeline.ExtractionStrategyFactory")
     def test_handles_strategy_exception_gracefully(self, mock_factory, mock_scores):
         """Strategy exceptions should be caught and logged, not crash pipeline."""
         pipeline = self._create_pipeline_with_mocks()
