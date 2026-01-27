@@ -149,17 +149,13 @@ class TestExecuteHitGrouping(ExtractionPipelineTestCase):
     def _create_pipeline_with_mocks(self):
         """Helper to create a pipeline with mocked dependencies."""
         with (
-            patch("greedybear.cronjobs.extraction.pipeline.SensorRepository") as mock_sensor,
-            patch("greedybear.cronjobs.extraction.pipeline.IocRepository") as mock_ioc,
-            patch("greedybear.cronjobs.extraction.pipeline.ElasticRepository") as mock_elastic,
+            patch("greedybear.cronjobs.extraction.pipeline.SensorRepository"),
+            patch("greedybear.cronjobs.extraction.pipeline.IocRepository"),
+            patch("greedybear.cronjobs.extraction.pipeline.ElasticRepository"),
         ):
             from greedybear.cronjobs.extraction.pipeline import ExtractionPipeline
 
             pipeline = ExtractionPipeline()
-            # Store mocks for later access
-            pipeline._mock_elastic = mock_elastic.return_value
-            pipeline._mock_ioc = mock_ioc.return_value
-            pipeline._mock_sensor = mock_sensor.return_value
             return pipeline
 
     @patch("greedybear.cronjobs.extraction.pipeline.UpdateScores")
