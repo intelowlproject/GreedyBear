@@ -155,6 +155,7 @@ class TestExecuteHitGrouping(ExtractionPipelineTestCase):
         self.assertEqual(result, 0)
         mock_factory.return_value.get_strategy.assert_not_called()
 
+    @patch("greedybear.cronjobs.extraction.pipeline.LEGACY_EXTRACTION", False)
     @patch("greedybear.cronjobs.extraction.pipeline.EXTRACTION_INTERVAL", 10)
     @patch("greedybear.cronjobs.extraction.pipeline.UpdateScores")
     @patch("greedybear.cronjobs.extraction.pipeline.ExtractionStrategyFactory")
