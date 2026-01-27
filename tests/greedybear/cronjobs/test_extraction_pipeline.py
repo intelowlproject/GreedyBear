@@ -15,7 +15,17 @@ from tests import ExtractionTestCase
 class ExtractionPipelineTestCase(ExtractionTestCase):
     """Base test case for extraction pipeline tests, reusing common extraction helpers."""
 
-    pass
+    def _create_pipeline_with_mocks(self):
+        """Helper to create a pipeline with mocked dependencies."""
+        with (
+            patch("greedybear.cronjobs.extraction.pipeline.SensorRepository"),
+            patch("greedybear.cronjobs.extraction.pipeline.IocRepository"),
+            patch("greedybear.cronjobs.extraction.pipeline.ElasticRepository"),
+        ):
+            from greedybear.cronjobs.extraction.pipeline import ExtractionPipeline
+
+            pipeline = ExtractionPipeline()
+            return pipeline
 
 
 class MockElasticHit:
@@ -111,18 +121,6 @@ class TestMinutesBackToLookup(ExtractionPipelineTestCase):
 class TestExecuteHitGrouping(ExtractionPipelineTestCase):
     """Tests for hit grouping logic in execute()."""
 
-    def _create_pipeline_with_mocks(self):
-        """Helper to create a pipeline with mocked dependencies."""
-        with (
-            patch("greedybear.cronjobs.extraction.pipeline.SensorRepository"),
-            patch("greedybear.cronjobs.extraction.pipeline.IocRepository"),
-            patch("greedybear.cronjobs.extraction.pipeline.ElasticRepository"),
-        ):
-            from greedybear.cronjobs.extraction.pipeline import ExtractionPipeline
-
-            pipeline = ExtractionPipeline()
-            return pipeline
-
     @patch("greedybear.cronjobs.extraction.pipeline.UpdateScores")
     @patch("greedybear.cronjobs.extraction.pipeline.ExtractionStrategyFactory")
     def test_skips_hits_without_src_ip(self, mock_factory, mock_scores):
@@ -215,18 +213,6 @@ class TestExecuteHitGrouping(ExtractionPipelineTestCase):
 
 class TestExecuteStrategySelection(ExtractionPipelineTestCase):
     """Tests for strategy selection and execution in execute()."""
-
-    def _create_pipeline_with_mocks(self):
-        """Helper to create a pipeline with mocked dependencies."""
-        with (
-            patch("greedybear.cronjobs.extraction.pipeline.SensorRepository"),
-            patch("greedybear.cronjobs.extraction.pipeline.IocRepository"),
-            patch("greedybear.cronjobs.extraction.pipeline.ElasticRepository"),
-        ):
-            from greedybear.cronjobs.extraction.pipeline import ExtractionPipeline
-
-            pipeline = ExtractionPipeline()
-            return pipeline
 
     @patch("greedybear.cronjobs.extraction.pipeline.UpdateScores")
     @patch("greedybear.cronjobs.extraction.pipeline.ExtractionStrategyFactory")
@@ -356,18 +342,6 @@ class TestExecuteStrategySelection(ExtractionPipelineTestCase):
 class TestExecuteScoring(ExtractionPipelineTestCase):
     """Tests for scoring logic in execute()."""
 
-    def _create_pipeline_with_mocks(self):
-        """Helper to create a pipeline with mocked dependencies."""
-        with (
-            patch("greedybear.cronjobs.extraction.pipeline.SensorRepository"),
-            patch("greedybear.cronjobs.extraction.pipeline.IocRepository"),
-            patch("greedybear.cronjobs.extraction.pipeline.ElasticRepository"),
-        ):
-            from greedybear.cronjobs.extraction.pipeline import ExtractionPipeline
-
-            pipeline = ExtractionPipeline()
-            return pipeline
-
     @patch("greedybear.cronjobs.extraction.pipeline.UpdateScores")
     @patch("greedybear.cronjobs.extraction.pipeline.ExtractionStrategyFactory")
     def test_updates_scores_when_iocs_extracted(self, mock_factory, mock_scores):
@@ -405,18 +379,6 @@ class TestExecuteScoring(ExtractionPipelineTestCase):
 
 class TestExecuteEmptyResponse(ExtractionPipelineTestCase):
     """Tests for empty Elasticsearch response handling."""
-
-    def _create_pipeline_with_mocks(self):
-        """Helper to create a pipeline with mocked dependencies."""
-        with (
-            patch("greedybear.cronjobs.extraction.pipeline.SensorRepository"),
-            patch("greedybear.cronjobs.extraction.pipeline.IocRepository"),
-            patch("greedybear.cronjobs.extraction.pipeline.ElasticRepository"),
-        ):
-            from greedybear.cronjobs.extraction.pipeline import ExtractionPipeline
-
-            pipeline = ExtractionPipeline()
-            return pipeline
 
     @patch("greedybear.cronjobs.extraction.pipeline.UpdateScores")
     @patch("greedybear.cronjobs.extraction.pipeline.ExtractionStrategyFactory")
