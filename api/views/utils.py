@@ -205,13 +205,11 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
     Format the IOC data into the requested format (e.g., JSON, CSV, TXT).
 
     Args:
-        request: The incoming request object.
         iocs (QuerySet): The filtered queryset of IOC data.
-        feed_type (str): Type of feed (e.g., log4j, cowrie, etc.).
+        feed_params (FeedRequestParams): Request parameters including format.
         valid_feed_types (frozenset): The set of all valid feed types.
-        format_ (str): Desired format of the response (e.g., json, csv, txt).
         dict_only (bool): Return IOC dictionary instead of Response object.
-        verbose (bool): Include IOC properties that may contain a lot of data.
+        verbose (bool): Include verbose fields (days_seen, destination_ports, honeypots, firehol_categories).
 
     Returns:
         Response: The HTTP response containing formatted IOC data.
@@ -235,7 +233,9 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
             )
         case "json":
             json_list = []
-            required_fields = {
+
+            # Base fields always returned
+            base_fields = {
                 "value",
                 "first_seen",
                 "last_seen",
@@ -244,15 +244,22 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
                 "scanner",
                 "payload_request",
                 "ip_reputation",
-                "firehol_categories",
                 "asn",
-                "destination_ports",
                 "login_attempts",
-                "honeypots",
-                "days_seen",
                 "recurrence_probability",
                 "expected_interactions",
             }
+
+            # Verbose fields only returned when verbose=true
+            verbose_fields = {
+                "days_seen",
+                "destination_ports",
+                "honeypots",
+                "firehol_categories",
+            }
+
+            # Combine fields based on verbose parameter
+            required_fields = base_fields | verbose_fields if verbose else base_fields
 
             # Collect values; `honeypots` will contain the list of associated honeypot names
             iocs = (ioc_as_dict(ioc, required_fields) for ioc in iocs) if isinstance(iocs, list) else iocs.values(*required_fields)
@@ -263,8 +270,11 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
                     "first_seen": ioc["first_seen"].strftime("%Y-%m-%d"),
                     "last_seen": ioc["last_seen"].strftime("%Y-%m-%d"),
                     "feed_type": ioc_feed_type,
-                    "destination_port_count": len(ioc["destination_ports"]),
                 }
+
+                # Only add destination_port_count if destination_ports is present (verbose mode)
+                if "destination_ports" in ioc:
+                    data_["destination_port_count"] = len(ioc["destination_ports"])
 
                 # Skip validation - data_ is constructed internally and matches the API contract
                 json_list.append(data_)
