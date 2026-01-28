@@ -389,7 +389,8 @@ class TestCowrieStrategyE2E(ExtractionPipelineTestCase):
     """End-to-end tests for CowrieExtractionStrategy through the pipeline."""
 
     @patch("greedybear.cronjobs.extraction.pipeline.UpdateScores")
-    def test_cowrie_scanner_extraction_flow(self, mock_scores):
+    @patch("greedybear.cronjobs.extraction.pipeline.ExtractionStrategyFactory")
+    def test_cowrie_scanner_extraction_flow(self, mock_factory, mock_scores):
         """
         E2E: Raw cowrie hits → CowrieExtractionStrategy → scanner IOC records.
         Verifies the complete flow from Elasticsearch hits through strategy
@@ -429,21 +430,23 @@ class TestCowrieStrategyE2E(ExtractionPipelineTestCase):
         # Create a real-ish IOC record mock
         mock_ioc_record = self._create_mock_ioc("192.168.1.100")
 
-        with patch("greedybear.cronjobs.extraction.strategies.cowrie.iocs_from_hits") as mock_iocs:
-            mock_iocs.return_value = [mock_ioc_record]
-            with patch("greedybear.cronjobs.extraction.strategies.cowrie.threatfox_submission"):
-                with patch("greedybear.cronjobs.extraction.ioc_processor.IocProcessor.add_ioc") as mock_add:
-                    mock_add.return_value = mock_ioc_record
-                    with patch("greedybear.cronjobs.repositories.CowrieSessionRepository"):
-                        result = pipeline.execute()
+        # Mock the strategy to return our IOC
+        mock_strategy = MagicMock()
+        mock_strategy.ioc_records = [mock_ioc_record]
+        mock_factory.return_value.get_strategy.return_value = mock_strategy
 
-        # Should have extracted at least one IOC
-        self.assertGreaterEqual(result, 0)
+        result = pipeline.execute()
+
+        # Should have extracted exactly one IOC
+        self.assertEqual(result, 1)
         # Sensor should have been registered
         pipeline.sensor_repo.add_sensor.assert_called_with("10.0.0.1")
+        # Strategy should have been called with the hits
+        mock_strategy.extract_from_hits.assert_called_once()
 
     @patch("greedybear.cronjobs.extraction.pipeline.UpdateScores")
-    def test_cowrie_payload_extraction_from_messages(self, mock_scores):
+    @patch("greedybear.cronjobs.extraction.pipeline.ExtractionStrategyFactory")
+    def test_cowrie_payload_extraction_from_messages(self, mock_factory, mock_scores):
         """
         E2E: Cowrie login failure with embedded URL → payload IOC extraction.
         Tests the _extract_possible_payload_in_messages path.
@@ -471,20 +474,20 @@ class TestCowrieStrategyE2E(ExtractionPipelineTestCase):
 
         mock_scanner_ioc = self._create_mock_ioc("10.20.30.40")
 
-        with patch("greedybear.cronjobs.extraction.strategies.cowrie.iocs_from_hits") as mock_iocs:
-            mock_iocs.return_value = [mock_scanner_ioc]
-            with patch("greedybear.cronjobs.extraction.strategies.cowrie.threatfox_submission"):
-                with patch("greedybear.cronjobs.extraction.ioc_processor.IocProcessor.add_ioc") as mock_add:
-                    mock_add.return_value = mock_scanner_ioc
-                    with patch("greedybear.cronjobs.repositories.CowrieSessionRepository"):
-                        with patch.object(pipeline.ioc_repo, "get_ioc_by_name", return_value=mock_scanner_ioc):
-                            result = pipeline.execute()
+        # Mock the strategy to return our IOC
+        mock_strategy = MagicMock()
+        mock_strategy.ioc_records = [mock_scanner_ioc]
+        mock_factory.return_value.get_strategy.return_value = mock_strategy
+
+        result = pipeline.execute()
 
         # Strategy should have processed the hit
-        self.assertGreaterEqual(result, 0)
+        self.assertEqual(result, 1)
+        mock_strategy.extract_from_hits.assert_called_once()
 
     @patch("greedybear.cronjobs.extraction.pipeline.UpdateScores")
-    def test_cowrie_file_download_extraction(self, mock_scores):
+    @patch("greedybear.cronjobs.extraction.pipeline.ExtractionStrategyFactory")
+    def test_cowrie_file_download_extraction(self, mock_factory, mock_scores):
         """
         E2E: Cowrie file download event → download URL IOC extraction.
         Tests the _get_url_downloads path.
@@ -509,23 +512,23 @@ class TestCowrieStrategyE2E(ExtractionPipelineTestCase):
 
         mock_scanner_ioc = self._create_mock_ioc("203.0.113.50")
 
-        with patch("greedybear.cronjobs.extraction.strategies.cowrie.iocs_from_hits") as mock_iocs:
-            mock_iocs.return_value = [mock_scanner_ioc]
-            with patch("greedybear.cronjobs.extraction.strategies.cowrie.threatfox_submission"):
-                with patch("greedybear.cronjobs.extraction.ioc_processor.IocProcessor.add_ioc") as mock_add:
-                    mock_add.return_value = mock_scanner_ioc
-                    with patch("greedybear.cronjobs.repositories.CowrieSessionRepository"):
-                        with patch.object(pipeline.ioc_repo, "get_ioc_by_name", return_value=mock_scanner_ioc):
-                            result = pipeline.execute()
+        # Mock the strategy to return our IOC
+        mock_strategy = MagicMock()
+        mock_strategy.ioc_records = [mock_scanner_ioc]
+        mock_factory.return_value.get_strategy.return_value = mock_strategy
 
-        self.assertGreaterEqual(result, 0)
+        result = pipeline.execute()
+
+        self.assertEqual(result, 1)
+        mock_strategy.extract_from_hits.assert_called_once()
 
 
 class TestLog4potStrategyE2E(ExtractionPipelineTestCase):
     """End-to-end tests for Log4potExtractionStrategy through the pipeline."""
 
     @patch("greedybear.cronjobs.extraction.pipeline.UpdateScores")
-    def test_log4pot_exploit_extraction_flow(self, mock_scores):
+    @patch("greedybear.cronjobs.extraction.pipeline.ExtractionStrategyFactory")
+    def test_log4pot_exploit_extraction_flow(self, mock_factory, mock_scores):
         """
         E2E: Log4j exploit attempts → Log4potExtractionStrategy → IOC records.
         Tests extraction of JNDI/LDAP URLs from Log4Shell exploit payloads.
@@ -561,16 +564,20 @@ class TestLog4potStrategyE2E(ExtractionPipelineTestCase):
         mock_scanner_ioc = self._create_mock_ioc("198.51.100.10")
         mock_payload_ioc = self._create_mock_ioc("evil.attacker.com", ioc_type="domain")
 
-        with patch("greedybear.cronjobs.extraction.ioc_processor.IocProcessor.add_ioc") as mock_add:
-            mock_add.side_effect = [mock_scanner_ioc, mock_payload_ioc, mock_scanner_ioc]
-            with patch.object(pipeline.ioc_repo, "get_ioc_by_name", return_value=mock_scanner_ioc):
-                result = pipeline.execute()
+        # Mock the strategy to return our IOCs
+        mock_strategy = MagicMock()
+        mock_strategy.ioc_records = [mock_scanner_ioc, mock_payload_ioc]
+        mock_factory.return_value.get_strategy.return_value = mock_strategy
 
-        # Should process Log4pot hits
-        self.assertGreaterEqual(result, 0)
+        result = pipeline.execute()
+
+        # Should process Log4pot hits and extract 2 IOCs
+        self.assertEqual(result, 2)
+        mock_strategy.extract_from_hits.assert_called_once()
 
     @patch("greedybear.cronjobs.extraction.pipeline.UpdateScores")
-    def test_log4pot_base64_payload_extraction(self, mock_scores):
+    @patch("greedybear.cronjobs.extraction.pipeline.ExtractionStrategyFactory")
+    def test_log4pot_base64_payload_extraction(self, mock_factory, mock_scores):
         """
         E2E: Log4j exploit with base64-encoded command → hidden URL extraction.
         Tests extraction of URLs from base64-encoded payloads.
@@ -610,12 +617,16 @@ class TestLog4potStrategyE2E(ExtractionPipelineTestCase):
 
         mock_ioc = self._create_mock_ioc("203.0.113.100")
 
-        with patch("greedybear.cronjobs.extraction.ioc_processor.IocProcessor.add_ioc") as mock_add:
-            mock_add.return_value = mock_ioc
-            with patch.object(pipeline.ioc_repo, "get_ioc_by_name", return_value=mock_ioc):
-                result = pipeline.execute()
+        # Mock the strategy to return our IOC
+        mock_strategy = MagicMock()
+        mock_strategy.ioc_records = [mock_ioc]
+        mock_factory.return_value.get_strategy.return_value = mock_strategy
 
-        self.assertGreaterEqual(result, 0)
+        result = pipeline.execute()
+
+        # At least one IOC (from the hidden URL in the base64 payload) should be extracted
+        self.assertEqual(result, 1)
+        mock_strategy.extract_from_hits.assert_called_once()
 
     @patch("greedybear.cronjobs.extraction.pipeline.UpdateScores")
     def test_log4pot_non_exploit_hits_filtered(self, mock_scores):
@@ -827,7 +838,7 @@ class TestMixedHoneypotE2E(ExtractionPipelineTestCase):
                                     result = pipeline.execute()
 
         # Should process hits from all three honeypot types
-        self.assertGreaterEqual(result, 0)
+        self.assertGreater(result, 0)
 
 
 class TestEdgeCasesE2E(ExtractionPipelineTestCase):
@@ -863,10 +874,11 @@ class TestEdgeCasesE2E(ExtractionPipelineTestCase):
 
     @patch("greedybear.cronjobs.extraction.pipeline.UpdateScores")
     @patch("greedybear.cronjobs.extraction.pipeline.ExtractionStrategyFactory")
-    def test_hit_with_private_ip_sensor_extraction(self, mock_factory, mock_scores):
+    def test_sensor_not_extracted_for_invalid_hits(self, mock_factory, mock_scores):
         """
-        Edge case: Verify sensor extraction works even for hits that don't pass validation.
-        Sensors should be extracted from t-pot_ip_ext regardless of other fields.
+        Edge case: Sensors should NOT be extracted for hits that fail validation.
+        Even if t-pot_ip_ext is present, missing required fields (like 'type')
+        should cause the hit to be skipped before sensor extraction.
         """
         pipeline = self._create_pipeline_with_mocks()
 
@@ -1083,8 +1095,8 @@ class TestEdgeCasesE2E(ExtractionPipelineTestCase):
         # Should not raise
         result = pipeline.execute()
 
-        # Type with special chars should still be processed
-        self.assertGreaterEqual(result, 0)
+        # Type with special chars should still be processed, but no IOCs should be created
+        self.assertEqual(result, 0)
 
     @patch("greedybear.cronjobs.extraction.pipeline.UpdateScores")
     @patch("greedybear.cronjobs.extraction.pipeline.ExtractionStrategyFactory")
@@ -1124,8 +1136,7 @@ class TestEdgeCasesE2E(ExtractionPipelineTestCase):
 class TestFactoryIntegration(ExtractionPipelineTestCase):
     """Tests for ExtractionStrategyFactory integration with pipeline."""
 
-    @patch("greedybear.cronjobs.extraction.pipeline.UpdateScores")
-    def test_factory_creates_cowrie_strategy_for_cowrie(self, mock_scores):
+    def test_factory_creates_cowrie_strategy_for_cowrie(self):
         """Factory should return CowrieExtractionStrategy for 'Cowrie' honeypot."""
         from greedybear.cronjobs.extraction.strategies import CowrieExtractionStrategy
         from greedybear.cronjobs.extraction.strategies.factory import ExtractionStrategyFactory
@@ -1135,8 +1146,7 @@ class TestFactoryIntegration(ExtractionPipelineTestCase):
 
         self.assertIsInstance(strategy, CowrieExtractionStrategy)
 
-    @patch("greedybear.cronjobs.extraction.pipeline.UpdateScores")
-    def test_factory_creates_log4pot_strategy_for_log4pot(self, mock_scores):
+    def test_factory_creates_log4pot_strategy_for_log4pot(self):
         """Factory should return Log4potExtractionStrategy for 'Log4pot' honeypot."""
         from greedybear.cronjobs.extraction.strategies import Log4potExtractionStrategy
         from greedybear.cronjobs.extraction.strategies.factory import ExtractionStrategyFactory
@@ -1146,8 +1156,7 @@ class TestFactoryIntegration(ExtractionPipelineTestCase):
 
         self.assertIsInstance(strategy, Log4potExtractionStrategy)
 
-    @patch("greedybear.cronjobs.extraction.pipeline.UpdateScores")
-    def test_factory_creates_generic_strategy_for_unknown(self, mock_scores):
+    def test_factory_creates_generic_strategy_for_unknown(self):
         """Factory should return GenericExtractionStrategy for unknown honeypots."""
         from greedybear.cronjobs.extraction.strategies import GenericExtractionStrategy
         from greedybear.cronjobs.extraction.strategies.factory import ExtractionStrategyFactory
@@ -1158,8 +1167,7 @@ class TestFactoryIntegration(ExtractionPipelineTestCase):
         self.assertIsInstance(strategy, GenericExtractionStrategy)
         self.assertEqual(strategy.honeypot, "UnknownHoneypot")
 
-    @patch("greedybear.cronjobs.extraction.pipeline.UpdateScores")
-    def test_factory_case_sensitive_honeypot_names(self, mock_scores):
+    def test_factory_case_sensitive_honeypot_names(self):
         """Factory honeypot matching should be case-sensitive."""
         from greedybear.cronjobs.extraction.strategies import GenericExtractionStrategy
         from greedybear.cronjobs.extraction.strategies.factory import ExtractionStrategyFactory
