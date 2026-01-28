@@ -112,7 +112,7 @@ def cowrie_session_view(request):
         commands = {s.commands for s in sessions if s.commands}
         clusters = {cmd.cluster for cmd in commands if cmd.cluster is not None}
         related_sessions = CowrieSession.objects.filter(commands__cluster__in=clusters).prefetch_related("source", "commands", "credential_set")
-        sessions = (sessions | related_sessions).distinct().prefetch_related("source", "commands", "credential_set")
+        sessions = sessions.union(related_sessions).prefetch_related("source", "commands", "credential_set")
 
     response_data = {
         "query": observable,

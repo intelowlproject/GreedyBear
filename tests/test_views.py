@@ -788,10 +788,11 @@ class CowrieSessionViewTestCase(CustomTestCase):
         self.assertEqual(response.status_code, 400)
 
     def test_invalid_query_parameter(self):
-        """Test that view returns BadRequest when query parameter is invalid."""
+        """Test that view returns 404 for a string that doesn't match any format (treated as password search)."""
         response = self.client.get("/api/cowrie_session?query=invalid-input}")
         # Special characters now allowed - treated as potential password
-        self.assertIn(response.status_code, [200, 400, 404])
+        # Since it won't exist in DB, should return 404
+        self.assertEqual(response.status_code, 404)
 
     def test_include_credentials_invalid_value(self):
         """Test that invalid boolean values default to false."""
@@ -887,12 +888,27 @@ class CowrieSessionViewTestCase(CustomTestCase):
         self.assertEqual(response.status_code, 200)
         self.assertNotIn("license", response.data)
 
-    def test_query_with_special_characters(self):
-        """Test handling of queries with special characters."""
-        response = self.client.get("/api/cowrie_session?query=<script>alert('xss')</script>")
-        # Special characters are now allowed in password queries (no XSS/SQL injection risk)
-        # Returns 404 if password doesn't exist, not 400 (validation error)
-        self.assertIn(response.status_code, [200, 404])
+    def test_query_with_special_characters_exists(self):
+        """Test that passwords with special characters return 200 when they exist."""
+        password = "<script>alert('xss')</script>"
+        session = CowrieSession.objects.create(
+            session_id=int("ABCDEF123456", 16),
+            start_time=self.current_time,
+            duration=1.0,
+            source=self.ioc,
+            commands=self.command_sequence,
+        )
+        CowrieCredential.objects.create(session=session, username="attacker", password=password)
+
+        response = self.client.get(f"/api/cowrie_session?query={password}&include_credentials=true")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("credentials", response.data)
+        self.assertEqual(response.data["credentials"][0], f"attacker | {password}")
+
+    def test_query_with_special_characters_not_found(self):
+        """Test that passwords with special characters return 404 when they don't exist."""
+        response = self.client.get("/api/cowrie_session?query=%$^&*()_+-=")
+        self.assertEqual(response.status_code, 404)
 
     # # # # # Authentication & Authorization Tests # # # # #
     def test_unauthenticated_request(self):

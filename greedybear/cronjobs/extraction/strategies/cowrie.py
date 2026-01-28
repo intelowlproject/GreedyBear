@@ -5,6 +5,8 @@ from collections import defaultdict
 from hashlib import sha256
 from urllib.parse import urlparse
 
+from django.db import transaction
+
 from greedybear.consts import PAYLOAD_REQUEST, SCANNER
 from greedybear.cronjobs.extraction.strategies import BaseExtractionStrategy
 from greedybear.cronjobs.extraction.utils import (
@@ -223,16 +225,17 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
                 self.session_repo.save_command_sequence(session_record.commands)
                 self.log.info(f"saved new command execute from {ioc.name} with hash {session_record.commands.commands_hash}")
 
-            self.ioc_repo.save(session_record.source)
-            self.session_repo.save_session(session_record)
+            with transaction.atomic():
+                self.ioc_repo.save(session_record.source)
+                self.session_repo.save_session(session_record)
 
-            # Create normalized credential records after session is saved
-            for username, password in credentials_to_create:
-                CowrieCredential.objects.get_or_create(
-                    session=session_record,
-                    username=username[:256],
-                    password=password[:256],
-                )
+                # Create normalized credential records after session is saved
+                for username, password in credentials_to_create:
+                    CowrieCredential.objects.get_or_create(
+                        session=session_record,
+                        username=username,
+                        password=password,
+                    )
 
         self.log.info(f"{len(hits_per_session)} sessions added")
 

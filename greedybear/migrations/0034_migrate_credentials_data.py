@@ -12,7 +12,10 @@ def migrate_credentials_to_table(apps, schema_editor):
     CowrieSession = apps.get_model("greedybear", "CowrieSession")
     CowrieCredential = apps.get_model("greedybear", "CowrieCredential")
 
-    for session in CowrieSession.objects.all():
+    credentials_to_create = []
+    chunk_size = 1000
+
+    for session in CowrieSession.objects.all().iterator(chunk_size=chunk_size):
         for cred_str in session.credentials:
             # Parse "username | password" format
             if " | " in cred_str:
@@ -20,13 +23,22 @@ def migrate_credentials_to_table(apps, schema_editor):
             else:
                 # Fallback for malformed data
                 username, password = "", cred_str
-            
-            # Use get_or_create to handle duplicates gracefully
-            CowrieCredential.objects.get_or_create(
-                session=session,
-                username=username[:256],  # Truncate to max_length
-                password=password[:256],
+
+            credentials_to_create.append(
+                CowrieCredential(
+                    session=session,
+                    username=username[:256],  # Truncate to max_length
+                    password=password[:256],
+                )
             )
+
+            if len(credentials_to_create) >= chunk_size:
+                CowrieCredential.objects.bulk_create(credentials_to_create, ignore_conflicts=True)
+                credentials_to_create = []
+
+    # Create remaining credentials
+    if credentials_to_create:
+        CowrieCredential.objects.bulk_create(credentials_to_create, ignore_conflicts=True)
 
 
 def reverse_migrate(apps, schema_editor):

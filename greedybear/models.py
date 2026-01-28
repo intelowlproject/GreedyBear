@@ -3,7 +3,6 @@
 from datetime import datetime
 
 from django.contrib.postgres import fields as pg_fields
-from django.contrib.postgres.indexes import GinIndex
 from django.db import models
 from django.db.models.functions import Lower
 
@@ -123,7 +122,6 @@ class CowrieSession(models.Model):
     class Meta:
         indexes = [
             models.Index(fields=["source"]),
-            GinIndex(fields=["credentials"], name="greedybear_credentials_gin_idx"),
         ]
 
     def __str__(self):
@@ -154,7 +152,8 @@ class CowrieCredential(models.Model):
         db_table = "greedybear_cowriecredential"
         # Index Strategy:
         # 1. cowriecred_pass_idx: Essential for exact password searches which are the primary query pattern.
-        # 2. cowriecred_user_pass_idx: Composite index covers queries filtering by both fields and enforces uniqueness.
+        # 2. cowriecred_user_pass_idx: Composite index optimizes queries filtering by both username and password;
+        # uniqueness per session is enforced by the unique_together constraint below.
         # 3. functional index (LOWER(password)): Created via RunSQL for potential case-insensitive lookups.
         indexes = [
             models.Index(fields=["password"], name="cowriecred_pass_idx"),
