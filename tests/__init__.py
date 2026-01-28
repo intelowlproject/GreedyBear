@@ -226,3 +226,22 @@ class ExtractionTestCase(CustomTestCase):
         mock.asn = asn
         mock.number_of_days_seen = len(mock.days_seen)
         return mock
+
+
+class MockElasticHit:
+    """Mock Elasticsearch hit that behaves like AttrDict from elasticsearch-dsl."""
+
+    def __init__(self, data: dict):
+        self._data = data
+
+    def __getitem__(self, key):
+        return self._data[key]
+
+    def __contains__(self, key):
+        return key in self._data
+
+    def get(self, key, default=None):
+        return self._data.get(key, default)
+
+    def to_dict(self):
+        return self._data.copy()
