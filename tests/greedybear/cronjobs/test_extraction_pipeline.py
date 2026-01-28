@@ -9,7 +9,7 @@ through strategy selection, IOC extraction, and scoring.
 
 from unittest.mock import MagicMock, patch
 
-from tests import ExtractionTestCase
+from tests import ExtractionTestCase, MockElasticHit
 
 
 class ExtractionPipelineTestCase(ExtractionTestCase):
@@ -26,25 +26,6 @@ class ExtractionPipelineTestCase(ExtractionTestCase):
 
             pipeline = ExtractionPipeline()
             return pipeline
-
-
-class MockElasticHit:
-    """Mock Elasticsearch hit that behaves like AttrDict from elasticsearch-dsl."""
-
-    def __init__(self, data: dict):
-        self._data = data
-
-    def __getitem__(self, key):
-        return self._data[key]
-
-    def __contains__(self, key):
-        return key in self._data
-
-    def get(self, key, default=None):
-        return self._data.get(key, default)
-
-    def to_dict(self):
-        return self._data.copy()
 
 
 class TestExtractionPipelineInit(ExtractionPipelineTestCase):
