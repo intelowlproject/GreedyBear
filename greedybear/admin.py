@@ -15,6 +15,7 @@ from greedybear.models import (
     MassScanner,
     Sensor,
     Statistics,
+    Tag,
     TorExitNode,
     WhatsMyIPDomain,
 )
@@ -184,3 +185,12 @@ class GeneralHoneypotAdmin(admin.ModelAdmin):
             % number_updated,
             messages.SUCCESS,
         )
+
+
+@admin.register(Tag)
+class TagModelAdmin(admin.ModelAdmin):
+    list_display = ["ioc", "name", "source", "timestamp"]
+    list_filter = ["source", "timestamp"]
+    search_fields = ["ioc__name", "name"]
+    search_help_text = ["search for IOC name or tag name"]
+    raw_id_fields = ["ioc"]

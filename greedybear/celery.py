@@ -122,4 +122,9 @@ app.conf.beat_schedule = {
         "schedule": crontab(hour=4, minute=30, day_of_week=0),
         "options": {"queue": "default"},
     },
+    "enrich_ips": {
+        "task": "greedybear.tasks.enrich_ips",
+        "schedule": crontab(hour=4, minute=45, day_of_week=0),
+        "options": {"queue": "default"},
+    },
 }
