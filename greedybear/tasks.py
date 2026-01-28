@@ -83,3 +83,10 @@ def get_tor_exit_nodes():
     from greedybear.cronjobs.tor_exit_nodes import TorExitNodesCron
 
     TorExitNodesCron().execute()
+
+
+@shared_task()
+def enrich_ips():
+    from greedybear.cronjobs.ip_enrichment import IPEnrichmentCron
+
+    IPEnrichmentCron().execute()

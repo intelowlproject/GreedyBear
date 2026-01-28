@@ -168,6 +168,23 @@ class TorExitNode(models.Model):
         return f"{self.ip_address} (tor exit node)"
 
 
+class Tag(models.Model):
+    """Store malware/threat tags from external sources like AbuseIPDB and Abuse.ch."""
+
+    ioc = models.ForeignKey(IOC, on_delete=models.CASCADE)
+    name = models.CharField(max_length=256)  # Tag name (normalized to lowercase)
+    source = models.CharField(max_length=32)  # "abuseipdb" or "abuse_ch"
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["ioc", "source"]),
+        ]
+
+    def __str__(self):
+        return f"{self.ioc.name}: {self.name} ({self.source})"
+
+
 class WhatsMyIPDomain(models.Model):
     domain = models.CharField(max_length=256, blank=False)
     added = models.DateTimeField(blank=False, default=datetime.now)
