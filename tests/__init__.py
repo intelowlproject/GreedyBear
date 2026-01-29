@@ -268,3 +268,33 @@ class MigrationTestCase(TransactionTestCase):
     def tearDown(self):
         self.migrator.reset()
         super().tearDown()
+
+        
+class E2ETestCase(ExtractionTestCase):
+    """Base test case for E2E pipeline tests with real strategies.
+
+    This base class provides helpers for creating pipelines with mocked
+    repositories but REAL strategies, enabling true integration testing.
+    """
+
+    def _create_pipeline_with_real_factory(self):
+        """
+        Create a pipeline with mocked repositories but REAL factory/strategies.
+
+        This approach tests the actual integration:
+        Pipeline → real Factory → real Strategy → IOC extraction
+
+        Returns:
+            ExtractionPipeline: Pipeline with mocked repos, real strategies.
+        """
+        from unittest.mock import patch
+
+        with (
+            patch("greedybear.cronjobs.extraction.pipeline.SensorRepository"),
+            patch("greedybear.cronjobs.extraction.pipeline.IocRepository"),
+            patch("greedybear.cronjobs.extraction.pipeline.ElasticRepository"),
+        ):
+            from greedybear.cronjobs.extraction.pipeline import ExtractionPipeline
+
+            pipeline = ExtractionPipeline()
+            return pipeline
