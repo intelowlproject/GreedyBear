@@ -3,7 +3,7 @@ import os
 
 import requests
 
-from greedybear.cronjobs.cronjob import Cronjob
+from greedybear.cronjobs.base import Cronjob
 from greedybear.cronjobs.repositories.ioc import IocRepository
 from greedybear.cronjobs.repositories.ip_enrichment import TagRepository
 
