@@ -9,7 +9,7 @@ from celery.signals import setup_logging
 from django.conf import settings
 from kombu import Exchange, Queue
 
-from greedybear.settings import EXTRACTION_INTERVAL, LEGACY_EXTRACTION
+from greedybear.settings import EXTRACTION_INTERVAL
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "greedybear.settings")
 
@@ -56,7 +56,7 @@ def setup_loggers(*args, **kwargs):
     dictConfig(settings.LOGGING)
 
 
-hp_extraction_interval = 10 if LEGACY_EXTRACTION else EXTRACTION_INTERVAL
+hp_extraction_interval = EXTRACTION_INTERVAL
 app.conf.beat_schedule = {
     # every 10 minutes or according to EXTRACTION_INTERVAL
     "extract_all": {

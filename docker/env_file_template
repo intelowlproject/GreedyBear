@@ -46,8 +46,6 @@ MOCK_CONNECTIONS=False
 # True for public deployment, False for internal deployment
 PUBLIC_DEPLOYMENT=False
 
-# Set True for use with TPot instances prior to version 24.04
-LEGACY_EXTRACTION=False
 # Interval for the honeypot data extraction in minutes (only choose divisors of 60)
 EXTRACTION_INTERVAL=10
 

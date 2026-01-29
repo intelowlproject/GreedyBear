@@ -1,21 +1,20 @@
 import logging
+from collections.abc import Iterator
 from datetime import datetime, timedelta
 
 from django.conf import settings
 from elasticsearch.dsl import Q, Search
 
 from greedybear.consts import REQUIRED_FIELDS
-from greedybear.settings import EXTRACTION_INTERVAL, LEGACY_EXTRACTION
+from greedybear.settings import EXTRACTION_INTERVAL
 
 
 class ElasticRepository:
     """
     Repository for querying honeypot log data from a T-Pot Elasticsearch instance.
 
-    Provides a cached search interface for retrieving log entries within
+    Provides a chunked search interface for retrieving log entries within
     a specified time window from logstash indices.
-
-    This class is intended for individual extraction runs, so the cache never clears.
     """
 
     class ElasticServerDownError(Exception):
@@ -24,10 +23,9 @@ class ElasticRepository:
         pass
 
     def __init__(self):
-        """Initialize the repository with an Elasticsearch client and empty cache."""
+        """Initialize the repository with an Elasticsearch client."""
         self.log = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
         self.elastic_client = settings.ELASTIC_CLIENT
-        self.search_cache = {}
 
     def has_honeypot_been_hit(self, minutes_back_to_lookup: int, honeypot_name: str) -> bool:
         """
@@ -36,84 +34,50 @@ class ElasticRepository:
         Args:
             minutes_back_to_lookup: Number of minutes to look back from the current
                 time when searching for honeypot hits.
-            honeypot_name: The  name/type of the honeypot to check for hits.
+            honeypot_name: The name/type of the honeypot to check for hits.
 
         Returns:
             True if at least one hit was recorded for the specified honeypot within
             the time window, False otherwise.
         """
         search = Search(using=self.elastic_client, index="logstash-*")
-        q = self._standard_query(minutes_back_to_lookup)
+        window_start, window_end = get_time_window(datetime.now(), minutes_back_to_lookup)
+        q = Q("range", **{"@timestamp": {"gte": window_start, "lt": window_end}})
         search = search.query(q)
         search = search.filter("term", **{"type.keyword": honeypot_name})
         return search.count() > 0
 
-    def search(self, minutes_back_to_lookup: int) -> list:
+    def search(self, minutes_back_to_lookup: int) -> Iterator[list]:
         """
-        Search for log entries within a specified time window.
-
-        Returns cached results if available for the given lookback period.
-        Uses legacy or modern query format based on LEGACY_EXTRACTION setting.
+        Search for log entries within a specified time window, yielding results
+        in chunks of at most EXTRACTION_INTERVAL minutes.
 
         Args:
             minutes_back_to_lookup: Number of minutes to look back from the current time.
 
-        Returns:
-            list: Log entries sorted by @timestamp, containing only REQUIRED_FIELDS.
+        Yields:
+            list: Log entries sorted by @timestamp for each chunk, containing only REQUIRED_FIELDS.
 
         Raises:
             ElasticServerDownError: If Elasticsearch is unreachable.
         """
-        if minutes_back_to_lookup in self.search_cache:
-            self.log.debug("fetching elastic search result from cache")
-            return self.search_cache[minutes_back_to_lookup]
-
         self._healthcheck()
-        search = Search(using=self.elastic_client, index="logstash-*")
         self.log.debug(f"minutes_back_to_lookup: {minutes_back_to_lookup}")
-        if LEGACY_EXTRACTION:
-            self.log.debug("querying elastic using legacy method")
-            gte_date = f"now-{minutes_back_to_lookup}m/m"
-            q = Q(
-                "bool",
-                should=[
-                    Q("range", timestamp={"gte": gte_date, "lte": "now/m"}),
-                    Q("range", end_time={"gte": gte_date, "lte": "now/m"}),
-                    Q("range", **{"@timestamp": {"gte": gte_date, "lte": "now/m"}}),
-                ],
-                minimum_should_match=1,
-            )
-        else:
-            q = self._standard_query(minutes_back_to_lookup)
-
-        search = search.query(q)
-        search.source(REQUIRED_FIELDS)
-        result = list(search.scan())
-        self.log.debug(f"found {len(result)} hits")
-
-        result.sort(key=lambda hit: hit["@timestamp"])
-        self.search_cache[minutes_back_to_lookup] = result
-        return result
-
-    def _standard_query(self, minutes_back_to_lookup: int) -> Q:
-        """
-        Builds an Elasticsearch query that filters documents based on their
-        @timestamp field, searching backwards from the current time for the
-        specified number of minutes.
-
-        Args:
-            minutes_back_to_lookup: Number of minutes to look back from the
-                current time. Defines the size of the time window to search.
-
-        Returns:
-            Q: An elasticsearch-dsl Query object with a range filter on the
-            @timestamp field. The range spans from (now - minutes_back_to_lookup)
-            to now.
-        """
-        self.log.debug("querying elastic using standard method")
         window_start, window_end = get_time_window(datetime.now(), minutes_back_to_lookup)
-        self.log.debug(f"time window: {window_start} - {window_end}")
-        return Q("range", **{"@timestamp": {"gte": window_start, "lt": window_end}})
+        chunk_start = window_start
+        while chunk_start < window_end:
+            self.log.debug("querying elastic")
+            chunk_end = min(chunk_start + timedelta(minutes=EXTRACTION_INTERVAL), window_end)
+            self.log.debug(f"time window: {chunk_start} - {chunk_end}")
+            search = Search(using=self.elastic_client, index="logstash-*")
+            q = Q("range", **{"@timestamp": {"gte": chunk_start, "lt": chunk_end}})
+            search = search.query(q)
+            search.source(REQUIRED_FIELDS)
+            result = list(search.scan())
+            self.log.debug(f"found {len(result)} hits")
+            result.sort(key=lambda hit: hit["@timestamp"])
+            yield result
+            chunk_start = chunk_end
 
     def _healthcheck(self):
         """

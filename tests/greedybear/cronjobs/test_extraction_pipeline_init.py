@@ -30,7 +30,6 @@ class TestExtractionPipelineInit(ExtractionTestCase):
 class TestMinutesBackToLookup(ExtractionTestCase):
     """Tests for the _minutes_back_to_lookup property."""
 
-    @patch("greedybear.cronjobs.extraction.pipeline.LEGACY_EXTRACTION", False)
     @patch("greedybear.cronjobs.extraction.pipeline.EXTRACTION_INTERVAL", 5)
     @patch("greedybear.cronjobs.extraction.pipeline.INITIAL_EXTRACTION_TIMESPAN", 120)
     @patch("greedybear.cronjobs.extraction.pipeline.SensorRepository")
@@ -47,7 +46,6 @@ class TestMinutesBackToLookup(ExtractionTestCase):
 
         self.assertEqual(result, 120)
 
-    @patch("greedybear.cronjobs.extraction.pipeline.LEGACY_EXTRACTION", False)
     @patch("greedybear.cronjobs.extraction.pipeline.EXTRACTION_INTERVAL", 5)
     @patch("greedybear.cronjobs.extraction.pipeline.SensorRepository")
     @patch("greedybear.cronjobs.extraction.pipeline.IocRepository")
@@ -62,19 +60,3 @@ class TestMinutesBackToLookup(ExtractionTestCase):
         result = pipeline._minutes_back_to_lookup
 
         self.assertEqual(result, 5)
-
-    @patch("greedybear.cronjobs.extraction.pipeline.LEGACY_EXTRACTION", True)
-    @patch("greedybear.cronjobs.extraction.pipeline.EXTRACTION_INTERVAL", 5)
-    @patch("greedybear.cronjobs.extraction.pipeline.SensorRepository")
-    @patch("greedybear.cronjobs.extraction.pipeline.IocRepository")
-    @patch("greedybear.cronjobs.extraction.pipeline.ElasticRepository")
-    def test_returns_11_for_legacy_extraction(self, mock_elastic, mock_ioc, mock_sensor):
-        """Should return 11 when LEGACY_EXTRACTION is enabled."""
-        from greedybear.cronjobs.extraction.pipeline import ExtractionPipeline
-
-        pipeline = ExtractionPipeline()
-        pipeline.ioc_repo.is_empty.return_value = False
-
-        result = pipeline._minutes_back_to_lookup
-
-        self.assertEqual(result, 11)

@@ -34,9 +34,11 @@ class TestHitFiltering(ExtractionPipelineTestCase):
         """Hits without src_ip should be skipped."""
         pipeline = self._create_pipeline_with_mocks()
         pipeline.elastic_repo.search.return_value = [
-            MockElasticHit({"type": "Cowrie"}),  # missing src_ip
-            MockElasticHit({"src_ip": "", "type": "Cowrie"}),  # empty src_ip
-            MockElasticHit({"src_ip": "   ", "type": "Cowrie"}),  # whitespace-only src_ip
+            [
+                MockElasticHit({"type": "Cowrie"}),  # missing src_ip
+                MockElasticHit({"src_ip": "", "type": "Cowrie"}),  # empty src_ip
+                MockElasticHit({"src_ip": "   ", "type": "Cowrie"}),  # whitespace-only src_ip
+            ]
         ]
         pipeline.ioc_repo.is_empty.return_value = False
 
@@ -51,9 +53,11 @@ class TestHitFiltering(ExtractionPipelineTestCase):
         """Hits without type (honeypot) should be skipped."""
         pipeline = self._create_pipeline_with_mocks()
         pipeline.elastic_repo.search.return_value = [
-            MockElasticHit({"src_ip": "1.2.3.4"}),  # missing type
-            MockElasticHit({"src_ip": "1.2.3.4", "type": ""}),  # empty type
-            MockElasticHit({"src_ip": "1.2.3.4", "type": "   "}),  # whitespace-only type
+            [
+                MockElasticHit({"src_ip": "1.2.3.4"}),  # missing type
+                MockElasticHit({"src_ip": "1.2.3.4", "type": ""}),  # empty type
+                MockElasticHit({"src_ip": "1.2.3.4", "type": "   "}),  # whitespace-only type
+            ]
         ]
         pipeline.ioc_repo.is_empty.return_value = False
 
@@ -80,7 +84,6 @@ class TestHitFiltering(ExtractionPipelineTestCase):
 class TestSensorExtraction(ExtractionPipelineTestCase):
     """Tests for sensor extraction from hits."""
 
-    @patch("greedybear.cronjobs.extraction.pipeline.LEGACY_EXTRACTION", False)
     @patch("greedybear.cronjobs.extraction.pipeline.EXTRACTION_INTERVAL", 10)
     @patch("greedybear.cronjobs.extraction.pipeline.UpdateScores")
     @patch("greedybear.cronjobs.extraction.pipeline.ExtractionStrategyFactory")
@@ -91,7 +94,7 @@ class TestSensorExtraction(ExtractionPipelineTestCase):
         """
         pipeline = self._create_pipeline_with_mocks()
         pipeline.elastic_repo.search.return_value = [
-            MockElasticHit({"src_ip": "1.2.3.4", "type": "Cowrie", "t-pot_ip_ext": "10.0.0.1"}),
+            [MockElasticHit({"src_ip": "1.2.3.4", "type": "Cowrie", "t-pot_ip_ext": "10.0.0.1"})],
         ]
         pipeline.ioc_repo.is_empty.return_value = False
         pipeline.ioc_repo.is_ready_for_extraction.return_value = False  # Skip strategy for this test
@@ -120,7 +123,7 @@ class TestSensorExtraction(ExtractionPipelineTestCase):
                 }
             ),
         ]
-        pipeline.elastic_repo.search.return_value = hits
+        pipeline.elastic_repo.search.return_value = [hits]
         pipeline.ioc_repo.is_empty.return_value = False
 
         pipeline.execute()
@@ -138,9 +141,11 @@ class TestHitGrouping(ExtractionPipelineTestCase):
         """Hits should be grouped by honeypot type before extraction."""
         pipeline = self._create_pipeline_with_mocks()
         pipeline.elastic_repo.search.return_value = [
-            MockElasticHit({"src_ip": "1.2.3.4", "type": "Cowrie"}),
-            MockElasticHit({"src_ip": "5.6.7.8", "type": "Cowrie"}),
-            MockElasticHit({"src_ip": "9.10.11.12", "type": "Log4pot"}),
+            [
+                MockElasticHit({"src_ip": "1.2.3.4", "type": "Cowrie"}),
+                MockElasticHit({"src_ip": "5.6.7.8", "type": "Cowrie"}),
+                MockElasticHit({"src_ip": "9.10.11.12", "type": "Log4pot"}),
+            ]
         ]
         pipeline.ioc_repo.is_empty.return_value = False
         pipeline.ioc_repo.is_ready_for_extraction.return_value = True
@@ -178,7 +183,7 @@ class TestHitGrouping(ExtractionPipelineTestCase):
             MockElasticHit({"src_ip": "2.2.2.2", "type": "Cowrie"}),
             MockElasticHit({"src_ip": "3.3.3.3", "type": "Cowrie"}),
         ]
-        pipeline.elastic_repo.search.return_value = hits
+        pipeline.elastic_repo.search.return_value = [hits]
         pipeline.ioc_repo.is_empty.return_value = False
         pipeline.ioc_repo.is_ready_for_extraction.return_value = True
 
@@ -218,7 +223,7 @@ class TestHitGrouping(ExtractionPipelineTestCase):
                 }
             ),
         ]
-        pipeline.elastic_repo.search.return_value = hits
+        pipeline.elastic_repo.search.return_value = [hits]
         pipeline.ioc_repo.is_empty.return_value = False
 
         # First honeypot disabled, second enabled
@@ -234,3 +239,110 @@ class TestHitGrouping(ExtractionPipelineTestCase):
         self.assertEqual(result, 1)
         # Factory should only be called once (for EnabledHoneypot)
         mock_factory.return_value.get_strategy.assert_called_once_with("EnabledHoneypot")
+
+
+class TestMultiChunkProcessing(ExtractionPipelineTestCase):
+    """Tests for multi-chunk processing behavior."""
+
+    @patch("greedybear.cronjobs.extraction.pipeline.UpdateScores")
+    @patch("greedybear.cronjobs.extraction.pipeline.ExtractionStrategyFactory")
+    def test_ioc_count_accumulated_across_chunks(self, mock_factory, mock_scores):
+        """IOC records from all chunks should be counted in the total."""
+        pipeline = self._create_pipeline_with_mocks()
+
+        chunk1 = [
+            MockElasticHit({"src_ip": "1.1.1.1", "type": "Cowrie"}),
+            MockElasticHit({"src_ip": "2.2.2.2", "type": "Cowrie"}),
+        ]
+        chunk2 = [
+            MockElasticHit({"src_ip": "3.3.3.3", "type": "Cowrie"}),
+        ]
+        chunk3 = [
+            MockElasticHit({"src_ip": "4.4.4.4", "type": "Cowrie"}),
+            MockElasticHit({"src_ip": "5.5.5.5", "type": "Cowrie"}),
+            MockElasticHit({"src_ip": "6.6.6.6", "type": "Cowrie"}),
+        ]
+        pipeline.elastic_repo.search.return_value = [chunk1, chunk2, chunk3]
+        pipeline.ioc_repo.is_empty.return_value = False
+        pipeline.ioc_repo.is_ready_for_extraction.return_value = True
+
+        mock_strategy = MagicMock()
+        mock_strategy.ioc_records = []
+
+        def set_ioc_records(hits):
+            mock_strategy.ioc_records = [self._create_mock_ioc(h["src_ip"]) for h in hits]
+
+        mock_strategy.extract_from_hits.side_effect = set_ioc_records
+        mock_factory.return_value.get_strategy.return_value = mock_strategy
+
+        result = pipeline.execute()
+
+        self.assertEqual(result, 6)
+
+    @patch("greedybear.cronjobs.extraction.pipeline.UpdateScores")
+    @patch("greedybear.cronjobs.extraction.pipeline.ExtractionStrategyFactory")
+    def test_scoring_called_per_chunk(self, mock_factory, mock_scores):
+        """UpdateScores should be called once per chunk that produces IOCs."""
+        pipeline = self._create_pipeline_with_mocks()
+
+        chunk_with_hits = [
+            MockElasticHit({"src_ip": "1.1.1.1", "type": "Cowrie"}),
+        ]
+        empty_chunk = []
+        pipeline.elastic_repo.search.return_value = [
+            chunk_with_hits,
+            empty_chunk,
+            chunk_with_hits,
+        ]
+        pipeline.ioc_repo.is_empty.return_value = False
+        pipeline.ioc_repo.is_ready_for_extraction.return_value = True
+
+        mock_strategy = MagicMock()
+        mock_strategy.ioc_records = [self._create_mock_ioc("1.1.1.1")]
+        mock_factory.return_value.get_strategy.return_value = mock_strategy
+
+        pipeline.execute()
+
+        self.assertEqual(mock_scores.return_value.score_only.call_count, 2)
+
+    @patch("greedybear.cronjobs.extraction.pipeline.UpdateScores")
+    @patch("greedybear.cronjobs.extraction.pipeline.ExtractionStrategyFactory")
+    def test_factory_created_once_across_chunks(self, mock_factory, mock_scores):
+        """ExtractionStrategyFactory should be instantiated once, not per chunk."""
+        pipeline = self._create_pipeline_with_mocks()
+
+        chunk = [MockElasticHit({"src_ip": "1.1.1.1", "type": "Cowrie"})]
+        pipeline.elastic_repo.search.return_value = [chunk, chunk, chunk]
+        pipeline.ioc_repo.is_empty.return_value = False
+        pipeline.ioc_repo.is_ready_for_extraction.return_value = True
+
+        mock_strategy = MagicMock()
+        mock_strategy.ioc_records = []
+        mock_factory.return_value.get_strategy.return_value = mock_strategy
+
+        pipeline.execute()
+
+        mock_factory.assert_called_once()
+
+    @patch("greedybear.cronjobs.extraction.pipeline.UpdateScores")
+    @patch("greedybear.cronjobs.extraction.pipeline.ExtractionStrategyFactory")
+    def test_each_chunk_groups_hits_independently(self, mock_factory, mock_scores):
+        """Each chunk should group its own hits by honeypot type independently."""
+        pipeline = self._create_pipeline_with_mocks()
+
+        chunk1 = [MockElasticHit({"src_ip": "1.1.1.1", "type": "Cowrie"})]
+        chunk2 = [MockElasticHit({"src_ip": "2.2.2.2", "type": "Log4pot"})]
+        pipeline.elastic_repo.search.return_value = [chunk1, chunk2]
+        pipeline.ioc_repo.is_empty.return_value = False
+        pipeline.ioc_repo.is_ready_for_extraction.return_value = True
+
+        mock_strategy = MagicMock()
+        mock_strategy.ioc_records = [self._create_mock_ioc()]
+        mock_factory.return_value.get_strategy.return_value = mock_strategy
+
+        pipeline.execute()
+
+        calls = mock_factory.return_value.get_strategy.call_args_list
+        self.assertEqual(len(calls), 2)
+        self.assertEqual(calls[0][0][0], "Cowrie")
+        self.assertEqual(calls[1][0][0], "Log4pot")
