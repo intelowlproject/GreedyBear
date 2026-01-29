@@ -408,7 +408,6 @@ else:
         EMAIL_USE_SSL = os.environ.get("EMAIL_USE_SSL", "False") == "True"
 
 
-LEGACY_EXTRACTION = os.environ.get("LEGACY_EXTRACTION", "False") == "True"
 EXTRACTION_INTERVAL = int(os.environ.get("EXTRACTION_INTERVAL", 10))
 INITIAL_EXTRACTION_TIMESPAN = int(os.environ.get("INITIAL_EXTRACTION_TIMESPAN", 60 * 24 * 3))  # 3 days
 CLUSTER_COWRIE_COMMAND_SEQUENCES = os.environ.get("CLUSTER_COWRIE_COMMAND_SEQUENCES", "False") == "True"

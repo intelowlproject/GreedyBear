@@ -11,7 +11,6 @@ from greedybear.cronjobs.scoring.scoring_jobs import UpdateScores
 from greedybear.settings import (
     EXTRACTION_INTERVAL,
     INITIAL_EXTRACTION_TIMESPAN,
-    LEGACY_EXTRACTION,
 )
 
 
@@ -40,7 +39,7 @@ class ExtractionPipeline:
         """
         if self.ioc_repo.is_empty():
             return INITIAL_EXTRACTION_TIMESPAN
-        return 11 if LEGACY_EXTRACTION else EXTRACTION_INTERVAL
+        return EXTRACTION_INTERVAL
 
     def execute(self) -> int:
         """
