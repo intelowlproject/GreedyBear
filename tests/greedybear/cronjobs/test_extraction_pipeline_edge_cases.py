@@ -73,7 +73,7 @@ class TestLargeBatches(E2ETestCase):
         """
         pipeline = self._create_pipeline_with_real_factory()
 
-        # Create 100 hits (reduced from 500 for performance, but still tests batching)
+        # Create 100 hits to test batch processing
         hits = [
             MockElasticHit(
                 {
