@@ -195,3 +195,42 @@ class TestHitGrouping(ExtractionPipelineTestCase):
         # Verify all 3 hits were passed together
         call_args = mock_strategy.extract_from_hits.call_args[0][0]
         self.assertEqual(len(call_args), 3)
+
+    @patch("greedybear.cronjobs.extraction.pipeline.UpdateScores")
+    @patch("greedybear.cronjobs.extraction.pipeline.ExtractionStrategyFactory")
+    def test_honeypot_skipped_when_not_ready(self, mock_factory, mock_scores):
+        """Honeypots not ready for extraction should be skipped."""
+        pipeline = self._create_pipeline_with_mocks()
+
+        hits = [
+            MockElasticHit(
+                {
+                    "src_ip": "1.2.3.4",
+                    "type": "DisabledHoneypot",
+                    "t-pot_ip_ext": "10.0.0.1",
+                }
+            ),
+            MockElasticHit(
+                {
+                    "src_ip": "5.6.7.8",
+                    "type": "EnabledHoneypot",
+                    "t-pot_ip_ext": "10.0.0.2",
+                }
+            ),
+        ]
+        pipeline.elastic_repo.search.return_value = hits
+        pipeline.ioc_repo.is_empty.return_value = False
+
+        # First honeypot disabled, second enabled
+        pipeline.ioc_repo.is_ready_for_extraction.side_effect = [False, True]
+
+        mock_strategy = MagicMock()
+        mock_strategy.ioc_records = [self._create_mock_ioc("5.6.7.8")]
+        mock_factory.return_value.get_strategy.return_value = mock_strategy
+
+        result = pipeline.execute()
+
+        # Should only process the enabled honeypot
+        self.assertEqual(result, 1)
+        # Factory should only be called once (for EnabledHoneypot)
+        mock_factory.return_value.get_strategy.assert_called_once_with("EnabledHoneypot")

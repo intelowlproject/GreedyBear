@@ -351,3 +351,100 @@ class TestScoringIntegration(E2ETestCase):
 
         self.assertEqual(result, 0)
         mock_scores.return_value.score_only.assert_not_called()
+
+
+class TestEdgeCases(E2ETestCase):
+    """Edge case tests for the extraction pipeline."""
+
+    @patch("greedybear.cronjobs.extraction.pipeline.UpdateScores")
+    @patch("greedybear.cronjobs.extraction.pipeline.ExtractionStrategyFactory")
+    def test_strategy_returns_empty_ioc_records(self, mock_factory, mock_scores):
+        """Strategy executes successfully but returns no IOC records."""
+        pipeline = self._create_pipeline_with_real_factory()
+
+        hits = [
+            MockElasticHit(
+                {
+                    "src_ip": "1.2.3.4",
+                    "type": "Cowrie",
+                }
+            ),
+        ]
+        pipeline.elastic_repo.search.return_value = hits
+        pipeline.ioc_repo.is_empty.return_value = False
+        pipeline.ioc_repo.is_ready_for_extraction.return_value = True
+
+        # Strategy returns empty list
+        mock_strategy = MagicMock()
+        mock_strategy.ioc_records = []
+        mock_factory.return_value.get_strategy.return_value = mock_strategy
+
+        result = pipeline.execute()
+
+        self.assertEqual(result, 0)
+        # Scoring should NOT be called when no IOCs
+        mock_scores.return_value.score_only.assert_not_called()
+
+    @patch("greedybear.cronjobs.extraction.pipeline.UpdateScores")
+    @patch("greedybear.cronjobs.extraction.pipeline.ExtractionStrategyFactory")
+    def test_partial_strategy_success(self, mock_factory, mock_scores):
+        """Some strategies succeed, some fail - pipeline continues."""
+        pipeline = self._create_pipeline_with_real_factory()
+        pipeline.log = MagicMock()
+
+        hits = [
+            MockElasticHit({"src_ip": "1.1.1.1", "type": "FailingHoneypot"}),
+            MockElasticHit({"src_ip": "2.2.2.2", "type": "SuccessHoneypot"}),
+        ]
+        pipeline.elastic_repo.search.return_value = hits
+        pipeline.ioc_repo.is_empty.return_value = False
+        pipeline.ioc_repo.is_ready_for_extraction.return_value = True
+
+        mock_failing = MagicMock()
+        mock_failing.extract_from_hits.side_effect = Exception("Boom")
+
+        mock_success = MagicMock()
+        mock_success.ioc_records = [self._create_mock_ioc("2.2.2.2")]
+
+        mock_factory.return_value.get_strategy.side_effect = [mock_failing, mock_success]
+
+        result = pipeline.execute()
+
+        # Should return 1 (one success)
+        self.assertEqual(result, 1)
+        # Should log 1 error
+        self.assertEqual(pipeline.log.error.call_count, 1)
+        # Scoring should be called with successful IOCs
+        mock_scores.return_value.score_only.assert_called_once()
+
+    @patch("greedybear.cronjobs.extraction.pipeline.UpdateScores")
+    @patch("greedybear.cronjobs.extraction.pipeline.ExtractionStrategyFactory")
+    def test_large_batch_of_hits(self, mock_factory, mock_scores):
+        """Large number of hits should be processed correctly."""
+        pipeline = self._create_pipeline_with_real_factory()
+
+        # Create 500 hits
+        hits = [
+            MockElasticHit(
+                {
+                    "src_ip": f"192.168.{i // 256}.{i % 256}",
+                    "type": "Cowrie",
+                }
+            )
+            for i in range(500)
+        ]
+        pipeline.elastic_repo.search.return_value = hits
+        pipeline.ioc_repo.is_empty.return_value = False
+        pipeline.ioc_repo.is_ready_for_extraction.return_value = True
+
+        mock_strategy = MagicMock()
+        mock_strategy.ioc_records = [self._create_mock_ioc("192.168.0.1")]
+        mock_factory.return_value.get_strategy.return_value = mock_strategy
+
+        result = pipeline.execute()
+
+        # Should process all hits
+        self.assertEqual(result, 1)
+        # All 500 hits should be passed to strategy
+        call_args = mock_strategy.extract_from_hits.call_args[0][0]
+        self.assertEqual(len(call_args), 500)
