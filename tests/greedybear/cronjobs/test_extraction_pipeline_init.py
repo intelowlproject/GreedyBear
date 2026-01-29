@@ -60,4 +60,3 @@ class TestMinutesBackToLookup(ExtractionTestCase):
         result = pipeline._minutes_back_to_lookup
 
         self.assertEqual(result, 5)
-
