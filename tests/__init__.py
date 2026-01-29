@@ -269,7 +269,7 @@ class MigrationTestCase(TransactionTestCase):
         self.migrator.reset()
         super().tearDown()
 
-        
+
 class E2ETestCase(ExtractionTestCase):
     """Base test case for E2E pipeline tests with real strategies.
 
