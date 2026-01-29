@@ -93,6 +93,14 @@ class MLModel(Scorer):
             df[feature] = 0
         return df[train_features]
 
+    @property
+    def is_available(self) -> bool:
+        """Check whether the model is already loaded or its file exists on disk."""
+        if "model" in self.__dict__:
+            return True
+        storage = FileSystemStorage(location=ML_MODEL_DIRECTORY)
+        return storage.exists(self.file_name)
+
     def score(self, df: pd.DataFrame) -> pd.DataFrame:
         """
         Score input data using the trained model.
@@ -112,6 +120,13 @@ class MLModel(Scorer):
             ValueError: If required features are missing from input
         """
         self.log.info(f"calculate {self.score_name} with {self.name}")
+
+        if not self.is_available:
+            self.log.warning(f"no trained model available for {self.name}, skipping scoring")
+            result_df = df.copy()
+            result_df[self.score_name] = 0
+            return result_df
+
         missing_features = set(self.features) - set(df.columns)
         if missing_features:
             raise ValueError(f"Missing required features: {missing_features}")
