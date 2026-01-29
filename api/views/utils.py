@@ -275,9 +275,11 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
 
                 # Remove verbose-only fields from response when not in verbose mode
                 if not verbose:
-                    # Remove honeypots and destination_ports arrays from response
-                    data_.pop("honeypots", None)
+                    # Remove destination_ports array from response
                     data_.pop("destination_ports", None)
+
+                # Always remove honeypots field as it's redundant with feed_type
+                data_.pop("honeypots", None)
 
                 # Skip validation - data_ is constructed internally and matches the API contract
                 json_list.append(data_)
