@@ -64,6 +64,6 @@ In 2022 we joined the official [DigitalOcean Open Source Program](https://www.di
 This project was started as a personal Christmas project by [Matteo Lodi](https://twitter.com/matte_lodi) in 2021.
 
 Special thanks to:
-* [Tim Leonhard](https://github.com/regulartim) for having greatly improved the project and added Machine Learning Models during his master thesis.
+* [Tim Leonhard](https://github.com/regulartim) for having greatly improved the project and added Machine Learning Models during his master thesis. He's the actual Principal Mantainer.
 * [Martina Carella](https://github.com/carellamartina) for having created the GUI during her master thesis.
 * [Daniele Rosetti](https://github.com/drosetti) for helping maintaining the Frontend.
