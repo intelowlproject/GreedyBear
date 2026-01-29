@@ -7,7 +7,7 @@ from django.db import migrations
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("greedybear", "0032_add_cowriecredential"),
+        ("greedybear", "0034_disable_additional_honeypots"),
     ]
 
     operations = [

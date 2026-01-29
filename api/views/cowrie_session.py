@@ -93,9 +93,15 @@ def cowrie_session_view(request):
     elif len(observable) == 64 and is_sha256hash(observable):
         try:
             commands = CommandSequence.objects.get(commands_hash=observable.lower())
-        except CommandSequence.DoesNotExist as exc:
-            raise Http404(f"No command sequences found with hash: {observable}") from exc
-        sessions = CowrieSession.objects.filter(commands=commands, duration__gt=0).prefetch_related("source", "commands", "credential_set")
+            sessions = CowrieSession.objects.filter(commands=commands, duration__gt=0).prefetch_related("source", "commands", "credential_set")
+        except CommandSequence.DoesNotExist:
+            sessions = (
+                CowrieSession.objects.filter(credential_set__password=observable, duration__gt=0)
+                .distinct()
+                .prefetch_related("source", "commands", "credential_set")
+            )
+            if not sessions.exists():
+                raise Http404(f"No command sequences or sessions with password matching hash: {observable}") from None
     else:
         sessions = (
             CowrieSession.objects.filter(

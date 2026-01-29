@@ -49,7 +49,7 @@ def reverse_migrate(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("greedybear", "0033_add_unique_constraint_to_credentials"),
+        ("greedybear", "0035_add_unique_constraint_to_credentials"),
     ]
 
     operations = [

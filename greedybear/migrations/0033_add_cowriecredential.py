@@ -8,7 +8,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("greedybear", "0031_remove_cowrie_log4j_fields"),
+        ("greedybear", "0032_torexitnode"),
     ]
 
     operations = [
