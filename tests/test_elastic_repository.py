@@ -63,7 +63,6 @@ class TestElasticRepository(CustomTestCase):
         self.assertIn("not reachable", str(ctx.exception))
 
     @patch("greedybear.cronjobs.repositories.elastic.Search")
-    @patch("greedybear.cronjobs.repositories.elastic.LEGACY_EXTRACTION", False)
     def test_search_returns_cached_list_not_generator(self, mock_search_class):
         mock_search = Mock()
         mock_search_class.return_value = mock_search
@@ -79,7 +78,6 @@ class TestElasticRepository(CustomTestCase):
         self.assertEqual(len(second_iteration), 20_000)
 
     @patch("greedybear.cronjobs.repositories.elastic.Search")
-    @patch("greedybear.cronjobs.repositories.elastic.LEGACY_EXTRACTION", False)
     def test_search_returns_ordered_list(self, mock_search_class):
         mock_search = Mock()
         mock_search_class.return_value = mock_search
@@ -94,21 +92,6 @@ class TestElasticRepository(CustomTestCase):
         self.assertTrue(is_ordered)
 
     @patch("greedybear.cronjobs.repositories.elastic.Search")
-    @patch("greedybear.cronjobs.repositories.elastic.LEGACY_EXTRACTION", True)
-    def test_search_legacy_mode_uses_relative_time(self, mock_search_class):
-        """Test legacy extraction uses relative time queries"""
-        mock_search = Mock()
-        mock_search_class.return_value = mock_search
-        mock_search.query.return_value = mock_search
-        mock_search.source.return_value = mock_search
-        mock_search.scan.return_value = iter([])
-
-        # Verify query was called (legacy mode uses different query structure)
-        self.repo.search(minutes_back_to_lookup=11)
-        mock_search.query.assert_called_once()
-
-    @patch("greedybear.cronjobs.repositories.elastic.Search")
-    @patch("greedybear.cronjobs.repositories.elastic.LEGACY_EXTRACTION", False)
     @patch("greedybear.cronjobs.repositories.elastic.get_time_window")
     def test_search_non_legacy_uses_time_window(self, mock_get_time_window, mock_search_class):
         """Test non-legacy extraction uses get_time_window"""

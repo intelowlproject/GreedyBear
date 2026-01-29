@@ -80,7 +80,6 @@ class TestHitFiltering(ExtractionPipelineTestCase):
 class TestSensorExtraction(ExtractionPipelineTestCase):
     """Tests for sensor extraction from hits."""
 
-    @patch("greedybear.cronjobs.extraction.pipeline.LEGACY_EXTRACTION", False)
     @patch("greedybear.cronjobs.extraction.pipeline.EXTRACTION_INTERVAL", 10)
     @patch("greedybear.cronjobs.extraction.pipeline.UpdateScores")
     @patch("greedybear.cronjobs.extraction.pipeline.ExtractionStrategyFactory")
