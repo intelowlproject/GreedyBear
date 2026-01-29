@@ -39,7 +39,7 @@ class TestEdgeCases(E2ETestCase):
             MockElasticHit({"src_ip": "1.1.1.1", "type": "FailingHoneypot"}),
             MockElasticHit({"src_ip": "2.2.2.2", "type": "SuccessHoneypot"}),
         ]
-        pipeline.elastic_repo.search.return_value = hits
+        pipeline.elastic_repo.search.return_value = [hits]
         pipeline.ioc_repo.is_empty.return_value = False
         pipeline.ioc_repo.is_ready_for_extraction.return_value = True
 
@@ -85,7 +85,7 @@ class TestLargeBatches(E2ETestCase):
             )
             for i in range(100)
         ]
-        pipeline.elastic_repo.search.return_value = hits
+        pipeline.elastic_repo.search.return_value = [hits]
         pipeline.ioc_repo.is_empty.return_value = False
         pipeline.ioc_repo.is_ready_for_extraction.return_value = True
         pipeline.ioc_repo.get_ioc_by_name.return_value = None

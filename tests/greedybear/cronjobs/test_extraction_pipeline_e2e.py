@@ -37,7 +37,7 @@ class TestCowrieE2E(E2ETestCase):
                 }
             ),
         ]
-        pipeline.elastic_repo.search.return_value = cowrie_hits
+        pipeline.elastic_repo.search.return_value = [cowrie_hits]
         pipeline.ioc_repo.is_empty.return_value = False
         pipeline.ioc_repo.is_ready_for_extraction.return_value = True
         pipeline.ioc_repo.get_ioc_by_name.return_value = None  # New IOC
@@ -75,7 +75,7 @@ class TestCowrieE2E(E2ETestCase):
                 }
             ),
         ]
-        pipeline.elastic_repo.search.return_value = cowrie_hits
+        pipeline.elastic_repo.search.return_value = [cowrie_hits]
         pipeline.ioc_repo.is_empty.return_value = False
         pipeline.ioc_repo.is_ready_for_extraction.return_value = True
         pipeline.ioc_repo.get_ioc_by_name.return_value = None
@@ -111,7 +111,7 @@ class TestLog4potE2E(E2ETestCase):
                 }
             ),
         ]
-        pipeline.elastic_repo.search.return_value = log4pot_hits
+        pipeline.elastic_repo.search.return_value = [log4pot_hits]
         pipeline.ioc_repo.is_empty.return_value = False
         pipeline.ioc_repo.is_ready_for_extraction.return_value = True
         pipeline.ioc_repo.get_ioc_by_name.return_value = None
@@ -141,7 +141,7 @@ class TestLog4potE2E(E2ETestCase):
                 }
             ),
         ]
-        pipeline.elastic_repo.search.return_value = log4pot_hits
+        pipeline.elastic_repo.search.return_value = [log4pot_hits]
         pipeline.ioc_repo.is_empty.return_value = False
         pipeline.ioc_repo.is_ready_for_extraction.return_value = True
         pipeline.ioc_repo.get_ioc_by_name.return_value = None
@@ -176,7 +176,7 @@ class TestGenericE2E(E2ETestCase):
                 }
             ),
         ]
-        pipeline.elastic_repo.search.return_value = unknown_hits
+        pipeline.elastic_repo.search.return_value = [unknown_hits]
         pipeline.ioc_repo.is_empty.return_value = False
         pipeline.ioc_repo.is_ready_for_extraction.return_value = True
         pipeline.ioc_repo.get_ioc_by_name.return_value = None
@@ -232,7 +232,7 @@ class TestMixedHoneypotE2E(E2ETestCase):
                 }
             ),
         ]
-        pipeline.elastic_repo.search.return_value = mixed_hits
+        pipeline.elastic_repo.search.return_value = [mixed_hits]
         pipeline.ioc_repo.is_empty.return_value = False
         pipeline.ioc_repo.is_ready_for_extraction.return_value = True
         pipeline.ioc_repo.get_ioc_by_name.return_value = None
@@ -269,7 +269,7 @@ class TestStrategyExceptionHandling(E2ETestCase):
                 }
             ),
         ]
-        pipeline.elastic_repo.search.return_value = hits
+        pipeline.elastic_repo.search.return_value = [hits]
         pipeline.ioc_repo.is_empty.return_value = False
         pipeline.ioc_repo.is_ready_for_extraction.return_value = True
 
@@ -303,7 +303,7 @@ class TestScoringIntegration(E2ETestCase):
                 }
             ),
         ]
-        pipeline.elastic_repo.search.return_value = hits
+        pipeline.elastic_repo.search.return_value = [hits]
         pipeline.ioc_repo.is_empty.return_value = False
         pipeline.ioc_repo.is_ready_for_extraction.return_value = True
         pipeline.ioc_repo.get_ioc_by_name.return_value = None
@@ -357,7 +357,7 @@ class TestIocContentVerification(E2ETestCase):
                 }
             ),
         ]
-        pipeline.elastic_repo.search.return_value = hits
+        pipeline.elastic_repo.search.return_value = [hits]
         pipeline.ioc_repo.is_empty.return_value = False
         pipeline.ioc_repo.is_ready_for_extraction.return_value = True
         pipeline.ioc_repo.get_ioc_by_name.return_value = None
@@ -419,7 +419,7 @@ class TestIocContentVerification(E2ETestCase):
                 }
             ),
         ]
-        pipeline.elastic_repo.search.return_value = hits
+        pipeline.elastic_repo.search.return_value = [hits]
         pipeline.ioc_repo.is_empty.return_value = False
         pipeline.ioc_repo.is_ready_for_extraction.return_value = True
         pipeline.ioc_repo.get_ioc_by_name.return_value = None
@@ -478,7 +478,7 @@ class TestIocContentVerification(E2ETestCase):
                 }
             ),
         ]
-        pipeline.elastic_repo.search.return_value = hits
+        pipeline.elastic_repo.search.return_value = [hits]
         pipeline.ioc_repo.is_empty.return_value = False
         pipeline.ioc_repo.is_ready_for_extraction.return_value = True
         pipeline.ioc_repo.get_ioc_by_name.return_value = None

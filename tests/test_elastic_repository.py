@@ -18,38 +18,38 @@ class TestElasticRepository(CustomTestCase):
 
         self.repo = ElasticRepository()
 
+    @patch("greedybear.cronjobs.repositories.elastic.get_time_window")
     @patch("greedybear.cronjobs.repositories.elastic.Search")
-    def test_has_honeypot_been_hit_returns_true_when_hits_exist(self, mock_search_class):
+    def test_has_honeypot_been_hit_returns_true_when_hits_exist(self, mock_search_class, mock_get_time_window):
         mock_search = Mock()
         mock_search_class.return_value = mock_search
-        mock_q = Mock()
-        with patch.object(self.repo, "_standard_query", return_value=mock_q):
-            mock_search.query.return_value = mock_search
-            mock_search.filter.return_value = mock_search
-            mock_search.count.return_value = 1
+        mock_search.query.return_value = mock_search
+        mock_search.filter.return_value = mock_search
+        mock_search.count.return_value = 1
+        mock_get_time_window.return_value = (datetime(2025, 1, 1), datetime(2025, 1, 1, 0, 10))
 
-            result = self.repo.has_honeypot_been_hit(minutes_back_to_lookup=10, honeypot_name="test_honeypot")
-            self.assertTrue(result)
-            mock_search.query.assert_called_once_with(mock_q)
-            mock_search.filter.assert_called_once_with("term", **{"type.keyword": "test_honeypot"})
-            mock_search.count.assert_called_once()
+        result = self.repo.has_honeypot_been_hit(minutes_back_to_lookup=10, honeypot_name="test_honeypot")
+        self.assertTrue(result)
+        mock_search.query.assert_called_once()
+        mock_search.filter.assert_called_once_with("term", **{"type.keyword": "test_honeypot"})
+        mock_search.count.assert_called_once()
 
+    @patch("greedybear.cronjobs.repositories.elastic.get_time_window")
     @patch("greedybear.cronjobs.repositories.elastic.Search")
-    def test_has_honeypot_been_hit_returns_false_when_no_hits(self, mock_search_class):
+    def test_has_honeypot_been_hit_returns_false_when_no_hits(self, mock_search_class, mock_get_time_window):
         mock_search = Mock()
         mock_search_class.return_value = mock_search
-        mock_q = Mock()
-        with patch.object(self.repo, "_standard_query", return_value=mock_q):
-            mock_search.query.return_value = mock_search
-            mock_search.filter.return_value = mock_search
-            mock_search.count.return_value = 0
+        mock_search.query.return_value = mock_search
+        mock_search.filter.return_value = mock_search
+        mock_search.count.return_value = 0
+        mock_get_time_window.return_value = (datetime(2025, 1, 1), datetime(2025, 1, 1, 0, 10))
 
-            result = self.repo.has_honeypot_been_hit(minutes_back_to_lookup=10, honeypot_name="test_honeypot")
+        result = self.repo.has_honeypot_been_hit(minutes_back_to_lookup=10, honeypot_name="test_honeypot")
 
-            self.assertFalse(result)
-            mock_search.query.assert_called_once_with(mock_q)
-            mock_search.filter.assert_called_once_with("term", **{"type.keyword": "test_honeypot"})
-            mock_search.count.assert_called_once()
+        self.assertFalse(result)
+        mock_search.query.assert_called_once()
+        mock_search.filter.assert_called_once_with("term", **{"type.keyword": "test_honeypot"})
+        mock_search.count.assert_called_once()
 
     def test_healthcheck_passes_when_ping_succeeds(self):
         self.mock_client.ping.return_value = True
@@ -62,8 +62,9 @@ class TestElasticRepository(CustomTestCase):
             self.repo._healthcheck()
         self.assertIn("not reachable", str(ctx.exception))
 
+    @patch("greedybear.cronjobs.repositories.elastic.get_time_window")
     @patch("greedybear.cronjobs.repositories.elastic.Search")
-    def test_search_returns_cached_list_not_generator(self, mock_search_class):
+    def test_search_yields_all_hits_across_chunks(self, mock_search_class, mock_get_time_window):
         mock_search = Mock()
         mock_search_class.return_value = mock_search
         mock_search.query.return_value = mock_search
@@ -71,14 +72,15 @@ class TestElasticRepository(CustomTestCase):
 
         mock_hits = [{"name": f"hit{i}", "@timestamp": i} for i in range(20_000)]
         mock_search.scan.return_value = iter(mock_hits)
+        mock_get_time_window.return_value = (datetime(2025, 1, 1, 12, 0), datetime(2025, 1, 1, 12, 10))
 
-        first_iteration = list(self.repo.search(minutes_back_to_lookup=10))
-        second_iteration = list(self.repo.search(minutes_back_to_lookup=10))
-        self.assertEqual(len(first_iteration), 20_000)
-        self.assertEqual(len(second_iteration), 20_000)
+        chunks = list(self.repo.search(minutes_back_to_lookup=10))
+        all_hits = [hit for chunk in chunks for hit in chunk]
+        self.assertEqual(len(all_hits), 20_000)
 
+    @patch("greedybear.cronjobs.repositories.elastic.get_time_window")
     @patch("greedybear.cronjobs.repositories.elastic.Search")
-    def test_search_returns_ordered_list(self, mock_search_class):
+    def test_search_returns_ordered_hits_within_chunks(self, mock_search_class, mock_get_time_window):
         mock_search = Mock()
         mock_search_class.return_value = mock_search
         mock_search.query.return_value = mock_search
@@ -86,15 +88,17 @@ class TestElasticRepository(CustomTestCase):
 
         mock_hits = [{"name": f"hit{i}", "@timestamp": i % 7} for i in range(20_000)]
         mock_search.scan.return_value = iter(mock_hits)
+        mock_get_time_window.return_value = (datetime(2025, 1, 1, 12, 0), datetime(2025, 1, 1, 12, 10))
 
-        result = list(self.repo.search(minutes_back_to_lookup=10))
-        is_ordered = all(a["@timestamp"] <= b["@timestamp"] for a, b in zip(result, result[1:], strict=False))
-        self.assertTrue(is_ordered)
+        chunks = list(self.repo.search(minutes_back_to_lookup=10))
+        for chunk in chunks:
+            is_ordered = all(a["@timestamp"] <= b["@timestamp"] for a, b in zip(chunk, chunk[1:], strict=False))
+            self.assertTrue(is_ordered)
 
     @patch("greedybear.cronjobs.repositories.elastic.Search")
     @patch("greedybear.cronjobs.repositories.elastic.get_time_window")
-    def test_search_non_legacy_uses_time_window(self, mock_get_time_window, mock_search_class):
-        """Test non-legacy extraction uses get_time_window"""
+    def test_search_uses_time_window(self, mock_get_time_window, mock_search_class):
+        """Test extraction uses get_time_window"""
         mock_search = Mock()
         mock_search_class.return_value = mock_search
         mock_search.query.return_value = mock_search
@@ -105,24 +109,9 @@ class TestElasticRepository(CustomTestCase):
         window_end = datetime(2025, 1, 1, 12, 10, 0)
         mock_get_time_window.return_value = (window_start, window_end)
 
-        self.repo.search(minutes_back_to_lookup=10)
+        list(self.repo.search(minutes_back_to_lookup=10))
 
         mock_get_time_window.assert_called_once()
-
-    @patch("greedybear.cronjobs.repositories.elastic.get_time_window")
-    @patch("greedybear.cronjobs.repositories.elastic.datetime")
-    def test_standard_query_returns_correct_query(self, mock_datetime, mock_get_time_window):
-        now = datetime(2023, 1, 1, 0, 0, 0)
-        mock_datetime.now.return_value = now
-        window_start = "2022-12-31T23:50:00"
-        window_end = "2023-01-01T00:00:00"
-        mock_get_time_window.return_value = (window_start, window_end)
-
-        q = self.repo._standard_query(minutes_back_to_lookup=10)
-
-        expected_dict = {"range": {"@timestamp": {"gte": window_start, "lt": window_end}}}
-        self.assertEqual(q.to_dict(), expected_dict)
-        mock_get_time_window.assert_called_once_with(now, 10)
 
 
 class TestTimeWindowCalculation(CustomTestCase):
