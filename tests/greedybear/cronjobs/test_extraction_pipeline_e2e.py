@@ -313,9 +313,9 @@ class TestScoringIntegration(E2ETestCase):
             mock_add.return_value = mock_ioc
             result = pipeline.execute()
 
-        # If IOCs were extracted, scoring should be called
-        if result > 0:
-            mock_scores.return_value.score_only.assert_called()
+        # IOCs should be extracted, and scoring should be called
+        self.assertGreater(result, 0)
+        mock_scores.return_value.score_only.assert_called()
 
     @patch("greedybear.cronjobs.extraction.pipeline.UpdateScores")
     def test_scoring_skipped_when_no_iocs(self, mock_scores):
