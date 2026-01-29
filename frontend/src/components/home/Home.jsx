@@ -12,6 +12,12 @@ const versionText = VERSION;
 const logoBgImg = `url('${PUBLIC_URL}/greedybear.png')`;
 const blogPosts = [
   {
+    title: "GreedyBear version 3 coming",
+    subText: "With many new features",
+    date: "29th January 2026",
+    link: "https://intelowlproject.github.io/blogs/greedybear_v3_release",
+  },
+  {
     title: "GreedyBear version 2.0 released",
     subText: "Upgrade from 1.x requires manual intervention",
     date: "3rd October 2025",
