@@ -1,4 +1,4 @@
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import numpy as np
 import pandas as pd
@@ -115,3 +115,24 @@ class TestRegressor(CustomTestCase):
 
         expected = np.array([0, 5, 0, 0, 2])
         np.testing.assert_array_equal(predictions, expected)
+
+
+class TestModelUnavailable(CustomTestCase):
+    """Test that scoring handles missing model files gracefully."""
+
+    class MockRFClassifier(TestClassifier.MockRFModel, Classifier):
+        def __init__(self):
+            super().__init__("Mock Random Forest Classifier", "mock_score")
+
+        @property
+        def untrained_model(self):
+            return Mock()
+
+    @patch("greedybear.cronjobs.scoring.ml_model.FileSystemStorage")
+    def test_score_skips_when_model_unavailable(self, mock_storage_cls):
+        """When the model file does not exist, score() should return a DataFrame with the score column set to 0."""
+        mock_storage_cls.return_value.exists.return_value = False
+        classifier = self.MockRFClassifier()
+        df = classifier.score(SAMPLE_DATA)
+        self.assertIn("mock_score", df.columns)
+        self.assertTrue((df["mock_score"] == 0).all())
