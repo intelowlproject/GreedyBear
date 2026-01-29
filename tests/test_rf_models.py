@@ -128,9 +128,7 @@ class TestModelUnavailable(CustomTestCase):
         def untrained_model(self):
             return Mock()
 
-    @patch(
-        "greedybear.cronjobs.scoring.ml_model.FileSystemStorage"
-    )
+    @patch("greedybear.cronjobs.scoring.ml_model.FileSystemStorage")
     def test_score_skips_when_model_unavailable(self, mock_storage_cls):
         """When the model file does not exist, score() should return a DataFrame with the score column set to 0."""
         mock_storage_cls.return_value.exists.return_value = False
