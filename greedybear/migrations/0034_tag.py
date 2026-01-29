@@ -6,7 +6,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("greedybear", "0032_torexitnode"),
+        ("greedybear", "0033_disable_additional_honeypots"),
     ]
 
     operations = [

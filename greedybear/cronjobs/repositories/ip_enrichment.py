@@ -5,16 +5,7 @@ class TagRepository:
     """Repository for Tag model."""
 
     def create_tags(self, ioc: IOC, tags: list, source: str) -> list:
-        """Create Tag records for an IOC with normalized tag names.
-
-        Args:
-            ioc: The IOC instance to associate tags with
-            tags: List of tag names (will be normalized to lowercase)
-            source: Source of the tags ("abuseipdb" or "abuse_ch")
-
-        Returns:
-            List of created Tag instances
-        """
+        """Create Tag records for an IOC with normalized tag names."""
         created_tags = []
         for tag_name in tags:
             # Normalize tag name to lowercase
