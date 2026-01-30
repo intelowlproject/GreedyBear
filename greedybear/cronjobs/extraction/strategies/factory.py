@@ -2,7 +2,6 @@ from greedybear.cronjobs.extraction.strategies import (
     BaseExtractionStrategy,
     CowrieExtractionStrategy,
     GenericExtractionStrategy,
-    Log4potExtractionStrategy,
 )
 from greedybear.cronjobs.repositories import IocRepository, SensorRepository
 
@@ -26,7 +25,6 @@ class ExtractionStrategyFactory:
         self.sensor_repo = sensor_repo
         self._strategies = {
             "Cowrie": lambda: CowrieExtractionStrategy("Cowrie", self.ioc_repo, self.sensor_repo),
-            "Log4pot": lambda: Log4potExtractionStrategy("Log4pot", self.ioc_repo, self.sensor_repo),
         }
 
     def get_strategy(self, honeypot: str) -> BaseExtractionStrategy:
