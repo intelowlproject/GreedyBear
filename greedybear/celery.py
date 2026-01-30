@@ -122,6 +122,16 @@ app.conf.beat_schedule = {
         "schedule": crontab(hour=4, minute=30, day_of_week=0),
         "options": {"queue": "default"},
     },
+    "get_threatfox_feed": {
+        "task": "greedybear.tasks.get_threatfox_feed",
+        "schedule": crontab(hour=4, minute=35, day_of_week=0),
+        "options": {"queue": "default"},
+    },
+    "get_abuseipdb_feed": {
+        "task": "greedybear.tasks.get_abuseipdb_feed",
+        "schedule": crontab(hour=4, minute=40, day_of_week=0),
+        "options": {"queue": "default"},
+    },
     "enrich_ips": {
         "task": "greedybear.tasks.enrich_ips",
         "schedule": crontab(hour=4, minute=45, day_of_week=0),

@@ -86,6 +86,20 @@ def get_tor_exit_nodes():
 
 
 @shared_task()
+def get_threatfox_feed():
+    from greedybear.cronjobs.threatfox_feed import ThreatFoxCron
+
+    ThreatFoxCron().execute()
+
+
+@shared_task()
+def get_abuseipdb_feed():
+    from greedybear.cronjobs.abuseipdb_feed import AbuseIPDBCron
+
+    AbuseIPDBCron().execute()
+
+
+@shared_task()
 def enrich_ips():
     from greedybear.cronjobs.ip_enrichment import IPEnrichmentCron
 

@@ -8,6 +8,7 @@ from django.utils.translation import ngettext
 
 from greedybear.models import (
     IOC,
+    AbuseIPDBEntry,
     CommandSequence,
     CowrieSession,
     FireHolList,
@@ -16,6 +17,7 @@ from greedybear.models import (
     Sensor,
     Statistics,
     Tag,
+    ThreatFoxEntry,
     TorExitNode,
     WhatsMyIPDomain,
 )
@@ -28,6 +30,22 @@ class TorExitNodeModelAdmin(admin.ModelAdmin):
     list_display = ["ip_address", "added", "reason"]
     search_fields = ["ip_address"]
     search_help_text = ["search for the IP address"]
+
+
+@admin.register(ThreatFoxEntry)
+class ThreatFoxEntryModelAdmin(admin.ModelAdmin):
+    list_display = ["ip_address", "malware_family", "added", "last_seen_online"]
+    list_filter = ["malware_family"]
+    search_fields = ["ip_address", "malware_family"]
+    search_help_text = ["search for IP address or malware family"]
+
+
+@admin.register(AbuseIPDBEntry)
+class AbuseIPDBEntryModelAdmin(admin.ModelAdmin):
+    list_display = ["ip_address", "abuse_confidence_score", "added", "last_reported_at"]
+    search_fields = ["ip_address"]
+    search_help_text = ["search for IP address"]
+    list_filter = ["abuse_confidence_score"]
 
 
 @admin.register(Sensor)

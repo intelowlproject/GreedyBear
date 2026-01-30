@@ -168,6 +168,42 @@ class TorExitNode(models.Model):
         return f"{self.ip_address} (tor exit node)"
 
 
+class ThreatFoxEntry(models.Model):
+    """Store ThreatFox IOCs (IP addresses) from Abuse.ch."""
+
+    ip_address = models.CharField(max_length=256, blank=False, unique=True)
+    malware_family = models.CharField(max_length=64, blank=True, default="")
+    added = models.DateTimeField(blank=False, default=datetime.now)
+    last_seen_online = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["ip_address"]),
+        ]
+        verbose_name_plural = "ThreatFox entries"
+
+    def __str__(self):
+        return f"{self.ip_address} ({self.malware_family or 'unknown'})"
+
+
+class AbuseIPDBEntry(models.Model):
+    """Store AbuseIPDB blacklist entries."""
+
+    ip_address = models.CharField(max_length=256, blank=False, unique=True)
+    abuse_confidence_score = models.IntegerField(default=0)
+    added = models.DateTimeField(blank=False, default=datetime.now)
+    last_reported_at = models.DateTimeField(blank=True, null=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["ip_address"]),
+        ]
+        verbose_name_plural = "AbuseIPDB entries"
+
+    def __str__(self):
+        return f"{self.ip_address} (score: {self.abuse_confidence_score})"
+
+
 class Tag(models.Model):
     """Store malware/threat tags from external sources like AbuseIPDB and Abuse.ch."""
 
