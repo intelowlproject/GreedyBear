@@ -41,12 +41,17 @@ class ThreatFoxCron(Cronjob):
 
             entries_added = 0
             for row in csv_reader:
-                # Skip comment lines
-                if not row or list(row.keys())[0].startswith("#"):
+                # Skip empty rows or rows where first field is empty/comment
+                if not row:
                     continue
 
                 # Extract IP from "ip:port" format
                 ioc_value = row.get("ioc", "") or row.get("IOC", "")
+
+                # Skip comment lines (ThreatFox CSV has # prefixed comments)
+                if not ioc_value or ioc_value.startswith("#"):
+                    continue
+
                 if ":" in ioc_value:
                     ip_address = ioc_value.split(":", 1)[0]
                 else:
