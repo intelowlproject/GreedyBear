@@ -36,20 +36,24 @@ class ThreatFoxCron(Cronjob):
             self.log.info("Clearing old ThreatFox entries")
             self.threatfox_repo.delete_all()
 
-            # Parse CSV
-            csv_reader = csv.DictReader(io.StringIO(r.text), delimiter=",", quotechar='"')
+            # Parse CSV - filter out comment lines first
+            # ThreatFox CSV has comment lines starting with #, need to remove before DictReader
+            csv_lines = r.text.splitlines()
+            filtered_lines = [line for line in csv_lines if line.strip() and not line.strip().startswith("#")]
+            csv_text = "\n".join(filtered_lines)
+
+            csv_reader = csv.DictReader(io.StringIO(csv_text), delimiter=",", quotechar='"')
 
             entries_added = 0
             for row in csv_reader:
-                # Skip empty rows or rows where first field is empty/comment
+                # Skip empty rows
                 if not row:
                     continue
 
                 # Extract IP from "ip:port" format
                 ioc_value = row.get("ioc", "") or row.get("IOC", "")
 
-                # Skip comment lines (ThreatFox CSV has # prefixed comments)
-                if not ioc_value or ioc_value.startswith("#"):
+                if not ioc_value:
                     continue
 
                 if ":" in ioc_value:
