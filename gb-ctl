@@ -61,8 +61,8 @@ print_help() {
 GreedyBear - Automated Setup and Management Script
 
 SYNOPSIS
-    ./start <command> [OPTIONS]
-    ./start -h|--help
+    ./gb-ctl <command> [OPTIONS]
+    ./gb-ctl -h|--help
 
 COMMANDS
     init         Initialize GreedyBear (setup environment files)
@@ -96,20 +96,20 @@ FEATURE FLAGS
 
 EXAMPLES
     # Initialize and start production deployment
-    ./start init --prod
-    ./start up --prod
+    ./gb-ctl init --prod
+    ./gb-ctl up --prod
 
     # Development with Elasticsearch
-    ./start up --dev --elastic
+    ./gb-ctl up --dev --elastic
 
     # Update production instance
-    ./start update --prod
+    ./gb-ctl update --prod
 
     # View logs
-    ./start logs
+    ./gb-ctl logs
 
     # Silent installation (non-interactive)
-    ./start init --prod --silent
+    ./gb-ctl init --prod --silent
 
 EOF
 }
