@@ -159,7 +159,7 @@ check_docker_compose() {
     fi
 }
 
-# Install Docker (basic implementation for common distros)
+# Install Docker (support for multiple distros)
 install_docker() {
     log_info "Installing Docker..."
     
@@ -173,11 +173,42 @@ install_docker() {
                 rm get-docker.sh
                 log_success "Docker installed. Please log out and back in for group changes to take effect."
                 ;;
+            fedora)
+                sudo dnf -y install dnf-plugins-core
+                sudo dnf config-manager --add-repo https://download.docker.com/linux/fedora/docker-ce.repo
+                sudo dnf install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+                sudo systemctl start docker
+                sudo systemctl enable docker
+                sudo usermod -aG docker "$USER"
+                log_success "Docker installed. Please log out and back in for group changes to take effect."
+                ;;
+            centos|rhel|almalinux|rocky)
+                sudo yum install -y yum-utils
+                sudo yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+                sudo yum install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+                sudo systemctl start docker
+                sudo systemctl enable docker
+                sudo usermod -aG docker "$USER"
+                log_success "Docker installed. Please log out and back in for group changes to take effect."
+                ;;
+            opensuse*|sles)
+                sudo zypper install -y docker docker-compose
+                sudo systemctl start docker
+                sudo systemctl enable docker
+                sudo usermod -aG docker "$USER"
+                log_success "Docker installed. Please log out and back in for group changes to take effect."
+                ;;
             *)
-                log_error "Automatic installation not supported for $ID. Please install manually."
+                log_error "Automatic installation not supported for $ID"
+                log_info "Please install Docker manually:"
+                log_info "  Visit: https://docs.docker.com/get-docker/"
                 exit 1
                 ;;
         esac
+    else
+        log_error "Cannot detect OS. Please install Docker manually."
+        log_info "Visit: https://docs.docker.com/get-docker/"
+        exit 1
     fi
 }
 
@@ -210,8 +241,25 @@ check_requirements() {
 init_env_files() {
     log_info "Initializing environment files..."
     
-    # Copy env_file if it doesn't exist
-    if [ ! -f docker/env_file ]; then
+    # Handle env_file
+    if [ -f docker/env_file ]; then
+        if [ "$SILENT_MODE" = true ]; then
+            log_info "Regenerating docker/env_file (silent mode)"
+            cp docker/env_file_template docker/env_file
+            log_success "Regenerated docker/env_file from template"
+        else
+            log_warning "docker/env_file already exists"
+            read -p "Do you want to regenerate it? This will backup the existing file. [y/N] " -n 1 -r
+            echo
+            if [[ $REPLY =~ ^[Yy]$ ]]; then
+                mv docker/env_file docker/env_file.backup.$(date +%Y%m%d_%H%M%S)
+                cp docker/env_file_template docker/env_file
+                log_success "Backed up old file and created new docker/env_file from template"
+            else
+                log_info "Keeping existing docker/env_file"
+            fi
+        fi
+    else
         if [ -f docker/env_file_template ]; then
             cp docker/env_file_template docker/env_file
             log_success "Created docker/env_file from template"
@@ -227,12 +275,18 @@ init_env_files() {
             log_error "docker/env_file_template not found"
             exit 1
         fi
-    else
-        log_info "docker/env_file already exists, skipping"
     fi
     
-    # Copy env_file_postgres if it doesn't exist
-    if [ ! -f docker/env_file_postgres ]; then
+    # Handle env_file_postgres
+    if [ -f docker/env_file_postgres ]; then
+        if [ "$SILENT_MODE" = true ]; then
+            log_info "Regenerating docker/env_file_postgres (silent mode)"
+            cp docker/env_file_postgres_template docker/env_file_postgres
+            log_success "Regenerated docker/env_file_postgres from template"
+        else
+            log_info "docker/env_file_postgres already exists, skipping"
+        fi
+    else
         if [ -f docker/env_file_postgres_template ]; then
             cp docker/env_file_postgres_template docker/env_file_postgres
             log_success "Created docker/env_file_postgres from template"
@@ -240,20 +294,20 @@ init_env_files() {
             log_error "docker/env_file_postgres_template not found"
             exit 1
         fi
-    else
-        log_info "docker/env_file_postgres already exists, skipping"
     fi
     
-    # Copy .env if it doesn't exist
-    if [ ! -f .env ]; then
+    # Handle .env
+    if [ -f .env ]; then
+        if [ "$SILENT_MODE" = false ]; then
+            log_info ".env already exists, skipping"
+        fi
+    else
         if [ -f .env_template ]; then
             cp .env_template .env
             log_success "Created .env from template"
         else
             log_warning ".env_template not found, skipping"
         fi
-    else
-        log_info ".env already exists, skipping"
     fi
     
     # Generate Django secret if needed
@@ -350,6 +404,29 @@ cmd_init() {
 # Start services
 cmd_up() {
     log_info "Starting GreedyBear services..."
+    
+    # Handle version checkout if specified
+    if [ "$GREEDYBEAR_VERSION" != "latest" ] && [ "$ENV_MODE" = "prod" ]; then
+        log_info "Checking out version ${GREEDYBEAR_VERSION}..."
+        
+        # Add current directory to git safe.directory if needed
+        directory=$(git config --global --get safe.directory 2>/dev/null || true)
+        if ! [[ "${directory}" == $(pwd) ]]; then
+            git config --global --add safe.directory "$(pwd)"
+        fi
+        
+        # Checkout the specified version
+        if git rev-parse "v${GREEDYBEAR_VERSION}" >/dev/null 2>&1; then
+            git checkout "v${GREEDYBEAR_VERSION}"
+            log_success "Checked out version v${GREEDYBEAR_VERSION}"
+        else
+            log_error "Version v${GREEDYBEAR_VERSION} not found"
+            log_info "Available versions:"
+            git tag -l "v*" | tail -10
+            exit 1
+        fi
+    fi
+    
     execute_compose up -d "$@"
     log_success "GreedyBear is up and running!"
     
