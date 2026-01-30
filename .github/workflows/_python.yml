@@ -20,6 +20,10 @@ on:
         description: Path to the requirements.txt file
         type: string
         required: true
+      project_dev_requirements_file:
+        description: Path to an additional project dev requirements file
+        type: string
+        required: false
       install_from:
         description: Directory that must be used to install the packages
         type: string
@@ -325,7 +329,7 @@ jobs:
         uses: ./.github/actions/python_requirements/create_dev_requirements_file
         with:
           install_from: ${{ inputs.install_from }}
-          use_coverage: ${{ inputs.use_coverage }}
+          project_dev_requirements_file: ${{ inputs.project_dev_requirements_file }}
 
       - name: Create docs requirements file
         uses: ./.github/actions/python_requirements/create_docs_requirements_file

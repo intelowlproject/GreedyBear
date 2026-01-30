@@ -8,9 +8,6 @@ inputs:
   project_dev_requirements_file:
     description: An additional project dev requirements file
     required: false
-  use_coverage:
-    description: Use coverage.py
-    required: false
 
 runs:
   using: "composite"
@@ -18,10 +15,7 @@ runs:
     - name: Create requirements-dev.txt
       run: |
         echo > requirements-dev.txt
-        if [[ '${{ inputs.use_coverage }}' != 'false' ]]; then
-          echo "coverage>=7.3.2" >> requirements-dev.txt
-        fi
-        if [[ -z '${{ inputs.project_dev_requirements_file }}' ]];then
+        if [[ -n '${{ inputs.project_dev_requirements_file }}' ]];then
           cat $(echo ${{ inputs.project_dev_requirements_file }}) >> requirements-dev.txt
         fi
       shell: bash
