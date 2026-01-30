@@ -3,12 +3,11 @@
 # GreedyBear Setup and Management Script
 # This script simplifies deployment, updates, and management of GreedyBear instances
 
-set -e
+set -euo pipefail
 
 # Version and defaults
 GREEDYBEAR_VERSION="latest"
 PROJECT_NAME="greedybear"
-DOCKER_COMPOSE_MIN_VERSION="2.0.0"
 SILENT_MODE=false
 
 # Color codes for output
@@ -19,7 +18,6 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Environment and command validation arrays
-declare -A env_arguments=(["prod"]=1 ["dev"]=1 ["test"]=1)
 declare -A cmd_arguments=(["init"]=1 ["up"]=1 ["start"]=1 ["down"]=1 ["stop"]=1 ["restart"]=1 ["logs"]=1 ["ps"]=1 ["update"]=1 ["build"]=1 ["pull"]=1 ["backup"]=1 ["restore"]=1 ["health"]=1 ["clean"]=1)
 
 # Path mapping for compose files
@@ -315,15 +313,20 @@ init_env_files() {
     fi
     
     # Generate Django secret if needed
-    if [ "$SILENT_MODE" = false ]; then
-        if grep -q "^DJANGO_SECRET=$" docker/env_file 2>/dev/null || grep -q "^DJANGO_SECRET=\"\"$" docker/env_file 2>/dev/null; then
+    if grep -q "^DJANGO_SECRET=$" docker/env_file 2>/dev/null || grep -q "^DJANGO_SECRET=\"\"$" docker/env_file 2>/dev/null; then
+        if [ "$SILENT_MODE" = false ]; then
             log_info "Generating Django secret key..."
-            DJANGO_SECRET=$(openssl rand -base64 32 2>/dev/null || cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 50 | head -n 1)
-            sed -i "s/^DJANGO_SECRET=.*/DJANGO_SECRET=${DJANGO_SECRET}/" docker/env_file
+        fi
+        DJANGO_SECRET=$(openssl rand -base64 32 2>/dev/null || cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 50 | head -n 1)
+        # Use | as delimiter to avoid issues with / in base64
+        sed -i "s|^DJANGO_SECRET=.*|DJANGO_SECRET=${DJANGO_SECRET}|" docker/env_file
+        if [ "$SILENT_MODE" = false ]; then
             log_success "Generated and set DJANGO_SECRET"
         fi
-        
-        # Generate database password if needed
+    fi
+    
+    # Generate database password if needed
+    if [ "$SILENT_MODE" = false ]; then
         if grep -q "^DB_PASSWORD=password$" docker/env_file 2>/dev/null; then
             log_warning "Using default database password. Consider changing it in docker/env_file"
         fi
@@ -399,9 +402,9 @@ cmd_init() {
     log_info "Next steps:"
     if [ "$SILENT_MODE" = false ]; then
         log_info "  1. Review and configure docker/env_file with your settings"
-        log_info "  2. Start GreedyBear with: ./start up --${ENV_MODE}"
+        log_info "  2. Start GreedyBear with: ./gbctl up --${ENV_MODE}"
     else
-        log_info "  Start GreedyBear with: ./start up --${ENV_MODE}"
+        log_info "  Start GreedyBear with: ./gbctl up --${ENV_MODE}"
     fi
 }
 
@@ -409,26 +412,10 @@ cmd_init() {
 cmd_up() {
     log_info "Starting GreedyBear services..."
     
-    # Handle version checkout if specified
+    # Handle version selection for Docker images if specified
     if [ "$GREEDYBEAR_VERSION" != "latest" ] && [ "$ENV_MODE" = "prod" ]; then
-        log_info "Checking out version ${GREEDYBEAR_VERSION}..."
-        
-        # Add current directory to git safe.directory if needed
-        directory=$(git config --global --get safe.directory 2>/dev/null || true)
-        if ! [[ "${directory}" == $(pwd) ]]; then
-            git config --global --add safe.directory "$(pwd)"
-        fi
-        
-        # Checkout the specified version
-        if git rev-parse "v${GREEDYBEAR_VERSION}" >/dev/null 2>&1; then
-            git checkout "v${GREEDYBEAR_VERSION}"
-            log_success "Checked out version v${GREEDYBEAR_VERSION}"
-        else
-            log_error "Version v${GREEDYBEAR_VERSION} not found"
-            log_info "Available versions:"
-            git tag -l "v*" | tail -10
-            exit 1
-        fi
+        export REACT_APP_INTELOWL_VERSION="$GREEDYBEAR_VERSION"
+        log_info "Using GreedyBear version ${GREEDYBEAR_VERSION} for Docker images (REACT_APP_INTELOWL_VERSION)"
     fi
     
     execute_compose up -d "$@"
@@ -468,7 +455,21 @@ cmd_restart() {
 
 # View logs
 cmd_logs() {
-    execute_compose logs -f "$@"
+    local follow=false
+    
+    # Check if -f or --follow flag is provided
+    for arg in "$@"; do
+        if [ "$arg" = "-f" ] || [ "$arg" = "--follow" ]; then
+            follow=true
+            break
+        fi
+    done
+    
+    if [ "$follow" = true ]; then
+        execute_compose logs -f "$@"
+    else
+        execute_compose logs "$@"
+    fi
 }
 
 # List services
@@ -515,17 +516,28 @@ cmd_backup() {
     
     mkdir -p "$backup_dir"
     
+    # Detect whether docker needs sudo
+    local docker_cmd="docker"
+    if ! docker ps >/dev/null 2>&1; then
+        if sudo -n docker ps >/dev/null 2>&1; then
+            docker_cmd="sudo docker"
+        fi
+    fi
+    
     # Check if postgres container is running
-    if ! docker ps --format '{{.Names}}' | grep -q "greedybear_postgres"; then
+    if ! ${docker_cmd} ps --format '{{.Names}}' | grep -q "greedybear_postgres"; then
         log_error "PostgreSQL container is not running. Start services first."
         exit 1
     fi
     
     # Backup PostgreSQL database
     log_info "Backing up PostgreSQL database..."
-    docker exec greedybear_postgres pg_dump -U user greedybear_db > "${backup_file}.sql"
+    set +e  # Temporarily disable exit on error to handle failures gracefully
+    ${docker_cmd} exec greedybear_postgres pg_dump -U user greedybear_db > "${backup_file}.sql"
+    backup_status=$?
+    set -e  # Re-enable exit on error
     
-    if [ $? -eq 0 ]; then
+    if [ $backup_status -eq 0 ]; then
         gzip "${backup_file}.sql"
         log_success "Database backup created: ${backup_file}.sql.gz"
     else
@@ -535,7 +547,7 @@ cmd_backup() {
     
     # Backup volumes info
     log_info "Saving volumes information..."
-    docker volume ls --filter name=greedybear > "${backup_file}_volumes.txt"
+    ${docker_cmd} volume ls --filter name=greedybear > "${backup_file}_volumes.txt"
     
     log_success "Backup complete: ${backup_file}.sql.gz"
     log_info "To restore: ./gbctl restore ${backup_file}.sql.gz"
@@ -558,8 +570,16 @@ cmd_restore() {
         exit 1
     fi
     
+    # Detect whether docker needs sudo
+    local docker_cmd="docker"
+    if ! docker ps >/dev/null 2>&1; then
+        if sudo -n docker ps >/dev/null 2>&1; then
+            docker_cmd="sudo docker"
+        fi
+    fi
+    
     # Check if postgres container is running
-    if ! docker ps --format '{{.Names}}' | grep -q "greedybear_postgres"; then
+    if ! ${docker_cmd} ps --format '{{.Names}}' | grep -q "greedybear_postgres"; then
         log_error "PostgreSQL container is not running. Start services first."
         exit 1
     fi
@@ -577,13 +597,20 @@ cmd_restore() {
     log_info "Restoring database from: $backup_file"
     
     # Decompress and restore
+    set +e  # Temporarily disable exit on error to handle failures gracefully
     if [[ $backup_file == *.gz ]]; then
-        gunzip -c "$backup_file" | docker exec -i greedybear_postgres psql -U user greedybear_db
+        # Use explicit pipefail check for gunzip | docker exec pipeline
+        set -o pipefail
+        gunzip -c "$backup_file" | ${docker_cmd} exec -i greedybear_postgres psql -U user greedybear_db
+        restore_status=$?
+        set +o pipefail
     else
-        docker exec -i greedybear_postgres psql -U user greedybear_db < "$backup_file"
+        ${docker_cmd} exec -i greedybear_postgres psql -U user greedybear_db < "$backup_file"
+        restore_status=$?
     fi
+    set -e  # Re-enable exit on error
     
-    if [ $? -eq 0 ]; then
+    if [ $restore_status -eq 0 ]; then
         log_success "Database restored successfully"
     else
         log_error "Restore failed"
@@ -599,6 +626,14 @@ cmd_health() {
     # Get compose arguments
     build_compose_args
     
+    # Detect whether docker needs sudo
+    local docker_cmd="docker"
+    if ! docker ps >/dev/null 2>&1; then
+        if sudo -n docker ps >/dev/null 2>&1; then
+            docker_cmd="sudo docker"
+        fi
+    fi
+    
     # Check each service
     local services=("postgres" "uwsgi" "nginx" "rabbitmq" "celery_beat" "celery_worker_default")
     local all_healthy=true
@@ -606,9 +641,9 @@ cmd_health() {
     for service in "${services[@]}"; do
         local container_name="greedybear_${service}"
         
-        if docker ps --format '{{.Names}}' | grep -q "^${container_name}$"; then
-            local status=$(docker inspect --format='{{.State.Status}}' "$container_name" 2>/dev/null)
-            local health=$(docker inspect --format='{{if .State.Health}}{{.State.Health.Status}}{{else}}no healthcheck{{end}}' "$container_name" 2>/dev/null)
+        if ${docker_cmd} ps --format '{{.Names}}' | grep -q "^${container_name}$"; then
+            local status=$(${docker_cmd} inspect --format='{{.State.Status}}' "$container_name" 2>/dev/null)
+            local health=$(${docker_cmd} inspect --format='{{if .State.Health}}{{.State.Health.Status}}{{else}}no healthcheck{{end}}' "$container_name" 2>/dev/null)
             
             if [ "$status" = "running" ]; then
                 if [ "$health" = "healthy" ] || [ "$health" = "no healthcheck" ]; then
@@ -643,6 +678,13 @@ cmd_clean() {
     log_warning "This will remove ALL GreedyBear data, containers, and volumes!"
     log_warning "This action is IRREVERSIBLE!"
     
+    # Always require explicit --force flag for safety
+    if [ "$FORCE_CLEAN" = false ]; then
+        log_error "The clean command requires the --force flag to prevent accidental data loss"
+        log_info "Usage: ./gbctl clean --force"
+        exit 1
+    fi
+    
     if [ "$SILENT_MODE" = false ]; then
         read -p "Type 'yes' to confirm complete removal: " confirmation
         if [ "$confirmation" != "yes" ]; then
@@ -672,6 +714,7 @@ parse_args() {
     ENABLE_ELASTIC=false
     ENABLE_STAG=false
     USE_VERSION=false
+    FORCE_CLEAN=false
     COMMAND=""
     
     # Check for help
@@ -681,7 +724,7 @@ parse_args() {
     fi
     
     # First argument should be command
-    if [[ ${cmd_arguments["$1"]} ]]; then
+    if [[ -v cmd_arguments["$1"] ]] && [[ ${cmd_arguments["$1"]} ]]; then
         COMMAND=$1
         shift
     else
@@ -722,15 +765,28 @@ parse_args() {
                 shift
                 ;;
             --project-name)
-                PROJECT_NAME=$2
+                if [[ -z "${2:-}" || "$2" == -* ]]; then
+                    echo -e "${RED}Error:${NC} --project-name requires a non-empty value" >&2
+                    exit 1
+                fi
+                # Deprecated: PROJECT_NAME is fixed to the default to avoid conflicts
+                log_warning "--project-name is deprecated and has no effect (container names are hardcoded)"
                 shift 2
                 ;;
             --version)
+                if [[ -z "${2:-}" || "$2" == -* ]]; then
+                    echo -e "${RED}Error:${NC} --version requires a non-empty value" >&2
+                    exit 1
+                fi
                 GREEDYBEAR_VERSION=$2
                 shift 2
                 ;;
             -s|--silent)
                 SILENT_MODE=true
+                shift
+                ;;
+            --force)
+                FORCE_CLEAN=true
                 shift
                 ;;
             -h|--help)

@@ -78,7 +78,7 @@ cd GreedyBear
 # Operations
 ./gbctl health               # Check services health
 ./gbctl backup               # Create PostgreSQL backup
-./gbctl restore backup.sql.gz # Restore from backup
+./gbctl restore backups/greedybear_backup_<timestamp>.sql.gz # Restore from backup
 
 # Silent installation (non-interactive)
 ./gbctl init --prod --silent
