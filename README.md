@@ -21,7 +21,7 @@ Documentation about GreedyBear installation, usage, configuration and contributi
 
 ## Public feeds
 
-There are public feeds provided by [The Honeynet Project](https://www.honeynet.org) in this [site](https://greedybear.honeynet.org). [Example](https://greedybear.honeynet.org/api/feeds/log4j/all/recent.txt)
+There are public feeds provided by [The Honeynet Project](https://www.honeynet.org) in this [site](https://greedybear.honeynet.org). [Example](https://greedybear.honeynet.org/api/feeds/cowrie/all/recent.txt)
 
 Please do not perform too many requests to extract feeds or you will be banned.
 
