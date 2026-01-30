@@ -25,6 +25,9 @@ def migrate_cowrie_log4j_to_general(apps, schema_editor):
                 ioc.general_honeypot.add(cowrie_hp)
             if getattr(ioc, "log4j", False):
                 ioc.general_honeypot.add(log4pot_hp)
+            ioc.cowire = False
+            ioc.log4j = False
+            ioc.save()
         except Exception:
             # Be resilient to odd DB states; continue migrating other rows
             continue

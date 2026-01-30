@@ -70,3 +70,8 @@ class TestCowrieLog4jMigration(MigrationTestCase):
             ioc_new.objects.get(id=ioc_none.id).general_honeypot.count(),
             0,
         )
+
+        for ioc in [ioc_cowrie, ioc_log4j, ioc_both, ioc_none]:
+            migrated_ioc = ioc_new.objects.get(id=ioc.id)
+            self.assertFalse(migrated_ioc.cowrie, f"Cowrie field not cleared for IOC {ioc.id}")
+            self.assertFalse(migrated_ioc.log4j, f"Log4j field not cleared for IOC {ioc.id}")
