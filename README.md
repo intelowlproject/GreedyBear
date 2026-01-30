@@ -52,11 +52,11 @@ git clone https://github.com/intelowlproject/GreedyBear.git
 cd GreedyBear
 
 # Initialize and start (production)
-./gb-ctl init --prod
-./gb-ctl up --prod
+./gbctl init --prod
+./gbctl up --prod
 ```
 
-The `gb-ctl` script handles:
+The `gbctl` script handles:
 - ✅ Dependency checks (Docker, Docker Compose)
 - ✅ Automatic environment file setup
 - ✅ Secret generation
@@ -67,24 +67,24 @@ The `gb-ctl` script handles:
 
 ```bash
 # Production deployment
-./gb-ctl init --prod          # Initialize environment
-./gb-ctl up --prod            # Start services
-./gb-ctl logs                 # View logs
-./gb-ctl update --prod        # Update to latest version
-./gb-ctl down                 # Stop and remove services
+./gbctl init --prod          # Initialize environment
+./gbctl up --prod            # Start services
+./gbctl logs                 # View logs
+./gbctl update --prod        # Update to latest version
+./gbctl down                 # Stop and remove services
 
 # Development with hot-reload
-./gb-ctl up --dev             # Start in development mode
+./gbctl up --dev             # Start in development mode
 
 # Production with HTTPS
-./gb-ctl up --prod --https    # Requires SSL certificates
+./gbctl up --prod --https    # Requires SSL certificates
 
 # With Elasticsearch (requires >=16GB RAM)
-./gb-ctl up --prod --elastic
+./gbctl up --prod --elastic
 
 # Silent installation (non-interactive)
-./gb-ctl init --prod --silent
-./gb-ctl up --prod
+./gbctl init --prod --silent
+./gbctl up --prod
 ```
 
 #### Available Commands
