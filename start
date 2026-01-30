@@ -1,0 +1,556 @@
+#!/usr/bin/env bash
+
+# GreedyBear Setup and Management Script
+# This script simplifies deployment, updates, and management of GreedyBear instances
+
+set -e
+
+# Version and defaults
+GREEDYBEAR_VERSION="latest"
+PROJECT_NAME="greedybear"
+DOCKER_COMPOSE_MIN_VERSION="2.0.0"
+SILENT_MODE=false
+
+# Color codes for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Environment and command validation arrays
+declare -A env_arguments=(["prod"]=1 ["dev"]=1 ["test"]=1)
+declare -A cmd_arguments=(["init"]=1 ["up"]=1 ["start"]=1 ["down"]=1 ["stop"]=1 ["restart"]=1 ["logs"]=1 ["ps"]=1 ["update"]=1 ["build"]=1 ["pull"]=1)
+
+# Path mapping for compose files
+declare -A path_mapping=(
+    ["default"]="docker/default.yml"
+    ["local"]="docker/local.override.yml"
+    ["https"]="docker/https.override.yml"
+    ["elastic"]="docker/elasticsearch.yml"
+    ["stag"]="docker/stag.override.yml"
+    ["version"]="docker/version.override.yml"
+)
+
+# Logging functions
+log_info() {
+    if [ "$SILENT_MODE" = false ]; then
+        echo -e "${BLUE}[INFO]${NC} $1"
+    fi
+}
+
+log_success() {
+    if [ "$SILENT_MODE" = false ]; then
+        echo -e "${GREEN}[SUCCESS]${NC} $1"
+    fi
+}
+
+log_warning() {
+    if [ "$SILENT_MODE" = false ]; then
+        echo -e "${YELLOW}[WARNING]${NC} $1"
+    fi
+}
+
+log_error() {
+    echo -e "${RED}[ERROR]${NC} $1" >&2
+}
+
+# Print help message
+print_help() {
+    cat << EOF
+GreedyBear - Automated Setup and Management Script
+
+SYNOPSIS
+    ./start <command> [OPTIONS]
+    ./start -h|--help
+
+COMMANDS
+    init         Initialize GreedyBear (setup environment files)
+    up           Start all services
+    start        Alias for 'up'
+    down         Stop and remove all services
+    stop         Stop all services without removing them
+    restart      Restart all services
+    logs         View logs from services
+    ps           List running services
+    update       Update GreedyBear to latest version
+    build        Build Docker images
+    pull         Pull latest Docker images
+
+OPTIONS
+    -h, --help              Show this help message
+    -s, --silent            Silent mode (non-interactive)
+    --project-name <name>   Specify project name (default: greedybear)
+    --version <value>       Specify version to install (default: latest)
+    
+DEPLOYMENT FLAGS
+    --prod                  Production deployment (default)
+    --dev                   Development deployment with hot-reload
+    --test                  Test deployment
+    
+FEATURE FLAGS
+    --https                 Enable HTTPS with custom certificates
+    --elastic               Enable Elasticsearch (requires >=16GB RAM)
+    --stag                  Staging deployment configuration
+    --use-version           Use specific version override
+
+EXAMPLES
+    # Initialize and start production deployment
+    ./start init --prod
+    ./start up --prod
+
+    # Development with Elasticsearch
+    ./start up --dev --elastic
+
+    # Update production instance
+    ./start update --prod
+
+    # View logs
+    ./start logs
+
+    # Silent installation (non-interactive)
+    ./start init --prod --silent
+
+EOF
+}
+
+# Check if Docker is installed
+check_docker() {
+    log_info "Checking Docker installation..."
+    
+    if ! command -v docker &> /dev/null; then
+        log_error "Docker is not installed."
+        if [ "$SILENT_MODE" = false ]; then
+            read -p "Would you like to install Docker? [y/N] " -n 1 -r
+            echo
+            if [[ $REPLY =~ ^[Yy]$ ]]; then
+                install_docker
+            else
+                log_error "Docker is required to run GreedyBear. Exiting."
+                exit 1
+            fi
+        else
+            log_error "Please install Docker first. Visit: https://docs.docker.com/get-docker/"
+            exit 1
+        fi
+    else
+        DOCKER_VERSION=$(docker --version | cut -d ' ' -f3 | tr -d ',')
+        log_success "Docker ${DOCKER_VERSION} is installed"
+    fi
+}
+
+# Check if Docker Compose is installed
+check_docker_compose() {
+    log_info "Checking Docker Compose installation..."
+    
+    if ! docker compose version &> /dev/null; then
+        log_error "Docker Compose v2+ is not available."
+        if [ "$SILENT_MODE" = false ]; then
+            read -p "Would you like installation instructions? [y/N] " -n 1 -r
+            echo
+            if [[ $REPLY =~ ^[Yy]$ ]]; then
+                echo "Please install Docker Compose v2+: https://docs.docker.com/compose/install/"
+            fi
+        fi
+        exit 1
+    else
+        COMPOSE_VERSION=$(docker compose version --short)
+        log_success "Docker Compose ${COMPOSE_VERSION} is installed"
+    fi
+}
+
+# Install Docker (basic implementation for common distros)
+install_docker() {
+    log_info "Installing Docker..."
+    
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        case $ID in
+            ubuntu|debian)
+                curl -fsSL https://get.docker.com -o get-docker.sh
+                sudo sh get-docker.sh
+                sudo usermod -aG docker "$USER"
+                rm get-docker.sh
+                log_success "Docker installed. Please log out and back in for group changes to take effect."
+                ;;
+            *)
+                log_error "Automatic installation not supported for $ID. Please install manually."
+                exit 1
+                ;;
+        esac
+    fi
+}
+
+# Check system requirements
+check_requirements() {
+    log_info "Checking system requirements..."
+    
+    # Check available memory
+    if command -v free &> /dev/null; then
+        TOTAL_MEM=$(free -g | awk '/^Mem:/{print $2}')
+        if [ "$ENABLE_ELASTIC" = true ] && [ "$TOTAL_MEM" -lt 16 ]; then
+            log_warning "Elasticsearch requires at least 16GB RAM. You have ${TOTAL_MEM}GB."
+            if [ "$SILENT_MODE" = false ]; then
+                read -p "Continue anyway? [y/N] " -n 1 -r
+                echo
+                if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+                    exit 1
+                fi
+            fi
+        fi
+    fi
+    
+    check_docker
+    check_docker_compose
+    
+    log_success "All requirements met"
+}
+
+# Initialize environment files
+init_env_files() {
+    log_info "Initializing environment files..."
+    
+    # Copy env_file if it doesn't exist
+    if [ ! -f docker/env_file ]; then
+        if [ -f docker/env_file_template ]; then
+            cp docker/env_file_template docker/env_file
+            log_success "Created docker/env_file from template"
+            
+            if [ "$SILENT_MODE" = false ]; then
+                log_warning "Please edit docker/env_file and configure required secrets:"
+                log_warning "  - DJANGO_SECRET"
+                log_warning "  - DB_PASSWORD"
+                log_warning "  - DEFAULT_FROM_EMAIL"
+                log_warning "  - DEFAULT_EMAIL"
+            fi
+        else
+            log_error "docker/env_file_template not found"
+            exit 1
+        fi
+    else
+        log_info "docker/env_file already exists, skipping"
+    fi
+    
+    # Copy env_file_postgres if it doesn't exist
+    if [ ! -f docker/env_file_postgres ]; then
+        if [ -f docker/env_file_postgres_template ]; then
+            cp docker/env_file_postgres_template docker/env_file_postgres
+            log_success "Created docker/env_file_postgres from template"
+        else
+            log_error "docker/env_file_postgres_template not found"
+            exit 1
+        fi
+    else
+        log_info "docker/env_file_postgres already exists, skipping"
+    fi
+    
+    # Copy .env if it doesn't exist
+    if [ ! -f .env ]; then
+        if [ -f .env_template ]; then
+            cp .env_template .env
+            log_success "Created .env from template"
+        else
+            log_warning ".env_template not found, skipping"
+        fi
+    else
+        log_info ".env already exists, skipping"
+    fi
+    
+    # Generate Django secret if needed
+    if [ "$SILENT_MODE" = false ]; then
+        if grep -q "^DJANGO_SECRET=$" docker/env_file 2>/dev/null || grep -q "^DJANGO_SECRET=\"\"$" docker/env_file 2>/dev/null; then
+            log_info "Generating Django secret key..."
+            DJANGO_SECRET=$(openssl rand -base64 32 2>/dev/null || cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 50 | head -n 1)
+            sed -i "s/^DJANGO_SECRET=.*/DJANGO_SECRET=${DJANGO_SECRET}/" docker/env_file
+            log_success "Generated and set DJANGO_SECRET"
+        fi
+        
+        # Generate database password if needed
+        if grep -q "^DB_PASSWORD=password$" docker/env_file 2>/dev/null; then
+            log_warning "Using default database password. Consider changing it in docker/env_file"
+        fi
+    fi
+    
+    log_success "Environment files initialized"
+}
+
+# Build compose file arguments
+build_compose_args() {
+    local compose_files=("${path_mapping["default"]}")
+    
+    # Add environment-specific files
+    if [ "$ENV_MODE" = "dev" ]; then
+        compose_files+=("${path_mapping["local"]}")
+    fi
+    
+    # Add feature flags
+    if [ "$ENABLE_HTTPS" = true ]; then
+        compose_files+=("${path_mapping["https"]}")
+    fi
+    
+    if [ "$ENABLE_ELASTIC" = true ]; then
+        compose_files+=("${path_mapping["elastic"]}")
+    fi
+    
+    if [ "$ENABLE_STAG" = true ]; then
+        compose_files+=("${path_mapping["stag"]}")
+    fi
+    
+    if [ "$USE_VERSION" = true ]; then
+        compose_files+=("${path_mapping["version"]}")
+    fi
+    
+    # Build docker compose arguments
+    COMPOSE_ARGS=()
+    for file in "${compose_files[@]}"; do
+        if [ -n "$file" ] && [ -f "$file" ]; then
+            COMPOSE_ARGS+=("-f" "$file")
+        else
+            log_warning "Compose file not found: $file"
+        fi
+    done
+    
+    COMPOSE_ARGS+=("-p" "$PROJECT_NAME")
+}
+
+# Execute docker compose command
+execute_compose() {
+    local cmd=$1
+    shift
+    
+    build_compose_args
+    
+    log_info "Executing: docker compose ${COMPOSE_ARGS[*]} $cmd $*"
+    
+    if grep "docker" <<< "$(groups)" > /dev/null 2>&1; then
+        docker compose --project-directory docker "${COMPOSE_ARGS[@]}" "$cmd" "$@"
+    else
+        sudo docker compose --project-directory docker "${COMPOSE_ARGS[@]}" "$cmd" "$@"
+    fi
+}
+
+# Initialize GreedyBear
+cmd_init() {
+    log_info "Initializing GreedyBear..."
+    
+    check_requirements
+    init_env_files
+    
+    log_success "Initialization complete!"
+    echo
+    log_info "Next steps:"
+    if [ "$SILENT_MODE" = false ]; then
+        log_info "  1. Review and configure docker/env_file with your settings"
+        log_info "  2. Start GreedyBear with: ./start up --${ENV_MODE}"
+    else
+        log_info "  Start GreedyBear with: ./start up --${ENV_MODE}"
+    fi
+}
+
+# Start services
+cmd_up() {
+    log_info "Starting GreedyBear services..."
+    execute_compose up -d "$@"
+    log_success "GreedyBear is up and running!"
+    
+    if [ "$ENV_MODE" = "prod" ]; then
+        if [ "$ENABLE_HTTPS" = true ]; then
+            log_info "Access GreedyBear at: https://localhost"
+        else
+            log_info "Access GreedyBear at: http://localhost"
+        fi
+    else
+        log_info "Access GreedyBear at: http://localhost"
+    fi
+}
+
+# Stop and remove services
+cmd_down() {
+    log_info "Stopping GreedyBear services..."
+    execute_compose down "$@"
+    log_success "GreedyBear services stopped"
+}
+
+# Stop services
+cmd_stop() {
+    log_info "Stopping GreedyBear services..."
+    execute_compose stop "$@"
+    log_success "GreedyBear services stopped"
+}
+
+# Restart services
+cmd_restart() {
+    log_info "Restarting GreedyBear services..."
+    execute_compose restart "$@"
+    log_success "GreedyBear services restarted"
+}
+
+# View logs
+cmd_logs() {
+    execute_compose logs -f "$@"
+}
+
+# List services
+cmd_ps() {
+    execute_compose ps "$@"
+}
+
+# Update GreedyBear
+cmd_update() {
+    log_info "Updating GreedyBear..."
+    
+    # Pull latest images
+    log_info "Pulling latest Docker images..."
+    execute_compose pull
+    
+    # Restart services
+    log_info "Restarting services with new images..."
+    execute_compose up -d
+    
+    log_success "GreedyBear updated successfully!"
+}
+
+# Build images
+cmd_build() {
+    log_info "Building GreedyBear images..."
+    execute_compose build "$@"
+    log_success "Build complete"
+}
+
+# Pull images
+cmd_pull() {
+    log_info "Pulling GreedyBear images..."
+    execute_compose pull "$@"
+    log_success "Pull complete"
+}
+
+# Parse arguments
+parse_args() {
+    # Set defaults
+    ENV_MODE="prod"
+    ENABLE_HTTPS=false
+    ENABLE_ELASTIC=false
+    ENABLE_STAG=false
+    USE_VERSION=false
+    COMMAND=""
+    
+    # Check for help
+    if [[ $# -eq 0 ]] || [[ "$1" == "-h" ]] || [[ "$1" == "--help" ]]; then
+        print_help
+        exit 0
+    fi
+    
+    # First argument should be command
+    if [[ ${cmd_arguments["$1"]} ]]; then
+        COMMAND=$1
+        shift
+    else
+        log_error "Invalid command: $1"
+        print_help
+        exit 1
+    fi
+    
+    # Parse remaining arguments
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --prod)
+                ENV_MODE="prod"
+                shift
+                ;;
+            --dev)
+                ENV_MODE="dev"
+                shift
+                ;;
+            --test)
+                ENV_MODE="test"
+                shift
+                ;;
+            --https)
+                ENABLE_HTTPS=true
+                shift
+                ;;
+            --elastic)
+                ENABLE_ELASTIC=true
+                shift
+                ;;
+            --stag)
+                ENABLE_STAG=true
+                shift
+                ;;
+            --use-version)
+                USE_VERSION=true
+                shift
+                ;;
+            --project-name)
+                PROJECT_NAME=$2
+                shift 2
+                ;;
+            --version)
+                GREEDYBEAR_VERSION=$2
+                shift 2
+                ;;
+            -s|--silent)
+                SILENT_MODE=true
+                shift
+                ;;
+            -h|--help)
+                print_help
+                exit 0
+                ;;
+            *)
+                # Pass unknown args to docker compose
+                break
+                ;;
+        esac
+    done
+    
+    # Store remaining args for docker compose
+    EXTRA_ARGS=("$@")
+}
+
+# Main execution
+main() {
+    parse_args "$@"
+    
+    # Execute command
+    case $COMMAND in
+        init)
+            cmd_init "${EXTRA_ARGS[@]}"
+            ;;
+        up|start)
+            cmd_up "${EXTRA_ARGS[@]}"
+            ;;
+        down)
+            cmd_down "${EXTRA_ARGS[@]}"
+            ;;
+        stop)
+            cmd_stop "${EXTRA_ARGS[@]}"
+            ;;
+        restart)
+            cmd_restart "${EXTRA_ARGS[@]}"
+            ;;
+        logs)
+            cmd_logs "${EXTRA_ARGS[@]}"
+            ;;
+        ps)
+            cmd_ps "${EXTRA_ARGS[@]}"
+            ;;
+        update)
+            cmd_update "${EXTRA_ARGS[@]}"
+            ;;
+        build)
+            cmd_build "${EXTRA_ARGS[@]}"
+            ;;
+        pull)
+            cmd_pull "${EXTRA_ARGS[@]}"
+            ;;
+        *)
+            log_error "Unknown command: $COMMAND"
+            print_help
+            exit 1
+            ;;
+    esac
+}
+
+# Run main function
+main "$@"

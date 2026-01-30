@@ -42,7 +42,64 @@ The tool has been created not only to provide the feeds from The Honeynet Projec
 If you manage one or more T-POTs of your own, you can get the code of this application and run Greedybear on your environment.
 In this way, you are able to provide new feeds of your own.
 
-To install it locally, Please refer to our [installation guide](https://intelowlproject.github.io/docs/GreedyBear/Installation/)
+### Quick Start
+
+GreedyBear now includes an automated setup script that simplifies installation and management:
+
+```bash
+# Clone the repository
+git clone https://github.com/intelowlproject/GreedyBear.git
+cd GreedyBear
+
+# Initialize and start (production)
+./start init --prod
+./start up --prod
+```
+
+The `start` script handles:
+- ✅ Dependency checks (Docker, Docker Compose)
+- ✅ Automatic environment file setup
+- ✅ Secret generation
+- ✅ Service orchestration
+- ✅ Easy updates and management
+
+#### Common Commands
+
+```bash
+# Production deployment
+./start init --prod          # Initialize environment
+./start up --prod            # Start services
+./start logs                 # View logs
+./start update --prod        # Update to latest version
+./start down                 # Stop and remove services
+
+# Development with hot-reload
+./start up --dev             # Start in development mode
+
+# Production with HTTPS
+./start up --prod --https    # Requires SSL certificates
+
+# With Elasticsearch (requires >=16GB RAM)
+./start up --prod --elastic
+
+# Silent installation (non-interactive)
+./start init --prod --silent
+./start up --prod
+```
+
+#### Available Commands
+- `init` - Initialize environment files and configuration
+- `up/start` - Start all services
+- `down` - Stop and remove all services
+- `stop` - Stop services without removing
+- `restart` - Restart all services
+- `logs` - View service logs
+- `ps` - List running services
+- `update` - Update to latest version
+- `build` - Build Docker images
+- `pull` - Pull latest Docker images
+
+For detailed installation and configuration instructions, please refer to our [installation guide](https://intelowlproject.github.io/docs/GreedyBear/Installation/)
 
 ## Sponsors and Acknowledgements
 
