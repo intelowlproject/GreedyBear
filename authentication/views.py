@@ -7,6 +7,7 @@ from certego_saas.apps.auth.backend import CookieTokenAuthentication
 from certego_saas.ext.throttling import POSTUserRateThrottle
 from django.conf import settings
 from django.contrib.auth import get_user_model, login
+from django.contrib.auth.hashers import check_password
 from django.core.cache import cache
 from durin import views as durin_views
 from greedybear.consts import GET
@@ -16,8 +17,9 @@ from rest_framework import status
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
-from .serializers import EmailVerificationSerializer, LoginSerializer, RegistrationSerializer
+from .serializers import ChangePasswordSerializer, EmailVerificationSerializer, LoginSerializer, RegistrationSerializer
 
 logger = logging.getLogger(__name__)
 
@@ -96,6 +98,39 @@ def checkConfiguration(request):
     if errors:
         return Response(status=status.HTTP_501_NOT_IMPLEMENTED)
     return Response(status=status.HTTP_200_OK)
+
+
+class ChangePasswordView(APIView):
+    """
+    Handles changing user password.
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        serializer = ChangePasswordSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        
+        user = request.user
+        old_password = serializer.validated_data.get("old_password")
+        new_password = serializer.validated_data.get("new_password")
+        
+        # Verify old password is correct
+        if not check_password(old_password, user.password):
+            logger.warning(f"User '{user.username}' attempted password change with incorrect old password")
+            return Response(
+                {"error": "Invalid old password"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Set and save new password
+        user.set_password(new_password)
+        user.save()
+        logger.info(f"User '{user.username}' successfully changed their password")
+        
+        return Response(
+            {"message": "Password changed successfully"}, 
+            status=status.HTTP_200_OK
+        )
 
 
 class LoginView(certego_views.LoginView):

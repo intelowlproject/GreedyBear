@@ -74,3 +74,17 @@ export async function checkConfiguration(body) {
     return Promise.reject(err);
   }
 }
+
+export async function changePassword(body) {
+  try {
+    const resp = await axios.post(`${AUTH_BASE_URI}/change-password`, body);
+    addToast("Password changed successfully!", null, "success", true);
+    return resp;
+  } catch (err) {
+    if (err.response && err.response.data) {
+      return Promise.reject(err.response.data);
+    }
+    addToast("Password change failed!", err.parsedMsg, "danger", true);
+    return Promise.reject(err);
+  }
+}

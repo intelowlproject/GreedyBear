@@ -25,6 +25,7 @@ __all__ = [
     "UserProfileSerializer",
     "RegistrationSerializer",
     "EmailVerificationSerializer",
+    "ChangePasswordSerializer",
 ]
 
 
@@ -138,7 +139,6 @@ class EmailVerificationSerializer(rest_email_auth.serializers.EmailVerificationS
             except SlackApiError as exc:
                 slack.log.error(f"Slack message failed for user(#{user.pk}) with error: {str(exc)}")
 
-
 class LoginSerializer(AuthTokenSerializer):
     def validate(self, attrs):
         try:
@@ -162,3 +162,22 @@ class LoginSerializer(AuthTokenSerializer):
                     logger.info(f"User {user} is not active. Error message: {exc.detail}")
             # else
             raise exc
+
+
+class ChangePasswordSerializer(rfs.Serializer):
+    """Serializer for changing user password"""
+    old_password = rfs.CharField(write_only=True, required=True, style={"input_type": "password"})
+    new_password = rfs.CharField(write_only=True, required=True, style={"input_type": "password"})
+    confirmNewPassword = rfs.CharField(write_only=True, required=True, style={"input_type": "password"})
+
+    def validate(self, data):
+        if data["new_password"] != data["confirmNewPassword"]:
+            raise ValidationError({"confirmNewPassword": "Passwords do not match"})
+        return data
+
+    def validate_new_password(self, password):
+        password_validation.validate_password(password)
+        if re.match(REGEX_PASSWORD, password):
+            return password
+        else:
+            raise ValidationError("Invalid password")

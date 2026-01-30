@@ -10,6 +10,7 @@ const Logout = React.lazy(() => import("./auth/Logout"));
 const Register = React.lazy(() => import("./auth/Register"));
 const EmailVerification = React.lazy(() => import("./auth/EmailVerification"));
 const ResetPassword = React.lazy(() => import("./auth/ResetPassword"));
+const ChangePassword = React.lazy(() => import("./auth/ChangePassword"));
 const Dashboard = React.lazy(() => import("./dashboard/Dashboard"));
 const Sessions = React.lazy(() => import("./me/sessions/Sessions"));
 const Feeds = React.lazy(() => import("./feeds/Feeds"));
@@ -92,6 +93,15 @@ const authRoutesLazy = [
     element: (
       <Suspense fallback={<FallBackLoading />}>
         <Sessions />
+      </Suspense>
+    ),
+  },
+  /* Change Password */
+  {
+    path: "/me/change-password",
+    element: (
+      <Suspense fallback={<FallBackLoading />}>
+        <ChangePassword />
       </Suspense>
     ),
   },

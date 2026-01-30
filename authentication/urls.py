@@ -6,6 +6,7 @@ from rest_framework import routers
 
 from .views import (
     APIAccessTokenView,
+    ChangePasswordView,
     EmailVerificationView,
     LoginView,
     PasswordResetRequestView,
@@ -43,6 +44,7 @@ urlpatterns = [
         name="auth_request-password-reset",
     ),
     path("reset-password", PasswordResetView.as_view(), name="auth_reset-password"),
+    path("change-password", ChangePasswordView.as_view(), name="auth_change-password"),
     path("login", LoginView.as_view(), name="auth_login"),
     path("configuration", checkConfiguration),
     # auth
