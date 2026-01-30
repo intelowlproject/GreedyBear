@@ -5,6 +5,10 @@
 
 set -euo pipefail
 
+# Resolve script directory and cd into it for repo-relative paths to work
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+cd "$SCRIPT_DIR"
+
 # Version and defaults
 GREEDYBEAR_VERSION="latest"
 PROJECT_NAME="greedybear"
@@ -82,13 +86,12 @@ COMMANDS
 OPTIONS
     -h, --help              Show this help message
     -s, --silent            Silent mode (non-interactive)
-    --project-name <name>   Specify project name (default: greedybear)
+    --project-name <name>   [DEPRECATED] Project name is fixed to 'greedybear'; this option is ignored
     --version <value>       Specify version to install (default: latest)
     
 DEPLOYMENT FLAGS
     --prod                  Production deployment (default)
     --dev                   Development deployment with hot-reload
-    --test                  Test deployment
     
 FEATURE FLAGS
     --https                 Enable HTTPS with custom certificates
@@ -169,10 +172,18 @@ install_docker() {
         . /etc/os-release
         case $ID in
             ubuntu|debian)
-                curl -fsSL https://get.docker.com -o get-docker.sh
-                sudo sh get-docker.sh
+                # Use official Docker repository instead of convenience script for security
+                sudo apt-get update
+                sudo apt-get install -y ca-certificates curl gnupg
+                sudo install -m 0755 -d /etc/apt/keyrings
+                curl -fsSL "https://download.docker.com/linux/${ID}/gpg" | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+                sudo chmod a+r /etc/apt/keyrings/docker.gpg
+                echo "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/${ID} ${VERSION_CODENAME} stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+                sudo apt-get update
+                sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+                sudo systemctl start docker
+                sudo systemctl enable docker
                 sudo usermod -aG docker "$USER"
-                rm get-docker.sh
                 log_success "Docker installed. Please log out and back in for group changes to take effect."
                 ;;
             fedora)
@@ -246,7 +257,10 @@ init_env_files() {
     # Handle env_file
     if [ -f docker/env_file ]; then
         if [ "$SILENT_MODE" = true ]; then
-            log_info "Regenerating docker/env_file (silent mode)"
+            # Always create backup even in silent mode to protect user configs
+            local backup_name="docker/env_file.backup.$(date +%Y%m%d_%H%M%S)"
+            cp docker/env_file "$backup_name"
+            log_info "Backed up existing docker/env_file to $backup_name"
             cp docker/env_file_template docker/env_file
             log_success "Regenerated docker/env_file from template"
         else
@@ -267,11 +281,11 @@ init_env_files() {
             log_success "Created docker/env_file from template"
             
             if [ "$SILENT_MODE" = false ]; then
-                log_warning "Please edit docker/env_file and configure required secrets:"
-                log_warning "  - DJANGO_SECRET"
+                llog_warning "Please edit docker/env_file and configure required secrets and settings:"
                 log_warning "  - DB_PASSWORD"
                 log_warning "  - DEFAULT_FROM_EMAIL"
                 log_warning "  - DEFAULT_EMAIL"
+                log_warning "Optional: override auto-generated DJANGO_SECRET (leave empty to use a generated value)"
             fi
         else
             log_error "docker/env_file_template not found"
@@ -282,7 +296,10 @@ init_env_files() {
     # Handle env_file_postgres
     if [ -f docker/env_file_postgres ]; then
         if [ "$SILENT_MODE" = true ]; then
-            log_info "Regenerating docker/env_file_postgres (silent mode)"
+            # Always create backup even in silent mode to protect user configs
+            local backup_name="docker/env_file_postgres.backup.$(date +%Y%m%d_%H%M%S)"
+            cp docker/env_file_postgres "$backup_name"
+            log_info "Backed up existing docker/env_file_postgres to $backup_name"
             cp docker/env_file_postgres_template docker/env_file_postgres
             log_success "Regenerated docker/env_file_postgres from template"
         else
@@ -381,6 +398,12 @@ execute_compose() {
     
     build_compose_args
     
+    # Handle version selection for Docker images if version override is enabled
+    if [ "$USE_VERSION" = true ] && [ "$GREEDYBEAR_VERSION" != "latest" ] && [ "$ENV_MODE" = "prod" ]; then
+        export REACT_APP_INTELOWL_VERSION="$GREEDYBEAR_VERSION"
+        log_info "Using GreedyBear version ${GREEDYBEAR_VERSION} for Docker images"
+    fi
+    
     log_info "Executing: docker compose ${COMPOSE_ARGS[*]} $cmd $*"
     
     if grep "docker" <<< "$(groups)" > /dev/null 2>&1; then
@@ -411,12 +434,6 @@ cmd_init() {
 # Start services
 cmd_up() {
     log_info "Starting GreedyBear services..."
-    
-    # Handle version selection for Docker images if specified
-    if [ "$GREEDYBEAR_VERSION" != "latest" ] && [ "$ENV_MODE" = "prod" ]; then
-        export REACT_APP_INTELOWL_VERSION="$GREEDYBEAR_VERSION"
-        log_info "Using GreedyBear version ${GREEDYBEAR_VERSION} for Docker images (REACT_APP_INTELOWL_VERSION)"
-    fi
     
     execute_compose up -d "$@"
     log_success "GreedyBear is up and running!"
@@ -485,9 +502,9 @@ cmd_update() {
     log_info "Pulling latest Docker images..."
     execute_compose pull
     
-    # Restart services
+    # Restart services using cmd_up to ensure version env vars are applied
     log_info "Restarting services with new images..."
-    execute_compose up -d
+    cmd_up "$@"
     
     log_success "GreedyBear updated successfully!"
 }
@@ -506,7 +523,7 @@ cmd_pull() {
     log_success "Pull complete"
 }
 
-# Backup database and volumes
+# Backup PostgreSQL database
 cmd_backup() {
     log_info "Creating backup..."
     
@@ -515,6 +532,14 @@ cmd_backup() {
     local backup_file="${backup_dir}/greedybear_backup_${timestamp}"
     
     mkdir -p "$backup_dir"
+    
+    # Source PostgreSQL credentials from env file
+    local pg_user="user"
+    local pg_db="greedybear_db"
+    if [ -f "docker/env_file_postgres" ]; then
+        pg_user=$(grep -E '^POSTGRES_USER=' docker/env_file_postgres | cut -d'=' -f2 || echo "user")
+        pg_db=$(grep -E '^POSTGRES_DB=' docker/env_file_postgres | cut -d'=' -f2 || echo "greedybear_db")
+    fi
     
     # Detect whether docker needs sudo
     local docker_cmd="docker"
@@ -533,7 +558,7 @@ cmd_backup() {
     # Backup PostgreSQL database
     log_info "Backing up PostgreSQL database..."
     set +e  # Temporarily disable exit on error to handle failures gracefully
-    ${docker_cmd} exec greedybear_postgres pg_dump -U user greedybear_db > "${backup_file}.sql"
+    ${docker_cmd} exec greedybear_postgres pg_dump -U "$pg_user" "$pg_db" > "${backup_file}.sql"
     backup_status=$?
     set -e  # Re-enable exit on error
     
@@ -578,6 +603,14 @@ cmd_restore() {
         fi
     fi
     
+    # Source PostgreSQL credentials from env file
+    local pg_user="user"
+    local pg_db="greedybear_db"
+    if [ -f "docker/env_file_postgres" ]; then
+        pg_user=$(grep -E '^POSTGRES_USER=' docker/env_file_postgres | cut -d'=' -f2 || echo "user")
+        pg_db=$(grep -E '^POSTGRES_DB=' docker/env_file_postgres | cut -d'=' -f2 || echo "greedybear_db")
+    fi
+    
     # Check if postgres container is running
     if ! ${docker_cmd} ps --format '{{.Names}}' | grep -q "greedybear_postgres"; then
         log_error "PostgreSQL container is not running. Start services first."
@@ -601,11 +634,11 @@ cmd_restore() {
     if [[ $backup_file == *.gz ]]; then
         # Use explicit pipefail check for gunzip | docker exec pipeline
         set -o pipefail
-        gunzip -c "$backup_file" | ${docker_cmd} exec -i greedybear_postgres psql -U user greedybear_db
+        gunzip -c "$backup_file" | ${docker_cmd} exec -i greedybear_postgres psql -U "$pg_user" "$pg_db"
         restore_status=$?
-        set +o pipefail
+        set -o pipefail  # Keep pipefail enabled (script default)
     else
-        ${docker_cmd} exec -i greedybear_postgres psql -U user greedybear_db < "$backup_file"
+        ${docker_cmd} exec -i greedybear_postgres psql -U "$pg_user" "$pg_db" < "$backup_file"
         restore_status=$?
     fi
     set -e  # Re-enable exit on error
@@ -744,10 +777,6 @@ parse_args() {
                 ENV_MODE="dev"
                 shift
                 ;;
-            --test)
-                ENV_MODE="test"
-                shift
-                ;;
             --https)
                 ENABLE_HTTPS=true
                 shift
@@ -761,7 +790,8 @@ parse_args() {
                 shift
                 ;;
             --use-version)
-                USE_VERSION=true
+                # Deprecated: --version now implicitly enables version override
+                log_warning "--use-version is deprecated; use --version <tag> instead (which implicitly enables version override)"
                 shift
                 ;;
             --project-name)
@@ -779,6 +809,7 @@ parse_args() {
                     exit 1
                 fi
                 GREEDYBEAR_VERSION=$2
+                USE_VERSION=true  # Implicitly enable version override when version is specified
                 shift 2
                 ;;
             -s|--silent)
