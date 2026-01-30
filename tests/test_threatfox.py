@@ -49,7 +49,7 @@ ioc,malware,last_online
             csv_lines.append(f"1.2.{i // 256}.{i % 256}:80,Emotet,2024-01-30T10:00:00Z")
 
         mock_response = MagicMock()
-        mock_response.text = "\\n".join(csv_lines)
+        mock_response.text = "\n".join(csv_lines)
         mock_response.raise_for_status = MagicMock()
         mock_get.return_value = mock_response
 
