@@ -20,7 +20,7 @@ NC='\033[0m' # No Color
 
 # Environment and command validation arrays
 declare -A env_arguments=(["prod"]=1 ["dev"]=1 ["test"]=1)
-declare -A cmd_arguments=(["init"]=1 ["up"]=1 ["start"]=1 ["down"]=1 ["stop"]=1 ["restart"]=1 ["logs"]=1 ["ps"]=1 ["update"]=1 ["build"]=1 ["pull"]=1)
+declare -A cmd_arguments=(["init"]=1 ["up"]=1 ["start"]=1 ["down"]=1 ["stop"]=1 ["restart"]=1 ["logs"]=1 ["ps"]=1 ["update"]=1 ["build"]=1 ["pull"]=1 ["backup"]=1 ["restore"]=1 ["health"]=1 ["clean"]=1)
 
 # Path mapping for compose files
 declare -A path_mapping=(
@@ -76,6 +76,10 @@ COMMANDS
     update       Update GreedyBear to latest version
     build        Build Docker images
     pull         Pull latest Docker images
+    backup       Backup database and volumes
+    restore      Restore from backup
+    health       Health check all services
+    clean        Remove all data and reset (destructive!)
 
 OPTIONS
     -h, --help              Show this help message
@@ -501,6 +505,165 @@ cmd_pull() {
     log_success "Pull complete"
 }
 
+# Backup database and volumes
+cmd_backup() {
+    log_info "Creating backup..."
+    
+    local backup_dir="backups"
+    local timestamp=$(date +%Y%m%d_%H%M%S)
+    local backup_file="${backup_dir}/greedybear_backup_${timestamp}"
+    
+    mkdir -p "$backup_dir"
+    
+    # Check if postgres container is running
+    if ! docker ps --format '{{.Names}}' | grep -q "greedybear_postgres"; then
+        log_error "PostgreSQL container is not running. Start services first."
+        exit 1
+    fi
+    
+    # Backup PostgreSQL database
+    log_info "Backing up PostgreSQL database..."
+    docker exec greedybear_postgres pg_dump -U user greedybear_db > "${backup_file}.sql"
+    
+    if [ $? -eq 0 ]; then
+        gzip "${backup_file}.sql"
+        log_success "Database backup created: ${backup_file}.sql.gz"
+    else
+        log_error "Database backup failed"
+        exit 1
+    fi
+    
+    # Backup volumes info
+    log_info "Saving volumes information..."
+    docker volume ls --filter name=greedybear > "${backup_file}_volumes.txt"
+    
+    log_success "Backup complete: ${backup_file}.sql.gz"
+    log_info "To restore: ./gbctl restore ${backup_file}.sql.gz"
+}
+
+# Restore from backup
+cmd_restore() {
+    if [ $# -eq 0 ]; then
+        log_error "Please specify backup file to restore"
+        log_info "Usage: ./gbctl restore backups/greedybear_backup_YYYYMMDD_HHMMSS.sql.gz"
+        log_info "Available backups:"
+        ls -lh backups/*.sql.gz 2>/dev/null || log_warning "No backups found"
+        exit 1
+    fi
+    
+    local backup_file=$1
+    
+    if [ ! -f "$backup_file" ]; then
+        log_error "Backup file not found: $backup_file"
+        exit 1
+    fi
+    
+    # Check if postgres container is running
+    if ! docker ps --format '{{.Names}}' | grep -q "greedybear_postgres"; then
+        log_error "PostgreSQL container is not running. Start services first."
+        exit 1
+    fi
+    
+    if [ "$SILENT_MODE" = false ]; then
+        log_warning "This will overwrite the current database!"
+        read -p "Are you sure you want to restore from backup? [y/N] " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            log_info "Restore cancelled"
+            exit 0
+        fi
+    fi
+    
+    log_info "Restoring database from: $backup_file"
+    
+    # Decompress and restore
+    if [[ $backup_file == *.gz ]]; then
+        gunzip -c "$backup_file" | docker exec -i greedybear_postgres psql -U user greedybear_db
+    else
+        docker exec -i greedybear_postgres psql -U user greedybear_db < "$backup_file"
+    fi
+    
+    if [ $? -eq 0 ]; then
+        log_success "Database restored successfully"
+    else
+        log_error "Restore failed"
+        exit 1
+    fi
+}
+
+# Health check all services
+cmd_health() {
+    log_info "Checking GreedyBear services health..."
+    echo
+    
+    # Get compose arguments
+    build_compose_args
+    
+    # Check each service
+    local services=("postgres" "uwsgi" "nginx" "rabbitmq" "celery_beat" "celery_worker_default")
+    local all_healthy=true
+    
+    for service in "${services[@]}"; do
+        local container_name="greedybear_${service}"
+        
+        if docker ps --format '{{.Names}}' | grep -q "^${container_name}$"; then
+            local status=$(docker inspect --format='{{.State.Status}}' "$container_name" 2>/dev/null)
+            local health=$(docker inspect --format='{{if .State.Health}}{{.State.Health.Status}}{{else}}no healthcheck{{end}}' "$container_name" 2>/dev/null)
+            
+            if [ "$status" = "running" ]; then
+                if [ "$health" = "healthy" ] || [ "$health" = "no healthcheck" ]; then
+                    echo -e "${GREEN}✓${NC} $service: running"
+                else
+                    echo -e "${YELLOW}!${NC} $service: running (health: $health)"
+                    all_healthy=false
+                fi
+            else
+                echo -e "${RED}✗${NC} $service: $status"
+                all_healthy=false
+            fi
+        else
+            echo -e "${RED}✗${NC} $service: not running"
+            all_healthy=false
+        fi
+    done
+    
+    echo
+    if [ "$all_healthy" = true ]; then
+        log_success "All services are healthy"
+        return 0
+    else
+        log_warning "Some services have issues"
+        log_info "Run './gbctl logs <service>' for details"
+        return 1
+    fi
+}
+
+# Clean all data and reset
+cmd_clean() {
+    log_warning "This will remove ALL GreedyBear data, containers, and volumes!"
+    log_warning "This action is IRREVERSIBLE!"
+    
+    if [ "$SILENT_MODE" = false ]; then
+        read -p "Type 'yes' to confirm complete removal: " confirmation
+        if [ "$confirmation" != "yes" ]; then
+            log_info "Clean cancelled"
+            exit 0
+        fi
+    fi
+    
+    log_info "Stopping and removing all containers..."
+    execute_compose down -v
+    
+    log_info "Removing environment files..."
+    rm -f docker/env_file docker/env_file_postgres .env
+    
+    log_info "Removing backup directory..."
+    rm -rf backups
+    
+    log_success "GreedyBear has been completely removed"
+    log_info "To reinstall, run: ./gbctl init --prod"
+}
+
 # Parse arguments
 parse_args() {
     # Set defaults
@@ -620,6 +783,18 @@ main() {
             ;;
         pull)
             cmd_pull "${EXTRA_ARGS[@]}"
+            ;;
+        backup)
+            cmd_backup "${EXTRA_ARGS[@]}"
+            ;;
+        restore)
+            cmd_restore "${EXTRA_ARGS[@]}"
+            ;;
+        health)
+            cmd_health "${EXTRA_ARGS[@]}"
+            ;;
+        clean)
+            cmd_clean "${EXTRA_ARGS[@]}"
             ;;
         *)
             log_error "Unknown command: $COMMAND"
