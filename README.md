@@ -56,13 +56,6 @@ cd GreedyBear
 ./gbctl up --prod
 ```
 
-The `gbctl` script handles:
-- ✅ Dependency checks (Docker, Docker Compose)
-- ✅ Automatic environment file setup
-- ✅ Secret generation
-- ✅ Service orchestration
-- ✅ Easy updates and management
-
 #### Common Commands
 
 ```bash
@@ -82,6 +75,11 @@ The `gbctl` script handles:
 # With Elasticsearch (requires >=16GB RAM)
 ./gbctl up --prod --elastic
 
+# Operations
+./gbctl health               # Check services health
+./gbctl backup               # Create PostgreSQL backup
+./gbctl restore backup.sql.gz # Restore from backup
+
 # Silent installation (non-interactive)
 ./gbctl init --prod --silent
 ./gbctl up --prod
@@ -98,6 +96,10 @@ The `gbctl` script handles:
 - `update` - Update to latest version
 - `build` - Build Docker images
 - `pull` - Pull latest Docker images
+- `backup` - Create PostgreSQL backup with timestamp
+- `restore` - Restore database from backup file
+- `health` - Check all services status and health
+- `clean` - Remove all data and containers (destructive)
 
 For detailed installation and configuration instructions, please refer to our [installation guide](https://intelowlproject.github.io/docs/GreedyBear/Installation/)
 
