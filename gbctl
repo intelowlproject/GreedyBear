@@ -86,7 +86,6 @@ COMMANDS
 OPTIONS
     -h, --help              Show this help message
     -s, --silent            Silent mode (non-interactive)
-    --project-name <name>   [DEPRECATED] Project name is fixed to 'greedybear'; this option is ignored
     --version <value>       Specify version to install (default: latest)
     
 DEPLOYMENT FLAGS
@@ -97,7 +96,6 @@ FEATURE FLAGS
     --https                 Enable HTTPS with custom certificates
     --elastic               Enable Elasticsearch (requires >=16GB RAM)
     --stag                  Staging deployment configuration
-    --use-version           Use specific version override
 
 EXAMPLES
     # Initialize and start production deployment
@@ -281,11 +279,7 @@ init_env_files() {
             log_success "Created docker/env_file from template"
             
             if [ "$SILENT_MODE" = false ]; then
-                llog_warning "Please edit docker/env_file and configure required secrets and settings:"
-                log_warning "  - DB_PASSWORD"
-                log_warning "  - DEFAULT_FROM_EMAIL"
-                log_warning "  - DEFAULT_EMAIL"
-                log_warning "Optional: override auto-generated DJANGO_SECRET (leave empty to use a generated value)"
+                log_warning "Please edit docker/env_file and configure required settings"
             fi
         else
             log_error "docker/env_file_template not found"
@@ -326,26 +320,6 @@ init_env_files() {
             log_success "Created .env from template"
         else
             log_warning ".env_template not found, skipping"
-        fi
-    fi
-    
-    # Generate Django secret if needed
-    if grep -q "^DJANGO_SECRET=$" docker/env_file 2>/dev/null || grep -q "^DJANGO_SECRET=\"\"$" docker/env_file 2>/dev/null; then
-        if [ "$SILENT_MODE" = false ]; then
-            log_info "Generating Django secret key..."
-        fi
-        DJANGO_SECRET=$(openssl rand -base64 32 2>/dev/null || cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 50 | head -n 1)
-        # Use | as delimiter to avoid issues with / in base64
-        sed -i "s|^DJANGO_SECRET=.*|DJANGO_SECRET=${DJANGO_SECRET}|" docker/env_file
-        if [ "$SILENT_MODE" = false ]; then
-            log_success "Generated and set DJANGO_SECRET"
-        fi
-    fi
-    
-    # Generate database password if needed
-    if [ "$SILENT_MODE" = false ]; then
-        if grep -q "^DB_PASSWORD=password$" docker/env_file 2>/dev/null; then
-            log_warning "Using default database password. Consider changing it in docker/env_file"
         fi
     fi
     
@@ -436,17 +410,7 @@ cmd_up() {
     log_info "Starting GreedyBear services..."
     
     execute_compose up -d "$@"
-    log_success "GreedyBear is up and running!"
-    
-    if [ "$ENV_MODE" = "prod" ]; then
-        if [ "$ENABLE_HTTPS" = true ]; then
-            log_info "Access GreedyBear at: https://localhost"
-        else
-            log_info "Access GreedyBear at: http://localhost"
-        fi
-    else
-        log_info "Access GreedyBear at: http://localhost"
-    fi
+    log_success "GreedyBear services started successfully!"
 }
 
 # Stop and remove services
@@ -788,20 +752,6 @@ parse_args() {
             --stag)
                 ENABLE_STAG=true
                 shift
-                ;;
-            --use-version)
-                # Deprecated: --version now implicitly enables version override
-                log_warning "--use-version is deprecated; use --version <tag> instead (which implicitly enables version override)"
-                shift
-                ;;
-            --project-name)
-                if [[ -z "${2:-}" || "$2" == -* ]]; then
-                    echo -e "${RED}Error:${NC} --project-name requires a non-empty value" >&2
-                    exit 1
-                fi
-                # Deprecated: PROJECT_NAME is fixed to the default to avoid conflicts
-                log_warning "--project-name is deprecated and has no effect (container names are hardcoded)"
-                shift 2
                 ;;
             --version)
                 if [[ -z "${2:-}" || "$2" == -* ]]; then

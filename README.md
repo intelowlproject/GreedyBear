@@ -42,66 +42,7 @@ The tool has been created not only to provide the feeds from The Honeynet Projec
 If you manage one or more T-POTs of your own, you can get the code of this application and run Greedybear on your environment.
 In this way, you are able to provide new feeds of your own.
 
-### Quick Start
-
-GreedyBear now includes an automated setup script that simplifies installation and management:
-
-```bash
-# Clone the repository
-git clone https://github.com/intelowlproject/GreedyBear.git
-cd GreedyBear
-
-# Initialize and start (production)
-./gbctl init --prod
-./gbctl up --prod
-```
-
-#### Common Commands
-
-```bash
-# Production deployment
-./gbctl init --prod          # Initialize environment
-./gbctl up --prod            # Start services
-./gbctl logs                 # View logs
-./gbctl update --prod        # Update to latest version
-./gbctl down                 # Stop and remove services
-
-# Development with hot-reload
-./gbctl up --dev             # Start in development mode
-
-# Production with HTTPS
-./gbctl up --prod --https    # Requires SSL certificates
-
-# With Elasticsearch (requires >=16GB RAM)
-./gbctl up --prod --elastic
-
-# Operations
-./gbctl health               # Check services health
-./gbctl backup               # Create PostgreSQL backup
-./gbctl restore backups/greedybear_backup_<timestamp>.sql.gz # Restore from backup
-
-# Silent installation (non-interactive)
-./gbctl init --prod --silent
-./gbctl up --prod
-```
-
-#### Available Commands
-- `init` - Initialize environment files and configuration
-- `up/start` - Start all services
-- `down` - Stop and remove all services
-- `stop` - Stop services without removing
-- `restart` - Restart all services
-- `logs` - View service logs
-- `ps` - List running services
-- `update` - Update to latest version
-- `build` - Build Docker images
-- `pull` - Pull latest Docker images
-- `backup` - Create PostgreSQL backup with timestamp
-- `restore` - Restore database from backup file
-- `health` - Check all services status and health
-- `clean` - Remove all data and containers (destructive)
-
-For detailed installation and configuration instructions, please refer to our [installation guide](https://intelowlproject.github.io/docs/GreedyBear/Installation/)
+To install it locally, Please refer to our [installation guide](https://intelowlproject.github.io/docs/GreedyBear/Installation/)
 
 ## Sponsors and Acknowledgements
 
