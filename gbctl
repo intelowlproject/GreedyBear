@@ -162,6 +162,34 @@ check_docker_compose() {
     fi
 }
 
+# Detect whether docker needs sudo
+# Detect whether docker needs sudo
+detect_docker_cmd() {
+    DOCKER_CMD="docker"
+    
+    if ! docker ps >/dev/null 2>&1; then
+        # Try passwordless sudo first
+        if sudo -n docker ps >/dev/null 2>&1; then
+            DOCKER_CMD="sudo docker"
+        else
+            # Check if silent mode is enabled before prompting for sudo
+            if [ "$SILENT_MODE" = true ]; then
+                log_error "Docker requires sudo, but passwordless sudo is not available."
+                log_error "In --silent mode, you must have passwordless sudo permission or be in the docker group."
+                exit 1
+            fi
+
+            # Fall back to interactive sudo (may prompt for password)
+            if sudo docker ps >/dev/null 2>&1; then
+                DOCKER_CMD="sudo docker"
+            else
+                log_error "Docker is not accessible. Ensure you have permission to run Docker commands (with or without sudo)."
+                exit 1
+            fi
+        fi
+    fi
+}
+
 # Install Docker (support for multiple distros)
 install_docker() {
     log_info "Installing Docker..."
@@ -380,11 +408,8 @@ execute_compose() {
     
     log_info "Executing: docker compose ${COMPOSE_ARGS[*]} $cmd $*"
     
-    if grep "docker" <<< "$(groups)" > /dev/null 2>&1; then
-        docker compose --project-directory docker "${COMPOSE_ARGS[@]}" "$cmd" "$@"
-    else
-        sudo docker compose --project-directory docker "${COMPOSE_ARGS[@]}" "$cmd" "$@"
-    fi
+    detect_docker_cmd
+    ${DOCKER_CMD} compose --project-directory docker "${COMPOSE_ARGS[@]}" "$cmd" "$@"
 }
 
 # Initialize GreedyBear
@@ -436,21 +461,7 @@ cmd_restart() {
 
 # View logs
 cmd_logs() {
-    local follow=false
-    
-    # Check if -f or --follow flag is provided
-    for arg in "$@"; do
-        if [ "$arg" = "-f" ] || [ "$arg" = "--follow" ]; then
-            follow=true
-            break
-        fi
-    done
-    
-    if [ "$follow" = true ]; then
-        execute_compose logs -f "$@"
-    else
-        execute_compose logs "$@"
-    fi
+    execute_compose logs "$@"
 }
 
 # List services
@@ -505,13 +516,8 @@ cmd_backup() {
         pg_db=$(grep -E '^POSTGRES_DB=' docker/env_file_postgres | cut -d'=' -f2 || echo "greedybear_db")
     fi
     
-    # Detect whether docker needs sudo
-    local docker_cmd="docker"
-    if ! docker ps >/dev/null 2>&1; then
-        if sudo -n docker ps >/dev/null 2>&1; then
-            docker_cmd="sudo docker"
-        fi
-    fi
+    detect_docker_cmd
+    local docker_cmd="$DOCKER_CMD"
     
     # Check if postgres container is running
     if ! ${docker_cmd} ps --format '{{.Names}}' | grep -q "greedybear_postgres"; then
@@ -559,13 +565,8 @@ cmd_restore() {
         exit 1
     fi
     
-    # Detect whether docker needs sudo
-    local docker_cmd="docker"
-    if ! docker ps >/dev/null 2>&1; then
-        if sudo -n docker ps >/dev/null 2>&1; then
-            docker_cmd="sudo docker"
-        fi
-    fi
+    detect_docker_cmd
+    local docker_cmd="$DOCKER_CMD"
     
     # Source PostgreSQL credentials from env file
     local pg_user="user"
@@ -623,13 +624,8 @@ cmd_health() {
     # Get compose arguments
     build_compose_args
     
-    # Detect whether docker needs sudo
-    local docker_cmd="docker"
-    if ! docker ps >/dev/null 2>&1; then
-        if sudo -n docker ps >/dev/null 2>&1; then
-            docker_cmd="sudo docker"
-        fi
-    fi
+    detect_docker_cmd
+    local docker_cmd="$DOCKER_CMD"
     
     # Check each service
     local services=("postgres" "uwsgi" "nginx" "rabbitmq" "celery_beat" "celery_worker_default")
