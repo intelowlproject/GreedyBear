@@ -5,14 +5,14 @@
 
 set -euo pipefail
 
-# Resolve script directory and cd into it for repo-relative paths to work
+# Resolve script directory for absolute path usage
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-cd "$SCRIPT_DIR"
 
 # Version and defaults
 GREEDYBEAR_VERSION="latest"
 PROJECT_NAME="greedybear"
 SILENT_MODE=false
+ELASTIC_ENDPOINT=""
 
 # Color codes for output
 RED='\033[0;31m'
@@ -26,12 +26,12 @@ declare -A cmd_arguments=(["init"]=1 ["up"]=1 ["start"]=1 ["down"]=1 ["stop"]=1 
 
 # Path mapping for compose files
 declare -A path_mapping=(
-    ["default"]="docker/default.yml"
-    ["local"]="docker/local.override.yml"
-    ["https"]="docker/https.override.yml"
-    ["elastic"]="docker/elasticsearch.yml"
-    ["stag"]="docker/stag.override.yml"
-    ["version"]="docker/version.override.yml"
+    ["default"]="${SCRIPT_DIR}/docker/default.yml"
+    ["local"]="${SCRIPT_DIR}/docker/local.override.yml"
+    ["https"]="${SCRIPT_DIR}/docker/https.override.yml"
+    ["elastic"]="${SCRIPT_DIR}/docker/elasticsearch.yml"
+    ["stag"]="${SCRIPT_DIR}/docker/stag.override.yml"
+    ["version"]="${SCRIPT_DIR}/docker/version.override.yml"
 )
 
 # Logging functions
@@ -95,6 +95,7 @@ DEPLOYMENT FLAGS
 FEATURE FLAGS
     --https                 Enable HTTPS with custom certificates
     --elastic               Enable Elasticsearch (requires >=16GB RAM)
+    --elastic-endpoint      Specify Elasticsearch endpoint (for init)
     --stag                  Staging deployment configuration
 
 EXAMPLES
@@ -273,6 +274,13 @@ check_requirements() {
     check_docker
     check_docker_compose
     
+    # Check if git is installed
+    if ! command -v git &> /dev/null; then
+        log_error "Git is not installed."
+        log_info "Please install git to use all features of this script."
+        exit 1
+    fi
+    
     log_success "All requirements met"
 }
 
@@ -281,32 +289,32 @@ init_env_files() {
     log_info "Initializing environment files..."
     
     # Handle env_file
-    if [ -f docker/env_file ]; then
+    if [ -f "${SCRIPT_DIR}/docker/env_file" ]; then
         if [ "$SILENT_MODE" = true ]; then
             # Always create backup even in silent mode to protect user configs
-            local backup_name="docker/env_file.backup.$(date +%Y%m%d_%H%M%S)"
-            cp docker/env_file "$backup_name"
+            local backup_name="${SCRIPT_DIR}/docker/env_file.backup.$(date +%Y%m%d_%H%M%S)"
+            cp "${SCRIPT_DIR}/docker/env_file" "$backup_name"
             log_info "Backed up existing docker/env_file to $backup_name"
-            cp docker/env_file_template docker/env_file
+            cp "${SCRIPT_DIR}/docker/env_file_template" "${SCRIPT_DIR}/docker/env_file"
             log_success "Regenerated docker/env_file from template"
         else
             log_warning "docker/env_file already exists"
             read -p "Do you want to regenerate it? This will backup the existing file. [y/N] " -n 1 -r
             echo
             if [[ $REPLY =~ ^[Yy]$ ]]; then
-                mv docker/env_file docker/env_file.backup.$(date +%Y%m%d_%H%M%S)
-                cp docker/env_file_template docker/env_file
+                mv "${SCRIPT_DIR}/docker/env_file" "${SCRIPT_DIR}/docker/env_file.backup.$(date +%Y%m%d_%H%M%S)"
+                cp "${SCRIPT_DIR}/docker/env_file_template" "${SCRIPT_DIR}/docker/env_file"
                 log_success "Backed up old file and created new docker/env_file from template"
             else
                 log_info "Keeping existing docker/env_file"
             fi
         fi
     else
-        if [ -f docker/env_file_template ]; then
-            cp docker/env_file_template docker/env_file
+        if [ -f "${SCRIPT_DIR}/docker/env_file_template" ]; then
+            cp "${SCRIPT_DIR}/docker/env_file_template" "${SCRIPT_DIR}/docker/env_file"
             log_success "Created docker/env_file from template"
             
-            if [ "$SILENT_MODE" = false ]; then
+            if [ "$SILENT_MODE" = false ] && [ -z "$ELASTIC_ENDPOINT" ]; then
                 log_warning "Please edit docker/env_file and configure required settings"
             fi
         else
@@ -314,22 +322,32 @@ init_env_files() {
             exit 1
         fi
     fi
+
+    # Set Elasticsearch endpoint if provided
+    if [ -n "$ELASTIC_ENDPOINT" ]; then
+        if grep -q "^ELASTIC_ENDPOINT=" "${SCRIPT_DIR}/docker/env_file"; then
+            sed -i "s|^ELASTIC_ENDPOINT=.*|ELASTIC_ENDPOINT=${ELASTIC_ENDPOINT}|" "${SCRIPT_DIR}/docker/env_file"
+        else
+            echo "ELASTIC_ENDPOINT=${ELASTIC_ENDPOINT}" >> "${SCRIPT_DIR}/docker/env_file"
+        fi
+        log_success "Configured ELASTIC_ENDPOINT in docker/env_file"
+    fi
     
     # Handle env_file_postgres
-    if [ -f docker/env_file_postgres ]; then
+    if [ -f "${SCRIPT_DIR}/docker/env_file_postgres" ]; then
         if [ "$SILENT_MODE" = true ]; then
             # Always create backup even in silent mode to protect user configs
-            local backup_name="docker/env_file_postgres.backup.$(date +%Y%m%d_%H%M%S)"
-            cp docker/env_file_postgres "$backup_name"
+            local backup_name="${SCRIPT_DIR}/docker/env_file_postgres.backup.$(date +%Y%m%d_%H%M%S)"
+            cp "${SCRIPT_DIR}/docker/env_file_postgres" "$backup_name"
             log_info "Backed up existing docker/env_file_postgres to $backup_name"
-            cp docker/env_file_postgres_template docker/env_file_postgres
+            cp "${SCRIPT_DIR}/docker/env_file_postgres_template" "${SCRIPT_DIR}/docker/env_file_postgres"
             log_success "Regenerated docker/env_file_postgres from template"
         else
             log_info "docker/env_file_postgres already exists, skipping"
         fi
     else
-        if [ -f docker/env_file_postgres_template ]; then
-            cp docker/env_file_postgres_template docker/env_file_postgres
+        if [ -f "${SCRIPT_DIR}/docker/env_file_postgres_template" ]; then
+            cp "${SCRIPT_DIR}/docker/env_file_postgres_template" "${SCRIPT_DIR}/docker/env_file_postgres"
             log_success "Created docker/env_file_postgres from template"
         else
             log_error "docker/env_file_postgres_template not found"
@@ -338,13 +356,13 @@ init_env_files() {
     fi
     
     # Handle .env
-    if [ -f .env ]; then
+    if [ -f "${SCRIPT_DIR}/.env" ]; then
         if [ "$SILENT_MODE" = false ]; then
             log_info ".env already exists, skipping"
         fi
     else
-        if [ -f .env_template ]; then
-            cp .env_template .env
+        if [ -f "${SCRIPT_DIR}/.env_template" ]; then
+            cp "${SCRIPT_DIR}/.env_template" "${SCRIPT_DIR}/.env"
             log_success "Created .env from template"
         else
             log_warning ".env_template not found, skipping"
@@ -409,7 +427,7 @@ execute_compose() {
     log_info "Executing: docker compose ${COMPOSE_ARGS[*]} $cmd $*"
     
     detect_docker_cmd
-    ${DOCKER_CMD} compose --project-directory docker "${COMPOSE_ARGS[@]}" "$cmd" "$@"
+    ${DOCKER_CMD} compose --project-directory "${SCRIPT_DIR}/docker" "${COMPOSE_ARGS[@]}" "$cmd" "$@"
 }
 
 # Initialize GreedyBear
@@ -430,9 +448,69 @@ cmd_init() {
     fi
 }
 
+# Check for version downgrade
+check_downgrade() {
+    # Only check if a specific version is requested
+    if [ "$USE_VERSION" != true ]; then
+        return
+    fi
+
+    detect_docker_cmd
+    local docker_cmd="$DOCKER_CMD"
+
+    # Check if uwsgi container exists
+    local container_name="${PROJECT_NAME}_uwsgi"
+    if ! ${docker_cmd} ps -a --format '{{.Names}}' | grep -q "^${container_name}$"; then
+        return
+    fi
+    
+    # Get current image
+    local current_image
+    current_image=$(${docker_cmd} inspect --format='{{.Config.Image}}' "$container_name" 2>/dev/null || echo "")
+    
+    if [ -z "$current_image" ]; then
+        return
+    fi
+    
+    # Extract tag (part after :)
+    local current_tag="${current_image##*:}"
+    
+    # If current tag is "prod", "latest" or matches requested, skip
+    # We can't reliably compare "prod"/"latest" with semantic versions
+    if [ "$current_tag" = "prod" ] || [ "$current_tag" = "latest" ] || [ "$current_tag" = "$GREEDYBEAR_VERSION" ]; then
+        return
+    fi
+    
+    # Check for downgrade using sort -V
+    local lowest_version
+    lowest_version=$(echo -e "${current_tag}\n${GREEDYBEAR_VERSION}" | sort -V | head -n1)
+    
+    if [ "$lowest_version" = "$GREEDYBEAR_VERSION" ] && [ "$current_tag" != "$GREEDYBEAR_VERSION" ]; then
+        log_warning "POTENTIAL DOWNGRADE DETECTED!"
+        log_warning "Current running version: $current_tag"
+        log_warning "Target version:          $GREEDYBEAR_VERSION"
+        log_warning "Downgrading may cause database incompatibility issues since the database"
+        log_warning "might have been migrated to the newer version."
+        
+        if [ "$SILENT_MODE" = false ]; then
+            read -p "Are you sure you want to proceed? [y/N] " -n 1 -r
+            echo
+            if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+                log_info "Operation cancelled"
+                exit 1
+            fi
+        else
+            log_error "Aborting downgrade in silent mode to prevent data corruption."
+            exit 1
+        fi
+    fi
+}
+
 # Start services
 cmd_up() {
     log_info "Starting GreedyBear services..."
+    
+    check_downgrade
     
     execute_compose up -d "$@"
     log_success "GreedyBear services started successfully!"
@@ -473,6 +551,19 @@ cmd_ps() {
 cmd_update() {
     log_info "Updating GreedyBear..."
     
+    # Check if we are in a git repository
+    if [ -d "${SCRIPT_DIR}/.git" ]; then
+        log_info "Pulling latest code from git..."
+        if git -C "$SCRIPT_DIR" pull; then
+            log_success "Code updated successfully"
+        else
+            log_error "Failed to pull latest code. Please check your git configuration."
+            exit 1
+        fi
+    else
+        log_warning "Not a git repository. Skipping code update."
+    fi
+
     # Pull latest images
     log_info "Pulling latest Docker images..."
     execute_compose pull
@@ -502,7 +593,7 @@ cmd_pull() {
 cmd_backup() {
     log_info "Creating backup..."
     
-    local backup_dir="backups"
+    local backup_dir="${SCRIPT_DIR}/backups"
     local timestamp=$(date +%Y%m%d_%H%M%S)
     local backup_file="${backup_dir}/greedybear_backup_${timestamp}"
     
@@ -511,16 +602,16 @@ cmd_backup() {
     # Source PostgreSQL credentials from env file
     local pg_user="user"
     local pg_db="greedybear_db"
-    if [ -f "docker/env_file_postgres" ]; then
-        pg_user=$(grep -E '^POSTGRES_USER=' docker/env_file_postgres | cut -d'=' -f2 || echo "user")
-        pg_db=$(grep -E '^POSTGRES_DB=' docker/env_file_postgres | cut -d'=' -f2 || echo "greedybear_db")
+    if [ -f "${SCRIPT_DIR}/docker/env_file_postgres" ]; then
+        pg_user=$(grep -E '^POSTGRES_USER=' "${SCRIPT_DIR}/docker/env_file_postgres" | cut -d'=' -f2 || echo "user")
+        pg_db=$(grep -E '^POSTGRES_DB=' "${SCRIPT_DIR}/docker/env_file_postgres" | cut -d'=' -f2 || echo "greedybear_db")
     fi
     
     detect_docker_cmd
     local docker_cmd="$DOCKER_CMD"
     
     # Check if postgres container is running
-    if ! ${docker_cmd} ps --format '{{.Names}}' | grep -q "greedybear_postgres"; then
+    if ! ${docker_cmd} ps --format '{{.Names}}' | grep -q "${PROJECT_NAME}_postgres"; then
         log_error "PostgreSQL container is not running. Start services first."
         exit 1
     fi
@@ -528,7 +619,7 @@ cmd_backup() {
     # Backup PostgreSQL database
     log_info "Backing up PostgreSQL database..."
     set +e  # Temporarily disable exit on error to handle failures gracefully
-    ${docker_cmd} exec greedybear_postgres pg_dump -U "$pg_user" "$pg_db" > "${backup_file}.sql"
+    ${docker_cmd} exec ${PROJECT_NAME}_postgres pg_dump -U "$pg_user" "$pg_db" > "${backup_file}.sql"
     backup_status=$?
     set -e  # Re-enable exit on error
     
@@ -542,7 +633,7 @@ cmd_backup() {
     
     # Backup volumes info
     log_info "Saving volumes information..."
-    ${docker_cmd} volume ls --filter name=greedybear > "${backup_file}_volumes.txt"
+    ${docker_cmd} volume ls --filter name=${PROJECT_NAME} > "${backup_file}_volumes.txt"
     
     log_success "Backup complete: ${backup_file}.sql.gz"
     log_info "To restore: ./gbctl restore ${backup_file}.sql.gz"
@@ -571,13 +662,13 @@ cmd_restore() {
     # Source PostgreSQL credentials from env file
     local pg_user="user"
     local pg_db="greedybear_db"
-    if [ -f "docker/env_file_postgres" ]; then
-        pg_user=$(grep -E '^POSTGRES_USER=' docker/env_file_postgres | cut -d'=' -f2 || echo "user")
-        pg_db=$(grep -E '^POSTGRES_DB=' docker/env_file_postgres | cut -d'=' -f2 || echo "greedybear_db")
+    if [ -f "${SCRIPT_DIR}/docker/env_file_postgres" ]; then
+        pg_user=$(grep -E '^POSTGRES_USER=' "${SCRIPT_DIR}/docker/env_file_postgres" | cut -d'=' -f2 || echo "user")
+        pg_db=$(grep -E '^POSTGRES_DB=' "${SCRIPT_DIR}/docker/env_file_postgres" | cut -d'=' -f2 || echo "greedybear_db")
     fi
     
     # Check if postgres container is running
-    if ! ${docker_cmd} ps --format '{{.Names}}' | grep -q "greedybear_postgres"; then
+    if ! ${docker_cmd} ps --format '{{.Names}}' | grep -q "${PROJECT_NAME}_postgres"; then
         log_error "PostgreSQL container is not running. Start services first."
         exit 1
     fi
@@ -599,11 +690,11 @@ cmd_restore() {
     if [[ $backup_file == *.gz ]]; then
         # Use explicit pipefail check for gunzip | docker exec pipeline
         set -o pipefail
-        gunzip -c "$backup_file" | ${docker_cmd} exec -i greedybear_postgres psql -U "$pg_user" "$pg_db"
+        gunzip -c "$backup_file" | ${docker_cmd} exec -i ${PROJECT_NAME}_postgres psql -U "$pg_user" "$pg_db"
         restore_status=$?
         set -o pipefail  # Keep pipefail enabled (script default)
     else
-        ${docker_cmd} exec -i greedybear_postgres psql -U "$pg_user" "$pg_db" < "$backup_file"
+        ${docker_cmd} exec -i ${PROJECT_NAME}_postgres psql -U "$pg_user" "$pg_db" < "$backup_file"
         restore_status=$?
     fi
     set -e  # Re-enable exit on error
@@ -632,7 +723,7 @@ cmd_health() {
     local all_healthy=true
     
     for service in "${services[@]}"; do
-        local container_name="greedybear_${service}"
+        local container_name="${PROJECT_NAME}_${service}"
         
         if ${docker_cmd} ps --format '{{.Names}}' | grep -q "^${container_name}$"; then
             local status=$(${docker_cmd} inspect --format='{{.State.Status}}' "$container_name" 2>/dev/null)
@@ -690,10 +781,10 @@ cmd_clean() {
     execute_compose down -v
     
     log_info "Removing environment files..."
-    rm -f docker/env_file docker/env_file_postgres .env
+    rm -f "${SCRIPT_DIR}/docker/env_file" "${SCRIPT_DIR}/docker/env_file_postgres" "${SCRIPT_DIR}/.env"
     
     log_info "Removing backup directory..."
-    rm -rf backups
+    rm -rf "${SCRIPT_DIR}/backups"
     
     log_success "GreedyBear has been completely removed"
     log_info "To reinstall, run: ./gbctl init --prod"
@@ -756,6 +847,14 @@ parse_args() {
                 fi
                 GREEDYBEAR_VERSION=$2
                 USE_VERSION=true  # Implicitly enable version override when version is specified
+                shift 2
+                ;;
+            --elastic-endpoint)
+                if [[ -z "${2:-}" || "$2" == -* ]]; then
+                    echo -e "${RED}Error:${NC} --elastic-endpoint requires a non-empty value" >&2
+                    exit 1
+                fi
+                ELASTIC_ENDPOINT=$2
                 shift 2
                 ;;
             -s|--silent)
