@@ -164,9 +164,8 @@ class IocRepository:
         """
         Get all scanners associated with active honeypots for scoring.
 
-        Retrieves IOCs that are marked as scanners and are associated with either
-        Cowrie, Log4j, or active general honeypots. Returns only the name field
-        and specified score fields for efficiency.
+        Retrieves IOCs that are marked as scanners and are associated with any
+        active honeypot. Returns only the name field and specified score fields for efficiency.
 
         Args:
             score_fields: List of score field names to retrieve (e.g., ['recurrence_probability']).

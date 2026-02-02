@@ -169,7 +169,7 @@ def get_current_data(days_lookback: int = 30, ioc_repo=None) -> list[dict]:
     Retrieves IOCs that:
     - Are scanners
     - Were seen in the specified lookback period
-    - Are associated with either Cowrie, Log4j, or active general honeypots
+    - Are associated with any active honeypot
 
     Args:
         days_lookback: Number of days to look back for last_seen timestamp.
