@@ -1,14 +1,13 @@
 from datetime import datetime
 
-import pytest
+from django.test import TestCase
 
 from greedybear.cronjobs.extraction.ioc_processor import IocProcessor
 from greedybear.cronjobs.repositories import IocRepository, SensorRepository
 from greedybear.models import IOC, AbuseIPDBEntry, IocType, Tag, ThreatFoxEntry
 
 
-@pytest.mark.django_db
-class TestIOCEnrichment:
+class TestIOCEnrichment(TestCase):
     """Test IOC enrichment with threat intelligence feeds."""
 
     def test_enrich_ioc_with_threatfox(self):
