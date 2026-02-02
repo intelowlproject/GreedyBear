@@ -67,6 +67,7 @@ class IocProcessor:
         ioc_record.payload_request = ioc_record.payload_request or (attack_type == PAYLOAD_REQUEST)
 
         self.ioc_repo.save(ioc_record)
+        self._enrich_with_threat_intel(ioc_record)
         return ioc_record
 
     def _merge_iocs(self, existing: IOC, new: IOC) -> IOC:
@@ -107,3 +108,28 @@ class IocProcessor:
             ioc.days_seen.append(ioc.last_seen.date())
             ioc.number_of_days_seen = len(ioc.days_seen)
         return ioc
+
+    def _enrich_with_threat_intel(self, ioc_record: IOC) -> None:
+        """Check if IOC IP exists in threat intel feeds and tag it."""
+        if ioc_record.type != IocType.IP:
+            return
+
+        from greedybear.models import AbuseIPDBEntry, Tag, ThreatFoxEntry
+
+        # Check ThreatFox feed
+        try:
+            threatfox_entry = ThreatFoxEntry.objects.get(ip_address=ioc_record.name)
+            if threatfox_entry.malware_family:
+                Tag.objects.get_or_create(ioc=ioc_record, name=threatfox_entry.malware_family.lower(), source="abuse_ch")
+                self.log.debug(f"Added ThreatFox tag '{threatfox_entry.malware_family}' to {ioc_record.name}")
+        except ThreatFoxEntry.DoesNotExist:
+            pass
+
+        # Check AbuseIPDB feed
+        try:
+            abuseipdb_entry = AbuseIPDBEntry.objects.get(ip_address=ioc_record.name)
+            if abuseipdb_entry.abuse_confidence_score > 75:
+                Tag.objects.get_or_create(ioc=ioc_record, name="high-risk", source="abuseipdb")
+                self.log.debug(f"Added AbuseIPDB 'high-risk' tag to {ioc_record.name}")
+        except AbuseIPDBEntry.DoesNotExist:
+            pass

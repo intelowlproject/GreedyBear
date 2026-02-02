@@ -90,17 +90,9 @@ class ThreatFoxCron(Cronjob):
                 if created:
                     self.log.info(f"Added ThreatFox entry: {validated_ip} ({malware_family})")
                     entries_added += 1
-                    self._update_ioc_reputation(validated_ip, malware_family)
 
             self.log.info(f"Completed ThreatFox download. Added {entries_added} entries.")
 
         except requests.RequestException as e:
             self.log.error(f"Failed to fetch ThreatFox feed: {e}")
             raise
-
-    def _update_ioc_reputation(self, ip_address: str, malware_family: str):
-        """Update the IP reputation of an existing IOC to mark it as ThreatFox-listed."""
-        reputation = f"threatfox: {malware_family}" if malware_family else "threatfox"
-        updated = self.ioc_repo.update_ioc_reputation(ip_address, reputation)
-        if updated:
-            self.log.debug(f"Updated IOC {ip_address} reputation to '{reputation}'")

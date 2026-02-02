@@ -84,17 +84,9 @@ class AbuseIPDBCron(Cronjob):
                 if created:
                     self.log.info(f"Added AbuseIPDB entry: {validated_ip} (score: {abuse_score})")
                     entries_added += 1
-                    self._update_ioc_reputation(validated_ip, abuse_score)
 
             self.log.info(f"Completed AbuseIPDB download. Added {entries_added} entries.")
 
         except requests.RequestException as e:
             self.log.error(f"Failed to fetch AbuseIPDB blacklist: {e}")
             raise
-
-    def _update_ioc_reputation(self, ip_address: str, abuse_score: int):
-        """Update the IP reputation of an existing IOC to mark it as AbuseIPDB-listed."""
-        reputation = f"abuseipdb: {abuse_score}%"
-        updated = self.ioc_repo.update_ioc_reputation(ip_address, reputation)
-        if updated:
-            self.log.debug(f"Updated IOC {ip_address} reputation to '{reputation}'")

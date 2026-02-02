@@ -97,10 +97,3 @@ def get_abuseipdb_feed():
     from greedybear.cronjobs.abuseipdb_feed import AbuseIPDBCron
 
     AbuseIPDBCron().execute()
-
-
-@shared_task()
-def enrich_ips():
-    from greedybear.cronjobs.ip_enrichment import IPEnrichmentCron
-
-    IPEnrichmentCron().execute()
