@@ -84,19 +84,20 @@ COMMANDS
     clean        Remove all data and reset (destructive!)
 
 OPTIONS
-    -h, --help              Show this help message
-    -s, --silent            Silent mode (non-interactive)
-    --version <value>       Specify version to install (default: latest)
+    -h, --help                  Show this help message
+    -s, --silent                Silent mode (non-interactive)
+    --version <version>         Specify version to install (default: latest)
+    --force                     Force operation (required for 'clean')
     
 DEPLOYMENT FLAGS
-    --prod                  Production deployment (default)
-    --dev                   Development deployment with hot-reload
+    --prod                      Production deployment (default)
+    --dev                       Development deployment with hot-reload
     
 FEATURE FLAGS
-    --https                 Enable HTTPS with custom certificates
-    --elastic               Enable Elasticsearch (requires >=16GB RAM)
-    --elastic-endpoint      Specify Elasticsearch endpoint (for init)
-    --stag                  Staging deployment configuration
+    --https                     Enable HTTPS with custom certificates
+    --elastic                   Enable Elasticsearch (requires >=16GB RAM)
+    --elastic-endpoint <url>    Specify Elasticsearch endpoint (for init)
+    --stag                      Staging deployment configuration
 
 EXAMPLES
     # Initialize and start production deployment
@@ -147,7 +148,9 @@ check_docker() {
 check_docker_compose() {
     log_info "Checking Docker Compose installation..."
     
-    if ! docker compose version &> /dev/null; then
+    detect_docker_cmd
+    
+    if ! ${DOCKER_CMD} compose version &> /dev/null; then
         log_error "Docker Compose v2+ is not available."
         if [ "$SILENT_MODE" = false ]; then
             read -p "Would you like installation instructions? [y/N] " -n 1 -r
@@ -158,12 +161,11 @@ check_docker_compose() {
         fi
         exit 1
     else
-        COMPOSE_VERSION=$(docker compose version --short)
+        COMPOSE_VERSION=$(${DOCKER_CMD} compose version --short)
         log_success "Docker Compose ${COMPOSE_VERSION} is installed"
     fi
 }
 
-# Detect whether docker needs sudo
 # Detect whether docker needs sudo
 detect_docker_cmd() {
     DOCKER_CMD="docker"
