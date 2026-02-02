@@ -13,7 +13,6 @@ GREEDYBEAR_VERSION="latest"
 PROJECT_NAME="greedybear"
 SILENT_MODE=false
 ELASTIC_ENDPOINT=""
-ELASTIC_ENDPOINT=""
 # Admin creation defaults
 ADMIN_USERNAME=""
 ADMIN_PASSWORD=""
@@ -654,8 +653,8 @@ cmd_restore() {
     if [ $# -eq 0 ]; then
         log_error "Please specify backup file to restore"
         log_info "Usage: ./gbctl restore backups/greedybear_backup_YYYYMMDD_HHMMSS.sql.gz"
-        log_info "Available backups:"
-        ls -lh backups/*.sql.gz 2>/dev/null || log_warning "No backups found"
+        log_info "Available backups in ${SCRIPT_DIR}/backups:"
+        ls -lh "${SCRIPT_DIR}/backups/"*.sql.gz 2>/dev/null || log_warning "No backups found"
         exit 1
     fi
     
