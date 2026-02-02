@@ -73,7 +73,6 @@ class SessionInline(admin.TabularInline):
         "source",
         "start_time",
         "duration",
-        "credentials",
         "interaction_count",
         "commands",
     ]
@@ -90,7 +89,6 @@ class CowrieSessionModelAdmin(admin.ModelAdmin):
         "start_time",
         "duration",
         "login_attempt",
-        "credentials",
         "command_execution",
         "interaction_count",
         "source",

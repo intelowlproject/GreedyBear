@@ -36,7 +36,6 @@ def migrate_credentials_to_table(apps, schema_editor):
                 CowrieCredential.objects.bulk_create(credentials_to_create, ignore_conflicts=True)
                 credentials_to_create = []
 
-    # Create remaining credentials
     if credentials_to_create:
         CowrieCredential.objects.bulk_create(credentials_to_create, ignore_conflicts=True)
 
@@ -54,4 +53,10 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.RunPython(migrate_credentials_to_table, reverse_code=reverse_migrate),
+        # remove the credentials ArrayField after migrating data
+        migrations.RemoveField(
+            model_name="cowriesession",
+            name="credentials",
+        ),
     ]
+

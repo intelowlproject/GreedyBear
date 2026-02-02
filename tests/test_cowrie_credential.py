@@ -513,9 +513,6 @@ class CowrieStrategyIntegrationTestCase(CustomTestCase):
         self.assertEqual(creds.first().username, "admin")
         self.assertEqual(creds.first().password, "password123")
 
-        # Check backward compatibility ArrayField -> No longer populated
-        self.assertEqual(len(session.credentials), 0)
-
     def test_extract_login_failed_multiple(self):
         """Test extraction of multiple failed logins in same session."""
         scanner_ip = "5.6.7.8"
@@ -555,9 +552,6 @@ class CowrieStrategyIntegrationTestCase(CustomTestCase):
         self.assertEqual(usernames, ["root", "root"])
         self.assertEqual(passwords, ["123", "456"])
 
-        # The ArrayField on the session is no longer populated
-        self.assertEqual(len(session.credentials), 0)
-
     def test_duplicate_credentials_deduplication(self):
         """Test that identical credentials in the same session are not duplicated in DB."""
         scanner_ip = "9.9.9.9"
@@ -594,9 +588,6 @@ class CowrieStrategyIntegrationTestCase(CustomTestCase):
         cred = session.credential_set.first()
         self.assertEqual(cred.username, "user")
         self.assertEqual(cred.password, "pass")
-
-        # The ArrayField on the session is no longer populated
-        self.assertEqual(len(session.credentials), 0)
 
     def test_null_character_normalization(self):
         """Test that null chars are replaced."""

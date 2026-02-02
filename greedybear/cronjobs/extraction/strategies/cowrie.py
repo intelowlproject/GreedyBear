@@ -5,8 +5,6 @@ from collections import defaultdict
 from hashlib import sha256
 from urllib.parse import urlparse
 
-from django.db import transaction
-
 from greedybear.consts import PAYLOAD_REQUEST, SCANNER
 from greedybear.cronjobs.extraction.strategies import BaseExtractionStrategy
 from greedybear.cronjobs.extraction.utils import (
@@ -19,7 +17,7 @@ from greedybear.cronjobs.repositories import (
     IocRepository,
     SensorRepository,
 )
-from greedybear.models import IOC, CommandSequence, CowrieCredential, CowrieSession
+from greedybear.models import IOC, CommandSequence, CowrieSession
 from greedybear.regex import REGEX_URL_PROTOCOL
 
 
@@ -214,34 +212,26 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
         for sid, session_hits in hits_per_session.items():
             session_record = self.session_repo.get_or_create_session(session_id=sid, source=ioc)
 
-            credentials_to_create = []
+            # Process hits and save credentials immediately
+            # Note: get_or_create already saved the session, so credentials can reference it
             for hit in sorted(session_hits, key=lambda hit: hit["timestamp"]):
-                cred = self._process_session_hit(session_record, hit, ioc)
-                if cred:
-                    credentials_to_create.append(cred)
+                self._process_session_hit(session_record, hit, ioc)
 
             if session_record.commands is not None:
                 self._deduplicate_command_sequence(session_record)
                 self.session_repo.save_command_sequence(session_record.commands)
                 self.log.info(f"saved new command execute from {ioc.name} with hash {session_record.commands.commands_hash}")
 
-            with transaction.atomic():
-                self.ioc_repo.save(session_record.source)
-                self.session_repo.save_session(session_record)
-
-                # Create normalized credential records after session is saved
-                for username, password in credentials_to_create:
-                    CowrieCredential.objects.get_or_create(
-                        session=session_record,
-                        username=username,
-                        password=password,
-                    )
+            # Final save to persist fields modified during hit processing
+            self.ioc_repo.save(session_record.source)
+            self.session_repo.save_session(session_record)
 
         self.log.info(f"{len(hits_per_session)} sessions added")
 
-    def _process_session_hit(self, session_record: CowrieSession, hit: dict, ioc: IOC) -> tuple[str, str] | None:
+    def _process_session_hit(self, session_record: CowrieSession, hit: dict, ioc: IOC) -> None:
         """
         Process a single hit and update the session record.
+        Saves credentials immediately when found.
 
         Args:
             session_record: CowrieSession instance to update
@@ -258,9 +248,9 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
                 session_record.login_attempt = True
                 username = normalize_credential_field(hit["username"])[:256]
                 password = normalize_credential_field(hit["password"])[:256]
-                # Legacy ArrayField population removed to avoid duplication
                 session_record.source.login_attempts += 1
-                return username, password
+                # save credential immediately
+                self.session_repo.save_credential(session_record, username, password)
 
             case "cowrie.command.input":
                 self.log.info(f"found a command execution from {ioc.name}")
@@ -278,7 +268,6 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
                 session_record.duration = hit["duration"]
 
         session_record.interaction_count += 1
-        return None
 
     def _add_fks(self, scanner_ip: str, hostname: str) -> None:
         """

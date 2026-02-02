@@ -108,12 +108,6 @@ class CowrieSession(models.Model):
     start_time = models.DateTimeField(blank=True, null=True)
     duration = models.FloatField(blank=True, null=True)
     login_attempt = models.BooleanField(blank=False, null=False, default=False)
-    credentials = pg_fields.ArrayField(
-        models.CharField(max_length=256, blank=True),
-        blank=False,
-        null=False,
-        default=list,
-    )
     command_execution = models.BooleanField(blank=False, null=False, default=False)
     interaction_count = models.IntegerField(blank=False, null=False, default=0)
     source = models.ForeignKey(IOC, on_delete=models.CASCADE, blank=False, null=False)
@@ -136,7 +130,6 @@ class CowrieCredential(models.Model):
     querying and indexing on username/password fields.
     """
 
-    id = models.AutoField(primary_key=True)
     session = models.ForeignKey(
         CowrieSession,
         on_delete=models.CASCADE,
@@ -154,7 +147,6 @@ class CowrieCredential(models.Model):
         # 1. cowriecred_pass_idx: Essential for exact password searches which are the primary query pattern.
         # 2. cowriecred_user_pass_idx: Composite index optimizes queries filtering by both username and password;
         # uniqueness per session is enforced by the unique_together constraint below.
-        # 3. functional index (LOWER(password)): Created via RunSQL for potential case-insensitive lookups.
         indexes = [
             models.Index(fields=["password"], name="cowriecred_pass_idx"),
             models.Index(fields=["username", "password"], name="cowriecred_user_pass_idx"),

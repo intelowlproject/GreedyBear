@@ -1,6 +1,6 @@
 import logging
 
-from greedybear.models import IOC, CommandSequence, CowrieSession
+from greedybear.models import IOC, CommandSequence, CowrieCredential, CowrieSession
 
 
 class CowrieSessionRepository:
@@ -73,6 +73,47 @@ class CowrieSessionRepository:
         """
         cmd.save()
         return cmd
+
+    def save_credential(self, session: CowrieSession, username: str, password: str) -> bool:
+        """
+        Save a single credential for a session using get_or_create to avoid duplicates.
+
+        Args:
+            session: The CowrieSession instance this credential belongs to.
+            username: Username to save.
+            password: Password to save.
+
+        Returns:
+            True if a new credential was created, False if it already existed.
+        """
+        _, created = CowrieCredential.objects.get_or_create(
+            session=session,
+            username=username,
+            password=password,
+        )
+        return created
+
+    def save_credentials(self, session: CowrieSession, credentials_list: list[tuple[str, str]]) -> int:
+        """
+        Save credentials for a session using get_or_create to avoid duplicates.
+
+        Args:
+            session: The CowrieSession instance these credentials belong to.
+            credentials_list: List of (username, password) tuples to save.
+
+        Returns:
+            Number of new credential records created.
+        """
+        created_count = 0
+        for username, password in credentials_list:
+            _, created = CowrieCredential.objects.get_or_create(
+                session=session,
+                username=username,
+                password=password,
+            )
+            if created:
+                created_count += 1
+        return created_count
 
     def delete_old_command_sequences(self, cutoff_date) -> int:
         """

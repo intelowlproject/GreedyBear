@@ -40,8 +40,5 @@ class Migration(migrations.Migration):
             model_name="cowriecredential",
             index=models.Index(fields=["username", "password"], name="cowriecred_user_pass_idx"),
         ),
-        migrations.RunSQL(
-            sql="CREATE INDEX cowriecred_pass_lower_idx ON greedybear_cowriecredential(LOWER(password));",
-            reverse_sql="DROP INDEX IF EXISTS cowriecred_pass_lower_idx;",
-        ),
     ]
+

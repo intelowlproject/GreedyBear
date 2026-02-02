@@ -237,17 +237,16 @@ class TestCowrieExtractionStrategy(ExtractionTestCase):
         result = self.strategy._process_session_hit(session_record, hit, ioc)
 
         self.assertTrue(session_record.login_attempt)
-        # ArrayField is no longer populated
-        self.assertEqual(len(session_record.credentials), 0)
         self.assertEqual(session_record.source.login_attempts, 1)
-        # Check returned credentials
-        self.assertEqual(result, ("root", "password123"))
+        self.assertIsNone(result)
+        self.mock_session_repo.save_credential.assert_called_once_with(session_record, "root", "password123")
 
     def test_process_session_hit_truncation(self):
         """Test that excessive credential length is truncated."""
         session_record = Mock()
         session_record.credentials = []
         session_record.source = Mock(login_attempts=0)
+        session_record.interaction_count = 0
 
         hit = {
             "eventid": "cowrie.login.failed",
@@ -257,12 +256,17 @@ class TestCowrieExtractionStrategy(ExtractionTestCase):
         }
         ioc = Mock(name="1.2.3.4")
 
-        username, password = self.strategy._process_session_hit(session_record, hit, ioc)
+        result = self.strategy._process_session_hit(session_record, hit, ioc)
 
-        self.assertEqual(len(username), 256)
-        self.assertEqual(len(password), 256)
-        self.assertTrue(username.startswith("uuuu"))
-        self.assertTrue(password.startswith("pppp"))
+        self.assertIsNone(result)
+        self.mock_session_repo.save_credential.assert_called_once()
+        call_args = self.mock_session_repo.save_credential.call_args
+        username_arg = call_args[0][1]
+        password_arg = call_args[0][2]
+        self.assertEqual(len(username_arg), 256)
+        self.assertEqual(len(password_arg), 256)
+        self.assertTrue(username_arg.startswith("uuuu"))
+        self.assertTrue(password_arg.startswith("pppp"))
 
     def test_process_session_hit_command_input(self):
         """Test processing of command input event."""
