@@ -21,7 +21,7 @@ jest.mock("@certego/certego-ui", () => {
           first_seen: "2023-03-15",
           last_seen: "2023-03-15",
           attack_count: 1,
-          feed_type: "log4j",
+          feed_type: "cowrie",
         },
       ],
     },
@@ -38,7 +38,7 @@ jest.mock("@certego/certego-ui", () => {
     ...originalModule,
 
     useAxiosComponentLoader: jest.fn(() => [
-      ["Honeytrap", "Glutton", "CitrixHoneypot", "Log4j", "Cowrie"],
+      ["Honeytrap", "Glutton", "CitrixHoneypot", "Cowrie"],
       loader,
     ]),
 
@@ -88,7 +88,7 @@ describe("Feeds component", () => {
       "/api/feeds/all/all/recent.json"
     );
 
-    await user.selectOptions(feedTypeSelectElement, "log4j");
+    await user.selectOptions(feedTypeSelectElement, "cowrie");
     await user.selectOptions(attackTypeSelectElement, "scanner");
     await user.selectOptions(iocTypeSelectElement, "ip");
     await user.selectOptions(prioritizationSelectElement, "persistent");
@@ -97,7 +97,7 @@ describe("Feeds component", () => {
       // check link has been changed including ioc_type parameter
       expect(buttonRawData).toHaveAttribute(
         "href",
-        "/api/feeds/log4j/scanner/persistent.json?ioc_type=ip"
+        "/api/feeds/cowrie/scanner/persistent.json?ioc_type=ip"
       );
     });
 
@@ -106,7 +106,7 @@ describe("Feeds component", () => {
     await waitFor(() => {
       expect(buttonRawData).toHaveAttribute(
         "href",
-        "/api/feeds/log4j/scanner/persistent.json?ioc_type=domain"
+        "/api/feeds/cowrie/scanner/persistent.json?ioc_type=domain"
       );
     });
   });
