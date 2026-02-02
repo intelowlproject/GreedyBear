@@ -3,7 +3,6 @@ from hashlib import sha256
 from unittest.mock import Mock
 
 from certego_saas.apps.user.models import User
-from django.db import connection
 from django.test import TestCase, TransactionTestCase
 from django_test_migrations.migrator import Migrator
 
@@ -267,8 +266,6 @@ class MigrationTestCase(TransactionTestCase):
         return self.migrator.apply_tested_migration((self.app_name, self.migrate_to))
 
     def tearDown(self):
-        with connection.cursor() as cursor:
-            cursor.execute("SET CONSTRAINTS ALL IMMEDIATE")
         self.migrator.reset()
         super().tearDown()
 

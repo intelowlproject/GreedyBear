@@ -1,6 +1,9 @@
+from django.test import tag
+
 from . import MigrationTestCase
 
 
+@tag("migration")
 class TestRemoveHardcodedHoneypots(MigrationTestCase):
     """Tests that hardcoded honeypots are removed only when no IOC references them."""
 
@@ -30,6 +33,7 @@ class TestRemoveHardcodedHoneypots(MigrationTestCase):
         )
 
 
+@tag("migration")
 class TestCowrieLog4jMigration(MigrationTestCase):
     """Tests migration of cowrie and log4j boolean flags into the GeneralHoneypot M2M relation."""
 
