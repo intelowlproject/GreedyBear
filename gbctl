@@ -13,7 +13,11 @@ GREEDYBEAR_VERSION="latest"
 PROJECT_NAME="greedybear"
 SILENT_MODE=false
 ELASTIC_ENDPOINT=""
-
+ELASTIC_ENDPOINT=""
+# Admin creation defaults
+ADMIN_USERNAME=""
+ADMIN_PASSWORD=""
+ADMIN_EMAIL=""
 # Color codes for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -22,7 +26,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Environment and command validation arrays
-declare -A cmd_arguments=(["init"]=1 ["up"]=1 ["start"]=1 ["down"]=1 ["stop"]=1 ["restart"]=1 ["logs"]=1 ["ps"]=1 ["update"]=1 ["build"]=1 ["pull"]=1 ["backup"]=1 ["restore"]=1 ["health"]=1 ["clean"]=1)
+declare -A cmd_arguments=(["init"]=1 ["up"]=1 ["start"]=1 ["down"]=1 ["stop"]=1 ["restart"]=1 ["logs"]=1 ["ps"]=1 ["update"]=1 ["build"]=1 ["pull"]=1 ["backup"]=1 ["restore"]=1 ["health"]=1 ["clean"]=1 ["create-admin"]=1)
 
 # Path mapping for compose files
 declare -A path_mapping=(
@@ -82,12 +86,16 @@ COMMANDS
     restore      Restore from backup
     health       Health check all services
     clean        Remove all data and reset (destructive!)
+    create-admin Create a Django superuser (interactive or silent)
 
 OPTIONS
     -h, --help                  Show this help message
     -s, --silent                Silent mode (non-interactive)
     --version <version>         Specify version to install (default: latest)
     --force                     Force operation (required for 'clean')
+    --username <name>           Username for create-admin
+    --password <pass>           Password for create-admin
+    --email <addr>              Email address for create-admin
     
 DEPLOYMENT FLAGS
     --prod                      Production deployment (default)
@@ -792,6 +800,51 @@ cmd_clean() {
     log_info "To reinstall, run: ./gbctl init --prod"
 }
 
+# Create admin user
+cmd_create_admin() {
+    log_info "Creating Django superuser..."
+    
+    detect_docker_cmd
+    local docker_cmd="$DOCKER_CMD"
+    local container_name="${PROJECT_NAME}_uwsgi"
+    
+    # Check if uwsgi container is running
+    if ! ${docker_cmd} ps --format '{{.Names}}' | grep -q "^${container_name}$"; then
+        log_error "GreedyBear uWSGI container is not running. Please start services first."
+        exit 1
+    fi
+    
+    # Check if we have arguments for silent mode
+    if [ -n "$ADMIN_USERNAME" ] && [ -n "$ADMIN_PASSWORD" ] && [ -n "$ADMIN_EMAIL" ]; then
+        log_info "Creating superuser in non-interactive mode..."
+        
+        # We need to pass environment variables to the exec command
+        ${docker_cmd} exec -e DJANGO_SUPERUSER_PASSWORD="$ADMIN_PASSWORD" \
+                           -e DJANGO_SUPERUSER_USERNAME="$ADMIN_USERNAME" \
+                           -e DJANGO_SUPERUSER_EMAIL="$ADMIN_EMAIL" \
+                           "$container_name" python3 manage.py createsuperuser --noinput
+                           
+        if [ $? -eq 0 ]; then
+            log_success "Superuser '$ADMIN_USERNAME' created successfully!"
+        else
+            log_error "Failed to create superuser."
+            exit 1
+        fi
+    else
+        # Fallback to interactive mode if ANY argument is missing
+        if [ "$SILENT_MODE" = true ] && ( [ -z "$ADMIN_USERNAME" ] || [ -z "$ADMIN_PASSWORD" ] || [ -z "$ADMIN_EMAIL" ] ); then
+            log_error "Silent mode requires --username, --password, and --email flags for create-admin."
+            exit 1
+        fi
+        
+        log_info "Entering interactive mode..."
+        log_info "Please follow the prompts to create your superuser."
+        
+        # Use -it for interactive terminal
+        ${docker_cmd} exec -it "$container_name" python3 manage.py createsuperuser
+    fi
+}
+
 # Parse arguments
 parse_args() {
     # Set defaults
@@ -867,6 +920,30 @@ parse_args() {
                 FORCE_CLEAN=true
                 shift
                 ;;
+            --username)
+                if [[ -z "${2:-}" || "$2" == -* ]]; then
+                    echo -e "${RED}Error:${NC} --username requires a non-empty value" >&2
+                    exit 1
+                fi
+                ADMIN_USERNAME=$2
+                shift 2
+                ;;
+            --password)
+                if [[ -z "${2:-}" || "$2" == -* ]]; then
+                    echo -e "${RED}Error:${NC} --password requires a non-empty value" >&2
+                    exit 1
+                fi
+                ADMIN_PASSWORD=$2
+                shift 2
+                ;;
+            --email)
+                if [[ -z "${2:-}" || "$2" == -* ]]; then
+                    echo -e "${RED}Error:${NC} --email requires a non-empty value" >&2
+                    exit 1
+                fi
+                ADMIN_EMAIL=$2
+                shift 2
+                ;;
             -h|--help)
                 print_help
                 exit 0
@@ -929,6 +1006,9 @@ main() {
             ;;
         clean)
             cmd_clean "${EXTRA_ARGS[@]}"
+            ;;
+        create-admin)
+            cmd_create_admin "${EXTRA_ARGS[@]}"
             ;;
         *)
             log_error "Unknown command: $COMMAND"
