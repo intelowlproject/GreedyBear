@@ -465,7 +465,7 @@ execute_compose() {
     build_compose_args
     
     # Handle version selection for Docker images if version override is enabled
-    if [ "$USE_VERSION" = true ] && [ "$GREEDYBEAR_VERSION" != "latest" ]; then
+    if [ "$USE_VERSION" = true ]; then
         export REACT_APP_INTELOWL_VERSION="$GREEDYBEAR_VERSION"
         log_info "Using GreedyBear version ${GREEDYBEAR_VERSION} for Docker images"
     fi
