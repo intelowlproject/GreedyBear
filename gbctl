@@ -683,7 +683,11 @@ cmd_backup() {
     local timestamp=$(date +%Y%m%d_%H%M%S)
     local backup_file="${backup_dir}/greedybear_backup_${timestamp}"
     
-    mkdir -p "$backup_dir"
+    # Securely create backup directory
+    if [ ! -d "$backup_dir" ]; then
+        mkdir -p "$backup_dir"
+        chmod 700 "$backup_dir"
+    fi
     
     # Source PostgreSQL credentials from env file
     local pg_user="user"
@@ -711,6 +715,7 @@ cmd_backup() {
     
     if [ $backup_status -eq 0 ]; then
         gzip "${backup_file}.sql"
+        chmod 600 "${backup_file}.sql.gz"
         log_success "Database backup created: ${backup_file}.sql.gz"
     else
         log_error "Database backup failed"
