@@ -32,7 +32,7 @@ def feeds(request, feed_type, attack_type, prioritize, format_):
 
     Args:
         request: The incoming request object.
-        feed_type (str): Type of feed (e.g., log4j, cowrie, etc.).
+        feed_type (str): Type of feed (e.g. cowrie, honeytrap, etc.).
         attack_type (str): Type of attack (e.g., all, specific attack types).
         prioritize (str): Prioritization mechanism to use (e.g., recent, persistent).
         format_ (str): Desired format of the response (e.g., json, csv, txt).
@@ -91,7 +91,7 @@ def feeds_advanced(request):
 
     Args:
         request: The incoming request object.
-        feed_type (str): Type of feed to retrieve. (supported: `cowrie`, `log4j`, etc.; default: `all`)
+        feed_type (str): Type of feed to retrieve. (supported: `cowrie`, `honeytrap`, etc.; default: `all`)
         attack_type (str): Type of attack to filter. (supported: `scanner`, `payload_request`, `all`; default: `all`)
         max_age (int): Maximum number of days since last occurrence. E.g. an IOC that was last seen 4 days ago is excluded by default. (default: 3)
         min_days_seen (int): Minimum number of days on which an IOC must have been seen. (default: 1)
@@ -130,7 +130,7 @@ def feeds_asn(request):
 
     Args:
         request: The HTTP request object.
-        feed_type (str): Filter by feed type (e.g., 'cowrie', 'log4j'). Default: 'all'.
+        feed_type (str): Filter by feed type (e.g. 'cowrie', 'honeytrap'). Default: 'all'.
         attack_type (str): Filter by attack type (e.g., 'scanner', 'payload_request'). Default: 'all'.
         max_age (int): Maximum age of IOCs in days. Default: 3.
         min_days_seen (int): Minimum days an IOC must have been observed. Default: 1.

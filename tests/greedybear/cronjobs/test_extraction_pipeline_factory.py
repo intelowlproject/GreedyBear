@@ -22,16 +22,6 @@ class TestExtractionStrategyFactory(ExtractionTestCase):
 
         self.assertIsInstance(strategy, CowrieExtractionStrategy)
 
-    def test_factory_creates_log4pot_strategy_for_log4pot(self):
-        """Factory should return Log4potExtractionStrategy for 'Log4pot' honeypot."""
-        from greedybear.cronjobs.extraction.strategies import Log4potExtractionStrategy
-        from greedybear.cronjobs.extraction.strategies.factory import ExtractionStrategyFactory
-
-        factory = ExtractionStrategyFactory(MagicMock(), MagicMock())
-        strategy = factory.get_strategy("Log4pot")
-
-        self.assertIsInstance(strategy, Log4potExtractionStrategy)
-
     def test_factory_creates_generic_strategy_for_unknown(self):
         """Factory should return GenericExtractionStrategy for unknown honeypots."""
         from greedybear.cronjobs.extraction.strategies import GenericExtractionStrategy
@@ -66,9 +56,6 @@ class TestExtractionStrategyFactory(ExtractionTestCase):
 
         cowrie_strategy = factory.get_strategy("Cowrie")
         self.assertEqual(cowrie_strategy.honeypot, "Cowrie")
-
-        log4pot_strategy = factory.get_strategy("Log4pot")
-        self.assertEqual(log4pot_strategy.honeypot, "Log4pot")
 
         generic_strategy = factory.get_strategy("Heralding")
         self.assertEqual(generic_strategy.honeypot, "Heralding")
