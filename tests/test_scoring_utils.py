@@ -1,7 +1,14 @@
 from datetime import datetime
 
 import pandas as pd
-from greedybear.cronjobs.scoring.utils import correlated_features, date_delta, get_current_data, get_features, multi_label_encode
+
+from greedybear.cronjobs.scoring.utils import (
+    correlated_features,
+    date_delta,
+    get_current_data,
+    get_features,
+    multi_label_encode,
+)
 
 from . import CustomTestCase
 
@@ -93,7 +100,7 @@ class TestFeatExtraction(CustomTestCase):
             self.assertEqual(str(feature["days_seen"][0]), today)
             self.assertEqual(feature["asn"], "12345")
             self.assertTrue(len(feature["honeypots"]) > 0)
-            self.assertTrue(set(feature["honeypots"]).issubset({"heralding", "ciscoasa", "log4j", "cowrie"}))
+            self.assertTrue(set(feature["honeypots"]).issubset({"heralding", "ciscoasa", "log4pot", "cowrie"}))
             self.assertEqual(feature["honeypot_count"], len(feature["honeypots"]))
             self.assertEqual(feature["destination_port_count"], 3)
             self.assertEqual(feature["days_seen_count"], 1)
@@ -116,8 +123,9 @@ class TestMultiLabelEncode(CustomTestCase):
         data = get_current_data()
         features = get_features(data, today)
         features = multi_label_encode(features, "honeypots").to_dict("records")
-        for h in ["heralding", "ciscoasa", "log4j", "cowrie"]:
-            self.assertEqual(features[0][f"has_{h}"], 1)
+        features.sort(key=lambda d: d["value"], reverse=True)
+        for h in ["heralding", "ciscoasa", "log4pot", "cowrie"]:
+            self.assertEqual(features[1][f"has_{h}"], 1)
 
     def test_multi_label_encode_sample(self):
         """Test with sample data"""

@@ -1,6 +1,5 @@
 # This file is a part of GreedyBear https://github.com/honeynet/GreedyBear
 # See the file 'LICENSE' for copying permission.
-from __future__ import absolute_import, unicode_literals
 
 import os
 
@@ -8,8 +7,9 @@ from celery import Celery
 from celery.schedules import crontab
 from celery.signals import setup_logging
 from django.conf import settings
-from greedybear.settings import EXTRACTION_INTERVAL, LEGACY_EXTRACTION
 from kombu import Exchange, Queue
+
+from greedybear.settings import EXTRACTION_INTERVAL
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "greedybear.settings")
 
@@ -56,32 +56,13 @@ def setup_loggers(*args, **kwargs):
     dictConfig(settings.LOGGING)
 
 
-hp_extraction_interval = 10 if LEGACY_EXTRACTION else EXTRACTION_INTERVAL
+hp_extraction_interval = EXTRACTION_INTERVAL
 app.conf.beat_schedule = {
     # every 10 minutes or according to EXTRACTION_INTERVAL
-    "extract_log4pot": {
-        "task": "greedybear.tasks.extract_log4pot",
+    "extract_all": {
+        "task": "greedybear.tasks.extract_all",
         "schedule": crontab(minute=f"*/{hp_extraction_interval}"),
         "options": {"queue": "default", "countdown": 10},
-    },
-    # every 10 minutes or according to EXTRACTION_INTERVAL
-    "extract_cowrie": {
-        "task": "greedybear.tasks.extract_cowrie",
-        "schedule": crontab(minute=f"*/{hp_extraction_interval}"),
-        "options": {"queue": "default", "countdown": 10},
-    },
-    # FEEDS
-    # every 10 minutes or according to EXTRACTION_INTERVAL
-    "extract_general": {
-        "task": "greedybear.tasks.extract_general",
-        "schedule": crontab(minute=f"*/{hp_extraction_interval}"),
-        "options": {"queue": "default", "countdown": 10},
-    },
-    # once a day
-    "extract_sensors": {
-        "task": "greedybear.tasks.extract_sensors",
-        "schedule": crontab(hour=0),
-        "options": {"queue": "default"},
     },
     # once an hour
     "monitor_honeypots": {
@@ -129,6 +110,16 @@ app.conf.beat_schedule = {
     "get_whatsmyip": {
         "task": "greedybear.tasks.get_whatsmyip",
         "schedule": crontab(hour=4, minute=3, day_of_week=6),
+        "options": {"queue": "default"},
+    },
+    "extract_firehol_lists": {
+        "task": "greedybear.tasks.extract_firehol_lists",
+        "schedule": crontab(hour=4, minute=15, day_of_week=0),
+        "options": {"queue": "default"},
+    },
+    "get_tor_exit_nodes": {
+        "task": "greedybear.tasks.get_tor_exit_nodes",
+        "schedule": crontab(hour=4, minute=30, day_of_week=0),
         "options": {"queue": "default"},
     },
 }

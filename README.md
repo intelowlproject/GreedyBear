@@ -6,8 +6,7 @@
 [![Twitter Follow](https://img.shields.io/twitter/follow/intel_owl?style=social)](https://twitter.com/intel_owl)
 [![Linkedin](https://img.shields.io/badge/LinkedIn-0077B5?style=flat&logo=linkedin&logoColor=white)](https://www.linkedin.com/company/intelowl/)
 
-[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
-[![Imports: isort](https://img.shields.io/badge/%20imports-isort-%231674b1?style=flat&labelColor=ef8336)](https://pycqa.github.io/isort/)
+[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![CodeQL](https://github.com/intelowlproject/GreedyBear/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/intelowlproject/GreedyBear/actions/workflows/codeql-analysis.yml)
 [![Dependency Review](https://github.com/intelowlproject/GreedyBear/actions/workflows/dependency_review.yml/badge.svg)](https://github.com/intelowlproject/GreedyBear/actions/workflows/dependency_review.yml)
 [![Pull request automation](https://github.com/intelowlproject/GreedyBear/actions/workflows/pull_request_automation.yml/badge.svg)](https://github.com/intelowlproject/GreedyBear/actions/workflows/pull_request_automation.yml)
@@ -22,7 +21,7 @@ Documentation about GreedyBear installation, usage, configuration and contributi
 
 ## Public feeds
 
-There are public feeds provided by [The Honeynet Project](https://www.honeynet.org) in this [site](https://greedybear.honeynet.org). [Example](https://greedybear.honeynet.org/api/feeds/log4j/all/recent.txt)
+There are public feeds provided by [The Honeynet Project](https://www.honeynet.org) in this [site](https://greedybear.honeynet.org). [Example](https://greedybear.honeynet.org/api/feeds/cowrie/all/recent.txt)
 
 Please do not perform too many requests to extract feeds or you will be banned.
 
@@ -65,6 +64,6 @@ In 2022 we joined the official [DigitalOcean Open Source Program](https://www.di
 This project was started as a personal Christmas project by [Matteo Lodi](https://twitter.com/matte_lodi) in 2021.
 
 Special thanks to:
-* [Tim Leonhard](https://github.com/regulartim) for having greatly improved the project and added Machine Learning Models during his master thesis.
+* [Tim Leonhard](https://github.com/regulartim) for having greatly improved the project and added Machine Learning Models during his master thesis. He's the actual Principal Mantainer.
 * [Martina Carella](https://github.com/carellamartina) for having created the GUI during her master thesis.
 * [Daniele Rosetti](https://github.com/drosetti) for helping maintaining the Frontend.

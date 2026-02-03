@@ -13,8 +13,8 @@ from .views import (
     RegistrationView,
     ResendVerificationView,
     TokenSessionsViewSet,
-    checkAuthentication,
-    checkConfiguration,
+    check_authentication,
+    check_configuration,
 )
 
 router = routers.DefaultRouter(trailing_slash=False)
@@ -44,10 +44,10 @@ urlpatterns = [
     ),
     path("reset-password", PasswordResetView.as_view(), name="auth_reset-password"),
     path("login", LoginView.as_view(), name="auth_login"),
-    path("configuration", checkConfiguration),
+    path("configuration", check_configuration),
     # auth
     path("", include("certego_saas.apps.auth.urls")),
     path("apiaccess", APIAccessTokenView.as_view(), name="auth_apiaccess"),
-    path("authentication", checkAuthentication),
+    path("authentication", check_authentication),
     path("", include(router.urls)),
 ]

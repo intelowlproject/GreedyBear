@@ -16,10 +16,25 @@ class Migration(migrations.Migration):
         migrations.CreateModel(
             name="CommandSequence",
             fields=[
-                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
                 ("first_seen", models.DateTimeField(default=datetime.datetime.utcnow)),
                 ("last_seen", models.DateTimeField(default=datetime.datetime.utcnow)),
-                ("commands", django.contrib.postgres.fields.ArrayField(base_field=models.CharField(blank=True, max_length=1024), default=list, size=None)),
+                (
+                    "commands",
+                    django.contrib.postgres.fields.ArrayField(
+                        base_field=models.CharField(blank=True, max_length=1024),
+                        default=list,
+                        size=None,
+                    ),
+                ),
                 ("commands_hash", models.CharField(blank=True, max_length=64)),
                 ("cluster", models.IntegerField(blank=True, null=True)),
             ],
@@ -27,6 +42,11 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="cowriesession",
             name="commands",
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, to="greedybear.commandsequence"),
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to="greedybear.commandsequence",
+            ),
         ),
     ]

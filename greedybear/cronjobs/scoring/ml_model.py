@@ -7,11 +7,12 @@ import numpy as np
 import pandas as pd
 from django.core.files.base import ContentFile
 from django.core.files.storage import FileSystemStorage
+from sklearn.model_selection import train_test_split
+
 from greedybear.cronjobs.scoring.consts import MULTI_VAL_FEATURES, SAMPLE_COUNT
 from greedybear.cronjobs.scoring.scorer import Scorer
 from greedybear.cronjobs.scoring.utils import multi_label_encode
 from greedybear.settings import ML_MODEL_DIRECTORY
-from sklearn.model_selection import train_test_split
 
 
 class MLModel(Scorer):
@@ -92,6 +93,14 @@ class MLModel(Scorer):
             df[feature] = 0
         return df[train_features]
 
+    @property
+    def is_available(self) -> bool:
+        """Check whether the model is already loaded or its file exists on disk."""
+        if "model" in self.__dict__:
+            return True
+        storage = FileSystemStorage(location=ML_MODEL_DIRECTORY)
+        return storage.exists(self.file_name)
+
     def score(self, df: pd.DataFrame) -> pd.DataFrame:
         """
         Score input data using the trained model.
@@ -111,20 +120,27 @@ class MLModel(Scorer):
             ValueError: If required features are missing from input
         """
         self.log.info(f"calculate {self.score_name} with {self.name}")
+
+        if not self.is_available:
+            self.log.warning(f"no trained model available for {self.name}, skipping scoring")
+            result_df = df.copy()
+            result_df[self.score_name] = 0
+            return result_df
+
         missing_features = set(self.features) - set(df.columns)
         if missing_features:
             raise ValueError(f"Missing required features: {missing_features}")
 
-        X = df[self.features].copy()
+        x = df[self.features].copy()
         for feature in MULTI_VAL_FEATURES:
-            X = multi_label_encode(X, feature)
-            X = self.add_missing_features(X)
+            x = multi_label_encode(x, feature)
+            x = self.add_missing_features(x)
 
         result_df = df.copy()
-        result_df[self.score_name] = self.predict(X)
+        result_df[self.score_name] = self.predict(x)
         return result_df
 
-    def recall_auc(self, X: pd.DataFrame, y: pd.DataFrame) -> float:
+    def recall_auc(self, x: pd.DataFrame, y: pd.DataFrame) -> float:
         """
         Calculate the area under the recall curve for top-k predictions.
         Quality metric for both, classification and regression tasks.
@@ -135,17 +151,17 @@ class MLModel(Scorer):
         a quater of the dataset.
 
         Args:
-            X: The input features to generate predictions for.
+            x: The input features to generate predictions for.
             y: Prediction targets.
 
         Returns:
             A score between 0 and 1, where 1 is perfect.
         """
         y = y.reset_index(drop=True)
-        predictions = pd.Series(self.predict(X))
+        predictions = pd.Series(self.predict(x))
         ranked_data = pd.DataFrame({"target": y, "prediction": predictions}).sort_values(by="prediction", ascending=False)
         total_positives = y.sum()
-        max_k = len(X) // 4  # look at the first quater of predictions
+        max_k = len(x) // 4  # look at the first quater of predictions
         k_values = np.linspace(0, max_k, num=SAMPLE_COUNT, dtype=np.int32, endpoint=True)
         recalls = [ranked_data.head(k)["target"].sum() / total_positives for k in k_values]
         area = np.trapezoid(recalls) / SAMPLE_COUNT
@@ -174,16 +190,16 @@ class MLModel(Scorer):
         """
 
     @abstractmethod
-    def split_train_test(self, X: pd.DataFrame, y: pd.DataFrame) -> list:
+    def split_train_test(self, x: pd.DataFrame, y: pd.DataFrame) -> list:
         """
         Split data into training and test sets.
 
         Args:
-            X: Feature matrix
+            x: Feature matrix
             y: Target values
 
         Returns:
-            list: (X_train, X_test, y_train, y_test) split datasets
+            list: (x_train, x_test, y_train, y_test) split datasets
         """
 
     @abstractmethod
@@ -197,12 +213,12 @@ class MLModel(Scorer):
         """
 
     @abstractmethod
-    def predict(self, X: pd.DataFrame) -> np.ndarray:
+    def predict(self, x: pd.DataFrame) -> np.ndarray:
         """
         Generate predictions for the input features.
 
         Args:
-            X: Feature matrix containing all the required and processed features
+            x: Feature matrix containing all the required and processed features
 
         Returns:
             np.ndarray: Array of predictions with shape (n_samples,)
@@ -228,31 +244,31 @@ class Classifier(MLModel):
         """
         return df["interactions_on_eval_day"] > 0
 
-    def split_train_test(self, X: pd.DataFrame, y: pd.DataFrame) -> list:
+    def split_train_test(self, x: pd.DataFrame, y: pd.DataFrame) -> list:
         """
         Split data into training and test sets while preserving class distribution.
 
         Args:
-            X: Feature matrix
+            x: Feature matrix
             y: Binary target values
 
         Returns:
-            list: (X_train, X_test, y_train, y_test) split datasets
+            list: (x_train, x_test, y_train, y_test) split datasets
         """
-        return train_test_split(X, y, test_size=0.2, stratify=y)
+        return train_test_split(x, y, test_size=0.2, stratify=y)
 
-    def predict(self, X: pd.DataFrame) -> np.ndarray:
+    def predict(self, x: pd.DataFrame) -> np.ndarray:
         """
         Generate probability predictions for the positive class.
 
         Args:
-            X: Feature matrix containing all the required and processed features
+            x: Feature matrix containing all the required and processed features
 
         Returns:
             np.ndarray: Array of probabilities for the positive class
                 with shape (n_samples,), values in range [0,1]
         """
-        return self.model.predict_proba(X)[:, 1]
+        return self.model.predict_proba(x)[:, 1]
 
 
 class Regressor(MLModel):
@@ -274,27 +290,28 @@ class Regressor(MLModel):
         """
         return df["interactions_on_eval_day"]
 
-    def split_train_test(self, X: pd.DataFrame, y: pd.DataFrame) -> list:
+    def split_train_test(self, x: pd.DataFrame, y: pd.DataFrame) -> list:
         """
         Split data into training and test sets.
 
         Args:
-            X: Feature matrix
+            x: Feature matrix
             y: Continuous target values
 
         Returns:
-            list: (X_train, X_test, y_train, y_test) split datasets
+            list: (x_train, x_test, y_train, y_test) split datasets
         """
-        return train_test_split(X, y, test_size=0.2)
+        return train_test_split(x, y, test_size=0.2)
 
-    def predict(self, X: pd.DataFrame) -> np.ndarray:
+    def predict(self, x: pd.DataFrame) -> np.ndarray:
         """
         Generate numeric predictions.
 
         Args:
-            X: Feature matrix containing all the required and processed features
+            x: Feature matrix containing all the required and processed features
 
         Returns:
             np.ndarray: Array of predicted values with shape (n_samples,)
         """
-        return self.model.predict(X)
+        predictions = self.model.predict(x)
+        return np.maximum(predictions, 0)

@@ -1,0 +1,28 @@
+name: Composite action create Python virtual environment
+description: Composite action create Python virtual environment
+inputs:
+  virtualenv_path:
+    description: Python's virtual environment path.
+    required: false
+    default: ".venv"
+  activate_only:
+    description: Whether to create the virtual environment or only activate it.
+    required: false
+    default: false
+
+runs:
+  using: "composite"
+  steps:
+    - name: Python's virtualenv creation
+      if: inputs.activate_only != 'true'
+      run: python -m venv ${{ inputs.virtualenv_path }}
+      shell: bash
+    - name: Activate newly created virtualenv
+      id: activate_newly_created_virtualenv
+      run: |
+        source ${{ inputs.virtualenv_path }}/bin/activate
+        echo "VIRTUAL_ENV=$VIRTUAL_ENV" >> $GITHUB_ENV
+        echo "::debug::Virtual environment path is $VIRTUAL_ENV"
+        echo "$VIRTUAL_ENV/bin" >> $GITHUB_PATH
+        echo "::debug::PATH environment variable state after $VIRTUAL_ENV/bin path being added to it: $GITHUB_PATH"
+      shell: bash

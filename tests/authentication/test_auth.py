@@ -68,7 +68,7 @@ class TestUserAuth(CustomOAuthTestCase):
         )
         self.assertEqual(AuthToken.objects.count(), 1)
 
-        self.client.credentials(HTTP_AUTHORIZATION=("Token %s" % token.token))
+        self.client.credentials(HTTP_AUTHORIZATION=(f"Token {token.token}"))
         response = self.client.post(logout_uri)
 
         self.assertEqual(response.status_code, 204, msg=(response))
@@ -302,7 +302,11 @@ class TestUserAuth(CustomOAuthTestCase):
 
 class CheckConfigurationTestCase(CustomOAuthTestCase):
     def test_200_local_setup(self):
-        with self.settings(DEFAULT_FROM_EMAIL="fake@email.it", DEFAULT_EMAIL="fake@email.it", STAGE_LOCAL="true"):
+        with self.settings(
+            DEFAULT_FROM_EMAIL="fake@email.it",
+            DEFAULT_EMAIL="fake@email.it",
+            STAGE_LOCAL="true",
+        ):
             # register page has been removed
             # response = self.client.get("/api/auth/configuration?page=register")
             # self.assertEqual(response.status_code, 200)

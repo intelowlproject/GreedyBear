@@ -1,18 +1,32 @@
 repos:
--   repo: https://github.com/pycqa/flake8
-    rev: 7.1.1
+# Python linting with Ruff
+-   repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.12.7
     hooks:
-    - id: flake8
-      args: ["--config", ".github/configurations/python_linters/.flake8"]
+      - id: ruff
+        name: ruff-lint
+        args: ["--fix", "--config", "./.github/configurations/python_linters/.ruff.toml"]
+      - id: ruff-format
+        args: ["--config", "./.github/configurations/python_linters/.ruff.toml"]
 
--   repo: https://github.com/pycqa/isort
-    rev: 5.13.2
+# Frontend formatting with Prettier (using local npm)
+# Skips if frontend/node_modules doesn't exist (for backend-only contributors)
+-   repo: local
     hooks:
-      - id: isort
-        args: ["--settings-path", ".github/configurations/python_linters/.isort.cfg", "--filter-files", "--skip", "venv"]
+      - id: prettier
+        name: prettier
+        entry: bash -c 'if [ -d frontend/node_modules ]; then cd frontend && npm run formatter; else echo "Skipping prettier - run npm install in frontend/ to enable"; fi'
+        language: system
+        files: ^frontend/src/.*\.(js|jsx)$|^frontend/tests/.*\.(js|jsx)$|^frontend/src/styles/.*\.(css|scss)$
+        pass_filenames: false
 
--   repo: https://github.com/psf/black
-    rev: 24.8.0
+# Frontend linting with ESLint (using local npm)
+# Skips if frontend/node_modules doesn't exist (for backend-only contributors)
+-   repo: local
     hooks:
-      - id: black
-        args: ["--config", ".github/configurations/python_linters/.black"]
+      - id: eslint
+        name: eslint
+        entry: bash -c 'if [ -d frontend/node_modules ]; then cd frontend && npm run lint; else echo "Skipping eslint - run npm install in frontend/ to enable"; fi'
+        language: system
+        files: ^frontend/src/.*\.(js|jsx)$|^frontend/tests/.*\.(js|jsx)$
+        pass_filenames: false

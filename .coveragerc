@@ -1,0 +1,32 @@
+[run]
+source = greedybear
+omit = 
+    */migrations/*
+    */tests/*
+    */test_*.py
+    */__pycache__/*
+    */venv/*
+    */env/*
+    manage.py
+    greedybear/settings.py
+    greedybear/wsgi.py
+
+[report]
+show_missing = True
+precision = 2
+skip_covered = False
+skip_empty = True
+exclude_lines =
+    pragma: no cover
+    def __repr__
+    def __str__
+    raise AssertionError
+    raise NotImplementedError
+    if __name__ == "__main__":
+    @(abc\.)?abstractmethod
+
+[html]
+directory = htmlcov
+
+[xml]
+output = coverage.xml

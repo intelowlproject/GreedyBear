@@ -1,5 +1,8 @@
 # This file is a part of GreedyBear https://github.com/honeynet/GreedyBear
 # See the file 'LICENSE' for copying permission.
+from django.urls import include, path
+from rest_framework import routers
+
 from api.views import (
     StatisticsViewSet,
     command_sequence_view,
@@ -7,11 +10,10 @@ from api.views import (
     enrichment_view,
     feeds,
     feeds_advanced,
+    feeds_asn,
     feeds_pagination,
     general_honeypot_list,
 )
-from django.urls import include, path
-from rest_framework import routers
 
 # Routers provide an easy way of automatically determining the URL conf.
 router = routers.DefaultRouter(trailing_slash=False)
@@ -21,6 +23,7 @@ router.register(r"statistics", StatisticsViewSet, basename="statistics")
 urlpatterns = [
     path("feeds/", feeds_pagination),
     path("feeds/advanced/", feeds_advanced),
+    path("feeds/asn/", feeds_asn),
     path("feeds/<str:feed_type>/<str:attack_type>/<str:prioritize>.<str:format_>", feeds),
     path("enrichment", enrichment_view),
     path("cowrie_session", cowrie_session_view),

@@ -14,16 +14,18 @@ import { feedsTableColumns } from "./tableColumns";
 import { FEEDS_LICENSE } from "../../constants";
 
 // costants
-const feedTypeChoices = [
-  { label: "All", value: "all" },
-  { label: "Log4j", value: "log4j" },
-  { label: "Cowrie", value: "cowrie" },
-];
+const feedTypeChoices = [{ label: "All", value: "all" }];
 
 const attackTypeChoices = [
   { label: "All", value: "all" },
   { label: "Scanner", value: "scanner" },
   { label: "Payload request", value: "payload_request" },
+];
+
+const iocTypeChoices = [
+  { label: "All", value: "all" },
+  { label: "IP addresses", value: "ip" },
+  { label: "Domains", value: "domain" },
 ];
 
 const prioritizationChoices = [
@@ -36,6 +38,7 @@ const prioritizationChoices = [
 const initialValues = {
   feeds_type: "all",
   attack_type: "all",
+  ioc_type: "all",
   prioritize: "recent",
 };
 
@@ -87,6 +90,7 @@ export default function Feeds() {
       params: {
         feed_type: initialValues.feeds_type,
         attack_type: initialValues.attack_type,
+        ioc_type: initialValues.ioc_type,
         prioritize: initialValues.prioritize,
       },
       initialParams: {
@@ -102,10 +106,11 @@ export default function Feeds() {
     (values) => {
       try {
         setUrl(
-          `${FEEDS_BASE_URI}/${values.feeds_type}/${values.attack_type}/${values.prioritize}.json`
+          `${FEEDS_BASE_URI}/${values.feeds_type}/${values.attack_type}/${values.prioritize}.json?ioc_type=${values.ioc_type}`
         );
         initialValues.feeds_type = values.feeds_type;
         initialValues.attack_type = values.attack_type;
+        initialValues.ioc_type = values.ioc_type;
         initialValues.prioritize = values.prioritize;
 
         const resetPage = {
@@ -148,7 +153,7 @@ export default function Feeds() {
                   {(formik) => (
                     <Form>
                       <FormGroup row>
-                        <Col sm={12} md={4}>
+                        <Col sm={12} md={3}>
                           <Label
                             className="form-control-label"
                             htmlFor="Feeds__feeds_type"
@@ -166,7 +171,7 @@ export default function Feeds() {
                             }}
                           />
                         </Col>
-                        <Col sm={12} md={4}>
+                        <Col sm={12} md={3}>
                           <Label
                             className="form-control-label"
                             htmlFor="Feeds__attack_type"
@@ -184,7 +189,25 @@ export default function Feeds() {
                             }}
                           />
                         </Col>
-                        <Col sm={12} md={4}>
+                        <Col sm={12} md={3}>
+                          <Label
+                            className="form-control-label"
+                            htmlFor="Feeds__ioc_type"
+                          >
+                            IOC type:
+                          </Label>
+                          <Select
+                            id="Feeds__ioc_type"
+                            name="ioc_type"
+                            value={initialValues.ioc_type}
+                            choices={iocTypeChoices}
+                            onChange={(e) => {
+                              formik.handleChange(e);
+                              formik.submitForm();
+                            }}
+                          />
+                        </Col>
+                        <Col sm={12} md={3}>
                           <Label
                             className="form-control-label"
                             htmlFor="Feeds__prioritize"

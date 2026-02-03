@@ -2,16 +2,27 @@
 # See the file 'LICENSE' for copying permission.
 import logging
 
-from api.views.utils import FeedRequestParams, feeds_response, get_queryset, get_valid_feed_types
 from certego_saas.apps.auth.backend import CookieTokenAuthentication
 from certego_saas.ext.pagination import CustomPageNumberPagination
-from greedybear.consts import GET
-from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.decorators import (
+    api_view,
+    authentication_classes,
+    permission_classes,
+)
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+
+from api.serializers import ASNFeedsOrderingSerializer
+from api.views.utils import (
+    FeedRequestParams,
+    asn_aggregated_queryset,
+    feeds_response,
+    get_queryset,
+    get_valid_feed_types,
+)
+from greedybear.consts import GET
 
 logger = logging.getLogger(__name__)
-
-api_view([GET])
 
 
 @api_view([GET])
@@ -21,7 +32,7 @@ def feeds(request, feed_type, attack_type, prioritize, format_):
 
     Args:
         request: The incoming request object.
-        feed_type (str): Type of feed (e.g., log4j, cowrie, etc.).
+        feed_type (str): Type of feed (e.g. cowrie, honeytrap, etc.).
         attack_type (str): Type of attack (e.g., all, specific attack types).
         prioritize (str): Prioritization mechanism to use (e.g., recent, persistent).
         format_ (str): Desired format of the response (e.g., json, csv, txt).
@@ -31,9 +42,11 @@ def feeds(request, feed_type, attack_type, prioritize, format_):
     Returns:
         Response: The HTTP response with formatted IOC data.
     """
-    logger.info(f"request /api/feeds with params: feed type: {feed_type}, " f"attack_type: {attack_type}, prioritization: {prioritize}, format: {format_}")
+    logger.info(f"request /api/feeds with params: feed type: {feed_type}, attack_type: {attack_type}, prioritization: {prioritize}, format: {format_}")
 
-    feed_params = FeedRequestParams({"feed_type": feed_type, "attack_type": attack_type, "format_": format_})
+    feed_params_data = request.query_params.dict()
+    feed_params_data.update({"feed_type": feed_type, "attack_type": attack_type, "format_": format_})
+    feed_params = FeedRequestParams(feed_params_data)
     feed_params.apply_default_filters(request.query_params)
     feed_params.set_prioritization(prioritize)
 
@@ -78,7 +91,7 @@ def feeds_advanced(request):
 
     Args:
         request: The incoming request object.
-        feed_type (str): Type of feed to retrieve. (supported: `cowrie`, `log4j`, etc.; default: `all`)
+        feed_type (str): Type of feed to retrieve. (supported: `cowrie`, `honeytrap`, etc.; default: `all`)
         attack_type (str): Type of attack to filter. (supported: `scanner`, `payload_request`, `all`; default: `all`)
         max_age (int): Maximum number of days since last occurrence. E.g. an IOC that was last seen 4 days ago is excluded by default. (default: 3)
         min_days_seen (int): Minimum number of days on which an IOC must have been seen. (default: 1)
@@ -106,3 +119,45 @@ def feeds_advanced(request):
         resp_data = feeds_response(iocs, feed_params, valid_feed_types, dict_only=True, verbose=verbose)
         return paginator.get_paginated_response(resp_data)
     return feeds_response(iocs_queryset, feed_params, valid_feed_types, verbose=verbose)
+
+
+@api_view(["GET"])
+@authentication_classes([CookieTokenAuthentication])
+@permission_classes([IsAuthenticated])
+def feeds_asn(request):
+    """
+    Retrieve aggregated IOC feed data grouped by ASN (Autonomous System Number).
+
+    Args:
+        request: The HTTP request object.
+        feed_type (str): Filter by feed type (e.g. 'cowrie', 'honeytrap'). Default: 'all'.
+        attack_type (str): Filter by attack type (e.g., 'scanner', 'payload_request'). Default: 'all'.
+        max_age (int): Maximum age of IOCs in days. Default: 3.
+        min_days_seen (int): Minimum days an IOC must have been observed. Default: 1.
+        exclude_reputation (str): ';'-separated reputations to exclude (e.g., 'mass scanner'). Default: none.
+        ordering (str): Aggregation ordering field (e.g., 'total_attack_count', 'asn'). Default: '-ioc_count'.
+        asn (str, optional): Filter results to a single ASN.
+
+    Returns:
+     Response: HTTP response with a JSON list of ASN aggregation objects.
+     Each object contains:
+            asn (int): ASN number.
+            ioc_count (int): Number of IOCs for this ASN.
+            total_attack_count (int): Sum of attack_count for all IOCs.
+            total_interaction_count (int): Sum of interaction_count for all IOCs.
+            total_login_attempts (int): Sum of login_attempts for all IOCs.
+            honeypots (List[str]): Sorted list of unique honeypots that observed these IOCs.
+            expected_ioc_count (float): Sum of recurrence_probability for all IOCs, rounded to 4 decimals.
+            expected_interactions (float): Sum of expected_interactions for all IOCs, rounded to 4 decimals.
+            first_seen (DateTime): Earliest first_seen timestamp among IOCs.
+            last_seen (DateTime): Latest last_seen timestamp among IOCs.
+    """
+    logger.info(f"request /api/feeds/asn/ with params: {request.query_params}")
+    feed_params = FeedRequestParams(request.query_params)
+    valid_feed_types = get_valid_feed_types()
+
+    iocs_qs = get_queryset(request, feed_params, valid_feed_types, is_aggregated=True, serializer_class=ASNFeedsOrderingSerializer)
+
+    asn_aggregates = asn_aggregated_queryset(iocs_qs, request, feed_params)
+    data = list(asn_aggregates)
+    return Response(data)

@@ -1,0 +1,53 @@
+name: Composite action restore pip cache
+description: Composite action to restore pip cache
+inputs:
+  custom_pip_cache_path:
+    description: Path to pip cache.
+    required: false
+  git_reference:
+    description: A git reference (name of the branch, reference to the PR) that will be used to build the cache key.
+    required: false
+    default: ${{ github.ref_name }}
+
+outputs:
+  cache-hit:
+    description: Whether pip cache was found in the cache or not.
+    value: ${{ steps.explain_cache_output.outputs.real_cache_hit }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Generate random UUID
+      id: generate_random_uuid
+      run: |
+        random_uuid=$(uuidgen -r)
+        echo "::debug::Random uuid generated is $random_uuid. Should only cause a cache-miss"
+        echo "computed_uuid=$random_uuid" >> $GITHUB_OUTPUT
+      shell: bash
+    - name: Get pip cache directory
+      id: get_pip_cache_directory
+      run: |
+        if [[ -z '${{ inputs.custom_pip_cache_path }}' ]]; then
+          echo "pip_cache_path=$(pip cache dir)" >> $GITHUB_OUTPUT
+        else
+          echo "pip_cache_path=${{ inputs.custom_pip_cache_path }}" >> $GITHUB_OUTPUT
+        fi
+        echo "::debug::Pip cache path $pip_cache_path"
+      shell: bash
+    - name: Restore pip cache
+      id: restore_pip_cache
+      uses: actions/cache/restore@v4
+      with:
+        key: ${{ steps.generate_random_uuid.outputs.computed_uuid }}
+        path: ${{ steps.get_pip_cache_directory.outputs.pip_cache_path }}
+        restore-keys: ${{ inputs.git_reference }}-pip-cache-
+    - name: Explain cache output
+      id: explain_cache_output
+      run: |
+        echo "::debug::Restore action for pip's cache returned cache-hit: ${{ steps.restore_pip_cache.outputs.cache-hit }} with cache-matched-key: ${{ steps.restore_pip_cache.outputs.cache-matched-key }}"
+        if [[ -z '${{ steps.restore_pip_cache.outputs.cache-matched-key }}' ]]; then
+          echo "real_cache_hit=false" >> $GITHUB_OUTPUT
+        else
+          echo "real_cache_hit=true" >> $GITHUB_OUTPUT
+        fi
+      shell: bash

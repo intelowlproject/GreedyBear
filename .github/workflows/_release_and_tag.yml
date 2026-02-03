@@ -31,11 +31,40 @@ on:
         required: false
         default: #CyberSecurity
 
+      publish_on_ecr:
+        description: Publish on ecr
+        type: boolean
+        required: false
+        default: false
+      repository:
+        description: Repository name
+        type: string
+        required: false
+        default: ${{ github.event.repository.name }}
+
+      dockerfiles:
+        description: Path for dockerfiles from working directory
+        type: string
+        required: false
+      working_directory:
+        description: Docker build context
+        type: string
+        required: false
+        default: .
+      aws_region:
+        description: Aws region
+        type: string
+        required: false
+        default: eu-central-1
+
+
 jobs:
   release_and_tag:
     name: Create release and tag
     runs-on: ubuntu-latest
-    if: github.event.pull_request.merged == true && ( github.base_ref == 'master' || github.base_ref == 'main' )
+    if: github.event.pull_request.merged == true
+    outputs:
+      match: ${{ steps.check-tag.outputs.match }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -43,6 +72,7 @@ jobs:
 
       - name: Check Tag
         id: check-tag
+        if: github.base_ref == 'master' || github.base_ref == 'main'
         run: |
           if [[ "${{ github.event.pull_request.title }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "match=true" >> $GITHUB_OUTPUT
@@ -51,7 +81,7 @@ jobs:
       - name: Create Tag and Release
         id: create-release
         if: steps.check-tag.outputs.match == 'true'
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ github.event.pull_request.title }}
           name: Version ${{ github.event.pull_request.title }}
@@ -67,7 +97,7 @@ jobs:
         with:
           fetch-depth: 0 # otherwise, you do not retrieve the tags
 
-      - uses: actions/setup-python@v4
+      - uses: actions/setup-python@v5
         if: steps.check-tag.outputs.match == 'true' && (inputs.publish_on_pypi || inputs.publish_on_test_pypi)
         with:
           python-version: "3.x"
@@ -116,3 +146,41 @@ jobs:
           api_key_secret: ${{ secrets.TWITTER_API_KEY_SECRET }}
           access_token: ${{ secrets.TWITTER_ACCESS_TOKEN }}
           access_token_secret: ${{ secrets.TWITTER_ACCESS_TOKEN_SECRET }}
+
+
+  push_on_ecr:
+    runs-on: ubuntu-latest
+    needs: release_and_tag
+    if: github.event.pull_request.merged == true && inputs.publish_on_ecr == true
+    strategy:
+      matrix:
+        dockerfile: ${{ fromJson(inputs.dockerfiles) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # otherwise, you do not retrieve the tags
+      - name: Push on ecr branch
+        uses: ./.github/actions/push_on_ecr
+        if: github.base_ref == 'master' || github.base_ref == 'main' || github.base_ref == 'develop' || github.base_ref == 'dev'
+        with:
+          repository: ${{ inputs.repository }}
+          aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
+          aws_access_key: ${{ secrets.AWS_ACCESS_KEY}}
+          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          dockerfile: ${{ matrix.dockerfile }}
+          image_tag: ${{ ( github.base_ref == 'main' || github.base_ref == 'master' )  && 'prod' || 'stag' }}
+          aws_region: ${{ inputs.aws_region }}
+          working_directory: ${{ inputs.working_directory }}
+
+      - name: Push on ecr new release
+        if: needs.release_and_tag.outputs.match == 'true' && (github.base_ref == 'master' || github.base_ref == 'main' )
+        uses: ./.github/actions/push_on_ecr
+        with:
+          repository: ${{ inputs.repository }}
+          aws_account_id: ${{ secrets.AWS_ACCOUNT_ID }}
+          aws_access_key: ${{ secrets.AWS_ACCESS_KEY}}
+          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          dockerfile: ${{ inputs.dockerfile }}
+          image_tag: ${{ github.event.pull_request.title }}
+          aws_region: ${{ inputs.aws_region }}
+          working_directory: ${{ inputs.working_directory }}

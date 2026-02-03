@@ -5,6 +5,7 @@ services:
       dockerfile: docker/Dockerfile
       args:
         WATCHMAN: "true"
+        INSTALL_DEV: "true"
     image: intelowlproject/greedybear:test
     volumes:
       - ../:/opt/deploy/greedybear

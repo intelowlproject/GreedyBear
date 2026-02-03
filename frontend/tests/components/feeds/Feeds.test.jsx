@@ -21,7 +21,7 @@ jest.mock("@certego/certego-ui", () => {
           first_seen: "2023-03-15",
           last_seen: "2023-03-15",
           attack_count: 1,
-          feed_type: "log4j",
+          feed_type: "cowrie",
         },
       ],
     },
@@ -38,11 +38,16 @@ jest.mock("@certego/certego-ui", () => {
     ...originalModule,
 
     useAxiosComponentLoader: jest.fn(() => [
-      ["Honeytrap", "Glutton", "CitrixHoneypot"],
+      ["Honeytrap", "Glutton", "CitrixHoneypot", "Cowrie"],
       loader,
     ]),
 
-    useDataTable: jest.fn(() => [feeds, <MockTableComponent />, jest.fn()]),
+    useDataTable: jest.fn(() => [
+      feeds,
+      <MockTableComponent />,
+      jest.fn(),
+      jest.fn(),
+    ]),
   };
 });
 
@@ -72,6 +77,8 @@ describe("Feeds component", () => {
     expect(feedTypeSelectElement).toBeInTheDocument();
     const attackTypeSelectElement = screen.getByLabelText("Attack type:");
     expect(attackTypeSelectElement).toBeInTheDocument();
+    const iocTypeSelectElement = screen.getByLabelText("IOC type:");
+    expect(iocTypeSelectElement).toBeInTheDocument();
     const prioritizationSelectElement = screen.getByLabelText("Prioritize:");
     expect(prioritizationSelectElement).toBeInTheDocument();
 
@@ -81,15 +88,25 @@ describe("Feeds component", () => {
       "/api/feeds/all/all/recent.json"
     );
 
-    await user.selectOptions(feedTypeSelectElement, "log4j");
+    await user.selectOptions(feedTypeSelectElement, "cowrie");
     await user.selectOptions(attackTypeSelectElement, "scanner");
+    await user.selectOptions(iocTypeSelectElement, "ip");
     await user.selectOptions(prioritizationSelectElement, "persistent");
 
     await waitFor(() => {
-      // check link has been changed
+      // check link has been changed including ioc_type parameter
       expect(buttonRawData).toHaveAttribute(
         "href",
-        "/api/feeds/log4j/scanner/persistent.json"
+        "/api/feeds/cowrie/scanner/persistent.json?ioc_type=ip"
+      );
+    });
+
+    // Test selecting domain IOC type
+    await user.selectOptions(iocTypeSelectElement, "domain");
+    await waitFor(() => {
+      expect(buttonRawData).toHaveAttribute(
+        "href",
+        "/api/feeds/cowrie/scanner/persistent.json?ioc_type=domain"
       );
     });
   });

@@ -31,8 +31,15 @@ RUN mkdir -p ${LOG_PATH} \
     && pip3 install --no-cache-dir --upgrade pip
 
 COPY requirements/project-requirements.txt $PYTHONPATH/project-requirements.txt
+COPY requirements/dev-requirements.txt $PYTHONPATH/dev-requirements.txt
 WORKDIR $PYTHONPATH
 RUN pip3 install --no-cache-dir -r $PYTHONPATH/project-requirements.txt
+
+# Conditionally install dev requirements (coverage, etc.)
+ARG INSTALL_DEV=false
+RUN if [ "$INSTALL_DEV" = "true" ]; then \
+      pip3 install --no-cache-dir -r $PYTHONPATH/dev-requirements.txt; \
+    fi
 
 COPY . $PYTHONPATH
 COPY --from=frontend-build /build /var/www/reactapp

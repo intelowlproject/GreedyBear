@@ -1,0 +1,22 @@
+name: Composite action create Python dev requirements file
+description: Composite action to create Python dev requirements file
+inputs:
+  install_from:
+    description: Directory that must be used to install the packages
+    required: false
+    default: .
+  project_dev_requirements_file:
+    description: An additional project dev requirements file
+    required: false
+
+runs:
+  using: "composite"
+  steps:
+    - name: Create requirements-dev.txt
+      run: |
+        echo > requirements-dev.txt
+        if [[ -n '${{ inputs.project_dev_requirements_file }}' ]];then
+          cat $(echo ${{ inputs.project_dev_requirements_file }}) >> requirements-dev.txt
+        fi
+      shell: bash
+      working-directory: ${{ inputs.install_from }}

@@ -29,7 +29,6 @@ def generalHoneypot(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("greedybear", "0007_generalhoneypot"),
     ]

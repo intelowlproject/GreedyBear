@@ -1,28 +1,36 @@
 # This file is a part of GreedyBear https://github.com/honeynet/GreedyBear
 # See the file 'LICENSE' for copying permission.
-from greedybear.cronjobs.base import ElasticJob
-from greedybear.cronjobs.honeypots import Honeypot
-from greedybear.models import GeneralHoneypot
+from greedybear.cronjobs.base import Cronjob
+from greedybear.cronjobs.repositories import ElasticRepository, IocRepository
 
 
-class MonitorHoneypots(ElasticJob):
-    def __init__(self):
-        super(MonitorHoneypots, self).__init__()
-        self.honeypots_to_monitor = [Honeypot("Log4pot"), Honeypot("Cowrie")]
-        # FEEDS - add monitor for all general honeypots from list
-        general_honeypots = GeneralHoneypot.objects.all().filter(active=True)
-        for hp in general_honeypots:
-            self.honeypots_to_monitor.append(Honeypot(hp.name))
+class MonitorHoneypots(Cronjob):
+    """Monitor active honeypots for recent log activity."""
 
-    @property
-    def minutes_back_to_lookup(self):
-        return 60
+    def __init__(
+        self,
+        ioc_repo: IocRepository | None = None,
+        elastic_repo: ElasticRepository | None = None,
+        minutes_back: int = 60,
+    ):
+        """Initialize the monitoring.
+
+        Args:
+            ioc_repo: Repository for accessing known honeypots.
+            elastic_repo: Repository for querying Elasticsearch logs.
+            minutes_back: Time window in minutes to check for activity.
+        """
+        super().__init__()
+        self.ioc_repo = ioc_repo or IocRepository()
+        self.elastic_repo = elastic_repo or ElasticRepository()
+        self.minutes_back = minutes_back
 
     def run(self):
-        for honeypot_to_monitor in self.honeypots_to_monitor:
-            self.log.info(f"checking if logs from the honeypot {honeypot_to_monitor.name} are available")
-            search = self._base_search(honeypot_to_monitor)
-
-            hits = search[:10].execute()
-            if not hits:
-                self.log.warning(f"no logs available for the Honeypot {honeypot_to_monitor.name}." f" Something could be wrong in the TPOT cluster")
+        """Check all active honeypots for recent log activity."""
+        for honeypot in self.ioc_repo.get_active_honeypots():
+            honeypot_name = honeypot.name
+            self.log.info(f"checking if logs from the honeypot {honeypot} are available")
+            if self.elastic_repo.has_honeypot_been_hit(self.minutes_back, honeypot_name):
+                self.log.info(f"logs available for {honeypot}")
+                continue
+            self.log.warning(f"no logs available for {honeypot} - something could be wrong with T-Pot")

@@ -1,0 +1,56 @@
+name: Composite action push on ecr
+description: Composite action push on ecr
+inputs:
+  repository:
+    description: Repository name
+    required: true
+  dockerfile:
+    description: Path for dockerfile from working directory
+    required: true
+  working_directory:
+    description: Docker build context
+    required: true
+
+  aws_account_id:
+    description: Aws User code
+    required: true
+  aws_access_key:
+    description: Aws access key
+    required: true
+  aws_secret_access_key:
+    description: Aws secret access key
+    required: true
+  image_tag:
+    description: Directory that must be run against the linters
+    required: true
+
+  aws_region:
+    description: Aws region
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Configure AWS Credentials
+      uses: aws-actions/configure-aws-credentials@v4
+      with:
+        aws-region: ${{ inputs.aws_region}}
+        aws-access-key-id: ${{ inputs.aws_access_key }}
+        aws-secret-access-key: ${{ inputs.aws_secret_access_key }}
+
+    - name: Login to Amazon ECR Private
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v2
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build and push
+      uses: docker/build-push-action@v5
+      with:
+        context: ${{ inputs.working_directory }}
+        push: true
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+        tags: ${{inputs.aws_account_id}}.dkr.ecr.${{inputs.aws_region}}.amazonaws.com/${{ inputs.repository }}:${{ inputs.image_tag }}
+        file: ${{ inputs.working_directory }}/${{ inputs.dockerfile }}

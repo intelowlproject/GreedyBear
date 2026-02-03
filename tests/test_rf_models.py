@@ -1,7 +1,8 @@
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import numpy as np
 import pandas as pd
+
 from greedybear.cronjobs.scoring.ml_model import Classifier, Regressor
 from greedybear.cronjobs.scoring.random_forest import RFModel
 
@@ -49,11 +50,11 @@ class TestClassifier(CustomTestCase):
 
         training_target = classifier.training_target(SAMPLE_DATA)
         self.assertEqual(len(training_target), len(CLASSIFIER_TARGET))
-        for a, b in zip(training_target, CLASSIFIER_TARGET):
+        for a, b in zip(training_target, CLASSIFIER_TARGET, strict=False):
             self.assertEqual(a, b)
 
         df = classifier.score(SAMPLE_DATA)
-        for a, b in zip(df["mock_score"], classifier.model.predict_proba.return_value[:, 1]):
+        for a, b in zip(df["mock_score"], classifier.model.predict_proba.return_value[:, 1], strict=False):
             self.assertEqual(a, b)
 
         auc = classifier.recall_auc(df, training_target)
@@ -86,18 +87,52 @@ class TestRegressor(CustomTestCase):
 
         training_target = regressor.training_target(SAMPLE_DATA)
         self.assertEqual(len(training_target), len(REGRESSOR_TARGET))
-        for a, b in zip(training_target, REGRESSOR_TARGET):
+        for a, b in zip(training_target, REGRESSOR_TARGET, strict=False):
             self.assertEqual(a, b)
 
-        X_train, X_test, y_train, y_test = regressor.split_train_test(SAMPLE_DATA, training_target)
-        self.assertEqual(len(X_train), 4)
-        self.assertEqual(len(X_test), 1)
-        self.assertEqual(len(X_train), len(y_train))
-        self.assertEqual(len(X_test), len(y_test))
+        x_train, x_test, y_train, y_test = regressor.split_train_test(SAMPLE_DATA, training_target)
+        self.assertEqual(len(x_train), 4)
+        self.assertEqual(len(x_test), 1)
+        self.assertEqual(len(x_train), len(y_train))
+        self.assertEqual(len(x_test), len(y_test))
 
         df = regressor.score(SAMPLE_DATA)
-        for a, b in zip(df["mock_score"], regressor.model.predict.return_value):
+        for a, b in zip(df["mock_score"], regressor.model.predict.return_value, strict=False):
             self.assertEqual(a, b)
 
         auc = regressor.recall_auc(df, training_target)
         self.assertEqual(0 <= auc <= 1, True)
+
+    def test_negative_predictions(self):
+        """Test that negative predictions are clipped to 0"""
+        regressor = self.MockRFRegressor()
+        regressor.model = regressor.untrained_model
+
+        # Set return value with negative numbers
+        regressor.model.predict.return_value = np.array([-10, 5, 0, -1, 2])
+
+        predictions = regressor.predict(SAMPLE_DATA)
+
+        expected = np.array([0, 5, 0, 0, 2])
+        np.testing.assert_array_equal(predictions, expected)
+
+
+class TestModelUnavailable(CustomTestCase):
+    """Test that scoring handles missing model files gracefully."""
+
+    class MockRFClassifier(TestClassifier.MockRFModel, Classifier):
+        def __init__(self):
+            super().__init__("Mock Random Forest Classifier", "mock_score")
+
+        @property
+        def untrained_model(self):
+            return Mock()
+
+    @patch("greedybear.cronjobs.scoring.ml_model.FileSystemStorage")
+    def test_score_skips_when_model_unavailable(self, mock_storage_cls):
+        """When the model file does not exist, score() should return a DataFrame with the score column set to 0."""
+        mock_storage_cls.return_value.exists.return_value = False
+        classifier = self.MockRFClassifier()
+        df = classifier.score(SAMPLE_DATA)
+        self.assertIn("mock_score", df.columns)
+        self.assertTrue((df["mock_score"] == 0).all())

@@ -1,0 +1,67 @@
+# =============================================================================
+# Git Attributes Configuration for GreedyBear
+# Ensures consistent line endings across all platforms
+# =============================================================================
+
+# Default behavior: Auto-detect text files and normalize to LF
+* text=auto eol=lf
+
+# -----------------------------------------------------------------------------
+# Text files (normalize to LF)
+# -----------------------------------------------------------------------------
+
+# Python
+*.py text eol=lf
+
+# JavaScript/React
+*.js text eol=lf
+*.jsx text eol=lf
+*.mjs text eol=lf
+*.cjs text eol=lf
+
+# Styles
+*.css text eol=lf
+*.scss text eol=lf
+
+# Web
+*.html text eol=lf
+
+# Config files
+*.json text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.toml text eol=lf
+*.conf text eol=lf
+
+# Documentation
+*.md text eol=lf
+*.txt text eol=lf
+
+# Shell scripts
+*.sh text eol=lf
+
+# Docker
+Dockerfile text eol=lf
+Dockerfile_nginx text eol=lf
+
+# Git
+.gitignore text eol=lf
+.gitattributes text eol=lf
+
+# -----------------------------------------------------------------------------
+# Binary files (do not normalize)
+# -----------------------------------------------------------------------------
+
+# Images
+*.png binary
+*.ico binary
+
+# -----------------------------------------------------------------------------
+# Linguist overrides (GitHub language statistics)
+# -----------------------------------------------------------------------------
+
+# Exclude from language statistics
+*.min.js linguist-vendored
+*.min.css linguist-vendored
+**/migrations/* linguist-generated
+package-lock.json linguist-generated
