@@ -84,7 +84,30 @@ load_config() {
         if [ "$SILENT_MODE" = false ] && [ "$COMMAND" != "init" ]; then
             log_info "Loading configuration from ${GBCTL_CONFIG}..."
         fi
-        source "$GBCTL_CONFIG"
+        # Safely parse expected KEY=VALUE pairs instead of sourcing arbitrary shell code
+        while IFS='=' read -r key value; do
+            # Skip empty lines and comments
+            [[ -z "$key" || "$key" == \#* ]] && continue
+            
+            # Trim leading/trailing whitespace from key
+            key="${key#"${key%%[![:space:]]*}"}"
+            key="${key%"${key##*[![:space:]]}"}"
+            
+            # Trim quotes from value if present
+            value="${value%\"}"
+            value="${value#\"}"
+            value="${value%\'}"
+            value="${value#\'}"
+            
+            case "$key" in
+                ENV_MODE) ENV_MODE="$value" ;;
+                ENABLE_HTTPS) ENABLE_HTTPS="$value" ;;
+                ENABLE_ELASTIC) ENABLE_ELASTIC="$value" ;;
+                ENABLE_STAG) ENABLE_STAG="$value" ;;
+                USE_VERSION) USE_VERSION="$value" ;;
+                GREEDYBEAR_VERSION) GREEDYBEAR_VERSION="$value" ;;
+            esac
+        done < "$GBCTL_CONFIG"
     fi
 }
 
