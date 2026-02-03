@@ -366,8 +366,10 @@ init_env_files() {
 
     # Set Elasticsearch endpoint if provided
     if [ -n "$ELASTIC_ENDPOINT" ]; then
+        # Escape ampersand to avoid sed interpreting it as the matched string
+        local escaped_endpoint="${ELASTIC_ENDPOINT//&/\\&}"
         if grep -q "^ELASTIC_ENDPOINT=" "${SCRIPT_DIR}/docker/env_file"; then
-            sed -i "s|^ELASTIC_ENDPOINT=.*|ELASTIC_ENDPOINT=${ELASTIC_ENDPOINT}|" "${SCRIPT_DIR}/docker/env_file"
+            sed -i "s|^ELASTIC_ENDPOINT=.*|ELASTIC_ENDPOINT=${escaped_endpoint}|" "${SCRIPT_DIR}/docker/env_file"
         else
             echo "ELASTIC_ENDPOINT=${ELASTIC_ENDPOINT}" >> "${SCRIPT_DIR}/docker/env_file"
         fi
