@@ -13,6 +13,8 @@ GREEDYBEAR_VERSION="latest"
 PROJECT_NAME="greedybear"
 SILENT_MODE=false
 ELASTIC_ENDPOINT=""
+GBCTL_CONFIG="${SCRIPT_DIR}/.gbctl.conf"
+
 # Admin creation defaults
 ADMIN_USERNAME=""
 ADMIN_PASSWORD=""
@@ -60,6 +62,32 @@ log_error() {
     echo -e "${RED}[ERROR]${NC} $1" >&2
 }
 
+# Save configuration to file
+save_config() {
+    log_info "Saving configuration to ${GBCTL_CONFIG}..."
+    cat > "$GBCTL_CONFIG" <<EOF
+# GreedyBear Configuration
+ENV_MODE="$ENV_MODE"
+ENABLE_HTTPS="$ENABLE_HTTPS"
+ENABLE_ELASTIC="$ENABLE_ELASTIC"
+ENABLE_STAG="$ENABLE_STAG"
+USE_VERSION="$USE_VERSION"
+GREEDYBEAR_VERSION="$GREEDYBEAR_VERSION"
+EOF
+    log_success "Configuration saved"
+}
+
+# Load configuration from file
+load_config() {
+    if [ -f "$GBCTL_CONFIG" ]; then
+        # Read the config file
+        if [ "$SILENT_MODE" = false ] && [ "$COMMAND" != "init" ]; then
+            log_info "Loading configuration from ${GBCTL_CONFIG}..."
+        fi
+        source "$GBCTL_CONFIG"
+    fi
+}
+
 # Print help message
 print_help() {
     cat << EOF
@@ -86,6 +114,10 @@ COMMANDS
     health       Health check all services
     clean        Remove all data and reset (destructive!)
     create-admin Create a Django superuser (interactive or silent)
+
+LOGS OPTIONS
+    ./gbctl logs           View container logs (stdout/stderr)
+    ./gbctl logs app       View Django application logs inside container
 
 OPTIONS
     -h, --help                  Show this help message
@@ -379,6 +411,9 @@ init_env_files() {
     fi
     
     log_success "Environment files initialized"
+    
+    # Save configuration
+    save_config
 }
 
 # Build compose file arguments
@@ -520,10 +555,33 @@ cmd_up() {
     log_info "Starting GreedyBear services..."
     
     check_downgrade
+    check_git_version_mismatch
     
     execute_compose up -d "$@"
     log_success "GreedyBear services started successfully!"
 }
+
+# Check for git version mismatch
+check_git_version_mismatch() {
+    # Only check if we are in a git repo and not pinning a specific version
+    if [ -d "${SCRIPT_DIR}/.git" ] && [ "$USE_VERSION" != true ]; then
+        if command -v git &> /dev/null; then
+            local current_branch
+            current_branch=$(git -C "$SCRIPT_DIR" branch --show-current)
+            
+            # If we are on main/master but running dev, or vice versa
+            # This is a heuristic check
+            if [ "$ENV_MODE" = "prod" ] && [ "$current_branch" != "main" ] && [ "$current_branch" != "master" ]; then
+               log_warning "Version Mismatch Warning:"
+               log_warning "  You are running in PROD mode but your git branch is '$current_branch'."
+               log_warning "  Production usually runs on 'main' or 'master'."
+            elif [ "$ENV_MODE" = "dev" ] && ([ "$current_branch" = "main" ] || [ "$current_branch" = "master" ]); then
+               log_info "Note: You are running in DEV mode on the '$current_branch' branch."
+            fi
+        fi
+    fi
+}
+
 
 # Stop and remove services
 cmd_down() {
@@ -548,7 +606,24 @@ cmd_restart() {
 
 # View logs
 cmd_logs() {
-    execute_compose logs "$@"
+    if [ $# -gt 0 ] && [ "$1" == "app" ]; then
+        shift
+        log_info "Tailing Django application logs (Ctrl+C to exit)..."
+        
+        detect_docker_cmd
+        local container_name="${PROJECT_NAME}_uwsgi"
+        
+        # Check if container is running
+        if ! ${DOCKER_CMD} ps --format '{{.Names}}' | grep -q "^${container_name}$"; then
+            log_error "Container $container_name is not running."
+            exit 1
+        fi
+        
+        # Tail the log file inside the container
+        ${DOCKER_CMD} exec -it "$container_name" tail -f /var/log/greedybear/django/greedybear.log
+    else
+        execute_compose logs "$@"
+    fi
 }
 
 # List services
@@ -858,7 +933,7 @@ parse_args() {
     FORCE_CLEAN=false
     COMMAND=""
     
-    # Check for help
+    # Check for help (early check before loading config)
     if [[ $# -eq 0 ]] || [[ "$1" == "-h" ]] || [[ "$1" == "--help" ]]; then
         print_help
         exit 0
@@ -872,6 +947,13 @@ parse_args() {
         log_error "Invalid command: $1"
         print_help
         exit 1
+    fi
+
+    # Load configuration (unless we are initializing)
+    # We load config AFTER setting command but BEFORE parsing other flags
+    # This allows flags to override config
+    if [[ "$COMMAND" != "init" ]]; then
+        load_config
     fi
     
     # Parse remaining arguments

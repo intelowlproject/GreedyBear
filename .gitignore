@@ -20,3 +20,5 @@ coverage.xml
 *.cover
 .coverage.*
 
+# gbctl configuration file
+.gbctl.conf
