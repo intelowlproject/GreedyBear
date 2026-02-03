@@ -340,9 +340,8 @@ check_requirements() {
     
     # Check if git is installed
     if ! command -v git &> /dev/null; then
-        log_error "Git is not installed."
-        log_info "Please install git to use all features of this script."
-        exit 1
+        log_warning "Git is not installed."
+        log_info "Some features (like update) will not work."
     fi
     
     log_success "All requirements met"
