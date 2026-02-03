@@ -3,7 +3,8 @@ from hashlib import sha256
 from unittest.mock import Mock
 
 from certego_saas.apps.user.models import User
-from django.test import TestCase
+from django.test import TestCase, TransactionTestCase
+from django_test_migrations.migrator import Migrator
 
 from greedybear.models import (
     IOC,
@@ -245,6 +246,28 @@ class MockElasticHit:
 
     def to_dict(self):
         return self._data.copy()
+
+
+class MigrationTestCase(TransactionTestCase):
+    """
+    Reusable base class for migration tests.
+    """
+
+    app_name = "greedybear"
+    migrate_from = None
+    migrate_to = None
+
+    def setUp(self):
+        super().setUp()
+        self.migrator = Migrator(database="default")
+        self.old_state = self.migrator.apply_initial_migration((self.app_name, self.migrate_from))
+
+    def apply_tested_migration(self):
+        return self.migrator.apply_tested_migration((self.app_name, self.migrate_to))
+
+    def tearDown(self):
+        self.migrator.reset()
+        super().tearDown()
 
 
 class E2ETestCase(ExtractionTestCase):

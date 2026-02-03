@@ -421,3 +421,6 @@ THREATFOX_API_KEY = os.environ.get("THREATFOX_API_KEY", "")
 # Optional feed license URL to include in API responses
 # If not set, no license information will be included in feeds
 FEEDS_LICENSE = os.environ.get("FEEDS_LICENSE", "")
+
+# Project test runner
+TEST_RUNNER = "tests.test_runner.CustomTestRunner"
