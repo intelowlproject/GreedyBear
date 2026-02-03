@@ -3,7 +3,7 @@ celery==5.6.2
 # if you change this, update the documentation
 elasticsearch==9.2.1
 
-Django==5.2.10
+Django==5.2.11
 djangorestframework==3.16.1
 django-rest-email-auth==5.0.0
 django-ses==4.6.0
