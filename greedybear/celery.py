@@ -58,30 +58,25 @@ def setup_loggers(*args, **kwargs):
 
 hp_extraction_interval = EXTRACTION_INTERVAL
 app.conf.beat_schedule = {
-    # every 10 minutes or according to EXTRACTION_INTERVAL
+    # ===========================================
+    # TIMING-CRITICAL: Extraction Task
+    # Runs every 10 minutes (or EXTRACTION_INTERVAL)
+    # Slots: :00, :10, :20, :30, :40, :50
+    # ===========================================
     "extract_all": {
         "task": "greedybear.tasks.extract_all",
         "schedule": crontab(minute=f"*/{hp_extraction_interval}"),
         "options": {"queue": "default", "countdown": 10},
     },
-    # once an hour
-    "monitor_honeypots": {
-        "task": "greedybear.tasks.monitor_honeypots",
-        "schedule": crontab(minute=18),
-        "options": {"queue": "default"},
-    },
-    # once an hour
-    "monitor_logs": {
-        "task": "greedybear.tasks.monitor_logs",
-        "schedule": crontab(minute=33),
-        "options": {"queue": "default"},
-    },
+    # ===========================================
+    # TIMING-CRITICAL: Training
     # SCORING
     # Important:
     # The training task must be run with a small offset after midnight (00:00)
     # to ensure training data aligns with complete calendar days.
     # The small offset is to make sure that the midnight extraction task is completed before training.
     # This way models learn from complete rather than partial day patterns, which is crucial for their performance.
+    # ===========================================
     "train_and_update": {
         "task": "greedybear.tasks.chain_train_and_update",
         # Sometimes this could start when the midnight extraction is not ended yet.
@@ -89,37 +84,56 @@ app.conf.beat_schedule = {
         "schedule": crontab(hour=0, minute=int(hp_extraction_interval / 3 * 2)),
         "options": {"queue": "default"},
     },
-    # COMMANDS
+    # ===========================================
+    # HOURLY: Monitoring Tasks
+    # Run at :05 and :15 (avoiding extraction slots)
+    # ===========================================
+    "monitor_honeypots": {
+        "task": "greedybear.tasks.monitor_honeypots",
+        "schedule": crontab(minute=5),
+        "options": {"queue": "default"},
+    },
+    "monitor_logs": {
+        "task": "greedybear.tasks.monitor_logs",
+        "schedule": crontab(minute=15),
+        "options": {"queue": "default"},
+    },
+    # ===========================================
+    # DAILY/WEEKLY: Maintenance Tasks
+    # All bundled at 1:05 AM
+    # Timing not critical - Celery queues sequentially
+    # Avoids extraction slots at 1:00 and 1:10
+    # ===========================================
     # once a day
     "command_clustering": {
         "task": "greedybear.tasks.cluster_commands",
-        "schedule": crontab(hour=1, minute=3),
+        "schedule": crontab(hour=1, minute=5),
         "options": {"queue": "default"},
     },
     # once a day
     "clean_up": {
         "task": "greedybear.tasks.clean_up_db",
-        "schedule": crontab(hour=2, minute=3),
+        "schedule": crontab(hour=1, minute=5),
         "options": {"queue": "default"},
     },
     "get_mass_scanners": {
         "task": "greedybear.tasks.get_mass_scanners",
-        "schedule": crontab(hour=4, minute=3, day_of_week=0),
+        "schedule": crontab(hour=1, minute=5, day_of_week=0),
         "options": {"queue": "default"},
     },
     "get_whatsmyip": {
         "task": "greedybear.tasks.get_whatsmyip",
-        "schedule": crontab(hour=4, minute=3, day_of_week=6),
+        "schedule": crontab(hour=1, minute=5, day_of_week=6),
         "options": {"queue": "default"},
     },
     "extract_firehol_lists": {
         "task": "greedybear.tasks.extract_firehol_lists",
-        "schedule": crontab(hour=4, minute=15, day_of_week=0),
+        "schedule": crontab(hour=1, minute=5, day_of_week=0),
         "options": {"queue": "default"},
     },
     "get_tor_exit_nodes": {
         "task": "greedybear.tasks.get_tor_exit_nodes",
-        "schedule": crontab(hour=4, minute=30, day_of_week=0),
+        "schedule": crontab(hour=1, minute=5, day_of_week=0),
         "options": {"queue": "default"},
     },
 }
