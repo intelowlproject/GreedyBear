@@ -893,17 +893,12 @@ cmd_create_admin() {
     if [ -n "$ADMIN_USERNAME" ] && [ -n "$ADMIN_PASSWORD" ] && [ -n "$ADMIN_EMAIL" ]; then
         log_info "Creating superuser in non-interactive mode..."
         
-        # We need to pass environment variables to the exec command
-        # We need to pass environment variables to the exec command
-        # Note: --noinput requires all required fields. We pass a dummy first_name just in case.
-        ${docker_cmd} exec -e DJANGO_SUPERUSER_PASSWORD="$ADMIN_PASSWORD" \
+        if ${docker_cmd} exec -e DJANGO_SUPERUSER_PASSWORD="$ADMIN_PASSWORD" \
                            -e DJANGO_SUPERUSER_USERNAME="$ADMIN_USERNAME" \
                            -e DJANGO_SUPERUSER_EMAIL="$ADMIN_EMAIL" \
                            -e DJANGO_SUPERUSER_FIRST_NAME="admin" \
                            -e DJANGO_SUPERUSER_LAST_NAME="user" \
-                           "$container_name" python3 manage.py createsuperuser --noinput
-                           
-        if [ $? -eq 0 ]; then
+                           "$container_name" python3 manage.py createsuperuser --noinput; then
             log_success "Superuser '$ADMIN_USERNAME' created successfully!"
         else
             log_error "Failed to create superuser."
