@@ -818,9 +818,13 @@ cmd_create_admin() {
         log_info "Creating superuser in non-interactive mode..."
         
         # We need to pass environment variables to the exec command
+        # We need to pass environment variables to the exec command
+        # Note: --noinput requires all required fields. We pass a dummy first_name just in case.
         ${docker_cmd} exec -e DJANGO_SUPERUSER_PASSWORD="$ADMIN_PASSWORD" \
                            -e DJANGO_SUPERUSER_USERNAME="$ADMIN_USERNAME" \
                            -e DJANGO_SUPERUSER_EMAIL="$ADMIN_EMAIL" \
+                           -e DJANGO_SUPERUSER_FIRST_NAME="admin" \
+                           -e DJANGO_SUPERUSER_LAST_NAME="user" \
                            "$container_name" python3 manage.py createsuperuser --noinput
                            
         if [ $? -eq 0 ]; then
@@ -920,7 +924,7 @@ parse_args() {
                 shift
                 ;;
             --username)
-                if [[ -z "${2:-}" || "$2" == -* ]]; then
+                if [[ -z "${2:-}" ]]; then
                     echo -e "${RED}Error:${NC} --username requires a non-empty value" >&2
                     exit 1
                 fi
@@ -928,7 +932,7 @@ parse_args() {
                 shift 2
                 ;;
             --password)
-                if [[ -z "${2:-}" || "$2" == -* ]]; then
+                if [[ -z "${2:-}" ]]; then
                     echo -e "${RED}Error:${NC} --password requires a non-empty value" >&2
                     exit 1
                 fi
@@ -936,7 +940,7 @@ parse_args() {
                 shift 2
                 ;;
             --email)
-                if [[ -z "${2:-}" || "$2" == -* ]]; then
+                if [[ -z "${2:-}" ]]; then
                     echo -e "${RED}Error:${NC} --email requires a non-empty value" >&2
                     exit 1
                 fi
