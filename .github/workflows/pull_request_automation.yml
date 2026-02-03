@@ -87,6 +87,8 @@ jobs:
       upload_coverage: true
       tags_for_slow_tests: main
 
+      custom_command: python manage.py test --tag=migration --failfast
+
       env: >-
         {
         "ENVIRONMENT": "ci",
