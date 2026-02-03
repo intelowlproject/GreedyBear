@@ -792,8 +792,7 @@ cmd_clean() {
     log_info "Removing environment files..."
     rm -f "${SCRIPT_DIR}/docker/env_file" "${SCRIPT_DIR}/docker/env_file_postgres" "${SCRIPT_DIR}/.env"
     
-    log_info "Removing backup directory..."
-    rm -rf "${SCRIPT_DIR}/backups"
+
     
     log_success "GreedyBear has been completely removed"
     log_info "To reinstall, run: ./gbctl init --prod"
