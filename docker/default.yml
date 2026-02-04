@@ -8,7 +8,7 @@ services:
     container_name: greedybear_postgres
     restart: unless-stopped
     volumes:
-      - postgres_data:/var/lib/postgresql/data/
+      - postgres_data:/var/lib/postgresql
     env_file:
       - ./env_file_postgres
 
