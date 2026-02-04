@@ -2,7 +2,6 @@ import { UncontrolledPopover, PopoverBody } from "reactstrap";
 import { FiInfo } from "react-icons/fi";
 import { BooleanIcon, IconButton } from "@certego/certego-ui";
 
-
 const formatInteger = (value) => {
   if (value === null || value === undefined || Number.isNaN(value)) return "-";
   return Number(value).toLocaleString();
@@ -87,7 +86,9 @@ const feedsTableColumns = [
             <PopoverBody className="small">
               <div className="text-muted">Scores</div>
               <div>Recurrence: {formatPercent(recurrence_probability)}</div>
-              <div>Expected: {formatInteger(Math.round(expected_interactions))}</div>
+              <div>
+                Expected: {formatInteger(Math.round(expected_interactions))}
+              </div>
               <hr className="my-2" />
               <div className="text-muted">Activity</div>
               <div>Interactions: {formatInteger(interaction_count)}</div>
