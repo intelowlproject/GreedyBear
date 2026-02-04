@@ -6,14 +6,16 @@ services:
   postgres:
     image: library/postgres:18-alpine
     container_name: greedybear_postgres
+    restart: unless-stopped
     volumes:
-      - postgres_data:/var/lib/postgresql/data/
+      - postgres_data:/var/lib/postgresql
     env_file:
       - ./env_file_postgres
 
   uwsgi:
     image: intelowlproject/greedybear:prod
     container_name: greedybear_uwsgi
+    restart: unless-stopped
     volumes:
       - ../configuration/uwsgi/greedybear.ini:/etc/uwsgi/sites/greedybear.ini
       - generic_logs:/var/log/greedybear
@@ -46,6 +48,7 @@ services:
   rabbitmq:
     image: library/rabbitmq:4-alpine
     container_name: greedybear_rabbitmq
+    restart: unless-stopped
     volumes:
       - ../configuration/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
     logging:
