@@ -1,0 +1,34 @@
+[
+  {
+    "id": "gb-news-001",
+    "project": "greedybear",
+    "title": "GreedyBear version 3.0 coming",
+    "subText": "With many new features!",
+    "date": "29th January 2026",
+    "link": "https://intelowlproject.github.io/blogs/greedybear_v3_release"
+  },
+  {
+    "id": "gb-news-002",
+    "project": "greedybear",
+    "title": "GreedyBear version 2.0 released",
+    "subText": "Upgrade from 1.x requires manual intervention",
+    "date": "3rd October 2025",
+    "link": "https://intelowlproject.github.io/blogs/greedybear_v2_release"
+  },
+  {
+    "id": "gb-news-003",
+    "project": "greedybear",
+    "title": "Improvements to GreedyBear",
+    "subText": "Machine Learning applied to GreedyBear Feeds",
+    "date": "28th May 2025",
+    "link": "https://intelowlproject.github.io/blogs/improvements_to_greedybear"
+  },
+  {
+    "id": "gb-news-004",
+    "project": "greedybear",
+    "title": "New project available: GreedyBear",
+    "subText": "Honeynet Blog: Official announcement",
+    "date": "27th December 2021",
+    "link": "https://www.honeynet.org/2021/12/27/new-project-available-greedybear/"
+  }
+]
