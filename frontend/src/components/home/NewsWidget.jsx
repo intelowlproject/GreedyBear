@@ -59,7 +59,9 @@ export const NewsWidget = React.memo(() => {
   if (error) {
     return (
       <div className="d-flex justify-content-center align-items-center py-4">
-        <span className="text-muted">Unable to load news. Please try again later.</span>
+        <span className="text-muted">
+          Unable to load news. Please try again later.
+        </span>
       </div>
     );
   }
@@ -84,18 +86,16 @@ export const NewsWidget = React.memo(() => {
           <h5 className="text-secondary">{item.title}</h5>
           <p className="mb-2 text-muted">{item.subText}</p>
           <a
-          className="link-ul-primary"
-          href={item.link}
-          target="_blank"
-          rel="noopener noreferrer"
-          aria-label={`Read more about ${item.title}`}
+            className="link-ul-primary"
+            href={item.link}
+            target="_blank"
+            rel="noopener noreferrer"
+            aria-label={`Read more about ${item.title}`}
           >
             Read more
-         </a>
-
+          </a>
         </ContentSection>
       ))}
     </>
   );
 });
-
