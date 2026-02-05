@@ -4,9 +4,9 @@ Data migration to remove Log4pot from GeneralHoneypot if it has no associated IO
 This migration fixes issue #773 where Log4pot appears as an active honeypot
 in the admin interface and dashboard, despite having no data.
 
-The migration 0030_migrate_cowrie_log4j.py created Log4pot with active=True
-unconditionally, even for instances that never had Log4pot running. This
-migration cleans that up by removing the honeypot entry if it has no IOC data.
+The migration 0030 created Log4pot with active=True unconditionally, even for
+instances that never had Log4pot running. This migration cleans that up by
+removing the honeypot entry if it has no IOC data.
 
 If a user enables Log4Pot on their T-Pot instance later, the extraction
 pipeline will automatically create the GeneralHoneypot entry when it
@@ -25,6 +25,7 @@ def remove_unused_log4pot(apps, schema_editor):
         if not IOC.objects.filter(general_honeypot=hp).exists():
             hp.delete()
     except GeneralHoneypot.DoesNotExist:
+        # If the Log4pot honeypot does not exist, there is nothing to clean up.
         pass
 
 
