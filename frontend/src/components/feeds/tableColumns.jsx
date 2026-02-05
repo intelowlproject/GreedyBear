@@ -48,6 +48,18 @@ const feedsTableColumns = [
       ),
   },
   {
+    Header: "Scanner",
+    accessor: "scanner",
+    Cell: ({ value }) => <BooleanIcon truthy={value} withColors />,
+    maxWidth: 60,
+  },
+  {
+    Header: "Payload Request",
+    accessor: "payload_request",
+    Cell: ({ value }) => <BooleanIcon truthy={value} withColors />,
+    maxWidth: 60,
+  },
+  {
     Header: "Attack Count",
     accessor: "attack_count",
     maxWidth: 60,
@@ -78,7 +90,7 @@ const feedsTableColumns = [
             Icon={FiInfo}
           />
           <UncontrolledPopover
-            trigger="hover"
+            trigger="focus"
             target={popoverId}
             placement="left"
             className="feeds-details-popover"
@@ -87,7 +99,8 @@ const feedsTableColumns = [
               <div className="text-muted">Scores</div>
               <div>Recurrence: {formatPercent(recurrence_probability)}</div>
               <div>
-                Expected: {formatInteger(Math.round(expected_interactions))}
+                Expected Interactions:{" "}
+                {formatInteger(Math.round(expected_interactions))}
               </div>
               <hr className="my-2" />
               <div className="text-muted">Activity</div>
@@ -98,16 +111,6 @@ const feedsTableColumns = [
               <div className="text-muted">Enrichment</div>
               <div>ASN: {formatInteger(asn)}</div>
               <div>Reputation: {ip_reputation || "-"}</div>
-              <hr className="my-2" />
-              <div className="text-muted">Flags</div>
-              <div className="d-flex align-items-center">
-                <span className="me-2">Scanner</span>
-                <BooleanIcon truthy={scanner} withColors />
-              </div>
-              <div className="d-flex align-items-center">
-                <span className="me-2">Payload</span>
-                <BooleanIcon truthy={payload_request} withColors />
-              </div>
             </PopoverBody>
           </UncontrolledPopover>
         </div>
