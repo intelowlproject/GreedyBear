@@ -74,3 +74,48 @@ class TestCowrieLog4jMigration(MigrationTestCase):
             ioc_new.objects.get(id=ioc_none.id).general_honeypot.count(),
             0,
         )
+
+
+@tag("migration")
+class TestRemoveUnusedLog4pot(MigrationTestCase):
+    """Tests that Log4pot is removed only when it has no associated IOCs.
+
+    Fixes issue #773: Log4pot is active despite having no data.
+    """
+
+    migrate_from = "0033_disable_additional_honeypots"
+    migrate_to = "0034_remove_unused_log4pot"
+
+    def test_log4pot_deleted_if_unused(self):
+        """Log4pot should be deleted if it has no associated IOCs."""
+        GeneralHoneypot = self.old_state.apps.get_model(self.app_name, "GeneralHoneypot")
+
+        # Ensure Log4pot exists (created by migration 0030)
+        GeneralHoneypot.objects.get_or_create(name="Log4pot", defaults={"active": True})
+
+        new_state = self.apply_tested_migration()
+        hp_new = new_state.apps.get_model(self.app_name, "GeneralHoneypot")
+
+        self.assertFalse(
+            hp_new.objects.filter(name="Log4pot").exists(),
+            "Log4pot with no IOCs should be deleted",
+        )
+
+    def test_log4pot_kept_if_has_iocs(self):
+        """Log4pot should NOT be deleted if it has associated IOCs."""
+        GeneralHoneypot = self.old_state.apps.get_model(self.app_name, "GeneralHoneypot")
+        IOC = self.old_state.apps.get_model(self.app_name, "IOC")
+
+        log4pot_hp, _ = GeneralHoneypot.objects.get_or_create(name="Log4pot", defaults={"active": True})
+
+        # Create an IOC and link it to Log4pot
+        ioc = IOC.objects.create()
+        ioc.general_honeypot.add(log4pot_hp)
+
+        new_state = self.apply_tested_migration()
+        hp_new = new_state.apps.get_model(self.app_name, "GeneralHoneypot")
+
+        self.assertTrue(
+            hp_new.objects.filter(name="Log4pot").exists(),
+            "Log4pot with IOCs should NOT be deleted",
+        )
