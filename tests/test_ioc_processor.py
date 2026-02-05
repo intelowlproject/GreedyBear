@@ -1,5 +1,5 @@
 from datetime import date, datetime
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from greedybear.consts import PAYLOAD_REQUEST, SCANNER
 from greedybear.cronjobs.extraction.ioc_processor import IocProcessor
@@ -14,7 +14,7 @@ class TestAddIoc(ExtractionTestCase):
         self.processor = IocProcessor(self.mock_ioc_repo, self.mock_sensor_repo)
 
     def test_filters_sensor_ips(self):
-        self.mock_sensor_repo.sensors = {"192.168.1.1"}
+        self.mock_sensor_repo.cache = {"192.168.1.1": Mock()}
         ioc = self._create_mock_ioc(name="192.168.1.1")
 
         result = self.processor.add_ioc(ioc, attack_type=SCANNER)
@@ -25,7 +25,6 @@ class TestAddIoc(ExtractionTestCase):
     @patch("greedybear.cronjobs.extraction.ioc_processor.is_whatsmyip_domain")
     def test_filters_whatsmyip_domains(self, mock_whatsmyip):
         mock_whatsmyip.return_value = True
-        self.mock_sensor_repo.sensors = set()
         ioc = self._create_mock_ioc(name="some.domain.com", ioc_type=IocType.DOMAIN)
 
         result = self.processor.add_ioc(ioc, attack_type=SCANNER)
