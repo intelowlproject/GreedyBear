@@ -4,7 +4,7 @@ from django.contrib.postgres.aggregates import ArrayAgg
 from django.db import IntegrityError
 from django.db.models import F
 
-from greedybear.models import IOC, GeneralHoneypot
+from greedybear.models import IOC, GeneralHoneypot, Sensor
 
 
 class IocRepository:
@@ -40,6 +40,23 @@ class IocRepository:
             self.log.debug(f"adding honeypot {honeypot_name} to IoC {ioc}")
             honeypot = self.get_hp_by_name(honeypot_name)
             ioc.general_honeypot.add(honeypot)
+        return ioc
+
+    def add_sensor_to_ioc(self, sensor: "Sensor", ioc: IOC) -> IOC:
+        """
+        Associate a sensor with an IOC.
+
+        Args:
+            sensor: Sensor instance to associate.
+            ioc: IOC instance to add the sensor to.
+
+        Returns:
+            The updated IOC instance.
+        """
+        sensor_set = {s.address for s in ioc.sensors.all()}
+        if sensor.address not in sensor_set:
+            self.log.debug(f"adding sensor {sensor.address} to IoC {ioc}")
+            ioc.sensors.add(sensor)
         return ioc
 
     def create_honeypot(self, honeypot_name: str) -> GeneralHoneypot:

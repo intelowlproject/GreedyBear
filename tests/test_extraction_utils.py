@@ -325,6 +325,7 @@ class IocsFromHitsTestCase(CustomTestCase):
         hit_type="Cowrie",
         ip_rep="",
         asn=None,
+        sensor=None,
     ):
         hit = {
             "src_ip": src_ip,
@@ -335,14 +336,17 @@ class IocsFromHitsTestCase(CustomTestCase):
         }
         if asn:
             hit["geoip"] = {"asn": asn}
+        if sensor:
+            hit["_sensor"] = sensor
         return hit
 
     def test_creates_ioc_from_single_hit(self):
         hits = [self._create_hit(src_ip="8.8.8.8", dest_port=22)]
         iocs = iocs_from_hits(hits)
         self.assertEqual(len(iocs), 1)
-        self.assertEqual(iocs[0].name, "8.8.8.8")
-        self.assertEqual(iocs[0].type, IP)
+        ioc, sensors = iocs[0]
+        self.assertEqual(ioc.name, "8.8.8.8")
+        self.assertEqual(ioc.type, IP)
 
     def test_groups_hits_by_ip(self):
         hits = [
@@ -352,8 +356,9 @@ class IocsFromHitsTestCase(CustomTestCase):
         ]
         iocs = iocs_from_hits(hits)
         self.assertEqual(len(iocs), 1)
-        self.assertEqual(iocs[0].attack_count, 1)
-        self.assertEqual(iocs[0].interaction_count, 3)
+        ioc, sensors = iocs[0]
+        self.assertEqual(ioc.attack_count, 1)
+        self.assertEqual(ioc.interaction_count, 3)
 
     def test_creates_separate_iocs_for_different_ips(self):
         hits = [
@@ -362,7 +367,7 @@ class IocsFromHitsTestCase(CustomTestCase):
         ]
         iocs = iocs_from_hits(hits)
         self.assertEqual(len(iocs), 2)
-        names = {ioc.name for ioc in iocs}
+        names = {ioc.name for ioc, sensors in iocs}
         self.assertEqual(names, {"8.8.8.8", "1.1.1.1"})
 
     def test_aggregates_destination_ports(self):
@@ -372,7 +377,8 @@ class IocsFromHitsTestCase(CustomTestCase):
             self._create_hit(src_ip="8.8.8.8", dest_port=443),
         ]
         iocs = iocs_from_hits(hits)
-        self.assertEqual(iocs[0].destination_ports, [22, 80, 443])
+        ioc, sensors = iocs[0]
+        self.assertEqual(ioc.destination_ports, [22, 80, 443])
 
     def test_deduplicates_ports(self):
         hits = [
@@ -381,24 +387,28 @@ class IocsFromHitsTestCase(CustomTestCase):
             self._create_hit(src_ip="8.8.8.8", dest_port=22),
         ]
         iocs = iocs_from_hits(hits)
-        self.assertEqual(iocs[0].destination_ports, [22])
+        ioc, sensors = iocs[0]
+        self.assertEqual(ioc.destination_ports, [22])
 
     def test_handles_missing_dest_port(self):
         hits = [
             {"src_ip": "8.8.8.8", "@timestamp": "2025-01-01T12:00:00.000Z"},
         ]
         iocs = iocs_from_hits(hits)
-        self.assertEqual(iocs[0].destination_ports, [])
+        ioc, sensors = iocs[0]
+        self.assertEqual(ioc.destination_ports, [])
 
     def test_extracts_asn_from_geoip(self):
         hits = [self._create_hit(src_ip="8.8.8.8", asn=15169)]
         iocs = iocs_from_hits(hits)
-        self.assertEqual(iocs[0].asn, 15169)
+        ioc, sensors = iocs[0]
+        self.assertEqual(ioc.asn, 15169)
 
     def test_handles_missing_geoip(self):
         hits = [{"src_ip": "8.8.8.8", "@timestamp": "2025-01-01T12:00:00.000Z"}]
         iocs = iocs_from_hits(hits)
-        self.assertIsNone(iocs[0].asn)
+        ioc, sensors = iocs[0]
+        self.assertIsNone(ioc.asn)
 
     def test_extracts_timestamps(self):
         hits = [
@@ -407,8 +417,9 @@ class IocsFromHitsTestCase(CustomTestCase):
             self._create_hit(src_ip="8.8.8.8", timestamp="2025-01-01T11:00:00.000Z"),
         ]
         iocs = iocs_from_hits(hits)
-        self.assertEqual(iocs[0].first_seen, datetime.fromisoformat("2025-01-01T10:00:00.000Z"))
-        self.assertEqual(iocs[0].last_seen, datetime.fromisoformat("2025-01-01T12:00:00.000Z"))
+        ioc, sensors = iocs[0]
+        self.assertEqual(ioc.first_seen, datetime.fromisoformat("2025-01-01T10:00:00.000Z"))
+        self.assertEqual(ioc.last_seen, datetime.fromisoformat("2025-01-01T12:00:00.000Z"))
 
     def test_filters_loopback_addresses(self):
         hits = [
@@ -417,7 +428,8 @@ class IocsFromHitsTestCase(CustomTestCase):
         ]
         iocs = iocs_from_hits(hits)
         self.assertEqual(len(iocs), 1)
-        self.assertEqual(iocs[0].name, "8.8.8.8")
+        ioc, sensors = iocs[0]
+        self.assertEqual(ioc.name, "8.8.8.8")
 
     def test_filters_private_addresses(self):
         hits = [
@@ -428,7 +440,8 @@ class IocsFromHitsTestCase(CustomTestCase):
         ]
         iocs = iocs_from_hits(hits)
         self.assertEqual(len(iocs), 1)
-        self.assertEqual(iocs[0].name, "8.8.8.8")
+        ioc, sensors = iocs[0]
+        self.assertEqual(ioc.name, "8.8.8.8")
 
     def test_filters_multicast_addresses(self):
         hits = [
@@ -437,7 +450,8 @@ class IocsFromHitsTestCase(CustomTestCase):
         ]
         iocs = iocs_from_hits(hits)
         self.assertEqual(len(iocs), 1)
-        self.assertEqual(iocs[0].name, "8.8.8.8")
+        ioc, sensors = iocs[0]
+        self.assertEqual(ioc.name, "8.8.8.8")
 
     def test_filters_link_local_addresses(self):
         hits = [
@@ -446,7 +460,8 @@ class IocsFromHitsTestCase(CustomTestCase):
         ]
         iocs = iocs_from_hits(hits)
         self.assertEqual(len(iocs), 1)
-        self.assertEqual(iocs[0].name, "8.8.8.8")
+        ioc, sensors = iocs[0]
+        self.assertEqual(ioc.name, "8.8.8.8")
 
     def test_filters_reserved_addresses(self):
         hits = [
@@ -455,7 +470,8 @@ class IocsFromHitsTestCase(CustomTestCase):
         ]
         iocs = iocs_from_hits(hits)
         self.assertEqual(len(iocs), 1)
-        self.assertEqual(iocs[0].name, "8.8.8.8")
+        ioc, sensors = iocs[0]
+        self.assertEqual(ioc.name, "8.8.8.8")
 
     def test_heralding_counts_login_attempts(self):
         hits = [
@@ -464,7 +480,8 @@ class IocsFromHitsTestCase(CustomTestCase):
             self._create_hit(src_ip="8.8.8.8", hit_type="Heralding"),
         ]
         iocs = iocs_from_hits(hits)
-        self.assertEqual(iocs[0].login_attempts, 3)
+        ioc, sensors = iocs[0]
+        self.assertEqual(ioc.login_attempts, 3)
 
     def test_non_heralding_no_login_attempts(self):
         hits = [
@@ -472,13 +489,15 @@ class IocsFromHitsTestCase(CustomTestCase):
             self._create_hit(src_ip="8.8.8.8", hit_type="Cowrie"),
         ]
         iocs = iocs_from_hits(hits)
-        self.assertEqual(iocs[0].login_attempts, 0)
+        ioc, sensors = iocs[0]
+        self.assertEqual(ioc.login_attempts, 0)
 
     def test_corrects_ip_reputation(self):
         MassScanner.objects.create(ip_address="8.8.8.8")
         hits = [self._create_hit(src_ip="8.8.8.8", ip_rep="known attacker")]
         iocs = iocs_from_hits(hits)
-        self.assertEqual(iocs[0].ip_reputation, "mass scanner")
+        ioc, sensors = iocs[0]
+        self.assertEqual(ioc.ip_reputation, "mass scanner")
 
     def test_empty_hits_returns_empty_list(self):
         iocs = iocs_from_hits([])
@@ -493,9 +512,10 @@ class IocsFromHitsTestCase(CustomTestCase):
         iocs = iocs_from_hits(hits)
 
         self.assertEqual(len(iocs), 1)
-        self.assertIn("blocklist_de", iocs[0].firehol_categories)
-        self.assertIn("greensnow", iocs[0].firehol_categories)
-        self.assertEqual(len(iocs[0].firehol_categories), 2)
+        ioc, sensors = iocs[0]
+        self.assertIn("blocklist_de", ioc.firehol_categories)
+        self.assertIn("greensnow", ioc.firehol_categories)
+        self.assertEqual(len(ioc.firehol_categories), 2)
 
     def test_firehol_enrichment_network_range_match(self):
         """Test that IOCs get FireHol categories when IP is within a CIDR range (.netset files)"""
@@ -505,7 +525,8 @@ class IocsFromHitsTestCase(CustomTestCase):
         iocs = iocs_from_hits(hits)
 
         self.assertEqual(len(iocs), 1)
-        self.assertIn("dshield", iocs[0].firehol_categories)
+        ioc, sensors = iocs[0]
+        self.assertIn("dshield", ioc.firehol_categories)
 
     def test_firehol_enrichment_no_match(self):
         """Test that IOCs have empty FireHol categories when there's no match"""
@@ -516,7 +537,8 @@ class IocsFromHitsTestCase(CustomTestCase):
         iocs = iocs_from_hits(hits)
 
         self.assertEqual(len(iocs), 1)
-        self.assertEqual(iocs[0].firehol_categories, [])
+        ioc, sensors = iocs[0]
+        self.assertEqual(ioc.firehol_categories, [])
 
     def test_firehol_enrichment_mixed_match(self):
         """Test FireHol enrichment with both exact match and network range match"""
@@ -527,8 +549,9 @@ class IocsFromHitsTestCase(CustomTestCase):
         iocs = iocs_from_hits(hits)
 
         self.assertEqual(len(iocs), 1)
-        self.assertIn("blocklist_de", iocs[0].firehol_categories)
-        self.assertIn("dshield", iocs[0].firehol_categories)
+        ioc, sensors = iocs[0]
+        self.assertIn("blocklist_de", ioc.firehol_categories)
+        self.assertIn("dshield", ioc.firehol_categories)
 
     def test_firehol_enrichment_deduplicates_sources(self):
         """Test that duplicate sources are not added"""
@@ -539,8 +562,38 @@ class IocsFromHitsTestCase(CustomTestCase):
         iocs = iocs_from_hits(hits)
 
         self.assertEqual(len(iocs), 1)
+        ioc, sensors = iocs[0]
         # Should only have one instance of blocklist_de
-        self.assertEqual(iocs[0].firehol_categories.count("blocklist_de"), 1)
+        self.assertEqual(ioc.firehol_categories.count("blocklist_de"), 1)
+
+    def test_collects_sensors_from_hits(self):
+        """Test that sensors are collected from hits and returned"""
+        from greedybear.models import Sensor
+
+        sensor1 = Sensor.objects.create(address="10.0.0.1")
+        sensor2 = Sensor.objects.create(address="10.0.0.2")
+
+        hits = [
+            self._create_hit(src_ip="8.8.8.8", sensor=sensor1),
+            self._create_hit(src_ip="8.8.8.8", sensor=sensor2),
+            self._create_hit(src_ip="8.8.8.8", sensor=sensor1),  # Duplicate - should be deduplicated
+        ]
+        iocs = iocs_from_hits(hits)
+
+        self.assertEqual(len(iocs), 1)
+        ioc, sensors = iocs[0]
+        self.assertEqual(len(sensors), 2)
+        sensor_addresses = {s.address for s in sensors}
+        self.assertEqual(sensor_addresses, {"10.0.0.1", "10.0.0.2"})
+
+    def test_returns_empty_sensors_when_no_sensor_in_hits(self):
+        """Test that empty sensor list is returned when hits have no sensor"""
+        hits = [self._create_hit(src_ip="8.8.8.8")]
+        iocs = iocs_from_hits(hits)
+
+        self.assertEqual(len(iocs), 1)
+        ioc, sensors = iocs[0]
+        self.assertEqual(sensors, [])
 
 
 class ThreatfoxSubmissionTestCase(ExtractionTestCase):

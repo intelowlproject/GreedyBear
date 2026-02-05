@@ -21,7 +21,8 @@ class TestGenericExtractionStrategy(ExtractionTestCase):
         self.mock_ioc_repo.is_enabled.return_value = True
 
         mock_ioc = self._create_mock_ioc()
-        mock_iocs_from_hits.return_value = [mock_ioc]
+        # Return tuple (ioc, sensors) as expected by the new format
+        mock_iocs_from_hits.return_value = [(mock_ioc, [])]
 
         self.strategy.ioc_processor.add_ioc = Mock(return_value=mock_ioc)
 
@@ -30,7 +31,7 @@ class TestGenericExtractionStrategy(ExtractionTestCase):
         self.strategy.extract_from_hits(hits)
 
         mock_iocs_from_hits.assert_called_once_with(hits)
-        self.strategy.ioc_processor.add_ioc.assert_called_once_with(mock_ioc, attack_type=SCANNER, general_honeypot_name="TestHoneypot")
+        self.strategy.ioc_processor.add_ioc.assert_called_once_with(mock_ioc, attack_type=SCANNER, general_honeypot_name="TestHoneypot", sensor=None)
         self.assertEqual(len(self.strategy.ioc_records), 1)
         mock_threatfox.assert_called_once()
 
@@ -38,7 +39,8 @@ class TestGenericExtractionStrategy(ExtractionTestCase):
     def test_handles_none_ioc_record(self, mock_iocs_from_hits):
         self.mock_ioc_repo.is_enabled.return_value = True
         mock_ioc = self._create_mock_ioc()
-        mock_iocs_from_hits.return_value = [mock_ioc]
+        # Return tuple (ioc, sensors) as expected by the new format
+        mock_iocs_from_hits.return_value = [(mock_ioc, [])]
 
         self.strategy.ioc_processor.add_ioc = Mock(return_value=None)
 
@@ -54,7 +56,8 @@ class TestGenericExtractionStrategy(ExtractionTestCase):
 
         mock_ioc1 = self._create_mock_ioc("1.2.3.4")
         mock_ioc2 = self._create_mock_ioc("5.6.7.8")
-        mock_iocs_from_hits.return_value = [mock_ioc1, mock_ioc2]
+        # Return tuples (ioc, sensors) as expected by the new format
+        mock_iocs_from_hits.return_value = [(mock_ioc1, []), (mock_ioc2, [])]
         self.strategy.ioc_processor.add_ioc = Mock(side_effect=[mock_ioc1, mock_ioc2])
 
         hits = [
@@ -76,7 +79,8 @@ class TestGenericExtractionStrategy(ExtractionTestCase):
         self.mock_ioc_repo.is_enabled.return_value = True
 
         mock_ioc = self._create_mock_ioc("1.2.3.4")
-        mock_iocs_from_hits.return_value = [mock_ioc]
+        # Return tuple (ioc, sensors) as expected by the new format
+        mock_iocs_from_hits.return_value = [(mock_ioc, [])]
         self.strategy.ioc_processor.add_ioc = Mock(return_value=mock_ioc)
 
         hits = [{"src_ip": "1.2.3.4", "dest_port": 80, "@timestamp": "2025-01-01T00:00:00"}]
@@ -85,3 +89,28 @@ class TestGenericExtractionStrategy(ExtractionTestCase):
 
         call_kwargs = self.strategy.ioc_processor.add_ioc.call_args[1]
         self.assertEqual(call_kwargs["general_honeypot_name"], "TestHoneypot")
+
+    @patch("greedybear.cronjobs.extraction.strategies.generic.iocs_from_hits")
+    @patch("greedybear.cronjobs.extraction.strategies.generic.threatfox_submission")
+    def test_processes_ioc_with_sensors(self, mock_threatfox, mock_iocs_from_hits):
+        """Test that sensors are passed to add_ioc when present"""
+        self.mock_ioc_repo.is_enabled.return_value = True
+
+        mock_ioc = self._create_mock_ioc()
+        mock_sensor1 = Mock()
+        mock_sensor1.address = "10.0.0.1"
+        mock_sensor2 = Mock()
+        mock_sensor2.address = "10.0.0.2"
+        # Return tuple with multiple sensors
+        mock_iocs_from_hits.return_value = [(mock_ioc, [mock_sensor1, mock_sensor2])]
+
+        self.strategy.ioc_processor.add_ioc = Mock(return_value=mock_ioc)
+
+        hits = [{"src_ip": "1.2.3.4", "dest_port": 80, "@timestamp": "2025-01-01T00:00:00"}]
+
+        self.strategy.extract_from_hits(hits)
+
+        # Should call add_ioc once with first sensor
+        self.strategy.ioc_processor.add_ioc.assert_called_once_with(mock_ioc, attack_type=SCANNER, general_honeypot_name="TestHoneypot", sensor=mock_sensor1)
+        # Should add remaining sensors directly via repo
+        self.mock_ioc_repo.add_sensor_to_ioc.assert_called_once_with(mock_sensor2, mock_ioc)

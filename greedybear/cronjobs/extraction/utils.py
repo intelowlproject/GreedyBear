@@ -87,9 +87,9 @@ def get_firehol_categories(ip: str, extracted_ip) -> list[str]:
     return firehol_categories
 
 
-def iocs_from_hits(hits: list[dict]) -> list[IOC]:
+def iocs_from_hits(hits: list[dict]) -> list[tuple["IOC", list]]:
     """
-    Convert Elasticsearch hits into IOC objects.
+    Convert Elasticsearch hits into IOC objects with associated sensors.
     Groups hits by source IP, filters out non-global addresses, and
     constructs IOC objects with aggregated data.
     Enriches IOCs with FireHol categories at creation time to ensure
@@ -99,7 +99,7 @@ def iocs_from_hits(hits: list[dict]) -> list[IOC]:
         hits: List of Elasticsearch hit dictionaries.
 
     Returns:
-        List of IOC instances, one per unique source IP.
+        List of tuples (IOC instance, list of Sensor objects) for each unique source IP.
     """
     hits_by_ip = defaultdict(list)
     for hit in hits:
@@ -112,6 +112,9 @@ def iocs_from_hits(hits: list[dict]) -> list[IOC]:
             continue
 
         firehol_categories = get_firehol_categories(ip, extracted_ip)
+
+        # Collect unique sensors from hits
+        sensors = list({hit["_sensor"] for hit in hits if hit.get("_sensor") is not None})
 
         ioc = IOC(
             name=ip,
@@ -127,7 +130,7 @@ def iocs_from_hits(hits: list[dict]) -> list[IOC]:
         if timestamps:
             ioc.first_seen = datetime.fromisoformat(min(timestamps))
             ioc.last_seen = datetime.fromisoformat(max(timestamps))
-        iocs.append(ioc)
+        iocs.append((ioc, sensors))
     return iocs
 
 

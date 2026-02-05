@@ -3,7 +3,7 @@ import logging
 from greedybear.consts import PAYLOAD_REQUEST, SCANNER
 from greedybear.cronjobs.extraction.utils import is_whatsmyip_domain
 from greedybear.cronjobs.repositories import IocRepository, SensorRepository
-from greedybear.models import IOC, IocType
+from greedybear.models import IOC, IocType, Sensor
 
 
 class IocProcessor:
@@ -26,24 +26,31 @@ class IocProcessor:
         self.ioc_repo = ioc_repo
         self.sensor_repo = sensor_repo
 
-    def add_ioc(self, ioc: IOC, attack_type: str, general_honeypot_name: str = None) -> IOC | None:
+    def add_ioc(
+        self,
+        ioc: IOC,
+        attack_type: str,
+        general_honeypot_name: str = None,
+        sensor: Sensor = None,
+    ) -> IOC | None:
         """
         Process an IOC record.
         Filters out sensor IPs and whats-my-ip domains, then creates a new
         IOC record or updates an existing one. Associates the IOC with a
-        general honeypot if specified.
+        general honeypot and/or sensor if specified.
 
         Args:
             ioc: IOC instance to process.
             attack_type: Type of attack (SCANNER or PAYLOAD_REQUEST).
             general_honeypot_name: Optional honeypot name to associate with the IOC.
+            sensor: Optional Sensor instance to associate with the IOC.
 
         Returns:
             The persisted IOC record, or None if filtered out.
         """
         self.log.info(f"processing ioc {ioc} for attack_type {attack_type}")
 
-        if ioc.name in self.sensor_repo.sensors:
+        if ioc.name in self.sensor_repo.cache:
             self.log.debug(f"not saved {ioc} because it is a sensor")
             return None
 
@@ -61,6 +68,9 @@ class IocProcessor:
 
         if general_honeypot_name is not None:
             ioc_record = self.ioc_repo.add_honeypot_to_ioc(general_honeypot_name, ioc_record)
+
+        if sensor is not None:
+            ioc_record = self.ioc_repo.add_sensor_to_ioc(sensor, ioc_record)
 
         ioc_record = self._update_days_seen(ioc_record)
         ioc_record.scanner = ioc_record.scanner or (attack_type == SCANNER)

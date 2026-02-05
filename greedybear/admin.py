@@ -31,7 +31,9 @@ class TorExitNodeModelAdmin(admin.ModelAdmin):
 
 @admin.register(Sensor)
 class SensorsModelAdmin(admin.ModelAdmin):
-    list_display = [field.name for field in Sensor._meta.get_fields()]
+    list_display = ["id", "address"]
+    search_fields = ["address"]
+    search_help_text = ["search for the sensor IP address"]
 
 
 @admin.register(Statistics)
@@ -122,6 +124,7 @@ class IOCModelAdmin(admin.ModelAdmin):
         "scanner",
         "payload_request",
         "general_honeypots",
+        "sensor_list",
         "ip_reputation",
         "firehol_categories",
         "asn",
@@ -138,11 +141,14 @@ class IOCModelAdmin(admin.ModelAdmin):
     search_fields = ["name", "related_ioc__name"]
     search_help_text = ["search for the IP address source"]
     raw_id_fields = ["related_ioc"]
-    filter_horizontal = ["general_honeypot"]
+    filter_horizontal = ["general_honeypot", "sensors"]
     inlines = [SessionInline]
 
     def general_honeypots(self, ioc):
         return ", ".join([str(element) for element in ioc.general_honeypot.all()])
+
+    def sensor_list(self, ioc):
+        return ", ".join([str(sensor.address) for sensor in ioc.sensors.all()])
 
 
 @admin.register(GeneralHoneypot)
