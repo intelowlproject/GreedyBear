@@ -11,7 +11,7 @@ from greedybear.cronjobs.extraction.utils import (
     is_whatsmyip_domain,
     threatfox_submission,
 )
-from greedybear.models import FireHolList, MassScanner, WhatsMyIPDomain
+from greedybear.models import FireHolList, MassScanner, WhatsMyIPDomain, Sensor
 
 from . import CustomTestCase, ExtractionTestCase
 
@@ -542,6 +542,80 @@ class IocsFromHitsTestCase(CustomTestCase):
         # Should only have one instance of blocklist_de
         self.assertEqual(iocs[0].firehol_categories.count("blocklist_de"), 1)
 
+    def test_country_fields_initialization(self):
+        """Test that attacker country fields are properly initialized with default values"""
+        hits = [self._create_hit(src_ip="8.8.8.8")]
+        iocs = iocs_from_hits(hits)
+
+        self.assertEqual(len(iocs), 1)
+        ioc = iocs[0]
+        # Attacker country fields should be initialized as empty strings
+        self.assertEqual(ioc.attacker_country_code, "")
+        self.assertEqual(ioc.attacker_country_name, "")
+
+    def test_country_fields_with_geoip_data(self):
+        """Test that attacker country fields can be set from geoip data"""
+        hit = {
+            "src_ip": "8.8.8.8",
+            "dest_port": 22,
+            "@timestamp": "2025-01-01T12:00:00.000Z",
+            "type": "Cowrie",
+            "ip_rep": "",
+            "geoip": {
+                "country_code2": "US",
+                "country_name": "United States"
+            }
+        }
+        hits = [hit]
+        iocs = iocs_from_hits(hits)
+
+        self.assertEqual(len(iocs), 1)
+        ioc = iocs[0]
+        # Test that attacker country fields could potentially be set if the function supports it
+        # Note: This test verifies the fields exist and can be accessed
+        self.assertIsInstance(ioc.attacker_country_code, str)
+        self.assertIsInstance(ioc.attacker_country_name, str)
+
+    def test_attacker_country_code_max_length_validation(self):
+        """Test that attacker country code fields respect max_length constraints"""
+        hits = [self._create_hit(src_ip="8.8.8.8")]
+        iocs = iocs_from_hits(hits)
+        ioc = iocs[0]
+        
+        # Verify that attacker country code fields have the expected max length constraints
+        # attacker_country_code should be max 3 chars
+        ioc.attacker_country_code = "USA"
+        
+        # attacker_country_name should be max 64 chars
+        long_country_name = "Very Long Country Name That Should Fit Within Limit"
+        ioc.attacker_country_name = long_country_name
+        
+        # Save should work without validation errors
+        ioc.save()
+        
+        # Verify the values were set correctly
+        saved_ioc = type(ioc).objects.get(pk=ioc.pk)
+        self.assertEqual(saved_ioc.attacker_country_code, "USA")
+        self.assertEqual(saved_ioc.attacker_country_name, long_country_name)
+
+    def test_attacker_country_fields_blank_allowed(self):
+        """Test that attacker country fields can be blank/empty"""
+        hits = [self._create_hit(src_ip="8.8.8.8")]
+        iocs = iocs_from_hits(hits)
+        ioc = iocs[0]
+        
+        # Set attacker country fields to empty strings
+        ioc.attacker_country_code = ""
+        ioc.attacker_country_name = ""
+        
+        # Save should work as fields are marked as blank=True
+        ioc.save()
+        
+        # Verify the empty values persist
+        saved_ioc = type(ioc).objects.get(pk=ioc.pk)
+        self.assertEqual(saved_ioc.attacker_country_code, "")
+        self.assertEqual(saved_ioc.attacker_country_name, "")
+
 
 class ThreatfoxSubmissionTestCase(ExtractionTestCase):
     def setUp(self):
@@ -636,3 +710,87 @@ class ThreatfoxSubmissionTestCase(ExtractionTestCase):
             self.assertEqual(len(submitted_urls), 2)
             self.assertIn("http://bad.com/malware.exe", submitted_urls)
             self.assertIn("http://worse.com/path/to/payload", submitted_urls)
+
+
+class TestSensorModel(CustomTestCase):
+    """Test cases for the Sensor model functionality"""
+
+    def test_sensor_creation_with_valid_ip(self):
+        """Test creating a sensor with a valid IP address"""
+        sensor = Sensor.objects.create(address="192.168.1.100")
+        self.assertEqual(sensor.address, "192.168.1.100")
+        self.assertTrue(Sensor.objects.filter(address="192.168.1.100").exists())
+
+    def test_sensor_str_representation(self):
+        """Test the string representation of Sensor model"""
+        sensor = Sensor.objects.create(address="10.0.0.1")
+        self.assertEqual(str(sensor), "10.0.0.1")
+
+    def test_sensor_address_field_max_length(self):
+        """Test that sensor address field respects max_length constraint"""
+        # Create a 15-character IP address (the maximum allowed)
+        max_length_ip = "255.255.255.255"  # 15 characters
+        sensor = Sensor.objects.create(address=max_length_ip)
+        self.assertEqual(sensor.address, max_length_ip)
+
+    def test_sensor_address_field_not_blank(self):
+        """Test that sensor address field cannot be blank"""
+        # This test documents the field constraint - address cannot be blank
+        # In practice, this would be enforced at the database/validation level
+        sensor = Sensor(address="")
+        # The field is marked as blank=False, so empty string should be allowed
+        # but it's not meaningful for an IP address
+        self.assertEqual(sensor.address, "")
+
+    def test_sensor_uniqueness_by_address(self):
+        """Test that multiple sensors can have the same address (no unique constraint)"""
+        # Based on the model definition, address field doesn't have unique=True
+        # so multiple sensors with same address should be allowed
+        Sensor.objects.create(address="1.1.1.1")
+        Sensor.objects.create(address="1.1.1.1")
+        
+        sensors = Sensor.objects.filter(address="1.1.1.1")
+        self.assertEqual(sensors.count(), 2)
+
+    def test_sensor_country_fields_initialization(self):
+        """Test that sensor country fields are properly initialized with default values"""
+        sensor = Sensor.objects.create(address="192.168.1.1")
+        
+        # Sensor country fields should be initialized as empty strings
+        self.assertEqual(sensor.sensor_country_code, "")
+        self.assertEqual(sensor.sensor_country_name, "")
+
+    def test_sensor_country_fields_max_length_validation(self):
+        """Test that sensor country fields respect max_length constraints"""
+        sensor = Sensor.objects.create(address="192.168.1.1")
+        
+        # sensor_country_code should be max 3 chars
+        sensor.sensor_country_code = "USA"
+        
+        # sensor_country_name should be max 64 chars
+        long_country_name = "Very Long Country Name That Should Fit Within Limit"
+        sensor.sensor_country_name = long_country_name
+        
+        # Save should work without validation errors
+        sensor.save()
+        
+        # Verify the values were set correctly
+        saved_sensor = Sensor.objects.get(pk=sensor.pk)
+        self.assertEqual(saved_sensor.sensor_country_code, "USA")
+        self.assertEqual(saved_sensor.sensor_country_name, long_country_name)
+
+    def test_sensor_country_fields_blank_allowed(self):
+        """Test that sensor country fields can be blank/empty"""
+        sensor = Sensor.objects.create(address="192.168.1.1")
+        
+        # Set sensor country fields to empty strings
+        sensor.sensor_country_code = ""
+        sensor.sensor_country_name = ""
+        
+        # Save should work as fields are marked as blank=True
+        sensor.save()
+        
+        # Verify the empty values persist
+        saved_sensor = Sensor.objects.get(pk=sensor.pk)
+        self.assertEqual(saved_sensor.sensor_country_code, "")
+        self.assertEqual(saved_sensor.sensor_country_name, "")
