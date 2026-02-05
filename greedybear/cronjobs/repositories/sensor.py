@@ -29,14 +29,16 @@ class SensorRepository:
         """
         return self.cache
 
-    def add_sensor(self, ip: str) -> bool:
+    def add_sensor(self, ip: str, country_code: str = None, country_name: str = None) -> bool:
         """
-        Add a new sensor IP address.
+        Add a new sensor IP address with optional country information.
         Validates that the IP is not already known and is a valid IP address
         before writing it to the database and updating the cache.
 
         Args:
-            ip: IP address string to add .
+            ip: IP address string to add.
+            country_code: Optional sensor country code.
+            country_name: Optional sensor country name.
 
         Returns:
             True if the sensor was added, False if already known or invalid.
@@ -46,7 +48,7 @@ class SensorRepository:
         if get_ioc_type(ip) != IP:
             self.log.debug(f"{ip} is not an IP address - won't add as a sensor")
             return False
-        sensor = Sensor(address=ip)
+        sensor = Sensor(address=ip, sensor_country_code=country_code or "", sensor_country_name=country_name or "")
         sensor.save()
         self.cache.add(ip)
         self.log.info(f"added sensor {ip} to the database")
