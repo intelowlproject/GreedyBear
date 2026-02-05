@@ -568,10 +568,28 @@ class IocsFromHitsTestCase(CustomTestCase):
 
         self.assertEqual(len(iocs), 1)
         ioc = iocs[0]
-        # Test that attacker country fields could potentially be set if the function supports it
-        # Note: This test verifies the fields exist and can be accessed
-        self.assertIsInstance(ioc.attacker_country_code, str)
-        self.assertIsInstance(ioc.attacker_country_name, str)
+        # Test that attacker country fields are properly extracted from geoip data
+        self.assertEqual(ioc.attacker_country_code, "US")
+        self.assertEqual(ioc.attacker_country_name, "United States")
+
+    def test_country_fields_with_country_iso_code(self):
+        """Test that attacker country fields fallback to country_iso_code when country_code2 is not available"""
+        hit = {
+            "src_ip": "8.8.8.8",
+            "dest_port": 22,
+            "@timestamp": "2025-01-01T12:00:00.000Z",
+            "type": "Cowrie",
+            "ip_rep": "",
+            "geoip": {"country_iso_code": "CA", "country_name": "Canada"},
+        }
+        hits = [hit]
+        iocs = iocs_from_hits(hits)
+
+        self.assertEqual(len(iocs), 1)
+        ioc = iocs[0]
+        # Test that attacker country fields fallback to country_iso_code
+        self.assertEqual(ioc.attacker_country_code, "CA")
+        self.assertEqual(ioc.attacker_country_name, "Canada")
 
     def test_attacker_country_code_max_length_validation(self):
         """Test that attacker country code fields respect max_length constraints"""

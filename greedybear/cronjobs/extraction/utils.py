@@ -112,8 +112,8 @@ def iocs_from_hits(hits: list[dict]) -> list[IOC]:
             continue
         # Extract attacker location from geoip
         geoip_data = hits[0].get("geoip", {})
-        attacker_country_code = geoip_data.get("country_code2") or geoip_data.get("country_iso_code")
-        attacker_country_name = geoip_data.get("country_name")
+        attacker_country_code = geoip_data.get("country_code2") or geoip_data.get("country_iso_code") or ""
+        attacker_country_name = geoip_data.get("country_name") or ""
 
         firehol_categories = get_firehol_categories(ip, extracted_ip)
 
