@@ -109,7 +109,7 @@ const feedsTableColumns = [
               <div>Logins: {formatInteger(login_attempts)}</div>
               <hr className="my-2" />
               <div className="text-muted">Enrichment</div>
-              <div>ASN: {formatInteger(asn)}</div>
+              <div>ASN: {asn ?? "-"}</div>
               <div>Reputation: {ip_reputation || "-"}</div>
             </PopoverBody>
           </UncontrolledPopover>
