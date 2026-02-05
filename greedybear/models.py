@@ -21,6 +21,8 @@ class IocType(models.TextChoices):
 
 class Sensor(models.Model):
     address = models.CharField(max_length=15, blank=False)
+    sensor_country_code = models.CharField(max_length=3, blank=True)
+    sensor_country_name = models.CharField(max_length=64, blank=True)
 
     def __str__(self):
         return self.address
@@ -64,8 +66,6 @@ class IOC(models.Model):
     general_honeypot = models.ManyToManyField(GeneralHoneypot, blank=True)
     attacker_country_code = models.CharField(max_length=3, blank=True)
     attacker_country_name = models.CharField(max_length=64, blank=True)
-    sensor_country_code = models.CharField(max_length=3, blank=True)
-    sensor_country_name = models.CharField(max_length=64, blank=True)
     scanner = models.BooleanField(blank=False, default=False)
     payload_request = models.BooleanField(blank=False, default=False)
     related_ioc = models.ManyToManyField("self", blank=True, symmetrical=True)
