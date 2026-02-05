@@ -101,7 +101,7 @@ class TestSensorExtraction(ExtractionPipelineTestCase):
 
         pipeline.execute()
 
-        pipeline.sensor_repo.add_sensor.assert_called_once_with("10.0.0.1")
+        pipeline.sensor_repo.add_sensor.assert_called_once_with("10.0.0.1", None, None)
         pipeline.elastic_repo.search.assert_called_once_with(10)
 
     @patch("greedybear.cronjobs.extraction.pipeline.UpdateScores")
