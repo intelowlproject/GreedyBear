@@ -1,7 +1,7 @@
 # This file is a part of GreedyBear https://github.com/honeynet/GreedyBear
 # See the file 'LICENSE' for copying permission.
 
-from celery import shared_task
+from celery import chain, shared_task
 
 from greedybear.settings import CLUSTER_COWRIE_COMMAND_SEQUENCES
 
@@ -38,6 +38,12 @@ def chain_train_and_update():
     updater = UpdateScores()
     updater.data = trainer.current_data
     updater.execute()
+
+
+# chain between extract all and train and update which ensures that training and updating is done only after extraction is done
+@shared_task()
+def train_and_update_after_midnight():
+    chain(extract_all.s(), chain_train_and_update.s())()
 
 
 # COMMANDS

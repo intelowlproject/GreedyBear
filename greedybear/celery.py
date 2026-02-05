@@ -69,19 +69,14 @@ app.conf.beat_schedule = {
         "options": {"queue": "default", "countdown": 10},
     },
     # ===========================================
-    # TIMING-CRITICAL: Training
-    # SCORING
-    # Important:
-    # The training task must be run with a small offset after midnight (00:00)
-    # to ensure training data aligns with complete calendar days.
-    # The small offset is to make sure that the midnight extraction task is completed before training.
-    # This way models learn from complete rather than partial day patterns, which is crucial for their performance.
+    # TIMING-CRITICAL: Midnight Training
+    # This wrapper ensures `chain_train_and_update` runs
+    # only after the midnight extraction completes using Celery chain.
+    # Scheduled at exactly 00:00.
     # ===========================================
-    "train_and_update": {
-        "task": "greedybear.tasks.chain_train_and_update",
-        # Sometimes this could start when the midnight extraction is not ended yet.
-        # Let's increment this a little.
-        "schedule": crontab(hour=0, minute=int(hp_extraction_interval / 3 * 2)),
+    "train_and_update_after_midnight": {
+        "task": "greedybear.tasks.train_and_update_after_midnight",
+        "schedule": crontab(hour=0, minute=0),
         "options": {"queue": "default"},
     },
     # ===========================================
@@ -90,12 +85,12 @@ app.conf.beat_schedule = {
     # ===========================================
     "monitor_honeypots": {
         "task": "greedybear.tasks.monitor_honeypots",
-        "schedule": crontab(minute=5),
+        "schedule": crontab(minute=7),
         "options": {"queue": "default"},
     },
     "monitor_logs": {
         "task": "greedybear.tasks.monitor_logs",
-        "schedule": crontab(minute=15),
+        "schedule": crontab(minute=7),
         "options": {"queue": "default"},
     },
     # ===========================================
@@ -107,33 +102,33 @@ app.conf.beat_schedule = {
     # once a day
     "command_clustering": {
         "task": "greedybear.tasks.cluster_commands",
-        "schedule": crontab(hour=1, minute=5),
+        "schedule": crontab(hour=1, minute=7),
         "options": {"queue": "default"},
     },
     # once a day
     "clean_up": {
         "task": "greedybear.tasks.clean_up_db",
-        "schedule": crontab(hour=1, minute=5),
+        "schedule": crontab(hour=1, minute=7),
         "options": {"queue": "default"},
     },
     "get_mass_scanners": {
         "task": "greedybear.tasks.get_mass_scanners",
-        "schedule": crontab(hour=1, minute=5, day_of_week=0),
+        "schedule": crontab(hour=1, minute=7, day_of_week=0),
         "options": {"queue": "default"},
     },
     "get_whatsmyip": {
         "task": "greedybear.tasks.get_whatsmyip",
-        "schedule": crontab(hour=1, minute=5, day_of_week=6),
+        "schedule": crontab(hour=1, minute=7, day_of_week=0),
         "options": {"queue": "default"},
     },
     "extract_firehol_lists": {
         "task": "greedybear.tasks.extract_firehol_lists",
-        "schedule": crontab(hour=1, minute=5, day_of_week=0),
+        "schedule": crontab(hour=1, minute=7, day_of_week=0),
         "options": {"queue": "default"},
     },
     "get_tor_exit_nodes": {
         "task": "greedybear.tasks.get_tor_exit_nodes",
-        "schedule": crontab(hour=1, minute=5, day_of_week=0),
+        "schedule": crontab(hour=1, minute=7, day_of_week=0),
         "options": {"queue": "default"},
     },
 }
