@@ -1,51 +1,46 @@
 import React from "react";
 import { ContentSection } from "@certego/certego-ui";
 import { Spinner } from "reactstrap";
-import { PUBLIC_URL } from "../../constants/environment";
+import { GREEDYBEAR_NEWS_URL } from "../../constants/api";
 
 export const NewsWidget = React.memo(() => {
   const [data, setData] = React.useState([]);
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState(false);
 
-  const parseDate = (dateStr) => {
-    try {
-      // removing the  ordinal suffixes like st, nd, rd, th from day numbers
-      const cleaned = dateStr.replace(/(\d+)(st|nd|rd|th)/, "$1");
-      const parsed = new Date(cleaned);
+  const formatDate = (dateStr) => {
+    if (!dateStr) return "";
 
-      // checking if date is valid
-      return isNaN(parsed.getTime()) ? new Date(0) : parsed;
-    } catch (e) {
-      console.error("Error parsing date:", dateStr, e);
-      return new Date(0);
-    }
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) return dateStr;
+
+    const day = date.getDate();
+    const month = date.toLocaleDateString("en-US", { month: "short" });
+    const year = date.getFullYear();
+
+    const ordinals = ["th", "st", "nd", "rd"];
+    const v = day % 100;
+    const ordinal = ordinals[(v - 20) % 10] || ordinals[v] || ordinals[0];
+
+    return `${day}${ordinal} ${month} ${year}`;
   };
 
   React.useEffect(() => {
-    fetch(`${PUBLIC_URL}/news.json`)
+    fetch(GREEDYBEAR_NEWS_URL)
       .then((response) => {
         if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
+          throw new Error(`HTTP error ${response.status}`);
         }
         return response.json();
       })
-      .then((newsData) => {
-        const filtered = newsData
-          .filter((item) => item.project === "greedybear")
-          .sort((a, b) => parseDate(b.date) - parseDate(a.date));
-        setData(filtered);
-      })
+      .then(setData)
       .catch((err) => {
         console.error("Error fetching news:", err);
         setError(true);
       })
-      .finally(() => {
-        setLoading(false);
-      });
+      .finally(() => setLoading(false));
   }, []);
 
-  // loading state
   if (loading) {
     return (
       <div className="d-flex justify-content-center align-items-center py-4">
@@ -55,7 +50,6 @@ export const NewsWidget = React.memo(() => {
     );
   }
 
-  // error state
   if (error) {
     return (
       <div className="d-flex justify-content-center align-items-center py-4">
@@ -66,7 +60,6 @@ export const NewsWidget = React.memo(() => {
     );
   }
 
-  // empty state
   if (data.length === 0) {
     return (
       <div className="d-flex justify-content-center align-items-center py-4">
@@ -78,13 +71,16 @@ export const NewsWidget = React.memo(() => {
   return (
     <>
       {data.map((item) => (
-        <ContentSection
-          key={item.id || item.title}
-          className="border-dark bg-body mb-3"
-        >
-          <small className="text-muted float-end">{item.date}</small>
+        <ContentSection key={item.link} className="border-dark bg-body mb-3">
+          {item.date && (
+            <small className="text-muted float-end">
+              {formatDate(item.date)}
+            </small>
+          )}
+
           <h5 className="text-secondary">{item.title}</h5>
-          <p className="mb-2 text-muted">{item.subText}</p>
+          <p className="mb-2 text-muted">{item.subtext}</p>
+
           <a
             className="link-ul-primary"
             href={item.link}
