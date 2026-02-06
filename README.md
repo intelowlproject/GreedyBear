@@ -9,10 +9,14 @@
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![CodeQL](https://github.com/intelowlproject/GreedyBear/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/intelowlproject/GreedyBear/actions/workflows/codeql-analysis.yml)
 [![Dependency Review](https://github.com/intelowlproject/GreedyBear/actions/workflows/dependency_review.yml/badge.svg)](https://github.com/intelowlproject/GreedyBear/actions/workflows/dependency_review.yml)
-[![Pull request automation](https://github.com/intelowlproject/GreedyBear/actions/workflows/pull_request_automation.yml/badge.svg)](https://github.com/intelowlproject/GreedyBear/actions/workflows/pull_request_automation.yml)
+[![Pull request automation](https://github.com/intelowlproject/GreedyBear/actions/workflow## GSoC 2026 - Filesystem Payload Integrations/pull_request_automation.yml/badge.svg)](https://github.com/intelowlproject/GreedyBear/actions/workflows/pull_request_automation.yml)
 
 The project goal is to extract data of the attacks detected by a [TPOT](https://github.com/telekom-security/tpotce) or a cluster of them and to generate some feeds that can be used to prevent and detect attacks.
 
+## GSoC 2026 - Filesystem Payload Integration
+
+**@parthnayyar07** is working on [Issue #558](https://github.com/intelowlproject/GreedyBear/issues/558):  
+Integrating Dionaea filesystem payloads (`~/tpotce/data`) into GreedyBear feeds.
 [Official announcement here](https://www.honeynet.org/2021/12/27/new-project-available-greedybear/).
 
 ## Documentation
