@@ -2,12 +2,17 @@
 # See the file 'LICENSE' for copying permission.
 
 from celery import chain, shared_task
+from django.utils import timezone
 
 from greedybear.settings import CLUSTER_COWRIE_COMMAND_SEQUENCES
 
 
 @shared_task()
-def extract_all():
+def extract_all(is_midnight_chain=False):
+    now = timezone.now()
+    if now.hour == 0 and now.minute == 0 and not is_midnight_chain:
+        return "Skipped regular midnight extraction"
+
     from greedybear.cronjobs.extract import ExtractionJob
 
     ExtractionJob().execute()
@@ -29,7 +34,7 @@ def monitor_logs():
 
 # SCORING
 @shared_task()
-def chain_train_and_update():
+def chain_train_and_update(*args, **kwargs):
     from greedybear.cronjobs.scoring.scoring_jobs import TrainModels, UpdateScores
 
     trainer = TrainModels()
@@ -40,10 +45,10 @@ def chain_train_and_update():
     updater.execute()
 
 
-# chain between extract all and train and update which ensures that training and updating is done only after extraction is done
+# Midnight chain between extract all and train and update which ensures that training and updating is done only after extraction is done
 @shared_task()
 def train_and_update_after_midnight():
-    chain(extract_all.s(), chain_train_and_update.s())()
+    chain(extract_all.s(is_midnight_chain=True), chain_train_and_update.s())()
 
 
 # COMMANDS
