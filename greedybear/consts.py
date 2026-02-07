@@ -31,7 +31,7 @@ REQUIRED_FIELDS = [
 ]
 
 
-# Api where the source of news lies
+# API consist of news list.
 GITHUB_BLOG_API = "https://api.github.com/repos/intelowlproject/intelowlproject.github.io/contents/Blogs"
 
 # location of the full blog that are hosted in web

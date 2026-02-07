@@ -888,7 +888,7 @@ class NewsViewTestCase(CustomTestCase):
         cached_data = [{"title": "Cached GreedyBear Post", "date": "2024-01-01", "link": "https://example.com", "subtext": "Cached content"}]
         cache.set(CACHE_KEY_GREEDYBEAR_NEWS, cached_data, 300)
 
-        response = self.client.get("/api/news/")  # Adjust URL to match your urls.py
+        response = self.client.get("/api/news/")
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data, cached_data)
