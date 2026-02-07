@@ -81,7 +81,7 @@ app.conf.beat_schedule = {
     },
     # ===========================================
     # HOURLY: Monitoring Tasks
-    # Run at :05 and :15 (avoiding extraction slots)
+    # Run at :07 (avoiding extraction slots)
     # ===========================================
     "monitor_honeypots": {
         "task": "greedybear.tasks.monitor_honeypots",
@@ -95,7 +95,7 @@ app.conf.beat_schedule = {
     },
     # ===========================================
     # DAILY/WEEKLY: Maintenance Tasks
-    # All bundled at 1:05 AM
+    # All bundled at 1:07 AM
     # Timing not critical - Celery queues sequentially
     # Avoids extraction slots at 1:00 and 1:10
     # ===========================================
