@@ -88,6 +88,7 @@ const feedsTableColumns = [
             outline
             size="xs"
             Icon={FiInfo}
+            aria-label="View details"
           />
           <UncontrolledPopover
             trigger="focus"
@@ -100,7 +101,9 @@ const feedsTableColumns = [
               <div>Recurrence: {formatPercent(recurrence_probability)}</div>
               <div>
                 Expected Interactions:{" "}
-                {formatInteger(Math.round(expected_interactions))}
+                {expected_interactions != null
+                  ? Math.round(expected_interactions)
+                  : null}
               </div>
               <hr className="my-2" />
               <div className="text-muted">Activity</div>
