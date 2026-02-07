@@ -101,9 +101,11 @@ const feedsTableColumns = [
               <div>Recurrence: {formatPercent(recurrence_probability)}</div>
               <div>
                 Expected Interactions:{" "}
-                {expected_interactions != null
-                  ? Math.round(expected_interactions)
-                  : null}
+                {formatInteger(
+                  expected_interactions != null
+                    ? Math.round(expected_interactions)
+                    : null
+                )}
               </div>
               <hr className="my-2" />
               <div className="text-muted">Activity</div>
