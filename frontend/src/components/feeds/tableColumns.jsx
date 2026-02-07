@@ -69,8 +69,6 @@ const feedsTableColumns = [
     accessor: "details",
     Cell: ({ row }) => {
       const {
-        scanner,
-        payload_request,
         recurrence_probability,
         expected_interactions,
         interaction_count,
