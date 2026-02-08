@@ -49,7 +49,7 @@ class TestCowrieE2E(E2ETestCase):
             result = pipeline.execute()
 
         # Verify sensor was extracted
-        pipeline.sensor_repo.add_sensor.assert_called_with("10.0.0.1", None, None)
+        pipeline.sensor_repo.add_sensor.assert_called_with("10.0.0.1", None)
         # Verify IOC was created
         self.assertGreaterEqual(result, 0)
 
