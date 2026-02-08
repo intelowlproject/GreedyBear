@@ -21,7 +21,6 @@ class IocType(models.TextChoices):
 
 class Sensor(models.Model):
     address = models.CharField(max_length=15, blank=False)
-    sensor_country_code = models.CharField(max_length=3, blank=True)
     sensor_country_name = models.CharField(max_length=64, blank=True)
 
     def __str__(self):
@@ -64,7 +63,6 @@ class IOC(models.Model):
     interaction_count = models.IntegerField(default=1)
     # FEEDS - list of honeypots from general list, from which the IOC was detected
     general_honeypot = models.ManyToManyField(GeneralHoneypot, blank=True)
-    attacker_country_code = models.CharField(max_length=3, blank=True)
     attacker_country_name = models.CharField(max_length=64, blank=True)
     scanner = models.BooleanField(blank=False, default=False)
     payload_request = models.BooleanField(blank=False, default=False)

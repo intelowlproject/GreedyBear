@@ -112,7 +112,6 @@ def iocs_from_hits(hits: list[dict]) -> list[IOC]:
             continue
         # Extract attacker location from geoip
         geoip_data = hits[0].get("geoip", {})
-        attacker_country_code = geoip_data.get("country_code2") or geoip_data.get("country_iso_code") or ""
         attacker_country_name = geoip_data.get("country_name") or ""
 
         firehol_categories = get_firehol_categories(ip, extracted_ip)
@@ -124,7 +123,6 @@ def iocs_from_hits(hits: list[dict]) -> list[IOC]:
             ip_reputation=correct_ip_reputation(ip, hits[0].get("ip_rep", "")),
             asn=hits[0].get("geoip", {}).get("asn"),
             destination_ports=sorted(set(dest_ports)),
-            attacker_country_code=attacker_country_code,
             attacker_country_name=attacker_country_name,
             login_attempts=len(hits) if hits[0].get("type", "") == "Heralding" else 0,
             firehol_categories=firehol_categories,

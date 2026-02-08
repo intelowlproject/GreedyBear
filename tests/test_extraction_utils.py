@@ -549,8 +549,7 @@ class IocsFromHitsTestCase(CustomTestCase):
 
         self.assertEqual(len(iocs), 1)
         ioc = iocs[0]
-        # Attacker country fields should be initialized as empty strings
-        self.assertEqual(ioc.attacker_country_code, "")
+        # Attacker country field should be initialized as empty string
         self.assertEqual(ioc.attacker_country_name, "")
 
     def test_country_fields_with_geoip_data(self):
@@ -568,12 +567,11 @@ class IocsFromHitsTestCase(CustomTestCase):
 
         self.assertEqual(len(iocs), 1)
         ioc = iocs[0]
-        # Test that attacker country fields are properly extracted from geoip data
-        self.assertEqual(ioc.attacker_country_code, "US")
+        # Test that attacker country field is properly extracted from geoip data
         self.assertEqual(ioc.attacker_country_name, "United States")
 
     def test_country_fields_with_country_iso_code(self):
-        """Test that attacker country fields fallback to country_iso_code when country_code2 is not available"""
+        """Test that attacker country field uses country_name when available"""
         hit = {
             "src_ip": "8.8.8.8",
             "dest_port": 22,
@@ -587,19 +585,14 @@ class IocsFromHitsTestCase(CustomTestCase):
 
         self.assertEqual(len(iocs), 1)
         ioc = iocs[0]
-        # Test that attacker country fields fallback to country_iso_code
-        self.assertEqual(ioc.attacker_country_code, "CA")
+        # Test that attacker country name is extracted from geoip data
         self.assertEqual(ioc.attacker_country_name, "Canada")
 
-    def test_attacker_country_code_max_length_validation(self):
-        """Test that attacker country code fields respect max_length constraints"""
+    def test_attacker_country_name_max_length_validation(self):
+        """Test that attacker country name field respects max_length constraint"""
         hits = [self._create_hit(src_ip="8.8.8.8")]
         iocs = iocs_from_hits(hits)
         ioc = iocs[0]
-
-        # Verify that attacker country code fields have the expected max length constraints
-        # attacker_country_code should be max 3 chars
-        ioc.attacker_country_code = "USA"
 
         # attacker_country_name should be max 64 chars
         long_country_name = "Very Long Country Name That Should Fit Within Limit"
@@ -608,27 +601,24 @@ class IocsFromHitsTestCase(CustomTestCase):
         # Save should work without validation errors
         ioc.save()
 
-        # Verify the values were set correctly
+        # Verify the value was set correctly
         saved_ioc = type(ioc).objects.get(pk=ioc.pk)
-        self.assertEqual(saved_ioc.attacker_country_code, "USA")
         self.assertEqual(saved_ioc.attacker_country_name, long_country_name)
 
     def test_attacker_country_fields_blank_allowed(self):
-        """Test that attacker country fields can be blank/empty"""
+        """Test that attacker country field can be blank/empty"""
         hits = [self._create_hit(src_ip="8.8.8.8")]
         iocs = iocs_from_hits(hits)
         ioc = iocs[0]
 
-        # Set attacker country fields to empty strings
-        ioc.attacker_country_code = ""
+        # Set attacker country field to empty string
         ioc.attacker_country_name = ""
 
-        # Save should work as fields are marked as blank=True
+        # Save should work as field is marked as blank=True
         ioc.save()
 
-        # Verify the empty values persist
+        # Verify the empty value persists
         saved_ioc = type(ioc).objects.get(pk=ioc.pk)
-        self.assertEqual(saved_ioc.attacker_country_code, "")
         self.assertEqual(saved_ioc.attacker_country_name, "")
 
 
@@ -768,19 +758,15 @@ class TestSensorModel(CustomTestCase):
         self.assertEqual(sensors.count(), 2)
 
     def test_sensor_country_fields_initialization(self):
-        """Test that sensor country fields are properly initialized with default values"""
+        """Test that sensor country field is properly initialized with default value"""
         sensor = Sensor.objects.create(address="192.168.1.1")
 
-        # Sensor country fields should be initialized as empty strings
-        self.assertEqual(sensor.sensor_country_code, "")
+        # Sensor country field should be initialized as empty string
         self.assertEqual(sensor.sensor_country_name, "")
 
-    def test_sensor_country_fields_max_length_validation(self):
-        """Test that sensor country fields respect max_length constraints"""
+    def test_sensor_country_name_max_length_validation(self):
+        """Test that sensor country name field respects max_length constraint"""
         sensor = Sensor.objects.create(address="192.168.1.1")
-
-        # sensor_country_code should be max 3 chars
-        sensor.sensor_country_code = "USA"
 
         # sensor_country_name should be max 64 chars
         long_country_name = "Very Long Country Name That Should Fit Within Limit"
@@ -789,23 +775,20 @@ class TestSensorModel(CustomTestCase):
         # Save should work without validation errors
         sensor.save()
 
-        # Verify the values were set correctly
+        # Verify the value was set correctly
         saved_sensor = Sensor.objects.get(pk=sensor.pk)
-        self.assertEqual(saved_sensor.sensor_country_code, "USA")
         self.assertEqual(saved_sensor.sensor_country_name, long_country_name)
 
     def test_sensor_country_fields_blank_allowed(self):
-        """Test that sensor country fields can be blank/empty"""
+        """Test that sensor country field can be blank/empty"""
         sensor = Sensor.objects.create(address="192.168.1.1")
 
-        # Set sensor country fields to empty strings
-        sensor.sensor_country_code = ""
+        # Set sensor country field to empty string
         sensor.sensor_country_name = ""
 
-        # Save should work as fields are marked as blank=True
+        # Save should work as field is marked as blank=True
         sensor.save()
 
-        # Verify the empty values persist
+        # Verify the empty value persists
         saved_sensor = Sensor.objects.get(pk=sensor.pk)
-        self.assertEqual(saved_sensor.sensor_country_code, "")
         self.assertEqual(saved_sensor.sensor_country_name, "")
