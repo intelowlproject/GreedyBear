@@ -20,7 +20,7 @@ class IocType(models.TextChoices):
 
 
 class Sensor(models.Model):
-    address = models.CharField(max_length=15, blank=False)
+    address = models.CharField(max_length=15, blank=False, unique=True)
 
     def __str__(self):
         return self.address

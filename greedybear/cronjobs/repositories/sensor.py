@@ -36,10 +36,10 @@ class SensorRepository:
         if get_ioc_type(ip) != IP:
             self.log.debug(f"{ip} is not an IP address - won't add as a sensor")
             return None
-        sensor = Sensor(address=ip)
-        sensor.save()
+        sensor, created = Sensor.objects.get_or_create(address=ip)
         self.cache[ip] = sensor
-        self.log.info(f"added sensor {ip} to the database")
+        if created:
+            self.log.info(f"added sensor {ip} to the database")
         return sensor
 
     def _fill_cache(self) -> None:
