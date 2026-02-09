@@ -3,7 +3,7 @@ import logging
 from greedybear.consts import PAYLOAD_REQUEST, SCANNER
 from greedybear.cronjobs.extraction.utils import is_whatsmyip_domain
 from greedybear.cronjobs.repositories import IocRepository, SensorRepository
-from greedybear.models import IOC, IocType, Sensor
+from greedybear.models import IOC, IocType
 
 
 class IocProcessor:
@@ -31,7 +31,6 @@ class IocProcessor:
         ioc: IOC,
         attack_type: str,
         general_honeypot_name: str = None,
-        sensor: Sensor = None,
     ) -> IOC | None:
         """
         Process an IOC record.
@@ -43,7 +42,6 @@ class IocProcessor:
             ioc: IOC instance to process.
             attack_type: Type of attack (SCANNER or PAYLOAD_REQUEST).
             general_honeypot_name: Optional honeypot name to associate with the IOC.
-            sensor: Optional Sensor instance to associate with the IOC.
 
         Returns:
             The persisted IOC record, or None if filtered out.
@@ -62,15 +60,16 @@ class IocProcessor:
         if ioc_record is None:  # Create
             self.log.debug(f"{ioc} was not seen before - creating a new record")
             ioc_record = self.ioc_repo.save(ioc)
-        else:  # Update
+            # Add sensors to newly saved IOC
+            if hasattr(ioc, "_sensors_to_add") and ioc._sensors_to_add:
+                for sensor in ioc._sensors_to_add:
+                    ioc_record.sensors.add(sensor)
+        else:  # Update - sensors handled inside _merge_iocs
             self.log.debug(f"{ioc} is already known - updating record")
             ioc_record = self._merge_iocs(ioc_record, ioc)
 
         if general_honeypot_name is not None:
             ioc_record = self.ioc_repo.add_honeypot_to_ioc(general_honeypot_name, ioc_record)
-
-        if sensor is not None:
-            ioc_record = self.ioc_repo.add_sensor_to_ioc(sensor, ioc_record)
 
         ioc_record = self._update_days_seen(ioc_record)
         ioc_record.scanner = ioc_record.scanner or (attack_type == SCANNER)
@@ -82,7 +81,7 @@ class IocProcessor:
     def _merge_iocs(self, existing: IOC, new: IOC) -> IOC:
         """
         Merge a new IOC's data into an existing record.
-        Updates timestamps, increments counters, and combines list fields.
+        Updates timestamps, increments counters, combines list fields, and adds sensors.
 
         Args:
             existing: The existing IOC record from the database.
@@ -99,6 +98,12 @@ class IocProcessor:
         existing.ip_reputation = new.ip_reputation
         existing.asn = new.asn
         existing.login_attempts += new.login_attempts
+
+        # Add sensors from new IOC (existing is already saved, so ManyToMany works)
+        if hasattr(new, "_sensors_to_add") and new._sensors_to_add:
+            for sensor in new._sensors_to_add:
+                existing.sensors.add(sensor)
+
         return existing
 
     def _update_days_seen(self, ioc: IOC) -> IOC:

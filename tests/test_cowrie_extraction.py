@@ -332,8 +332,8 @@ class TestCowrieExtractionStrategy(ExtractionTestCase):
     def test_extract_from_hits_integration(self, mock_iocs_from_hits):
         """Test the main extract_from_hits coordination."""
         mock_ioc = Mock(name="1.2.3.4")
-        # Return tuple (ioc, sensors) as expected by the new format
-        mock_iocs_from_hits.return_value = [(mock_ioc, [])]
+        # Return list of IOCs as expected by the new format
+        mock_iocs_from_hits.return_value = [mock_ioc]
 
         mock_ioc_record = Mock()
         self.strategy.ioc_processor.add_ioc.return_value = mock_ioc_record

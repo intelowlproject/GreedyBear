@@ -104,15 +104,9 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
 
     def _get_scanners(self, hits: list[dict]) -> None:
         """Extract scanner IPs and sessions."""
-        for ioc, sensors in iocs_from_hits(hits):
+        for ioc in iocs_from_hits(hits):
             self.log.info(f"found IP {ioc.name} by honeypot cowrie")
-            # Process IoC once with first sensor (or None)
-            first_sensor = sensors[0] if sensors else None
-            ioc_record = self.ioc_processor.add_ioc(ioc, attack_type=SCANNER, general_honeypot_name="Cowrie", sensor=first_sensor)
-            # Add remaining sensors if any
-            if ioc_record and len(sensors) > 1:
-                for sensor in sensors[1:]:
-                    self.ioc_repo.add_sensor_to_ioc(sensor, ioc_record)
+            ioc_record = self.ioc_processor.add_ioc(ioc, attack_type=SCANNER, general_honeypot_name="Cowrie")
             if ioc_record:
                 self.ioc_records.append(ioc_record)
                 threatfox_submission(ioc_record, ioc.related_urls, self.log)
@@ -154,7 +148,9 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
                 related_urls=[payload_url],
             )
             sensor = hit.get("_sensor")
-            self.ioc_processor.add_ioc(ioc, attack_type=PAYLOAD_REQUEST, general_honeypot_name="Cowrie", sensor=sensor)
+            if sensor:
+                ioc._sensors_to_add = [sensor]
+            self.ioc_processor.add_ioc(ioc, attack_type=PAYLOAD_REQUEST, general_honeypot_name="Cowrie")
             self._add_fks(scanner_ip, payload_hostname)
             self.payloads_in_message += 1
 
@@ -189,7 +185,9 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
                     related_urls=[download_url],
                 )
                 sensor = hit.get("_sensor")
-                ioc_record = self.ioc_processor.add_ioc(ioc, attack_type=PAYLOAD_REQUEST, general_honeypot_name="Cowrie", sensor=sensor)
+                if sensor:
+                    ioc._sensors_to_add = [sensor]
+                ioc_record = self.ioc_processor.add_ioc(ioc, attack_type=PAYLOAD_REQUEST, general_honeypot_name="Cowrie")
                 if ioc_record:
                     self.added_url_downloads += 1
                     threatfox_submission(ioc_record, ioc.related_urls, self.log)

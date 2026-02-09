@@ -123,39 +123,6 @@ class TestIocRepository(CustomTestCase):
         self.assertIn(hp1, ioc.general_honeypot.all())
         self.assertIn(hp2, ioc.general_honeypot.all())
 
-    def test_add_sensor_to_ioc_adds_new_sensor(self):
-        from greedybear.models import Sensor
-
-        ioc = IOC.objects.create(name="1.2.3.4", type="ip")
-        sensor = Sensor.objects.create(address="10.0.0.1")
-        result = self.repo.add_sensor_to_ioc(sensor, ioc)
-        self.assertIn(sensor, result.sensors.all())
-        self.assertEqual(ioc.sensors.count(), 1)
-
-    def test_add_sensor_to_ioc_idempotent(self):
-        from greedybear.models import Sensor
-
-        ioc = IOC.objects.create(name="1.2.3.4", type="ip")
-        sensor = Sensor.objects.create(address="10.0.0.1")
-        self.repo.add_sensor_to_ioc(sensor, ioc)
-        initial_count = ioc.sensors.count()
-        # Add same sensor again - should be idempotent
-        result = self.repo.add_sensor_to_ioc(sensor, ioc)
-        self.assertEqual(result.sensors.count(), initial_count)
-        self.assertEqual(ioc.sensors.count(), 1)
-
-    def test_add_sensor_to_ioc_multiple_sensors(self):
-        from greedybear.models import Sensor
-
-        ioc = IOC.objects.create(name="1.2.3.4", type="ip")
-        sensor1 = Sensor.objects.create(address="10.0.0.1")
-        sensor2 = Sensor.objects.create(address="10.0.0.2")
-        self.repo.add_sensor_to_ioc(sensor1, ioc)
-        self.repo.add_sensor_to_ioc(sensor2, ioc)
-        self.assertEqual(ioc.sensors.count(), 2)
-        self.assertIn(sensor1, ioc.sensors.all())
-        self.assertIn(sensor2, ioc.sensors.all())
-
     def test_existing_honeypots(self):
         expected_honeypots = ["Cowrie", "Log4pot", "Heralding", "Ciscoasa", "Ddospot"]
         for hp_name in expected_honeypots:

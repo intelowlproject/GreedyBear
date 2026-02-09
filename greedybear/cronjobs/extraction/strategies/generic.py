@@ -21,15 +21,9 @@ class GenericExtractionStrategy(BaseExtractionStrategy):
         Args:
             hits: List of Elasticsearch hits to process.
         """
-        for ioc, sensors in iocs_from_hits(hits):
+        for ioc in iocs_from_hits(hits):
             self.log.info(f"IoC {ioc.name} found by honeypot {self.honeypot}")
-            # Process IoC once with first sensor (or None)
-            first_sensor = sensors[0] if sensors else None
-            ioc_record = self.ioc_processor.add_ioc(ioc, attack_type=SCANNER, general_honeypot_name=self.honeypot, sensor=first_sensor)
-            # Add remaining sensors if any
-            if ioc_record and len(sensors) > 1:
-                for sensor in sensors[1:]:
-                    self.ioc_repo.add_sensor_to_ioc(sensor, ioc_record)
+            ioc_record = self.ioc_processor.add_ioc(ioc, attack_type=SCANNER, general_honeypot_name=self.honeypot)
             if ioc_record:
                 self.ioc_records.append(ioc_record)
                 threatfox_submission(ioc_record, ioc.related_urls, self.log)

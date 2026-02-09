@@ -100,6 +100,21 @@ class TestAddIoc(ExtractionTestCase):
 
         self.mock_ioc_repo.add_honeypot_to_ioc.assert_not_called()
 
+    def test_adds_sensors_from_attribute(self):
+        self.mock_sensor_repo.sensors = set()
+        self.mock_ioc_repo.get_ioc_by_name.return_value = None
+        ioc = self._create_mock_ioc()
+        sensor1 = Mock()
+        sensor2 = Mock()
+        ioc._sensors_to_add = [sensor1, sensor2]
+
+        self.mock_ioc_repo.save.return_value = ioc
+
+        self.processor.add_ioc(ioc, attack_type=SCANNER)
+
+        ioc.sensors.add.assert_any_call(sensor1)
+        ioc.sensors.add.assert_any_call(sensor2)
+
     def test_updates_days_seen_on_add(self):
         self.mock_sensor_repo.sensors = set()
         self.mock_ioc_repo.get_ioc_by_name.return_value = None
