@@ -3,4 +3,4 @@ export const GREEDYBEAR_DOCS_URL =
 
 // env variables
 export const VERSION = import.meta.env.REACT_APP_GREEDYBEAR_VERSION;
-export const PUBLIC_URL = import.meta.env.BASE_URL.replace(/\/$/, '');
+export const PUBLIC_URL = import.meta.env.BASE_URL.replace(/\/$/, "");

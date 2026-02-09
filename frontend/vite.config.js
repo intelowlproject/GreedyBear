@@ -26,4 +26,5 @@ export default defineConfig({
     build: {
         outDir: 'build',
     },
+    base: process.env.PUBLIC_URL || '/',
 });
