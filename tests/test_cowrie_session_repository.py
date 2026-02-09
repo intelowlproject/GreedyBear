@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from django.db import IntegrityError
 
 from greedybear.cronjobs.repositories import CowrieSessionRepository
-from greedybear.models import IOC, CommandSequence, CowrieSession
+from greedybear.models import IOC, CommandSequence, CowrieCredential, CowrieSession
 
 from . import CustomTestCase
 
@@ -173,3 +173,161 @@ class TestCowrieSessionRepositoryCleanup(CustomTestCase):
         self.assertEqual(deleted_count, 1)
         self.assertFalse(CowrieSession.objects.filter(session_id=777).exists())
         self.assertTrue(CowrieSession.objects.filter(session_id=888).exists())
+
+
+class TestCowrieCredentialRepository(CustomTestCase):
+    """Tests for credential-related methods in CowrieSessionRepository."""
+
+    def setUp(self):
+        self.repo = CowrieSessionRepository()
+
+    def test_save_credential_creates_new(self):
+        """Test save_credential creates a new credential and links to session."""
+        source = IOC.objects.create(name="1.2.3.4", type="ip")
+        session = CowrieSession.objects.create(session_id=11111, source=source)
+
+        created = self.repo.save_credential(session, "admin", "password123")
+
+        self.assertTrue(created)
+        self.assertEqual(session.credentials.count(), 1)
+        cred = session.credentials.first()
+        self.assertEqual(cred.username, "admin")
+        self.assertEqual(cred.password, "password123")
+
+    def test_save_credential_reuses_existing(self):
+        """Test save_credential reuses existing credential when duplicate."""
+        source = IOC.objects.create(name="1.2.3.4", type="ip")
+        session1 = CowrieSession.objects.create(session_id=22222, source=source)
+        session2 = CowrieSession.objects.create(session_id=33333, source=source)
+
+        # Create via first session
+        created1 = self.repo.save_credential(session1, "root", "toor")
+        # Link same credential to second session
+        created2 = self.repo.save_credential(session2, "root", "toor")
+
+        self.assertTrue(created1)
+        self.assertFalse(created2)
+
+        # Both sessions should share the same credential object
+        cred1 = session1.credentials.first()
+        cred2 = session2.credentials.first()
+        self.assertEqual(cred1.id, cred2.id)
+
+    def test_save_credentials_creates_multiple(self):
+        """Test save_credentials creates multiple credentials for a session."""
+        source = IOC.objects.create(name="1.2.3.4", type="ip")
+        session = CowrieSession.objects.create(session_id=44444, source=source)
+
+        credentials_list = [
+            ("user1", "pass1"),
+            ("user2", "pass2"),
+            ("user3", "pass3"),
+        ]
+        created_count = self.repo.save_credentials(session, credentials_list)
+
+        self.assertEqual(created_count, 3)
+        self.assertEqual(session.credentials.count(), 3)
+
+    def test_save_credentials_deduplicates(self):
+        """Test save_credentials deduplicates identical credentials."""
+        source = IOC.objects.create(name="1.2.3.4", type="ip")
+        session = CowrieSession.objects.create(session_id=55555, source=source)
+
+        # List with duplicates
+        credentials_list = [
+            ("admin", "admin"),
+            ("admin", "admin"),
+            ("root", "root"),
+        ]
+        created_count = self.repo.save_credentials(session, credentials_list)
+
+        # Only 2 unique credentials created
+        self.assertEqual(created_count, 2)
+        # But session has all 3 links (add() is called 3 times, but M2M auto-dedupes)
+        self.assertEqual(session.credentials.count(), 2)
+
+    def test_save_credentials_returns_zero_for_all_existing(self):
+        """Test save_credentials returns 0 when all credentials already exist."""
+        source = IOC.objects.create(name="1.2.3.4", type="ip")
+        session1 = CowrieSession.objects.create(session_id=66666, source=source)
+        session2 = CowrieSession.objects.create(session_id=77777, source=source)
+
+        # Create credentials via first session
+        self.repo.save_credentials(session1, [("a", "b"), ("c", "d")])
+
+        # Link same credentials to second session
+        created_count = self.repo.save_credentials(session2, [("a", "b"), ("c", "d")])
+
+        self.assertEqual(created_count, 0)
+        self.assertEqual(session2.credentials.count(), 2)
+
+    def test_delete_orphan_credentials_removes_unlinked(self):
+        """Test delete_orphan_credentials removes credentials with no sessions."""
+        source = IOC.objects.create(name="1.2.3.4", type="ip")
+        session = CowrieSession.objects.create(session_id=88888, source=source)
+
+        # Create credential linked to session
+        linked_cred = CowrieCredential.objects.create(username="linked", password="pass")
+        session.credentials.add(linked_cred)
+
+        # Create orphan credential (not linked to any session)
+        orphan_cred = CowrieCredential.objects.create(username="orphan", password="pass")
+
+        deleted_count = self.repo.delete_orphan_credentials()
+
+        self.assertEqual(deleted_count, 1)
+        self.assertTrue(CowrieCredential.objects.filter(id=linked_cred.id).exists())
+        self.assertFalse(CowrieCredential.objects.filter(id=orphan_cred.id).exists())
+
+    def test_delete_orphan_credentials_after_session_delete(self):
+        """Test orphan cleanup works after session deletion."""
+        source = IOC.objects.create(name="1.2.3.4", type="ip")
+        session = CowrieSession.objects.create(session_id=99999, source=source)
+
+        # Create and link credential
+        cred = CowrieCredential.objects.create(username="temp", password="temp")
+        session.credentials.add(cred)
+        cred_id = cred.id
+
+        # Credential exists and is linked
+        self.assertTrue(CowrieCredential.objects.filter(id=cred_id).exists())
+
+        # Delete session
+        session.delete()
+
+        # Credential still exists (M2M doesn't cascade delete)
+        self.assertTrue(CowrieCredential.objects.filter(id=cred_id).exists())
+
+        # Now it's orphaned, cleanup should remove it
+        deleted_count = self.repo.delete_orphan_credentials()
+
+        self.assertEqual(deleted_count, 1)
+        self.assertFalse(CowrieCredential.objects.filter(id=cred_id).exists())
+
+    def test_delete_orphan_credentials_preserves_shared(self):
+        """Test orphan cleanup preserves credentials shared across sessions."""
+        source = IOC.objects.create(name="1.2.3.4", type="ip")
+        session1 = CowrieSession.objects.create(session_id=111111, source=source)
+        session2 = CowrieSession.objects.create(session_id=222222, source=source)
+
+        # Create credential linked to both sessions
+        shared_cred = CowrieCredential.objects.create(username="shared", password="pass")
+        session1.credentials.add(shared_cred)
+        session2.credentials.add(shared_cred)
+        shared_cred_id = shared_cred.id
+
+        # Delete one session
+        session1.delete()
+
+        # Credential should NOT be deleted (still linked to session2)
+        deleted_count = self.repo.delete_orphan_credentials()
+        self.assertEqual(deleted_count, 0)
+        self.assertTrue(CowrieCredential.objects.filter(id=shared_cred_id).exists())
+
+        # Delete second session
+        session2.delete()
+
+        # Now it's orphaned
+        deleted_count = self.repo.delete_orphan_credentials()
+        self.assertEqual(deleted_count, 1)
+        self.assertFalse(CowrieCredential.objects.filter(id=shared_cred_id).exists())

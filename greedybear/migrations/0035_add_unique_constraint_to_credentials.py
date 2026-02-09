@@ -13,6 +13,6 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AlterUniqueTogether(
             name="cowriecredential",
-            unique_together={("session", "username", "password")},
+            unique_together={("username", "password")},
         ),
     ]

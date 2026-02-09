@@ -86,11 +86,11 @@ class CowrieSessionRepository:
         Returns:
             True if a new credential was created, False if it already existed.
         """
-        _, created = CowrieCredential.objects.get_or_create(
-            session=session,
+        credential, created = CowrieCredential.objects.get_or_create(
             username=username,
             password=password,
         )
+        session.credentials.add(credential)
         return created
 
     def save_credentials(self, session: CowrieSession, credentials_list: list[tuple[str, str]]) -> int:
@@ -106,14 +106,27 @@ class CowrieSessionRepository:
         """
         created_count = 0
         for username, password in credentials_list:
-            _, created = CowrieCredential.objects.get_or_create(
-                session=session,
+            credential, created = CowrieCredential.objects.get_or_create(
                 username=username,
                 password=password,
             )
+            session.credentials.add(credential)
             if created:
                 created_count += 1
         return created_count
+
+    def delete_orphan_credentials(self) -> int:
+        """
+        Delete credentials not linked to any sessions.
+
+        With the M2M relationship, credentials persist after sessions are deleted.
+        This cleans up orphan credential records.
+
+        Returns:
+            Number of orphan credentials deleted.
+        """
+        deleted_count, _ = CowrieCredential.objects.filter(sessions__isnull=True).delete()
+        return deleted_count
 
     def delete_old_command_sequences(self, cutoff_date) -> int:
         """

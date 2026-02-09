@@ -80,7 +80,7 @@ def cowrie_session_view(request):
         return HttpResponseBadRequest("Missing required 'query' parameter")
 
     if is_ip_address(observable):
-        sessions = CowrieSession.objects.filter(source__name=observable, duration__gt=0).prefetch_related("source", "commands", "credential_set")
+        sessions = CowrieSession.objects.filter(source__name=observable, duration__gt=0).prefetch_related("source", "commands", "credentials")
         if not sessions.exists():
             raise Http404(f"No information found for IP: {observable}")
 
@@ -93,23 +93,21 @@ def cowrie_session_view(request):
     elif len(observable) == 64 and is_sha256hash(observable):
         try:
             commands = CommandSequence.objects.get(commands_hash=observable.lower())
-            sessions = CowrieSession.objects.filter(commands=commands, duration__gt=0).prefetch_related("source", "commands", "credential_set")
+            sessions = CowrieSession.objects.filter(commands=commands, duration__gt=0).prefetch_related("source", "commands", "credentials")
         except CommandSequence.DoesNotExist:
             sessions = (
-                CowrieSession.objects.filter(credential_set__password=observable, duration__gt=0)
-                .distinct()
-                .prefetch_related("source", "commands", "credential_set")
+                CowrieSession.objects.filter(credentials__password=observable, duration__gt=0).distinct().prefetch_related("source", "commands", "credentials")
             )
             if not sessions.exists():
                 raise Http404(f"No command sequences or sessions with password matching hash: {observable}") from None
     else:
         sessions = (
             CowrieSession.objects.filter(
-                credential_set__password=observable,
+                credentials__password=observable,
                 duration__gt=0,
             )
             .distinct()
-            .prefetch_related("source", "commands", "credential_set")
+            .prefetch_related("source", "commands", "credentials")
         )
         if not sessions.exists():
             raise Http404(f"No sessions found with password: {observable}")
@@ -117,9 +115,9 @@ def cowrie_session_view(request):
     if include_similar:
         commands = {s.commands for s in sessions if s.commands}
         clusters = {cmd.cluster for cmd in commands if cmd.cluster is not None}
-        related_sessions = CowrieSession.objects.filter(commands__cluster__in=clusters).prefetch_related("source", "commands", "credential_set")
-        qs1 = sessions.prefetch_related("source", "commands", "credential_set")
-        qs2 = related_sessions.prefetch_related("source", "commands", "credential_set")
+        related_sessions = CowrieSession.objects.filter(commands__cluster__in=clusters).prefetch_related("source", "commands", "credentials")
+        qs1 = sessions.prefetch_related("source", "commands", "credentials")
+        qs2 = related_sessions.prefetch_related("source", "commands", "credentials")
         sessions = qs1.union(qs2)
     response_data = {
         "query": observable,
@@ -133,7 +131,7 @@ def cowrie_session_view(request):
     if include_credentials:
         credentials = set()
         for session in sessions:
-            for cred in session.credential_set.all():
+            for cred in session.credentials.all():
                 credentials.add(f"{cred.username} | {cred.password}")
         response_data["credentials"] = sorted(credentials)
     if include_session_data:
@@ -143,7 +141,7 @@ def cowrie_session_view(request):
                 "duration": s.duration,
                 "source": s.source.name,
                 "interactions": s.interaction_count,
-                "credentials": [f"{c.username} | {c.password}" for c in s.credential_set.all()],
+                "credentials": [f"{c.username} | {c.password}" for c in s.credentials.all()],
                 "commands": "\n".join(s.commands.commands) if s.commands else "",
             }
             for s in sessions

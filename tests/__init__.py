@@ -150,7 +150,9 @@ class CustomTestCase(TestCase):
         )
         cls.cowrie_session.save()
         # Create normalized credential record
-        CowrieCredential.objects.create(session=cls.cowrie_session, username="root", password="root")
+        # Create normalized credential record
+        cred = CowrieCredential.objects.create(username="root", password="root")
+        cls.cowrie_session.credentials.add(cred)
 
         cls.cmd_seq_2 = ["cd bar", "ls -la"]
         cls.command_sequence_2 = CommandSequence.objects.create(
@@ -174,7 +176,9 @@ class CustomTestCase(TestCase):
         )
         cls.cowrie_session_2.save()
         # Create normalized credential record
-        CowrieCredential.objects.create(session=cls.cowrie_session_2, username="user", password="user")
+        # Create normalized credential record
+        cred_2 = CowrieCredential.objects.create(username="user", password="user")
+        cls.cowrie_session_2.credentials.add(cred_2)
 
         try:
             cls.superuser = User.objects.get(is_superuser=True)

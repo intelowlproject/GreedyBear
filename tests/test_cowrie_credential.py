@@ -27,62 +27,69 @@ class CowrieCredentialModelTestCase(CustomTestCase):
     """Test CowrieCredential model functionality."""
 
     def test_create_credential_with_valid_data(self):
-        """Test creating a credential with valid session, username, and password."""
+        """Test creating a credential and linking to session."""
         credential = CowrieCredential.objects.create(
-            session=self.cowrie_session,
             username="testuser",
             password="testpass123",
         )
+        self.cowrie_session.credentials.add(credential)
+
         self.assertIsNotNone(credential.id)
-        self.assertEqual(credential.session, self.cowrie_session)
+        self.assertIn(self.cowrie_session, credential.sessions.all())
         self.assertEqual(credential.username, "testuser")
         self.assertEqual(credential.password, "testpass123")
 
     def test_credential_string_representation(self):
         """Test __str__ returns 'username | password' format."""
         credential = CowrieCredential.objects.create(
-            session=self.cowrie_session,
             username="admin",
             password="secret",
         )
+        self.cowrie_session.credentials.add(credential)
         self.assertEqual(str(credential), "admin | secret")
 
-    def test_foreign_key_relationship(self):
-        """Test ForeignKey relationship between credential and session."""
+    def test_m2m_relationship(self):
+        """Test ManyToMany relationship between credential and session."""
         credential = CowrieCredential.objects.create(
-            session=self.cowrie_session,
             username="user",
             password="pass",
         )
+        self.cowrie_session.credentials.add(credential)
+
         # Forward relationship
-        self.assertEqual(credential.session.session_id, self.cowrie_session.session_id)
+        self.assertIn(self.cowrie_session, credential.sessions.all())
 
         # Reverse relationship
-        credentials = self.cowrie_session.credential_set.all()
+        credentials = self.cowrie_session.credentials.all()
         self.assertIn(credential, credentials)
 
-    def test_cascade_delete(self):
-        """Test credentials are deleted when session is deleted (CASCADE)."""
+    def test_credential_persistence_after_session_delete(self):
+        """Test credentials PERSIST when session is deleted (M2M behavior)."""
         credential = CowrieCredential.objects.create(
-            session=self.cowrie_session,
             username="temp",
             password="temp123",
         )
+        self.cowrie_session.credentials.add(credential)
         credential_id = credential.id
 
         # Delete session
         self.cowrie_session.delete()
 
-        # Credential should be deleted
-        self.assertFalse(CowrieCredential.objects.filter(id=credential_id).exists())
+        # Credential should STILL exist
+        self.assertTrue(CowrieCredential.objects.filter(id=credential_id).exists())
+        # But relationship should be gone
+        credential.refresh_from_db()
+        self.assertEqual(credential.sessions.count(), 0)
 
     def test_multiple_credentials_per_session(self):
         """Test that one session can have multiple credentials."""
-        cred1 = CowrieCredential.objects.create(session=self.cowrie_session, username="user1", password="pass1")
-        cred2 = CowrieCredential.objects.create(session=self.cowrie_session, username="user2", password="pass2")
-        cred3 = CowrieCredential.objects.create(session=self.cowrie_session, username="user3", password="pass3")
+        cred1 = CowrieCredential.objects.create(username="user1", password="pass1")
+        cred2 = CowrieCredential.objects.create(username="user2", password="pass2")
+        cred3 = CowrieCredential.objects.create(username="user3", password="pass3")
 
-        credentials = list(self.cowrie_session.credential_set.all())
+        self.cowrie_session.credentials.add(cred1, cred2, cred3)
+
+        credentials = list(self.cowrie_session.credentials.all())
         # Should have at least 4 (1 from setup + 3 created here)
         self.assertGreaterEqual(len(credentials), 4)
         self.assertIn(cred1, credentials)
@@ -92,20 +99,20 @@ class CowrieCredentialModelTestCase(CustomTestCase):
     def test_empty_username_allowed(self):
         """Test credentials can have empty username (blank=True)."""
         credential = CowrieCredential.objects.create(
-            session=self.cowrie_session,
             username="",
             password="password123",
         )
+        self.cowrie_session.credentials.add(credential)
         self.assertEqual(credential.username, "")
         self.assertEqual(str(credential), " | password123")
 
     def test_empty_password_allowed(self):
         """Test credentials can have empty password (blank=True)."""
         credential = CowrieCredential.objects.create(
-            session=self.cowrie_session,
             username="username123",
             password="",
         )
+        self.cowrie_session.credentials.add(credential)
         self.assertEqual(credential.password, "")
         self.assertEqual(str(credential), "username123 | ")
 
@@ -113,20 +120,20 @@ class CowrieCredentialModelTestCase(CustomTestCase):
         """Test username field respects max_length=256."""
         long_username = "a" * 256
         credential = CowrieCredential.objects.create(
-            session=self.cowrie_session,
             username=long_username,
             password="test",
         )
+        self.cowrie_session.credentials.add(credential)
         self.assertEqual(len(credential.username), 256)
 
     def test_max_length_password(self):
         """Test password field respects max_length=256."""
         long_password = "b" * 256
         credential = CowrieCredential.objects.create(
-            session=self.cowrie_session,
             username="test",
             password=long_password,
         )
+        self.cowrie_session.credentials.add(credential)
         self.assertEqual(len(credential.password), 256)
 
 
@@ -143,7 +150,8 @@ class CowrieCredentialQueryTestCase(CustomTestCase):
     def test_query_by_password_case_insensitive(self):
         """Test case-insensitive password queries using __iexact."""
         # Create test credential
-        CowrieCredential.objects.create(session=self.cowrie_session, username="test", password="TestPass")
+        cred = CowrieCredential.objects.create(username="test", password="TestPass")
+        self.cowrie_session.credentials.add(cred)
 
         # All case variations should match
         self.assertTrue(CowrieCredential.objects.filter(password__iexact="testpass").exists())
@@ -165,20 +173,21 @@ class CowrieCredentialQueryTestCase(CustomTestCase):
         self.assertEqual(cred.password, "root")
 
     def test_query_sessions_via_password(self):
-        """Test querying sessions through credential_set reverse relationship."""
-        sessions = CowrieSession.objects.filter(credential_set__password="root")
+        """Test querying sessions through credentials reverse relationship."""
+        sessions = CowrieSession.objects.filter(credentials__password="root")
         self.assertGreater(sessions.count(), 0)
         self.assertIn(self.cowrie_session, sessions)
 
     def test_query_sessions_distinct(self):
         """Test .distinct() prevents duplicate sessions in results."""
         # Add multiple credentials with same password to one session
-        CowrieCredential.objects.create(session=self.cowrie_session, username="admin", password="duplicate")
-        CowrieCredential.objects.create(session=self.cowrie_session, username="user", password="duplicate")
+        cred1 = CowrieCredential.objects.create(username="admin", password="duplicate")
+        cred2 = CowrieCredential.objects.create(username="user", password="duplicate")
+        self.cowrie_session.credentials.add(cred1, cred2)
 
         # Without distinct, would get duplicate sessions
-        CowrieSession.objects.filter(credential_set__password="duplicate")
-        sessions_with_distinct = CowrieSession.objects.filter(credential_set__password="duplicate").distinct()
+        CowrieSession.objects.filter(credentials__password="duplicate")
+        sessions_with_distinct = CowrieSession.objects.filter(credentials__password="duplicate").distinct()
 
         # Verify distinct works
         session_ids = [s.session_id for s in sessions_with_distinct]
@@ -190,14 +199,14 @@ class CowrieCredentialQueryTestCase(CustomTestCase):
         self.assertEqual(credentials.count(), 0)
 
     def test_query_with_prefetch_related(self):
-        """Test prefetch_related optimization for credential_set."""
-        sessions = CowrieSession.objects.filter(credential_set__password="root").distinct().prefetch_related("credential_set")
+        """Test prefetch_related optimization for credentials."""
+        sessions = CowrieSession.objects.filter(credentials__password="root").distinct().prefetch_related("credentials")
 
         session = sessions.first()
         self.assertIsNotNone(session)
 
-        # Accessing credential_set should use prefetched data
-        credentials = list(session.credential_set.all())
+        # Accessing credentials should use prefetched data
+        credentials = list(session.credentials.all())
         self.assertGreater(len(credentials), 0)
 
 
@@ -214,11 +223,11 @@ class CowrieCredentialEdgeCasesTestCase(CustomTestCase):
             "password<script>alert('xss')</script>",
         ]
         for password in special_chars:
-            CowrieCredential.objects.create(
-                session=self.cowrie_session,
+            cred = CowrieCredential.objects.create(
                 username="user",
                 password=password,
             )
+            self.cowrie_session.credentials.add(cred)
             # Verify stored correctly
             found = CowrieCredential.objects.filter(password=password).first()
             self.assertIsNotNone(found)
@@ -233,11 +242,11 @@ class CowrieCredentialEdgeCasesTestCase(CustomTestCase):
             "1' UNION SELECT NULL--",
         ]
         for attempt in sql_attempts:
-            CowrieCredential.objects.create(
-                session=self.cowrie_session,
+            cred = CowrieCredential.objects.create(
                 username="user",
                 password=attempt,
             )
+            self.cowrie_session.credentials.add(cred)
             # Django ORM should handle this safely
             found = CowrieCredential.objects.filter(password=attempt).first()
             self.assertIsNotNone(found)
@@ -251,11 +260,11 @@ class CowrieCredentialEdgeCasesTestCase(CustomTestCase):
             "パスワード",  # Japanese
         ]
         for password in unicode_passwords:
-            CowrieCredential.objects.create(
-                session=self.cowrie_session,
+            cred = CowrieCredential.objects.create(
                 username="user",
                 password=password,
             )
+            self.cowrie_session.credentials.add(cred)
             found = CowrieCredential.objects.filter(password__iexact=password).first()
             self.assertIsNotNone(found)
 
@@ -267,11 +276,11 @@ class CowrieCredentialEdgeCasesTestCase(CustomTestCase):
             " pass word ",
         ]
         for password in whitespace_tests:
-            CowrieCredential.objects.create(
-                session=self.cowrie_session,
+            cred = CowrieCredential.objects.create(
                 username="user",
                 password=password,
             )
+            self.cowrie_session.credentials.add(cred)
             # Whitespace should be preserved
             found = CowrieCredential.objects.filter(password=password).first()
             self.assertIsNotNone(found)
@@ -295,10 +304,11 @@ class CowrieCredentialEdgeCasesTestCase(CustomTestCase):
                 source=ioc,
                 duration=1,
             )
-            CowrieCredential.objects.create(session=session, username=f"user{i}", password=password)
+            cred = CowrieCredential.objects.create(username=f"user{i}", password=password)
+            session.credentials.add(cred)
 
         # Query should find all sessions
-        sessions = CowrieSession.objects.filter(credential_set__password=password, duration__gt=0).distinct()
+        sessions = CowrieSession.objects.filter(credentials__password=password, duration__gt=0).distinct()
 
         self.assertGreaterEqual(sessions.count(), 3)
 
@@ -363,11 +373,11 @@ class CowrieCredentialAPIIntegrationTestCase(CustomTestCase):
         """Test password queries with special characters work (not treated as attacks)."""
         # Create credential with special characters
         special_password = "<script>alert('xss')</script>"
-        CowrieCredential.objects.create(
-            session=self.cowrie_session,
+        cred = CowrieCredential.objects.create(
             username="test",
             password=special_password,
         )
+        self.cowrie_session.credentials.add(cred)
 
         # Query should work (not be rejected as XSS)
         from urllib.parse import quote
@@ -398,7 +408,6 @@ class CowrieCredentialDataIntegrityTestCase(CustomTestCase):
         """Test get_or_create prevents duplicate credentials."""
         # First creation
         cred1, created1 = CowrieCredential.objects.get_or_create(
-            session=self.cowrie_session,
             username="testuser",
             password="testpass",
         )
@@ -406,15 +415,14 @@ class CowrieCredentialDataIntegrityTestCase(CustomTestCase):
 
         # Second attempt - should get existing
         cred2, created2 = CowrieCredential.objects.get_or_create(
-            session=self.cowrie_session,
             username="testuser",
             password="testpass",
         )
         self.assertFalse(created2)
         self.assertEqual(cred1.id, cred2.id)
 
-    def test_credentials_require_saved_session(self):
-        """Test credentials can only be created for saved sessions."""
+    def test_credentials_require_saved_session_for_linking(self):
+        """Test credentials can only be LINKED to saved sessions."""
         # Create but don't save session
         ioc = IOC.objects.create(
             name="192.168.1.200",
@@ -424,26 +432,31 @@ class CowrieCredentialDataIntegrityTestCase(CustomTestCase):
         )
         ioc.general_honeypot.add(self.cowrie_hp)
         session = CowrieSession(
-            session_id=int("abcdef123456", 16),
             source=ioc,
         )
 
-        # Must save session first (ForeignKey requirement)
-        session.save()
-
-        # Now can create credential
-        credential = CowrieCredential.objects.create(
-            session=session,
+        # Create credential (allowed even if session not saved)
+        cred = CowrieCredential.objects.create(
             username="user",
             password="pass",
         )
-        self.assertIsNotNone(credential.id)
+
+        # Attempting to link to unsaved session should raise ValueError
+        with self.assertRaises(ValueError):
+            session.credentials.add(cred)
+
+        # Save session (requires ID)
+        session.session_id = int("abcdef123456", 16)
+        session.save()
+
+        # Now linking should work
+        session.credentials.add(cred)
+        self.assertIn(cred, session.credentials.all())
 
     def test_unique_constraint_prevents_duplicates(self):
         """Test unique_together constraint prevents duplicate credentials."""
         # Create first credential
         CowrieCredential.objects.create(
-            session=self.cowrie_session,
             username="testuser",
             password="testpass",
         )
@@ -452,14 +465,12 @@ class CowrieCredentialDataIntegrityTestCase(CustomTestCase):
         with transaction.atomic():
             with self.assertRaises(IntegrityError):
                 CowrieCredential.objects.create(
-                    session=self.cowrie_session,
                     username="testuser",
                     password="testpass",
                 )
 
         # get_or_create should work (returns existing)
         cred, created = CowrieCredential.objects.get_or_create(
-            session=self.cowrie_session,
             username="testuser",
             password="testpass",
         )
@@ -508,7 +519,7 @@ class CowrieStrategyIntegrationTestCase(CustomTestCase):
         self.assertIsNotNone(session)
 
         # Check Credential created
-        creds = CowrieCredential.objects.filter(session=session)
+        creds = session.credentials.all()
         self.assertEqual(creds.count(), 1)
         self.assertEqual(creds.first().username, "admin")
         self.assertEqual(creds.first().password, "password123")
@@ -544,10 +555,10 @@ class CowrieStrategyIntegrationTestCase(CustomTestCase):
         session = CowrieSession.objects.get(session_id=int(session_id_hex, 16))
 
         # Should have 2 credentials
-        self.assertEqual(session.credential_set.count(), 2)
+        self.assertEqual(session.credentials.count(), 2)
 
-        usernames = sorted([c.username for c in session.credential_set.all()])
-        passwords = sorted([c.password for c in session.credential_set.all()])
+        usernames = sorted([c.username for c in session.credentials.all()])
+        passwords = sorted([c.password for c in session.credentials.all()])
 
         self.assertEqual(usernames, ["root", "root"])
         self.assertEqual(passwords, ["123", "456"])
@@ -584,8 +595,8 @@ class CowrieStrategyIntegrationTestCase(CustomTestCase):
         session = CowrieSession.objects.get(session_id=int(session_id_hex, 16))
 
         # Should have ONLY 1 credential record per unique pair
-        self.assertEqual(session.credential_set.count(), 1)
-        cred = session.credential_set.first()
+        self.assertEqual(session.credentials.count(), 1)
+        cred = session.credentials.first()
         self.assertEqual(cred.username, "user")
         self.assertEqual(cred.password, "pass")
 
@@ -609,7 +620,7 @@ class CowrieStrategyIntegrationTestCase(CustomTestCase):
         self.strategy.extract_from_hits(simple_hits)
 
         session = CowrieSession.objects.get(session_id=int(session_id_hex, 16))
-        cred = session.credential_set.first()
+        cred = session.credentials.first()
 
         self.assertEqual(cred.username, "us[NUL]er")
         self.assertEqual(cred.password, "pa[NUL]ss")

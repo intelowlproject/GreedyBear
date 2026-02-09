@@ -688,7 +688,8 @@ class CowrieSessionViewTestCase(CustomTestCase):
             source=self.ioc,
             commands=self.command_sequence,
         )
-        CowrieCredential.objects.create(session=session, username="admin", password=long_pass)
+        cred = CowrieCredential.objects.create(username="admin", password=long_pass)
+        session.credentials.add(cred)
 
         # Search for a substring "supersecret"
         response = self.client.get("/api/cowrie_session?query=supersecret")
@@ -837,7 +838,8 @@ class CowrieSessionViewTestCase(CustomTestCase):
             source=self.ioc,
             commands=self.command_sequence,
         )
-        CowrieCredential.objects.create(session=session, username="user", password=long_pass)
+        cred = CowrieCredential.objects.create(username="user", password=long_pass)
+        session.credentials.add(cred)
 
         response = self.client.get(f"/api/cowrie_session?query={long_pass}&include_credentials=true")
         self.assertEqual(response.status_code, 200)
@@ -898,7 +900,8 @@ class CowrieSessionViewTestCase(CustomTestCase):
             source=self.ioc,
             commands=self.command_sequence,
         )
-        CowrieCredential.objects.create(session=session, username="attacker", password=password)
+        cred = CowrieCredential.objects.create(username="attacker", password=password)
+        session.credentials.add(cred)
 
         response = self.client.get(f"/api/cowrie_session?query={password}&include_credentials=true")
         self.assertEqual(response.status_code, 200)

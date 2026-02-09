@@ -2,7 +2,6 @@
 # This file is a part of GreedyBear https://github.com/honeynet/GreedyBear
 # See the file 'LICENSE' for copying permission.
 
-import django.db.models.deletion
 from django.db import migrations, models
 
 
@@ -12,21 +11,17 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        migrations.RenameField(
+            model_name="cowriesession",
+            old_name="credentials",
+            new_name="legacy_credentials",
+        ),
         migrations.CreateModel(
             name="CowrieCredential",
             fields=[
                 ("id", models.AutoField(primary_key=True, serialize=False)),
                 ("username", models.CharField(blank=True, max_length=256)),
                 ("password", models.CharField(blank=True, max_length=256)),
-                (
-                    "session",
-                    models.ForeignKey(
-                        db_index=True,
-                        on_delete=django.db.models.deletion.CASCADE,
-                        related_name="credential_set",
-                        to="greedybear.cowriesession",
-                    ),
-                ),
             ],
             options={
                 "db_table": "greedybear_cowriecredential",
@@ -40,5 +35,11 @@ class Migration(migrations.Migration):
             model_name="cowriecredential",
             index=models.Index(fields=["username", "password"], name="cowriecred_user_pass_idx"),
         ),
+        migrations.AddField(
+            model_name="cowriesession",
+            name="credentials",
+            field=models.ManyToManyField(
+                blank=True, related_name="sessions", to="greedybear.cowriecredential"
+            ),
+        ),
     ]
-

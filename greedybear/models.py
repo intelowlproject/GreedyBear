@@ -112,6 +112,7 @@ class CowrieSession(models.Model):
     interaction_count = models.IntegerField(blank=False, null=False, default=0)
     source = models.ForeignKey(IOC, on_delete=models.CASCADE, blank=False, null=False)
     commands = models.ForeignKey(CommandSequence, on_delete=models.SET_NULL, blank=True, null=True)
+    credentials = models.ManyToManyField("CowrieCredential", related_name="sessions", blank=True)
 
     class Meta:
         indexes = [
@@ -119,6 +120,8 @@ class CowrieSession(models.Model):
         ]
 
     def __str__(self):
+        if self.session_id is None:
+            return f"Session (unsaved) from {self.source.name}"
         return f"Session {hex(self.session_id)[2:]} from {self.source.name}"
 
 
@@ -130,14 +133,6 @@ class CowrieCredential(models.Model):
     querying and indexing on username/password fields.
     """
 
-    session = models.ForeignKey(
-        CowrieSession,
-        on_delete=models.CASCADE,
-        related_name="credential_set",
-        db_index=True,
-        null=False,
-        blank=False,
-    )
     username = models.CharField(max_length=256, blank=True, null=False)
     password = models.CharField(max_length=256, blank=True, null=False)
 
@@ -151,9 +146,8 @@ class CowrieCredential(models.Model):
             models.Index(fields=["password"], name="cowriecred_pass_idx"),
             models.Index(fields=["username", "password"], name="cowriecred_user_pass_idx"),
         ]
-        # unique_together prevents duplicate credential pairs for the same session.
-        # We generally don't need timestamp granularity for credentials within a single session.
-        unique_together = [["session", "username", "password"]]
+        # unique_together prevents duplicate credential pairs.
+        unique_together = [["username", "password"]]
 
     def __str__(self):
         return f"{self.username} | {self.password}"
