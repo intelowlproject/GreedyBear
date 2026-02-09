@@ -150,6 +150,10 @@ class IOCModelAdmin(admin.ModelAdmin):
     def sensor_list(self, ioc):
         return ", ".join([str(sensor.address) for sensor in ioc.sensors.all()])
 
+    def get_queryset(self, request):
+        """Override to prefetch related sensors and honeypots, avoiding N+1 queries."""
+        return super().get_queryset(request).prefetch_related("sensors", "general_honeypot")
+
 
 @admin.register(GeneralHoneypot)
 class GeneralHoneypotAdmin(admin.ModelAdmin):
