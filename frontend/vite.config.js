@@ -6,10 +6,7 @@ export default defineConfig({
     plugins: [
         react(),
     ],
-    define: {
-        'process.env.REACT_APP_GREEDYBEAR_VERSION': JSON.stringify(process.env.REACT_APP_GREEDYBEAR_VERSION || 'dev'),
-        'process.env.PUBLIC_URL': JSON.stringify(process.env.PUBLIC_URL || ''),
-    },
+    envPrefix: 'REACT_APP_',
     resolve: {
         alias: {
             '~bootstrap': path.resolve(__dirname, 'node_modules/bootstrap'),
