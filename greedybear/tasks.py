@@ -1,15 +1,16 @@
 # This file is a part of GreedyBear https://github.com/honeynet/GreedyBear
 # See the file 'LICENSE' for copying permission.
 
+from datetime import datetime
+
 from celery import chain, shared_task
-from django.utils import timezone
 
 from greedybear.settings import CLUSTER_COWRIE_COMMAND_SEQUENCES
 
 
 @shared_task()
 def extract_all(is_midnight_chain=False):
-    now = timezone.now()
+    now = datetime.utcnow()
     if now.hour == 0 and now.minute == 0 and not is_midnight_chain:
         return "Skipped regular midnight extraction"
 
