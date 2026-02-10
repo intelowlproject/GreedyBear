@@ -89,7 +89,7 @@ def get_firehol_categories(ip: str, extracted_ip) -> list[str]:
 
 def iocs_from_hits(hits: list[dict]) -> list[IOC]:
     """
-    Convert Elasticsearch hits into IOC objects.
+    Convert Elasticsearch hits into IOC objects with associated sensors.
     Groups hits by source IP, filters out non-global addresses, and
     constructs IOC objects with aggregated data.
     Enriches IOCs with FireHol categories at creation time to ensure
@@ -113,6 +113,12 @@ def iocs_from_hits(hits: list[dict]) -> list[IOC]:
 
         firehol_categories = get_firehol_categories(ip, extracted_ip)
 
+        # Collect unique sensors from hits, deduplicated by sensor ID
+        sensors_map = {hit["_sensor"].id: hit["_sensor"] for hit in hits if hit.get("_sensor") is not None and getattr(hit["_sensor"], "id", None)}
+        sensors = list(sensors_map.values())
+        # Sort sensors by ID for consistent processing order
+        sensors.sort(key=lambda s: s.id)
+
         ioc = IOC(
             name=ip,
             type=get_ioc_type(ip),
@@ -123,6 +129,11 @@ def iocs_from_hits(hits: list[dict]) -> list[IOC]:
             login_attempts=len(hits) if hits[0].get("type", "") == "Heralding" else 0,
             firehol_categories=firehol_categories,
         )
+        # Attach sensors to temporary attribute for later processing.
+        # We cannot use `ioc.sensors.add()` here because the IOC instance is not yet saved
+        # to the database, and Django requires an ID for M2M relationships.
+        ioc._sensors_to_add = sensors
+
         timestamps = [hit["@timestamp"] for hit in hits if "@timestamp" in hit]
         if timestamps:
             ioc.first_seen = datetime.fromisoformat(min(timestamps))

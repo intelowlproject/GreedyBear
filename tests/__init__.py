@@ -195,6 +195,7 @@ class ExtractionTestCase(CustomTestCase):
     def setUp(self):
         self.mock_ioc_repo = Mock()
         self.mock_sensor_repo = Mock()
+        self.mock_sensor_repo.cache = {}  # Initialize cache as empty dict for sensor filtering
         self.mock_session_repo = Mock()
 
     def _create_mock_ioc(

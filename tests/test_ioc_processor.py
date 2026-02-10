@@ -1,5 +1,5 @@
 from datetime import date, datetime
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from greedybear.consts import PAYLOAD_REQUEST, SCANNER
 from greedybear.cronjobs.extraction.ioc_processor import IocProcessor
@@ -14,7 +14,7 @@ class TestAddIoc(ExtractionTestCase):
         self.processor = IocProcessor(self.mock_ioc_repo, self.mock_sensor_repo)
 
     def test_filters_sensor_ips(self):
-        self.mock_sensor_repo.sensors = {"192.168.1.1"}
+        self.mock_sensor_repo.cache = {"192.168.1.1": Mock()}
         ioc = self._create_mock_ioc(name="192.168.1.1")
 
         result = self.processor.add_ioc(ioc, attack_type=SCANNER)
@@ -25,7 +25,6 @@ class TestAddIoc(ExtractionTestCase):
     @patch("greedybear.cronjobs.extraction.ioc_processor.is_whatsmyip_domain")
     def test_filters_whatsmyip_domains(self, mock_whatsmyip):
         mock_whatsmyip.return_value = True
-        self.mock_sensor_repo.sensors = set()
         ioc = self._create_mock_ioc(name="some.domain.com", ioc_type=IocType.DOMAIN)
 
         result = self.processor.add_ioc(ioc, attack_type=SCANNER)
@@ -35,7 +34,7 @@ class TestAddIoc(ExtractionTestCase):
         self.mock_ioc_repo.save.assert_not_called()
 
     def test_creates_new_ioc_when_not_exists(self):
-        self.mock_sensor_repo.sensors = set()
+        self.mock_sensor_repo.cache = {}
         self.mock_ioc_repo.get_ioc_by_name.return_value = None
         new_ioc = self._create_mock_ioc()
         self.mock_ioc_repo.save.return_value = new_ioc
@@ -47,7 +46,7 @@ class TestAddIoc(ExtractionTestCase):
         self.assertIsNotNone(result)
 
     def test_updates_existing_ioc_when_exists(self):
-        self.mock_sensor_repo.sensors = set()
+        self.mock_sensor_repo.cache = {}
         existing_ioc = self._create_mock_ioc(attack_count=5)
         self.mock_ioc_repo.get_ioc_by_name.return_value = existing_ioc
         new_ioc = self._create_mock_ioc(attack_count=1)
@@ -59,7 +58,7 @@ class TestAddIoc(ExtractionTestCase):
         self.assertEqual(result.attack_count, 6)
 
     def test_sets_scanner_flag_for_scanner_attack_type(self):
-        self.mock_sensor_repo.sensors = set()
+        self.mock_sensor_repo.cache = {}
         self.mock_ioc_repo.get_ioc_by_name.return_value = None
         ioc = self._create_mock_ioc()
         self.mock_ioc_repo.save.return_value = ioc
@@ -70,7 +69,7 @@ class TestAddIoc(ExtractionTestCase):
         self.assertFalse(result.payload_request)
 
     def test_sets_payload_request_flag_for_payload_attack_type(self):
-        self.mock_sensor_repo.sensors = set()
+        self.mock_sensor_repo.cache = {}
         self.mock_ioc_repo.get_ioc_by_name.return_value = None
         ioc = self._create_mock_ioc()
         self.mock_ioc_repo.save.return_value = ioc
@@ -81,7 +80,7 @@ class TestAddIoc(ExtractionTestCase):
         self.assertTrue(result.payload_request)
 
     def test_adds_general_honeypot_when_provided(self):
-        self.mock_sensor_repo.sensors = set()
+        self.mock_sensor_repo.cache = {}
         self.mock_ioc_repo.get_ioc_by_name.return_value = None
         ioc = self._create_mock_ioc()
         self.mock_ioc_repo.save.return_value = ioc
@@ -92,7 +91,7 @@ class TestAddIoc(ExtractionTestCase):
         self.mock_ioc_repo.add_honeypot_to_ioc.assert_called_once_with("TestHoneypot", ioc)
 
     def test_skips_general_honeypot_when_not_provided(self):
-        self.mock_sensor_repo.sensors = set()
+        self.mock_sensor_repo.cache = {}
         self.mock_ioc_repo.get_ioc_by_name.return_value = None
         ioc = self._create_mock_ioc()
         self.mock_ioc_repo.save.return_value = ioc
@@ -101,8 +100,23 @@ class TestAddIoc(ExtractionTestCase):
 
         self.mock_ioc_repo.add_honeypot_to_ioc.assert_not_called()
 
+    def test_adds_sensors_from_attribute(self):
+        self.mock_sensor_repo.cache = {}
+        self.mock_ioc_repo.get_ioc_by_name.return_value = None
+        ioc = self._create_mock_ioc()
+        sensor1 = Mock()
+        sensor2 = Mock()
+        ioc._sensors_to_add = [sensor1, sensor2]
+
+        self.mock_ioc_repo.save.return_value = ioc
+
+        self.processor.add_ioc(ioc, attack_type=SCANNER)
+
+        ioc.sensors.add.assert_any_call(sensor1)
+        ioc.sensors.add.assert_any_call(sensor2)
+
     def test_updates_days_seen_on_add(self):
-        self.mock_sensor_repo.sensors = set()
+        self.mock_sensor_repo.cache = {}
         self.mock_ioc_repo.get_ioc_by_name.return_value = None
         ioc = self._create_mock_ioc(days_seen=[], last_seen=datetime(2025, 1, 1, 12, 0, 0))
         self.mock_ioc_repo.save.return_value = ioc
@@ -113,7 +127,7 @@ class TestAddIoc(ExtractionTestCase):
         self.assertEqual(result.number_of_days_seen, 1)
 
     def test_full_create_flow(self):
-        self.mock_sensor_repo.sensors = set()
+        self.mock_sensor_repo.cache = {}
         self.mock_ioc_repo.get_ioc_by_name.return_value = None
 
         ioc = self._create_mock_ioc(
@@ -133,7 +147,7 @@ class TestAddIoc(ExtractionTestCase):
         self.assertEqual(len(result.days_seen), 1)
 
     def test_full_update_flow(self):
-        self.mock_sensor_repo.sensors = set()
+        self.mock_sensor_repo.cache = {}
 
         existing = self._create_mock_ioc(
             attack_count=5,
@@ -166,7 +180,7 @@ class TestAddIoc(ExtractionTestCase):
 
     @patch("greedybear.cronjobs.extraction.ioc_processor.is_whatsmyip_domain")
     def test_only_checks_whatsmyip_for_domains(self, mock_whatsmyip):
-        self.mock_sensor_repo.sensors = set()
+        self.mock_sensor_repo.cache = {}
         self.mock_ioc_repo.get_ioc_by_name.return_value = None
         ioc = self._create_mock_ioc(name="1.2.3.4", ioc_type=IocType.IP)
         self.mock_ioc_repo.save.return_value = ioc

@@ -101,7 +101,7 @@ class TestSensorExtraction(ExtractionPipelineTestCase):
 
         pipeline.execute()
 
-        pipeline.sensor_repo.add_sensor.assert_called_once_with("10.0.0.1")
+        pipeline.sensor_repo.get_or_create_sensor.assert_called_once_with("10.0.0.1")
         pipeline.elastic_repo.search.assert_called_once_with(10)
 
     @patch("greedybear.cronjobs.extraction.pipeline.UpdateScores")
@@ -129,7 +129,7 @@ class TestSensorExtraction(ExtractionPipelineTestCase):
         pipeline.execute()
 
         # Sensor should NOT be extracted for invalid hits (missing type)
-        pipeline.sensor_repo.add_sensor.assert_not_called()
+        pipeline.sensor_repo.get_or_create_sensor.assert_not_called()
 
 
 class TestHitGrouping(ExtractionPipelineTestCase):

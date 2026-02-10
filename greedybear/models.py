@@ -20,7 +20,7 @@ class IocType(models.TextChoices):
 
 
 class Sensor(models.Model):
-    address = models.CharField(max_length=15, blank=False)
+    address = models.CharField(max_length=15, blank=False, unique=True)
 
     def __str__(self):
         return self.address
@@ -62,6 +62,8 @@ class IOC(models.Model):
     interaction_count = models.IntegerField(default=1)
     # FEEDS - list of honeypots from general list, from which the IOC was detected
     general_honeypot = models.ManyToManyField(GeneralHoneypot, blank=True)
+    # SENSORS - list of T-Pot sensors that detected this IOC
+    sensors = models.ManyToManyField(Sensor, blank=True)
     scanner = models.BooleanField(blank=False, default=False)
     payload_request = models.BooleanField(blank=False, default=False)
     related_ioc = models.ManyToManyField("self", blank=True, symmetrical=True)
