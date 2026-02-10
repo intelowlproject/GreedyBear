@@ -128,7 +128,9 @@ def iocs_from_hits(hits: list[dict]) -> list[IOC]:
             login_attempts=len(hits) if hits[0].get("type", "") == "Heralding" else 0,
             firehol_categories=firehol_categories,
         )
-        # Attach sensors to temporary attribute for later processing
+        # Attach sensors to temporary attribute for later processing.
+        # We cannot use `ioc.sensors.add()` here because the IOC instance is not yet saved
+        # to the database, and Django requires an ID for M2M relationships.
         ioc._sensors_to_add = sensors
 
         timestamps = [hit["@timestamp"] for hit in hits if "@timestamp" in hit]

@@ -60,7 +60,8 @@ class IocProcessor:
         if ioc_record is None:  # Create
             self.log.debug(f"{ioc} was not seen before - creating a new record")
             ioc_record = self.ioc_repo.save(ioc)
-            # Add sensors to newly saved IOC
+            # Add sensors to newly saved IOC from temporary attribute.
+            # (See greedybear/cronjobs/extraction/utils.py for why we use this)
             if hasattr(ioc, "_sensors_to_add") and ioc._sensors_to_add:
                 for sensor in ioc._sensors_to_add:
                     ioc_record.sensors.add(sensor)
@@ -99,7 +100,8 @@ class IocProcessor:
         existing.asn = new.asn
         existing.login_attempts += new.login_attempts
 
-        # Add sensors from new IOC (existing is already saved, so ManyToMany works)
+        # Add sensors from new IOC (existing is already saved, so ManyToMany works).
+        # We retrieve sensors from the temporary attribute of the input IOC object.
         if hasattr(new, "_sensors_to_add") and new._sensors_to_add:
             for sensor in new._sensors_to_add:
                 existing.sensors.add(sensor)
