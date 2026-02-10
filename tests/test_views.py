@@ -1,14 +1,14 @@
-from unittest.mock import MagicMock, patch
+from email.utils import parsedate_to_datetime
+from unittest.mock import patch
 
-import requests
 from django.conf import settings
 from django.core.cache import cache
 from django.test import override_settings
 from django.utils import timezone
-from rest_framework import status
+from feedparser import FeedParserDict
 from rest_framework.test import APIClient
 
-from api.views.utils import BLOG_BASE_URL, CACHE_KEY_GREEDYBEAR_NEWS, MAX_FILES_TO_CHECK, is_ip_address, is_sha256hash
+from api.views.utils import CACHE_KEY_GREEDYBEAR_NEWS, get_greedybear_news, is_ip_address, is_sha256hash
 from greedybear.models import IOC, GeneralHoneypot, Statistics, ViewType
 
 from . import CustomTestCase
@@ -872,247 +872,150 @@ class ValidationHelpersTestCase(CustomTestCase):
         self.assertFalse(is_sha256hash("not-a-hash"))
 
 
-class NewsViewTestCase(CustomTestCase):
+class NewsTestCase(CustomTestCase):
     def setUp(self):
-        """Set up test client and clear cache before each test."""
-        self.client = APIClient()
         cache.clear()
 
     def tearDown(self):
-        """Clear cache after each test."""
         cache.clear()
 
-    @patch("api.views.utils.requests.get")
-    def test_news_view_returns_cached_data(self, mock_get):
-        """Should return cached news data without making API calls."""
-        cached_data = [{"title": "Cached GreedyBear Post", "date": "2024-01-01", "link": "https://example.com", "subtext": "Cached content"}]
+    @patch("api.views.utils.feedparser.parse")
+    def test_returns_cached_data(self, mock_parse):
+        cached_data = [
+            {
+                "title": "GreedyBear Cached",
+                "date": "Thu, 29 Jan 2026 00:00:00 GMT",
+                "link": "https://example.com",
+                "subtext": "cached content",
+            }
+        ]
         cache.set(CACHE_KEY_GREEDYBEAR_NEWS, cached_data, 300)
 
-        response = self.client.get("/api/news/")
+        result = get_greedybear_news()
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data, cached_data)
-        mock_get.assert_not_called()
+        self.assertEqual(result, cached_data)
+        mock_parse.assert_not_called()
 
-    @patch("api.views.utils.requests.get")
-    @patch("api.views.utils.loads")
-    def test_news_view_fetches_and_returns_greedybear_posts(self, mock_loads, mock_get):
-        """Should fetch, filter, and return GreedyBear posts via API."""
-        # Mock file list response
-        mock_list_response = MagicMock()
-        mock_list_response.json.return_value = [
-            {"type": "file", "name": "greedybear-post.md", "download_url": "https://example.com/greedybear-post.md"},
-            {"type": "file", "name": "other-post.md", "download_url": "https://example.com/other-post.md"},
-        ]
+    @patch("api.views.utils.feedparser.parse")
+    def test_filters_only_greedybear_posts(self, mock_parse):
+        mock_parse.return_value = FeedParserDict(
+            entries=[
+                FeedParserDict(
+                    title="IntelOwl Update",
+                    summary="intelowl news",
+                    published="Wed, 01 Jan 2026 00:00:00 GMT",
+                    link="https://example.com/1",
+                ),
+                FeedParserDict(
+                    title="GreedyBear v3 Release",
+                    summary="greedybear release notes",
+                    published="Thu, 29 Jan 2026 00:00:00 GMT",
+                    link="https://example.com/2",
+                ),
+                FeedParserDict(
+                    title="IntelOwl Improvements",
+                    summary="Not related to GreedyBear",
+                    published="Mon, 01 Sep 2025 00:00:00 GMT",
+                    link="https://example.com/3",
+                ),
+            ]
+        )
 
-        # Mock markdown content responses
-        mock_md_response1 = MagicMock()
-        mock_md_response1.text = "markdown content 1"
+        result = get_greedybear_news()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["title"], "GreedyBear v3 Release")
 
-        mock_md_response2 = MagicMock()
-        mock_md_response2.text = "markdown content 2"
+    @patch("api.views.utils.feedparser.parse")
+    def test_sorts_posts_by_date_desc(self, mock_parse):
+        mock_parse.return_value = FeedParserDict(
+            entries=[
+                FeedParserDict(
+                    title="GreedyBear Old",
+                    summary="old post",
+                    published="Wed, 01 Jan 2026 00:00:00 GMT",
+                    link="https://example.com/old",
+                ),
+                FeedParserDict(
+                    title="GreedyBear New",
+                    summary="new post",
+                    published="Thu, 29 Jan 2026 00:00:00 GMT",
+                    link="https://example.com/new",
+                ),
+            ]
+        )
 
-        mock_get.side_effect = [mock_list_response, mock_md_response1, mock_md_response2]
+        result = get_greedybear_news()
+        self.assertEqual(len(result), 2)
+        self.assertEqual(result[0]["title"], "GreedyBear New")
+        self.assertEqual(result[1]["title"], "GreedyBear Old")
 
-        # Mock parsed post data
-        mock_loads.side_effect = [
-            MagicMock(
-                get=lambda k: {"title": "GreedyBear Security Update", "date": "2024-02-01"}.get(k),
-                content="This is a GreedyBear related post with important security updates",
-            ),
-            MagicMock(get=lambda k: {"title": "IntelOwl Release", "date": "2024-01-15"}.get(k), content="This is about IntelOwl"),
-        ]
+        # verifying sorting by date
+        self.assertGreater(
+            parsedate_to_datetime(result[0]["date"]),
+            parsedate_to_datetime(result[1]["date"]),
+        )
 
-        response = self.client.get("/api/news/")
+    @patch("api.views.utils.feedparser.parse")
+    def test_truncates_long_summary(self, mock_parse):
+        long_summary = "word " * 100
+        mock_parse.return_value = FeedParserDict(
+            entries=[
+                FeedParserDict(
+                    title="GreedyBear Long Post",
+                    summary=long_summary,
+                    published="Thu, 29 Jan 2026 00:00:00 GMT",
+                    link="https://example.com",
+                )
+            ]
+        )
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]["title"], "GreedyBear Security Update")
-        self.assertEqual(response.data[0]["date"], "2024-02-01")
-        self.assertEqual(response.data[0]["link"], f"{BLOG_BASE_URL}/greedybear-post")
-        self.assertIn("GreedyBear related post", response.data[0]["subtext"])
+        result = get_greedybear_news()
+        self.assertEqual(len(result), 1)
+        self.assertTrue(result[0]["subtext"].endswith("..."))
+        self.assertLessEqual(len(result[0]["subtext"]), 184)
 
-    @patch("api.views.utils.requests.get")
-    @patch("api.views.utils.loads")
-    def test_news_view_returns_posts_sorted_by_date(self, mock_loads, mock_get):
-        """Should return posts sorted with newest first."""
-        mock_list_response = MagicMock()
-        mock_list_response.json.return_value = [
-            {"type": "file", "name": "old.md", "download_url": "https://example.com/old.md"},
-            {"type": "file", "name": "new.md", "download_url": "https://example.com/new.md"},
-        ]
+    @patch("api.views.utils.feedparser.parse")
+    def test_skips_entries_without_published_date(self, mock_parse):
+        mock_parse.return_value = FeedParserDict(
+            entries=[
+                FeedParserDict(
+                    title="GreedyBear No Date",
+                    summary="missing date",
+                    link="https://example.com",
+                )
+            ]
+        )
 
-        mock_md_old = MagicMock()
-        mock_md_new = MagicMock()
+        result = get_greedybear_news()
+        self.assertEqual(result, [])
 
-        mock_get.side_effect = [mock_list_response, mock_md_old, mock_md_new]
+    @patch("api.views.utils.feedparser.parse")
+    def test_handles_feed_failure_gracefully(self, mock_parse):
+        mock_parse.side_effect = Exception("Feed error")
+        result = get_greedybear_news()
+        self.assertEqual(result, [])
 
-        mock_loads.side_effect = [
-            MagicMock(get=lambda k: {"title": "GreedyBear Old Post", "date": "2024-01-01"}.get(k), content="Old content"),
-            MagicMock(get=lambda k: {"title": "GreedyBear New Post", "date": "2024-02-01"}.get(k), content="New content"),
-        ]
+    @patch("api.views.utils.feedparser.parse")
+    def test_results_are_cached_after_first_call(self, mock_parse):
+        mock_parse.return_value = FeedParserDict(
+            entries=[
+                FeedParserDict(
+                    title="GreedyBear Cached Test",
+                    summary="cache test",
+                    published="Thu, 29 Jan 2026 00:00:00 GMT",
+                    link="https://example.com",
+                )
+            ]
+        )
 
-        response = self.client.get("/api/news/")
+        # first calling hits feed
+        result1 = get_greedybear_news()
+        self.assertEqual(len(result1), 1)
 
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 2)
-        self.assertEqual(response.data[0]["title"], "GreedyBear New Post")
-        self.assertEqual(response.data[0]["date"], "2024-02-01")
-        self.assertEqual(response.data[1]["title"], "GreedyBear Old Post")
-        self.assertEqual(response.data[1]["date"], "2024-01-01")
+        # resetting mock to ensure cache is used
+        mock_parse.reset_mock()
 
-    @patch("api.views.utils.requests.get")
-    def test_news_view_returns_empty_list_when_no_markdown_files(self, mock_get):
-        """Should return empty list when no markdown files exist."""
-        mock_list_response = MagicMock()
-        mock_list_response.json.return_value = [
-            {"type": "file", "name": "readme.txt", "download_url": "https://example.com/readme.txt"},
-            {"type": "directory", "name": "posts"},
-        ]
-
-        mock_get.return_value = mock_list_response
-
-        response = self.client.get("/api/news/")
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data, [])
-
-    @patch("api.views.utils.requests.get")
-    @patch("api.views.utils.loads")
-    def test_news_view_filters_posts_without_required_fields(self, mock_loads, mock_get):
-        """Should skip posts missing title or date."""
-        mock_list_response = MagicMock()
-        mock_list_response.json.return_value = [
-            {"type": "file", "name": "incomplete1.md", "download_url": "https://example.com/incomplete1.md"},
-            {"type": "file", "name": "incomplete2.md", "download_url": "https://example.com/incomplete2.md"},
-            {"type": "file", "name": "complete.md", "download_url": "https://example.com/complete.md"},
-        ]
-
-        mock_md1 = MagicMock()
-        mock_md2 = MagicMock()
-        mock_md3 = MagicMock()
-
-        mock_get.side_effect = [mock_list_response, mock_md1, mock_md2, mock_md3]
-
-        mock_loads.side_effect = [
-            # Missing date
-            MagicMock(get=lambda k: {"title": "GreedyBear Post"}.get(k), content="Content"),
-            # Missing title
-            MagicMock(get=lambda k: {"date": "2024-01-01"}.get(k), content="Content"),
-            # Complete
-            MagicMock(get=lambda k: {"title": "GreedyBear Complete", "date": "2024-01-01"}.get(k), content="Complete content"),
-        ]
-
-        response = self.client.get("/api/news/")
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]["title"], "GreedyBear Complete")
-
-    @patch("api.views.utils.requests.get")
-    @patch("api.views.utils.loads")
-    def test_news_view_filters_non_greedybear_posts(self, mock_loads, mock_get):
-        """Should only return posts with 'greedybear' in title."""
-        mock_list_response = MagicMock()
-        mock_list_response.json.return_value = [
-            {"type": "file", "name": "post1.md", "download_url": "https://example.com/post1.md"},
-            {"type": "file", "name": "post2.md", "download_url": "https://example.com/post2.md"},
-        ]
-
-        mock_md1 = MagicMock()
-        mock_md2 = MagicMock()
-
-        mock_get.side_effect = [mock_list_response, mock_md1, mock_md2]
-
-        mock_loads.side_effect = [
-            MagicMock(get=lambda k: {"title": "IntelOwl Update", "date": "2024-01-01"}.get(k), content="IntelOwl content"),
-            MagicMock(get=lambda k: {"title": "GreedyBear Feature", "date": "2024-01-15"}.get(k), content="GreedyBear content"),
-        ]
-
-        response = self.client.get("/api/news/")
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]["title"], "GreedyBear Feature")
-
-    @patch("api.views.utils.requests.get")
-    @patch("api.views.utils.loads")
-    def test_news_view_truncates_long_subtext(self, mock_loads, mock_get):
-        """Should truncate subtext to 180 characters."""
-        mock_list_response = MagicMock()
-        mock_list_response.json.return_value = [{"type": "file", "name": "long.md", "download_url": "https://example.com/long.md"}]
-
-        mock_md = MagicMock()
-        mock_get.side_effect = [mock_list_response, mock_md]
-
-        long_content = "word " * 100  # Very long content
-        mock_loads.return_value = MagicMock(get=lambda k: {"title": "GreedyBear Long Post", "date": "2024-01-01"}.get(k), content=long_content)
-
-        response = self.client.get("/api/news/")
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
-        self.assertLessEqual(len(response.data[0]["subtext"]), 184)  # 180 + "..."
-        self.assertTrue(response.data[0]["subtext"].endswith("..."))
-
-    @patch("api.views.utils.requests.get")
-    def test_news_view_handles_api_failure_gracefully(self, mock_get):
-        """Should return empty list on API failure."""
-        mock_get.side_effect = requests.RequestException("Connection error")
-
-        response = self.client.get("/api/news/")
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(response.data, [])
-
-    @patch("api.views.utils.requests.get")
-    @patch("api.views.utils.loads")
-    def test_news_view_caches_results(self, mock_loads, mock_get):
-        """Should cache results after first request."""
-        mock_list_response = MagicMock()
-        mock_list_response.json.return_value = [{"type": "file", "name": "post.md", "download_url": "https://example.com/post.md"}]
-
-        mock_md = MagicMock()
-        mock_get.side_effect = [mock_list_response, mock_md]
-
-        mock_loads.return_value = MagicMock(get=lambda k: {"title": "GreedyBear Post", "date": "2024-01-01"}.get(k), content="Content here")
-
-        # First request - should hit API
-        response1 = self.client.get("/api/news/")
-        self.assertEqual(response1.status_code, status.HTTP_200_OK)
-
-        # Reset mock to verify cache is used
-        mock_get.reset_mock()
-
-        # Second request - should use cache
-        response2 = self.client.get("/api/news/")
-        self.assertEqual(response2.status_code, status.HTTP_200_OK)
-        self.assertEqual(response1.data, response2.data)
-        mock_get.assert_not_called()
-
-    @patch("api.views.utils.requests.get")
-    @patch("api.views.utils.loads")
-    def test_news_view_respects_max_files_limit(self, mock_loads, mock_get):
-        """Should only process up to MAX_FILES_TO_CHECK files."""
-        many_files = [{"type": "file", "name": f"post{i}.md", "download_url": f"https://example.com/post{i}.md"} for i in range(MAX_FILES_TO_CHECK + 10)]
-
-        mock_list_response = MagicMock()
-        mock_list_response.json.return_value = many_files
-
-        mock_get.return_value = mock_list_response
-
-        response = self.client.get("/api/news/")
-
-        self.assertEqual(response.status_code, status.HTTP_200_OK)
-        # Verify we don't process more than MAX_FILES_TO_CHECK
-        self.assertLessEqual(mock_get.call_count, MAX_FILES_TO_CHECK + 1)
-
-    def test_news_view_only_accepts_get_method(self):
-        """Should only accept GET requests."""
-        post_response = self.client.post("/api/news/")
-        put_response = self.client.put("/api/news/")
-        delete_response = self.client.delete("/api/news/")
-
-        self.assertEqual(post_response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
-        self.assertEqual(put_response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
-        self.assertEqual(delete_response.status_code, status.HTTP_405_METHOD_NOT_ALLOWED)
+        # second call should use cache
+        result2 = get_greedybear_news()
+        self.assertEqual(result1, result2)
+        mock_parse.assert_not_called()

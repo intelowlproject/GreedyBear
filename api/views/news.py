@@ -7,19 +7,14 @@ from api.views.utils import get_greedybear_news
 @api_view(["GET"])
 def news_view(request):
     """
-    Fetch and return a list of GreedyBear-related blog posts.
+    Fetch GreedyBear blog posts from an RSS feed.
 
-    This endpoint retrieves blog entries from the intelowlproject.github.io repository
-    via the GitHub API. It filters for GreedyBear-specific content based on titles
-    to ensure the news widget remains relevant.
-
-    Caching Strategy:
-        To mitigate GitHub's rate limits and optimize performance, responses are
-        cached for one hour. This reduces average latency from ~7 seconds to
-        approximately 162ms.
+    Filters for posts with "GreedyBear" in the title, truncates long summaries,
+    sorts by newest first, and caches results to improve performance.
 
     Returns:
-        Response: A JSON list of dictionaries containing title, date, link, and subtext.
+        List[dict]: Each dict contains title, date, link, and subtext.
+        Returns an empty list if no relevant posts are found or feed fails.
     """
     news_list = get_greedybear_news()
     return Response(news_list)

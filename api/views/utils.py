@@ -4,20 +4,20 @@ import csv
 import logging
 import re
 from datetime import datetime, timedelta
+from email.utils import parsedate_to_datetime
 from ipaddress import ip_address
 
-import requests
+import feedparser
 from django.conf import settings
 from django.contrib.postgres.aggregates import ArrayAgg
 from django.core.cache import cache
 from django.db.models import Count, F, Max, Min, Sum
 from django.http import HttpResponse, HttpResponseBadRequest, StreamingHttpResponse
-from frontmatter import loads
 from rest_framework import status
 from rest_framework.response import Response
 
 from api.serializers import FeedsRequestSerializer
-from greedybear.consts import BLOG_BASE_URL, CACHE_KEY_GREEDYBEAR_NEWS, CACHE_TIMEOUT_SECONDS, GITHUB_BLOG_API, MAX_FILES_TO_CHECK
+from greedybear.consts import CACHE_KEY_GREEDYBEAR_NEWS, CACHE_TIMEOUT_SECONDS, RSS_FEED_URL
 from greedybear.models import IOC, GeneralHoneypot, Statistics
 
 logger = logging.getLogger(__name__)
@@ -409,71 +409,59 @@ def asn_aggregated_queryset(iocs_qs, request, feed_params):
 
 def get_greedybear_news() -> list[dict]:
     """
-    Fetch GreedyBear-related blog posts from the IntelOwl GitHub Pages repo.
+    Fetch GreedyBear-related blog posts from the IntelOwl RSS feed.
 
     Returns:
         List of dicts with keys: title, date, link, subtext
         Sorted newest first, or empty list on failure.
     """
-    # checking the cache first
     cached = cache.get(CACHE_KEY_GREEDYBEAR_NEWS)
     if cached is not None:
         return cached
 
     try:
-        # fetching the list of blog post files through github Api
-        response = requests.get(GITHUB_BLOG_API, timeout=10)
-        response.raise_for_status()
-        files = response.json()
+        feed = feedparser.parse(RSS_FEED_URL)
+        news_items: list[dict] = []
 
-        news_items = []
-
-        # processing each markdown file to extract details
-        for file in files[:MAX_FILES_TO_CHECK]:
-            if file.get("type") != "file" or not file.get("name", "").endswith(".md"):
-                continue
-
-            # fetching and parsing the mardown content (download url consist of .md content)
-            md_response = requests.get(file["download_url"], timeout=10)
-            md_response.raise_for_status()
-            post = loads(md_response.text)
-
-            # validating required fields
-            title = post.get("title")
-            date = post.get("date")
-            if not title or not date:
-                continue
-
-            # Note: Since intelowlproject.github.io/blogs typically includes the project name in the title,
-            # we are filtering by the 'GreedyBear' keyword to ensure we only fetch relevant content."
+        for entry in feed.entries:
+            title = entry.get("title", "")
             if "greedybear" not in title.lower():
                 continue
 
-            # url are build with the filename
-            slug = file["name"].replace(".md", "")
-            link = f"{BLOG_BASE_URL}/{slug}"
+            summary = entry.get("summary", "").strip().replace("\n", " ")
+            pub_date = entry.get("published")
 
-            # creating a preview text
-            body = post.content.strip().replace("\n", " ")
-            subtext = body[:180].rsplit(" ", 1)[0] + "..." if len(body) > 180 else body
+            if not pub_date:
+                continue
+
+            subtext = summary[:180].rsplit(" ", 1)[0] + "..." if len(summary) > 180 else summary
 
             news_items.append(
                 {
                     "title": title,
-                    "date": date,
-                    "link": link,
+                    "date": pub_date,
+                    "link": entry.get("link"),
                     "subtext": subtext,
                 }
             )
 
-        # sorting the news by date
-        news_items.sort(key=lambda x: x.get("date", ""), reverse=True)
+        # RSS feeds are typically chronological, but we sort explicitly
+        # to ensure consistency since the data source is external.
+        news_items.sort(
+            key=lambda x: parsedate_to_datetime(x["date"]),
+            reverse=True,
+        )
 
-        # caching the result
-        cache.set(CACHE_KEY_GREEDYBEAR_NEWS, news_items, CACHE_TIMEOUT_SECONDS)
-
+        cache.set(
+            CACHE_KEY_GREEDYBEAR_NEWS,
+            news_items,
+            CACHE_TIMEOUT_SECONDS,
+        )
         return news_items
 
     except Exception as exc:
-        logger.error("Failed to fetch GreedyBear news", exc_info=exc)
+        logger.error(
+            "Failed to fetch GreedyBear news from RSS feed",
+            exc_info=exc,
+        )
         return []
