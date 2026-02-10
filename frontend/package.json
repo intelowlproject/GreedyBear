@@ -32,13 +32,50 @@
     "test": "TZ=UTC jest ./tests",
     "test-coverage": "npm test -- --coverage=true",
     "lint-config-install": "cd ../.github/configurations/node_linters/eslint && npm i",
-    "lint": "eslint 'src/**/*.{js,jsx}' 'tests/**/*.{js,jsx}'",
+    "lint": "eslint src/**/*.{js,jsx} tests/**/*.{js,jsx}",
     "lint-fix": "npm run lint -- --fix",
     "lint-scss-config-install": "cd ../.github/configurations/node_linters/stylelint && npm i",
     "lint-scss": "stylelint --config ../.github/configurations/node_linters/stylelint/.stylelintrc.json 'src/styles/**/*.{css,scss}'",
     "lint-scss-fix": "npm run lint-scss -- --fix",
     "formatter": "prettier 'src/**/*.{js,jsx}' 'tests/**/*.{js,jsx}' 'src/styles/*.{css,scss}' --check",
     "formatter-fix": "npm run formatter -- --write"
+  },
+  "eslintConfig": {
+    "extends": [
+      "eslint:recommended",
+      "plugin:react/recommended"
+    ],
+    "env": {
+      "browser": true,
+      "jest": true,
+      "es6": true,
+      "node": true
+    },
+    "globals": {
+      "process": "readonly",
+      "global": "readonly"
+    },
+    "parserOptions": {
+      "ecmaVersion": 2021,
+      "sourceType": "module",
+      "ecmaFeatures": {
+        "jsx": true
+      }
+    },
+    "settings": {
+      "react": {
+        "version": "detect"
+      }
+    },
+    "rules": {
+      "react/prop-types": "off",
+      "react/display-name": "off",
+      "react/react-in-jsx-scope": "off",
+      "react/jsx-key": "off",
+      "no-unused-vars": "warn",
+      "no-console": "off",
+      "no-undef": "off"
+    }
   },
   "browserslist": {
     "production": [
@@ -62,6 +99,7 @@
     "@vitejs/plugin-react": "^5.1.3",
     "babel-eslint": "^10.1.0",
     "babel-jest": "^29.7.0",
+    "eslint": "^8.57.1",
     "eslint-config-airbnb": "^19.0.4",
     "eslint-config-prettier": "^9.1.0",
     "eslint-plugin-import": "^2.27.5",
