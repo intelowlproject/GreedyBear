@@ -113,8 +113,9 @@ def iocs_from_hits(hits: list[dict]) -> list[IOC]:
 
         firehol_categories = get_firehol_categories(ip, extracted_ip)
 
-        # Collect unique sensors from hits
-        sensors = list({hit["_sensor"] for hit in hits if hit.get("_sensor") is not None})
+        # Collect unique sensors from hits, deduplicated by sensor ID
+        sensors_map = {hit["_sensor"].id: hit["_sensor"] for hit in hits if hit.get("_sensor") is not None and getattr(hit["_sensor"], "id", None)}
+        sensors = list(sensors_map.values())
         # Sort sensors by ID for consistent processing order
         sensors.sort(key=lambda s: s.id)
 
