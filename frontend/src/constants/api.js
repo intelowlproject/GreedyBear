@@ -18,8 +18,9 @@ export const LOGIN_URI = `${AUTH_BASE_URI}/login`;
 export const LOGOUT_URI = `${AUTH_BASE_URI}/logout`;
 export const SESSIONS_BASE_URI = `${AUTH_BASE_URI}/sessions`;
 export const APIACCESS_BASE_URI = `${AUTH_BASE_URI}/apiaccess`;
-//feeds
+
+// feeds
 export const FEEDS_BASE_URI = `${API_BASE_URI}/feeds`;
 
-//honeypot
+// honeypot
 export const GENERAL_HONEYPOT_URI = `${API_BASE_URI}/general_honeypot`;
