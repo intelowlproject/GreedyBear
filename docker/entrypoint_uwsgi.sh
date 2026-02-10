@@ -12,11 +12,16 @@ done
 
 # Apply database migrations
 echo "Waiting for db to be ready..."
+# Create cache table for Django Q monitoring (ignore error if exists)
+python manage.py createcachetable || true
 python manage.py makemigrations durin
 python manage.py migrate
 
 # Collect static files
 python manage.py collectstatic --noinput
+
+# Setup Django Q2 schedules
+python manage.py setup_schedules
 
 echo "------------------------------"
 echo "DEBUG: " $DEBUG

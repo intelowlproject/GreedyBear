@@ -85,6 +85,7 @@ INSTALLED_APPS = [
     "certego_saas.apps.organization",
     # greedybear apps
     "greedybear.apps.GreedyBearConfig",
+    "django_q",
     "authentication",
     # auth
     "rest_email_auth",
@@ -187,8 +188,27 @@ DATABASES = {
     },
 }
 
-BROKER_URL = os.environ.get("BROKER_URL", "amqp://guest:guest@rabbitmq:5672")
-RESULT_BACKEND = "django-db"
+Q_CLUSTER = {
+    "name": "greedybear_q",
+    "workers": 4,
+    "recycle": 500,
+    "retry": 1860,  # Must be larger than timeout
+    "timeout": 1800,  # 30 minutes
+    "compress": True,
+    "save_limit": 250,
+    "queue_limit": 500,
+    "cpu_affinity": 1,
+    "label": "Django Q",
+    "orm": "default",
+}
+
+# Required for Django Q monitoring
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.db.DatabaseCache",
+        "LOCATION": "greedybear_cache",
+    }
+}
 
 AUTH_USER_MODEL = "certego_saas_user.User"  # custom user model
 AUTHENTICATION_BACKENDS = [
@@ -245,16 +265,16 @@ LOGGING = (
             },
         },
         "handlers": {
-            "celery": {
+            "django_q": {
                 "level": INFO_OR_DEBUG_LEVEL,
                 "class": "logging.handlers.WatchedFileHandler",
-                "filename": f"{DJANGO_LOG_DIRECTORY}/celery.log",
+                "filename": f"{DJANGO_LOG_DIRECTORY}/django_q.log",
                 "formatter": "stdfmt",
             },
-            "celery_error": {
+            "django_q_error": {
                 "level": "ERROR",
                 "class": "logging.handlers.WatchedFileHandler",
-                "filename": f"{DJANGO_LOG_DIRECTORY}/celery_errors.log",
+                "filename": f"{DJANGO_LOG_DIRECTORY}/django_q_errors.log",
                 "formatter": "stdfmt",
             },
             "elasticsearch": {
@@ -327,8 +347,8 @@ LOGGING = (
             },
         },
         "loggers": {
-            "celery": {
-                "handlers": ["celery", "celery_error"],
+            "django_q": {
+                "handlers": ["django_q", "django_q_error"],
                 "level": INFO_OR_DEBUG_LEVEL,
                 "propagate": True,
             },
