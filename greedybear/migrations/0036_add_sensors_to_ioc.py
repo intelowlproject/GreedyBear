@@ -3,6 +3,40 @@
 from django.db import migrations, models
 
 
+
+def deduplicate_sensors(apps, schema_editor):
+    """
+    Remove duplicate Sensor records directly from the database to facilitate
+    the unique constraint on the 'address' field.
+    For each address with multiple entries, we keep the one with the lowest ID
+    and remove the others.
+    """
+    Sensor = apps.get_model("greedybear", "Sensor")
+    db_alias = schema_editor.connection.alias
+    
+    # Identify duplicate addresses
+    # Grouping by address:
+    from django.db.models import Count
+    
+    duplicates = (
+        Sensor.objects.using(db_alias)
+        .values("address")
+        .annotate(count=Count("id"))
+        .filter(count__gt=1)
+    )
+
+    for entry in duplicates:
+        address = entry["address"]
+        # Get all sensors for this address, ordered by ID (oldest first)
+        sensors = Sensor.objects.using(db_alias).filter(address=address).order_by("id")
+        
+        # Keep the first one (lowest ID), delete the rest
+        first_sensor = sensors.first()
+        if first_sensor:
+            # Delete all other sensors with this address
+            Sensor.objects.using(db_alias).filter(address=address).exclude(id=first_sensor.id).delete()
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -15,6 +49,7 @@ class Migration(migrations.Migration):
             name='sensors',
             field=models.ManyToManyField(blank=True, to='greedybear.sensor'),
         ),
+        migrations.RunPython(deduplicate_sensors, reverse_code=migrations.RunPython.noop),
         migrations.AlterField(
             model_name='sensor',
             name='address',
