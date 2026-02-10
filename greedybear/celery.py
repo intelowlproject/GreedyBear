@@ -69,14 +69,19 @@ app.conf.beat_schedule = {
         "options": {"queue": "default", "countdown": 10},
     },
     # ===========================================
-    # TIMING-CRITICAL: Midnight Training
-    # This wrapper ensures `chain_train_and_update` runs
-    # only after the midnight extraction completes using Celery chain.
-    # Scheduled at exactly 00:00.
+    # TIMING-CRITICAL: Training
+    # SCORING
+    # Important:
+    # The training task must be run with a small offset after midnight (00:00)
+    # to ensure training data aligns with complete calendar days.
+    # The small offset is to make sure that the midnight extraction task is completed before training.
+    # This way models learn from complete rather than partial day patterns, which is crucial for their performance.
     # ===========================================
-    "train_and_update_after_midnight": {
-        "task": "greedybear.tasks.train_and_update_after_midnight",
-        "schedule": crontab(hour=0, minute=0),
+    "train_and_update": {
+        "task": "greedybear.tasks.chain_train_and_update",
+        # Sometimes this could start when the midnight extraction is not ended yet.
+        # Let's increment this a little.
+        "schedule": crontab(hour=0, minute=int(hp_extraction_interval / 3 * 2)),
         "options": {"queue": "default"},
     },
     # ===========================================
