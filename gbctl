@@ -61,7 +61,6 @@ save_config() {
     [ "$ENV_MODE" = "dev" ]      && compose_file+=":docker/local.override.yml"
     [ "$ENABLE_HTTPS" = true ]   && compose_file+=":docker/https.override.yml"
     [ "$ENABLE_ELASTIC" = true ] && compose_file+=":docker/elasticsearch.yml"
-    [ "$ENABLE_STAG" = true ]    && compose_file+=":docker/stag.override.yml"
     [ "$USE_VERSION" = true ]    && compose_file+=":docker/version.override.yml"
 
     cat > "$env_file" <<EOF
@@ -106,7 +105,6 @@ load_config() {
             [[ "$compose_file" == *"local.override.yml"* ]] && ENV_MODE="dev" || ENV_MODE="prod"
             [[ "$compose_file" == *"https.override.yml"* ]] && ENABLE_HTTPS=true
             [[ "$compose_file" == *"elasticsearch.yml"* ]]  && ENABLE_ELASTIC=true
-            [[ "$compose_file" == *"stag.override.yml"* ]]  && ENABLE_STAG=true
             if [[ "$compose_file" == *"version.override.yml"* ]]; then
                 USE_VERSION=true
                 GREEDYBEAR_VERSION="${version_pin:-latest}"
@@ -147,13 +145,13 @@ GLOBAL OPTIONS
     -s, --silent                Silent mode (non-interactive)
 
 INIT OPTIONS (./gbctl init)
-    --prod                      Production deployment (default)
     --dev                       Development deployment with hot-reload
+    --release <tag>             Pin a specific image tag (e.g. stag, 3.0.1)
     --https                     Enable HTTPS with custom certificates
     --elastic                   Enable Elasticsearch (requires >=16GB RAM)
     --elastic-endpoint <url>    Specify Elasticsearch endpoint
-    --stag                      Staging deployment configuration
-    --release <version>         Pin a specific image version (default: latest)
+
+    Without --dev or --release, production mode with the "prod" image tag is used.
 
 CLEAN OPTIONS (./gbctl clean)
     --force                     Required to confirm destructive operation
@@ -169,11 +167,13 @@ LOGS OPTIONS
 
 EXAMPLES
     # Initialize production deployment with external TPOT Elasticsearch
-    ./gbctl init --prod --elastic-endpoint http://tpot-host:64298
-    ./gbctl up
+    ./gbctl init --elastic-endpoint http://tpot-host:64298
 
     # Initialize for development with a dummy Elasticsearch instance
     ./gbctl init --dev --elastic
+
+    # Initialize staging deployment
+    ./gbctl init --release stag
 
     # Start services (uses configuration from init)
     ./gbctl up
@@ -188,7 +188,7 @@ EXAMPLES
     ./gbctl update
 
     # Silent initialization
-    ./gbctl init --prod --silent
+    ./gbctl init --silent
 
 EOF
 }
@@ -923,7 +923,7 @@ cmd_clean() {
     rm -f "${SCRIPT_DIR}/docker/env_file" "${SCRIPT_DIR}/docker/env_file_postgres" "${SCRIPT_DIR}/.env"
 
     log_success "GreedyBear has been completely removed"
-    log_info "To reinstall, run: ./gbctl init --prod"
+    log_info "To reinstall, run: ./gbctl init"
 }
 
 # Create admin user
@@ -978,7 +978,6 @@ parse_args() {
     ENV_MODE="prod"
     ENABLE_HTTPS=false
     ENABLE_ELASTIC=false
-    ENABLE_STAG=false
     USE_VERSION=false
     FORCE_CLEAN=false
     COMMAND=""
@@ -1010,11 +1009,6 @@ parse_args() {
     # Parse remaining arguments
     while [[ $# -gt 0 ]]; do
         case $1 in
-            --prod)
-                ENV_MODE="prod"
-                PASSED_FLAGS+=("--prod")
-                shift
-                ;;
             --dev)
                 ENV_MODE="dev"
                 PASSED_FLAGS+=("--dev")
@@ -1028,11 +1022,6 @@ parse_args() {
             --elastic)
                 ENABLE_ELASTIC=true
                 PASSED_FLAGS+=("--elastic")
-                shift
-                ;;
-            --stag)
-                ENABLE_STAG=true
-                PASSED_FLAGS+=("--stag")
                 shift
                 ;;
             --release)
@@ -1133,7 +1122,14 @@ main() {
     parse_args "$@"
     
     # Validate flags and execute command
-    local init_flags=(--prod --dev --https --elastic --stag --release --elastic-endpoint --silent)
+    local init_flags=(--dev --https --elastic --release --elastic-endpoint --silent)
+
+    # Reject conflicting flags
+    if [ "$ENV_MODE" = "dev" ] && [ "$USE_VERSION" = true ]; then
+        log_error "--dev and --release are mutually exclusive"
+        log_info "--dev builds images locally, --release pins a remote image tag"
+        exit 1
+    fi
 
     case $COMMAND in
         init)
