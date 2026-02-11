@@ -6,21 +6,21 @@ from django.core.exceptions import FieldDoesNotExist
 from rest_framework import serializers
 
 from greedybear.consts import REGEX_DOMAIN, REGEX_IP
-from greedybear.models import IOC, GeneralHoneypot
+from greedybear.models import IOC, Honeypot
 
 logger = logging.getLogger(__name__)
 
 
-class GeneralHoneypotSerializer(serializers.ModelSerializer):
+class HoneypotSerializer(serializers.ModelSerializer):
     class Meta:
-        model = GeneralHoneypot
+        model = Honeypot
 
     def to_representation(self, value):
         return value.name
 
 
 class IOCSerializer(serializers.ModelSerializer):
-    general_honeypot = GeneralHoneypotSerializer(many=True, read_only=True)
+    general_honeypot = HoneypotSerializer(many=True, read_only=True)
 
     class Meta:
         model = IOC

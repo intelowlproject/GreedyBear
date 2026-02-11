@@ -7,20 +7,20 @@ from . import MigrationTestCase
 class TestRemoveHardcodedHoneypots(MigrationTestCase):
     """Tests that hardcoded honeypots are removed only when no IOC references them."""
 
-    migrate_from = "0028_generalhoneypot_unique_generalhoneypot_name_ci"
+    migrate_from = "0028_honeypot_unique_honeypot_name_ci"
     migrate_to = "0029_remove_hardcoded_honeypots"
 
     def test_honeypots_deleted_only_if_unused(self):
         IOC = self.old_state.apps.get_model(self.app_name, "IOC")
-        GeneralHoneypot = self.old_state.apps.get_model(self.app_name, "GeneralHoneypot")
+        Honeypot = self.old_state.apps.get_model(self.app_name, "Honeypot")
 
-        used_hp = GeneralHoneypot.objects.get(name="Ciscoasa")
+        used_hp = Honeypot.objects.get(name="Ciscoasa")
 
         ioc = IOC.objects.create()
         ioc.general_honeypot.add(used_hp)
 
         new_state = self.apply_tested_migration()
-        hp_new = new_state.apps.get_model(self.app_name, "GeneralHoneypot")
+        hp_new = new_state.apps.get_model(self.app_name, "Honeypot")
 
         self.assertFalse(
             hp_new.objects.filter(name="Heralding").exists(),
@@ -35,14 +35,14 @@ class TestRemoveHardcodedHoneypots(MigrationTestCase):
 
 @tag("migration")
 class TestCowrieLog4jMigration(MigrationTestCase):
-    """Tests migration of cowrie and log4j boolean flags into the GeneralHoneypot M2M relation."""
+    """Tests migration of cowrie and log4j boolean flags into the Honeypot M2M relation."""
 
     migrate_from = "0029_remove_hardcoded_honeypots"
     migrate_to = "0030_migrate_cowrie_log4j"
 
     def test_boolean_flags_are_migrated_to_m2m(self):
         IOC = self.old_state.apps.get_model(self.app_name, "IOC")
-        self.old_state.apps.get_model(self.app_name, "GeneralHoneypot")
+        self.old_state.apps.get_model(self.app_name, "Honeypot")
 
         # creating iocs covering all flag combinations
         ioc_cowrie = IOC.objects.create(cowrie=True, log4j=False)
@@ -52,7 +52,7 @@ class TestCowrieLog4jMigration(MigrationTestCase):
 
         new_state = self.apply_tested_migration()
         ioc_new = new_state.apps.get_model(self.app_name, "IOC")
-        hp_new = new_state.apps.get_model(self.app_name, "GeneralHoneypot")
+        hp_new = new_state.apps.get_model(self.app_name, "Honeypot")
 
         # fetching migrated honeypots
         cowrie_hp = hp_new.objects.get(name="Cowrie")

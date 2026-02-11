@@ -10,7 +10,7 @@ from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from greedybear.models import IOC, GeneralHoneypot, Statistics, ViewType
+from greedybear.models import IOC, Honeypot, Statistics, ViewType
 
 logger = logging.getLogger(__name__)
 
@@ -80,7 +80,7 @@ class StatisticsViewSet(viewsets.ViewSet):
     @action(detail=False, methods=["get"])
     def feeds_types(self, request):
         """
-        Retrieve statistics for different types of feeds using GeneralHoneypot M2M relationship.
+        Retrieve statistics for different types of feeds using Honeypot M2M relationship.
 
         Args:
             request: The incoming request object.
@@ -90,7 +90,7 @@ class StatisticsViewSet(viewsets.ViewSet):
         """
         # Build annotations for each active general honeypot
         annotations = {}
-        general_honeypots = GeneralHoneypot.objects.all().filter(active=True)
+        general_honeypots = Honeypot.objects.all().filter(active=True)
         for hp in general_honeypots:
             # Use M2M relationship instead of boolean fields
             annotations[hp.name] = Count("name", distinct=True, filter=Q(general_honeypot__name__iexact=hp.name))

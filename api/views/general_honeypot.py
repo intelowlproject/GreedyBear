@@ -6,7 +6,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 from greedybear.consts import GET
-from greedybear.models import GeneralHoneypot
+from greedybear.models import Honeypot
 
 logger = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ def general_honeypot_list(request):
     logger.info(f"Requested general honeypots list from {request.user}.")
     active = request.query_params.get("onlyActive")
     honeypots = []
-    general_honeypots = GeneralHoneypot.objects.all()
+    general_honeypots = Honeypot.objects.all()
     if active == "true":
         general_honeypots = general_honeypots.filter(active=True)
         logger.info(f"Requested only active general honeypots from {request.user}")
