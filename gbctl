@@ -919,19 +919,12 @@ cmd_create_admin() {
     # Check if we have arguments for silent mode (from flags or environment variables)
     if [ -n "$ADMIN_USERNAME" ] && [ -n "$ADMIN_PASSWORD" ] && [ -n "$ADMIN_EMAIL" ]; then
         log_info "Creating superuser in non-interactive mode..."
-        
-        # Export credentials so docker inherits them without exposing values on the command line
-        export DJANGO_SUPERUSER_PASSWORD="$ADMIN_PASSWORD"
-        export DJANGO_SUPERUSER_USERNAME="$ADMIN_USERNAME"
-        export DJANGO_SUPERUSER_EMAIL="$ADMIN_EMAIL"
-        export DJANGO_SUPERUSER_FIRST_NAME="admin"
-        export DJANGO_SUPERUSER_LAST_NAME="user"
 
-        if ${docker_cmd} exec -e DJANGO_SUPERUSER_PASSWORD \
-                           -e DJANGO_SUPERUSER_USERNAME \
-                           -e DJANGO_SUPERUSER_EMAIL \
-                           -e DJANGO_SUPERUSER_FIRST_NAME \
-                           -e DJANGO_SUPERUSER_LAST_NAME \
+        if ${docker_cmd} exec -e DJANGO_SUPERUSER_PASSWORD="$ADMIN_PASSWORD" \
+                           -e DJANGO_SUPERUSER_USERNAME="$ADMIN_USERNAME" \
+                           -e DJANGO_SUPERUSER_EMAIL="$ADMIN_EMAIL" \
+                           -e DJANGO_SUPERUSER_FIRST_NAME="admin" \
+                           -e DJANGO_SUPERUSER_LAST_NAME="user" \
                            "$container_name" python3 manage.py createsuperuser --noinput; then
             log_success "Superuser '$ADMIN_USERNAME' created successfully!"
         else
