@@ -2,14 +2,13 @@
 FROM node:lts-alpine3.22 AS frontend-build
 
 WORKDIR /
-# copy react source code
-COPY frontend/ .
-# copy version file as an env file
-COPY docker/.version .env.local
-# install and build
-RUN npm install npm@latest --location=global
+# install dependencies first for layer caching
+COPY frontend/package.json frontend/package-lock.json ./
 RUN npm install
 
+# copy source code and build
+COPY frontend/ .
+COPY docker/.version .env.local
 RUN PUBLIC_URL=/static/reactapp/ npm run build
 
 # Stage 2: Backend
