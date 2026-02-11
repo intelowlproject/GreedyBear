@@ -1,17 +1,18 @@
+from django.conf import settings
 from django.core.management.base import BaseCommand
 from django_q.models import Schedule
-
-from greedybear.settings import EXTRACTION_INTERVAL
 
 
 class Command(BaseCommand):
     help = "Setup Django Q2 scheduled tasks"
 
     def handle(self, *args, **options):
+        extraction_interval = settings.EXTRACTION_INTERVAL
+
         # 1. Extraction: Every EXTRACTION_INTERVAL minutes
         Schedule.objects.update_or_create(
             name="extract_all",
-            defaults={"func": "greedybear.tasks.extract_all", "schedule_type": Schedule.CRON, "cron": f"*/{EXTRACTION_INTERVAL} * * * *", "repeats": -1},
+            defaults={"func": "greedybear.tasks.extract_all", "schedule_type": Schedule.CRON, "cron": f"*/{extraction_interval} * * * *", "repeats": -1},
         )
 
         # 2. Monitor Honeypots: Hourly at :07
@@ -26,7 +27,8 @@ class Command(BaseCommand):
         )
 
         # 4. Training: Daily at 00:XX (calculated)
-        minute = int(EXTRACTION_INTERVAL / 3 * 2)
+        minute = int(extraction_interval / 3 * 2)
+        minute = min(59, minute)
         Schedule.objects.update_or_create(
             name="train_and_update",
             defaults={"func": "greedybear.tasks.chain_train_and_update", "schedule_type": Schedule.CRON, "cron": f"{minute} 0 * * *", "repeats": -1},

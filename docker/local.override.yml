@@ -26,3 +26,5 @@ services:
     image: intelowlproject/greedybear:test
     volumes:
       - ../:/opt/deploy/greedybear
+    environment:
+      - DEBUG=True

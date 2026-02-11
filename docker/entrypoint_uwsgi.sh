@@ -13,15 +13,20 @@ done
 # Apply database migrations
 echo "Waiting for db to be ready..."
 # Create cache table for Django Q monitoring (idempotent)
-python manage.py shell -c "from django.db import connection; from django.core.management import call_command; call_command('createcachetable') if 'greedybear_cache' not in connection.introspection.table_names() else None"
+python manage.py shell -c "
+from django.db import connection
+from django.core.management import call_command
+try:
+    if 'greedybear_cache' not in connection.introspection.table_names():
+        call_command('createcachetable')
+except Exception as e:
+    print(f'Warning: Failed to create cache table: {e}')
+"
 python manage.py makemigrations durin
 python manage.py migrate
 
 # Collect static files
 python manage.py collectstatic --noinput
-
-# Setup Django Q2 schedules
-python manage.py setup_schedules
 
 echo "------------------------------"
 echo "DEBUG: " $DEBUG

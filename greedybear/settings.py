@@ -200,14 +200,19 @@ Q_CLUSTER = {
     "cpu_affinity": 1,
     "label": "Django Q",
     "orm": "default",
+    "cache": "django-q",
 }
 
-# Required for Django Q monitoring
+# Cache configuration
 CACHES = {
     "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "greedybear-default",
+    },
+    "django-q": {
         "BACKEND": "django.core.cache.backends.db.DatabaseCache",
         "LOCATION": "greedybear_cache",
-    }
+    },
 }
 
 AUTH_USER_MODEL = "certego_saas_user.User"  # custom user model
@@ -429,6 +434,8 @@ else:
 
 
 EXTRACTION_INTERVAL = int(os.environ.get("EXTRACTION_INTERVAL", 10))
+if EXTRACTION_INTERVAL < 1 or EXTRACTION_INTERVAL > 60:
+    raise ValueError(f"EXTRACTION_INTERVAL must be between 1 and 60 minutes, got {EXTRACTION_INTERVAL}")
 INITIAL_EXTRACTION_TIMESPAN = int(os.environ.get("INITIAL_EXTRACTION_TIMESPAN", 60 * 24 * 3))  # 3 days
 CLUSTER_COWRIE_COMMAND_SEQUENCES = os.environ.get("CLUSTER_COWRIE_COMMAND_SEQUENCES", "False") == "True"
 
