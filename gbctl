@@ -685,7 +685,7 @@ cmd_update() {
             # Pinned to a version tag — don't pull, just check for newer releases
             git -C "$SCRIPT_DIR" fetch --tags --quiet 2>/dev/null
             local latest_tag
-            latest_tag=$(git -C "$SCRIPT_DIR" tag --sort=-v:refname | head -1)
+            latest_tag=$(git -C "$SCRIPT_DIR" tag | sed 's/^v//' | sort -t. -k1,1n -k2,2n -k3,3n | tail -1)
             if [ -n "$latest_tag" ] && [ "$latest_tag" != "$GREEDYBEAR_VERSION" ]; then
                 log_warning "Pinned to ${GREEDYBEAR_VERSION}, but ${latest_tag} is available"
                 log_info "To upgrade, run: ./gbctl init --release ${latest_tag}"
