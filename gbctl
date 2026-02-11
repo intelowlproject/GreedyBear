@@ -145,7 +145,7 @@ LOGS OPTIONS
 OPTIONS
     -h, --help                  Show this help message
     -s, --silent                Silent mode (non-interactive)
-    --version <version>         Specify version to install (default: latest)
+    --release <version>         Specify version to install (default: latest)
     --force                     Force operation (required for 'clean')
     --username <name>           Username for create-admin (or use GB_ADMIN_USERNAME)
     --password <pass>           Password for create-admin (or use GB_ADMIN_PASSWORD)
@@ -1023,9 +1023,9 @@ parse_args() {
                 ENABLE_STAG=true
                 shift
                 ;;
-            --version)
+            --release)
                 if [[ -z "${2:-}" || "$2" == -* ]]; then
-                    echo -e "${RED}Error:${NC} --version requires a non-empty value" >&2
+                    echo -e "${RED}Error:${NC} --release requires a non-empty value" >&2
                     exit 1
                 fi
                 GREEDYBEAR_VERSION=$2
