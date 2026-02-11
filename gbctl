@@ -729,17 +729,22 @@ cmd_backup() {
     fi
     
     # Backup PostgreSQL database
+    # Write dump to a file inside the container to avoid stdout corruption,
+    # then copy it out to the host.
     log_info "Backing up PostgreSQL database..."
     set +e  # Temporarily disable exit on error to handle failures gracefully
-    ${docker_cmd} exec ${PROJECT_NAME}_postgres pg_dump -U "$pg_user" "$pg_db" > "${backup_file}.sql"
+    ${docker_cmd} exec ${PROJECT_NAME}_postgres pg_dump -U "$pg_user" -f /tmp/gb_backup.sql "$pg_db"
     backup_status=$?
     set -e  # Re-enable exit on error
-    
+
     if [ $backup_status -eq 0 ]; then
+        ${docker_cmd} cp ${PROJECT_NAME}_postgres:/tmp/gb_backup.sql "${backup_file}.sql"
+        ${docker_cmd} exec ${PROJECT_NAME}_postgres rm -f /tmp/gb_backup.sql
         gzip "${backup_file}.sql"
         chmod 600 "${backup_file}.sql.gz"
         log_success "Database backup created: ${backup_file}.sql.gz"
     else
+        ${docker_cmd} exec ${PROJECT_NAME}_postgres rm -f /tmp/gb_backup.sql 2>/dev/null || true
         log_error "Database backup failed"
         exit 1
     fi
