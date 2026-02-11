@@ -976,6 +976,7 @@ parse_args() {
     USE_VERSION=false
     FORCE_CLEAN=false
     COMMAND=""
+    PASSED_FLAGS=()
     
     # Check for help (early check before loading config)
     if [[ $# -eq 0 ]] || [[ "$1" == "-h" ]] || [[ "$1" == "--help" ]]; then
@@ -1005,22 +1006,27 @@ parse_args() {
         case $1 in
             --prod)
                 ENV_MODE="prod"
+                PASSED_FLAGS+=("--prod")
                 shift
                 ;;
             --dev)
                 ENV_MODE="dev"
+                PASSED_FLAGS+=("--dev")
                 shift
                 ;;
             --https)
                 ENABLE_HTTPS=true
+                PASSED_FLAGS+=("--https")
                 shift
                 ;;
             --elastic)
                 ENABLE_ELASTIC=true
+                PASSED_FLAGS+=("--elastic")
                 shift
                 ;;
             --stag)
                 ENABLE_STAG=true
+                PASSED_FLAGS+=("--stag")
                 shift
                 ;;
             --release)
@@ -1030,6 +1036,7 @@ parse_args() {
                 fi
                 GREEDYBEAR_VERSION=$2
                 USE_VERSION=true  # Implicitly enable version override when version is specified
+                PASSED_FLAGS+=("--release")
                 shift 2
                 ;;
             --elastic-endpoint)
@@ -1038,14 +1045,17 @@ parse_args() {
                     exit 1
                 fi
                 ELASTIC_ENDPOINT=$2
+                PASSED_FLAGS+=("--elastic-endpoint")
                 shift 2
                 ;;
             -s|--silent)
                 SILENT_MODE=true
+                PASSED_FLAGS+=("--silent")
                 shift
                 ;;
             --force)
                 FORCE_CLEAN=true
+                PASSED_FLAGS+=("--force")
                 shift
                 ;;
             --username)
@@ -1054,6 +1064,7 @@ parse_args() {
                     exit 1
                 fi
                 ADMIN_USERNAME=$2
+                PASSED_FLAGS+=("--username")
                 shift 2
                 ;;
             --password)
@@ -1062,6 +1073,7 @@ parse_args() {
                     exit 1
                 fi
                 ADMIN_PASSWORD=$2
+                PASSED_FLAGS+=("--password")
                 shift 2
                 ;;
             --email)
@@ -1070,6 +1082,7 @@ parse_args() {
                     exit 1
                 fi
                 ADMIN_EMAIL=$2
+                PASSED_FLAGS+=("--email")
                 shift 2
                 ;;
             -h|--help)
@@ -1087,55 +1100,94 @@ parse_args() {
     EXTRA_ARGS=("$@")
 }
 
+# Validate that only allowed flags were passed for the given command
+validate_flags() {
+    local cmd="$1"
+    shift
+    local allowed=("$@")
+
+    for flag in "${PASSED_FLAGS[@]}"; do
+        local valid=false
+        for a in "${allowed[@]}"; do
+            if [ "$flag" = "$a" ]; then
+                valid=true
+                break
+            fi
+        done
+        if [ "$valid" = false ]; then
+            log_error "Flag '$flag' is not valid for '$cmd' command"
+            log_info "Run './gbctl --help' for usage information"
+            exit 1
+        fi
+    done
+}
+
 # Main execution
 main() {
     parse_args "$@"
     
-    # Execute command
+    # Validate flags and execute command
+    local init_flags=(--prod --dev --https --elastic --stag --release --elastic-endpoint --silent)
+
     case $COMMAND in
         init)
+            validate_flags init "${init_flags[@]}"
             cmd_init "${EXTRA_ARGS[@]}"
             ;;
         up|start)
+            validate_flags "$COMMAND" --silent
             cmd_up "${EXTRA_ARGS[@]}"
             ;;
         down)
+            validate_flags down --silent
             cmd_down "${EXTRA_ARGS[@]}"
             ;;
         stop)
+            validate_flags stop --silent
             cmd_stop "${EXTRA_ARGS[@]}"
             ;;
         restart)
+            validate_flags restart --silent
             cmd_restart "${EXTRA_ARGS[@]}"
             ;;
         logs)
+            validate_flags logs --silent
             cmd_logs "${EXTRA_ARGS[@]}"
             ;;
         ps)
+            validate_flags ps --silent
             cmd_ps "${EXTRA_ARGS[@]}"
             ;;
         update)
+            validate_flags update --silent
             cmd_update "${EXTRA_ARGS[@]}"
             ;;
         build)
+            validate_flags build --silent
             cmd_build "${EXTRA_ARGS[@]}"
             ;;
         pull)
+            validate_flags pull --silent
             cmd_pull "${EXTRA_ARGS[@]}"
             ;;
         backup)
+            validate_flags backup --silent
             cmd_backup "${EXTRA_ARGS[@]}"
             ;;
         restore)
+            validate_flags restore --silent
             cmd_restore "${EXTRA_ARGS[@]}"
             ;;
         health)
+            validate_flags health --silent
             cmd_health "${EXTRA_ARGS[@]}"
             ;;
         clean)
+            validate_flags clean --force --silent
             cmd_clean "${EXTRA_ARGS[@]}"
             ;;
         create-admin)
+            validate_flags create-admin --username --password --email --silent
             cmd_create_admin "${EXTRA_ARGS[@]}"
             ;;
         *)
