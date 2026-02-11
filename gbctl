@@ -797,7 +797,12 @@ cmd_restore() {
     fi
     
     log_info "Restoring database from: $backup_file"
-    
+
+    # Drop and recreate the database to avoid duplicate object errors
+    log_info "Dropping and recreating database..."
+    ${docker_cmd} exec ${PROJECT_NAME}_postgres dropdb -U "$pg_user" "$pg_db"
+    ${docker_cmd} exec ${PROJECT_NAME}_postgres createdb -U "$pg_user" "$pg_db"
+
     # Decompress and restore
     set +e  # Temporarily disable exit on error to handle failures gracefully
     if [[ $backup_file == *.gz ]]; then
