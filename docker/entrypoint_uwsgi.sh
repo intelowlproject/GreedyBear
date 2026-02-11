@@ -16,9 +16,12 @@ python manage.py makemigrations durin
 python manage.py migrate
 
 # Collect static files
-python manage.py collectstatic --noinput
+python manage.py collectstatic --noinput --clear --verbosity 0
 
+. /opt/deploy/greedybear/docker/.version
+export REACT_APP_GREEDYBEAR_VERSION
 echo "------------------------------"
+echo "GreedyBear $REACT_APP_GREEDYBEAR_VERSION"
 echo "DEBUG: " $DEBUG
 echo "DJANGO_TEST_SERVER: " $DJANGO_TEST_SERVER
 echo "------------------------------"
