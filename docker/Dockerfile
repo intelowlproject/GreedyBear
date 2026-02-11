@@ -47,7 +47,7 @@ COPY --from=frontend-build /build /var/www/reactapp
 # separation is required to avoid to re-execute os installation in case of change of python requirements
 RUN touch ${LOG_PATH}/django/api.log ${LOG_PATH}/django/api_errors.log \
     && touch ${LOG_PATH}/django/greedybear.log ${LOG_PATH}/django/greedybear_errors.log \
-    && touch ${LOG_PATH}/django/celery.log ${LOG_PATH}/django/celery_errors.log \
+    && touch ${LOG_PATH}/django/django_q.log ${LOG_PATH}/django/django_q_errors.log \
     && touch ${LOG_PATH}/django/django_errors.log ${LOG_PATH}/django/elasticsearch.log\
     && touch ${LOG_PATH}/django/authentication.log ${LOG_PATH}/django/authentication_errors.log \
     && mkdir -p ${PYTHONPATH}/mlmodels \

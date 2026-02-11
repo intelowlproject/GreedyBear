@@ -832,7 +832,7 @@ cmd_health() {
     local docker_cmd="$DOCKER_CMD"
     
     # Check each service
-    local services=("postgres" "uwsgi" "nginx" "rabbitmq" "celery_beat" "celery_worker_default")
+    local services=("postgres" "uwsgi" "nginx" "qcluster")
     local all_healthy=true
     
     for service in "${services[@]}"; do
