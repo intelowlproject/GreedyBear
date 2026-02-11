@@ -903,11 +903,10 @@ cmd_clean() {
     log_info "Stopping and removing all containers..."
     execute_compose down -v
     
-    log_info "Removing environment files..."
+    log_info "Removing environment and configuration files..."
     rm -f "${SCRIPT_DIR}/docker/env_file" "${SCRIPT_DIR}/docker/env_file_postgres" "${SCRIPT_DIR}/.env"
-    
+    rm -f "$GBCTL_CONFIG"
 
-    
     log_success "GreedyBear has been completely removed"
     log_info "To reinstall, run: ./gbctl init --prod"
 }
