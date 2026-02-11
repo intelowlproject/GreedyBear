@@ -679,15 +679,26 @@ cmd_ps() {
 # Update GreedyBear
 cmd_update() {
     log_info "Updating GreedyBear..."
-    
-    # Check if we are in a git repository
+
     if [ -d "${SCRIPT_DIR}/.git" ]; then
-        log_info "Pulling latest code from git..."
-        if git -C "$SCRIPT_DIR" pull; then
-            log_success "Code updated successfully"
+        if [ "$USE_VERSION" = true ] && [ "$GREEDYBEAR_VERSION" != "stag" ]; then
+            # Pinned to a version tag — don't pull, just check for newer releases
+            git -C "$SCRIPT_DIR" fetch --tags --quiet 2>/dev/null
+            local latest_tag
+            latest_tag=$(git -C "$SCRIPT_DIR" tag --sort=-v:refname | head -1)
+            if [ -n "$latest_tag" ] && [ "$latest_tag" != "$GREEDYBEAR_VERSION" ]; then
+                log_warning "Pinned to ${GREEDYBEAR_VERSION}, but ${latest_tag} is available"
+                log_info "To upgrade, run: ./gbctl init --release ${latest_tag}"
+            fi
         else
-            log_error "Failed to pull latest code. Please check your git configuration."
-            exit 1
+            # Tracking a branch (develop, main, or stag) — pull latest
+            log_info "Pulling latest code from git..."
+            if git -C "$SCRIPT_DIR" pull; then
+                log_success "Code updated successfully"
+            else
+                log_error "Failed to pull latest code. Please check your git configuration."
+                exit 1
+            fi
         fi
     else
         log_warning "Not a git repository. Skipping code update."
@@ -696,11 +707,11 @@ cmd_update() {
     # Pull latest images
     log_info "Pulling latest Docker images..."
     execute_compose pull
-    
+
     # Restart services using cmd_up to ensure version env vars are applied
     log_info "Restarting services with new images..."
     cmd_up "$@"
-    
+
     log_success "GreedyBear updated successfully!"
 }
 
