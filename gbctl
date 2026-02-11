@@ -138,44 +138,52 @@ COMMANDS
     clean        Remove all data and reset (destructive!)
     create-admin Create a Django superuser (interactive or silent)
 
-LOGS OPTIONS
-    ./gbctl logs           View container logs (stdout/stderr)
-    ./gbctl logs app       View Django application logs inside container
-
-OPTIONS
+GLOBAL OPTIONS
     -h, --help                  Show this help message
     -s, --silent                Silent mode (non-interactive)
-    --release <version>         Specify version to install (default: latest)
-    --force                     Force operation (required for 'clean')
-    --username <name>           Username for create-admin (or use GB_ADMIN_USERNAME)
-    --password <pass>           Password for create-admin (or use GB_ADMIN_PASSWORD)
-    --email <addr>              Email address for create-admin (or use GB_ADMIN_EMAIL)
-    
-DEPLOYMENT FLAGS
+
+INIT OPTIONS (./gbctl init)
     --prod                      Production deployment (default)
     --dev                       Development deployment with hot-reload
-    
-FEATURE FLAGS
     --https                     Enable HTTPS with custom certificates
     --elastic                   Enable Elasticsearch (requires >=16GB RAM)
-    --elastic-endpoint <url>    Specify Elasticsearch endpoint (for init)
+    --elastic-endpoint <url>    Specify Elasticsearch endpoint
     --stag                      Staging deployment configuration
+    --release <version>         Pin a specific image version (default: latest)
+
+CLEAN OPTIONS (./gbctl clean)
+    --force                     Required to confirm destructive operation
+
+CREATE-ADMIN OPTIONS (./gbctl create-admin)
+    --username <name>           Username (or use GB_ADMIN_USERNAME env var)
+    --password <pass>           Password (or use GB_ADMIN_PASSWORD env var)
+    --email <addr>              Email address (or use GB_ADMIN_EMAIL env var)
+
+LOGS OPTIONS
+    ./gbctl logs               View container logs (stdout/stderr)
+    ./gbctl logs app           View Django application logs inside container
 
 EXAMPLES
-    # Initialize and start production deployment
-    ./gbctl init --prod
-    ./gbctl up --prod
+    # Initialize production deployment with external TPOT Elasticsearch
+    ./gbctl init --prod --elastic-endpoint http://tpot-host:64298
+    ./gbctl up
 
-    # Development with Elasticsearch
-    ./gbctl up --dev --elastic
+    # Initialize for development with a dummy Elasticsearch instance
+    ./gbctl init --dev --elastic
 
-    # Update production instance
-    ./gbctl update --prod
+    # Start services (uses configuration from init)
+    ./gbctl up
 
     # View logs
     ./gbctl logs
 
-    # Silent installation (non-interactive)
+    # Create admin user
+    ./gbctl create-admin --username admin --password secret --email admin@example.com
+
+    # Update to latest version
+    ./gbctl update
+
+    # Silent initialization
     ./gbctl init --prod --silent
 
 EOF
