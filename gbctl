@@ -479,11 +479,49 @@ execute_compose() {
     ${DOCKER_CMD} compose --project-directory "${SCRIPT_DIR}" "$cmd" "$@"
 }
 
+# Checkout the appropriate git branch/tag for the deployment mode
+checkout_git_ref() {
+    if [ ! -d "${SCRIPT_DIR}/.git" ]; then
+        return
+    fi
+    if ! command -v git &> /dev/null; then
+        return
+    fi
+
+    local target_ref="main"
+    if [ "$ENV_MODE" = "dev" ]; then
+        target_ref="develop"
+    elif [ "$USE_VERSION" = true ]; then
+        if [ "$GREEDYBEAR_VERSION" = "stag" ]; then
+            target_ref="develop"
+        else
+            target_ref="$GREEDYBEAR_VERSION"
+        fi
+    fi
+
+    local current_ref
+    current_ref=$(git -C "$SCRIPT_DIR" branch --show-current 2>/dev/null || git -C "$SCRIPT_DIR" rev-parse --short HEAD)
+
+    if [ "$current_ref" = "$target_ref" ]; then
+        log_info "Already on '$target_ref'"
+        return
+    fi
+
+    log_info "Checking out '$target_ref'..."
+    if git -C "$SCRIPT_DIR" checkout "$target_ref"; then
+        log_success "Checked out '$target_ref'"
+    else
+        log_error "Failed to checkout '$target_ref'. Please check your git state."
+        exit 1
+    fi
+}
+
 # Initialize GreedyBear
 cmd_init() {
     log_info "Initializing GreedyBear..."
-    
+
     check_requirements
+    checkout_git_ref
     init_env_files
     
     log_success "Initialization complete!"
