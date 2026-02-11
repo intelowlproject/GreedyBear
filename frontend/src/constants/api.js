@@ -23,3 +23,6 @@ export const FEEDS_BASE_URI = `${API_BASE_URI}/feeds`;
 
 //honeypot
 export const GENERAL_HONEYPOT_URI = `${API_BASE_URI}/general_honeypot`;
+
+// News
+export const GREEDYBEAR_NEWS_URL = `${API_BASE_URI}/news`;

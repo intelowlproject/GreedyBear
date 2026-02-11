@@ -1,0 +1,257 @@
+import React from "react";
+import { render, screen, waitFor } from "@testing-library/react";
+import { NewsWidget } from "../../../src/components/home/NewsWidget";
+import { GREEDYBEAR_NEWS_URL } from "../../../src/constants/api";
+import "@testing-library/jest-dom";
+
+global.fetch = jest.fn();
+
+describe("NewsWidget", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  afterEach(() => {
+    jest.resetAllMocks();
+  });
+
+  describe("Loading State", () => {
+    it("should display loading spinner while fetching data", () => {
+      fetch.mockImplementation(() => new Promise(() => {}));
+
+      render(<NewsWidget />);
+
+      expect(screen.getByText("Loading news...")).toBeInTheDocument();
+      expect(screen.getByRole("status")).toBeInTheDocument();
+    });
+  });
+
+  describe("Success State", () => {
+    it("should display news items when data is fetched successfully", async () => {
+      const mockNewsData = [
+        {
+          date: "2024-01-15",
+          title: "Test News Title 1",
+          subtext: "Test subtext 1",
+          link: "https://example.com/news1",
+        },
+        {
+          date: "2024-02-20",
+          title: "Test News Title 2",
+          subtext: "Test subtext 2",
+          link: "https://example.com/news2",
+        },
+      ];
+
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockNewsData,
+      });
+
+      render(<NewsWidget />);
+
+      // Wait for the first title to appear
+      expect(await screen.findByText("Test News Title 1")).toBeInTheDocument();
+
+      // Check the rest without waitFor
+      expect(screen.getByText("Test News Title 2")).toBeInTheDocument();
+      expect(screen.getByText("Test subtext 1")).toBeInTheDocument();
+      expect(screen.getByText("Test subtext 2")).toBeInTheDocument();
+    });
+
+    it("should call the correct API endpoint", async () => {
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => [],
+      });
+
+      render(<NewsWidget />);
+
+      await waitFor(() => {
+        expect(fetch).toHaveBeenCalledWith(GREEDYBEAR_NEWS_URL);
+      });
+      expect(fetch).toHaveBeenCalledTimes(1);
+    });
+
+    it("should render 'Read more' links with correct href", async () => {
+      const mockNewsData = [
+        {
+          date: "2024-01-15",
+          title: "Test News",
+          subtext: "Test subtext",
+          link: "https://example.com/news",
+        },
+      ];
+
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockNewsData,
+      });
+
+      render(<NewsWidget />);
+
+      const link = await screen.findByText("Read more");
+      expect(link).toHaveAttribute("href", "https://example.com/news");
+      expect(link).toHaveAttribute("target", "_blank");
+      expect(link).toHaveAttribute("rel", "noopener noreferrer");
+    });
+
+    it("should display message when no news is available", async () => {
+      fetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => [],
+      });
+
+      render(<NewsWidget />);
+
+      expect(
+        await screen.findByText("No news available at the moment.")
+      ).toBeInTheDocument();
+    });
+  });
+
+  describe("Error State", () => {
+    it("should display error message when fetch fails", async () => {
+      fetch.mockRejectedValueOnce(new Error("Network error"));
+
+      render(<NewsWidget />);
+
+      expect(
+        await screen.findByText("Unable to load news. Please try again later.")
+      ).toBeInTheDocument();
+    });
+
+    it("should display error message when response is not ok", async () => {
+      fetch.mockResolvedValueOnce({
+        ok: false,
+        status: 404,
+      });
+
+      render(<NewsWidget />);
+
+      expect(
+        await screen.findByText("Unable to load news. Please try again later.")
+      ).toBeInTheDocument();
+    });
+
+    it("should log error to console when fetch fails", async () => {
+      const consoleErrorSpy = jest
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+      const mockError = new Error("Network error");
+
+      fetch.mockRejectedValueOnce(mockError);
+
+      render(<NewsWidget />);
+
+      await waitFor(() => {
+        expect(consoleErrorSpy).toHaveBeenCalledWith(
+          "Error fetching news:",
+          mockError
+        );
+      });
+
+      consoleErrorSpy.mockRestore();
+    });
+  });
+
+  describe("Date Formatting", () => {
+    it("should format date correctly with ordinal suffix", async () => {
+      const mockNewsData = [
+        { date: "2024-01-01", title: "N1", subtext: "T", link: "L1" },
+        { date: "2024-02-02", title: "N2", subtext: "T", link: "L2" },
+        { date: "2024-03-03", title: "N3", subtext: "T", link: "L3" },
+        { date: "2024-04-21", title: "N4", subtext: "T", link: "L4" },
+      ];
+
+      fetch.mockResolvedValueOnce({ ok: true, json: async () => mockNewsData });
+
+      render(<NewsWidget />);
+
+      expect(await screen.findByText("1st Jan 2024")).toBeInTheDocument();
+      expect(screen.getByText("2nd Feb 2024")).toBeInTheDocument();
+      expect(screen.getByText("3rd Mar 2024")).toBeInTheDocument();
+      expect(screen.getByText("21st Apr 2024")).toBeInTheDocument();
+    });
+
+    it("should handle items without date", async () => {
+      const mockNewsData = [{ title: "No date", subtext: "T", link: "L" }];
+      fetch.mockResolvedValueOnce({ ok: true, json: async () => mockNewsData });
+
+      render(<NewsWidget />);
+
+      expect(await screen.findByText("No date")).toBeInTheDocument();
+      expect(screen.queryByText(/Jan|Feb|Mar/)).not.toBeInTheDocument();
+    });
+
+    it("should handle invalid date strings gracefully", async () => {
+      const mockNewsData = [
+        { date: "invalid-date", title: "Invalid", subtext: "T", link: "L" },
+      ];
+      fetch.mockResolvedValueOnce({ ok: true, json: async () => mockNewsData });
+
+      render(<NewsWidget />);
+
+      expect(await screen.findByText("Invalid")).toBeInTheDocument();
+      expect(screen.getByText("invalid-date")).toBeInTheDocument();
+    });
+
+    it("should format dates with correct ordinal suffix for 11th-13th", async () => {
+      const mockNewsData = [
+        { date: "2024-01-11", title: "11", subtext: "T", link: "L1" },
+        { date: "2024-01-12", title: "12", subtext: "T", link: "L2" },
+        { date: "2024-01-13", title: "13", subtext: "T", link: "L3" },
+      ];
+
+      fetch.mockResolvedValueOnce({ ok: true, json: async () => mockNewsData });
+
+      render(<NewsWidget />);
+
+      expect(await screen.findByText("11th Jan 2024")).toBeInTheDocument();
+      expect(screen.getByText("12th Jan 2024")).toBeInTheDocument();
+      expect(screen.getByText("13th Jan 2024")).toBeInTheDocument();
+    });
+  });
+
+  describe("Component Behavior", () => {
+    it("should fetch data only once on mount", async () => {
+      fetch.mockResolvedValueOnce({ ok: true, json: async () => [] });
+      const { rerender } = render(<NewsWidget />);
+
+      await waitFor(() => {
+        expect(fetch).toHaveBeenCalledTimes(1);
+      });
+
+      rerender(<NewsWidget />);
+      expect(fetch).toHaveBeenCalledTimes(1);
+    });
+
+    it("should render multiple news items correctly", async () => {
+      const mockNewsData = Array.from({ length: 5 }, (_, i) => ({
+        date: `2024-01-${i + 1}`,
+        title: `News Title ${i + 1}`,
+        subtext: `Subtext ${i + 1}`,
+        link: `https://example.com/news${i + 1}`,
+      }));
+
+      fetch.mockResolvedValueOnce({ ok: true, json: async () => mockNewsData });
+
+      render(<NewsWidget />);
+
+      expect(await screen.findByText("News Title 1")).toBeInTheDocument();
+
+      mockNewsData.forEach((item) => {
+        expect(screen.getByText(item.title)).toBeInTheDocument();
+        expect(screen.getByText(item.subtext)).toBeInTheDocument();
+      });
+
+      expect(screen.getAllByText("Read more")).toHaveLength(5);
+    });
+  });
+
+  describe("Memoization", () => {
+    it("should be wrapped with React.memo", () => {
+      expect(NewsWidget.$$typeof).toBeDefined();
+    });
+  });
+});

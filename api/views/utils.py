@@ -6,14 +6,18 @@ import re
 from datetime import datetime, timedelta
 from ipaddress import ip_address
 
+import feedparser
+import requests
 from django.conf import settings
 from django.contrib.postgres.aggregates import ArrayAgg
+from django.core.cache import cache
 from django.db.models import Count, F, Max, Min, Sum
 from django.http import HttpResponse, HttpResponseBadRequest, StreamingHttpResponse
 from rest_framework import status
 from rest_framework.response import Response
 
 from api.serializers import FeedsRequestSerializer
+from greedybear.consts import CACHE_KEY_GREEDYBEAR_NEWS, CACHE_TIMEOUT_SECONDS, RSS_FEED_URL
 from greedybear.models import IOC, GeneralHoneypot, Statistics
 
 logger = logging.getLogger(__name__)
@@ -401,3 +405,57 @@ def asn_aggregated_queryset(iocs_qs, request, feed_params):
         result.append(row_dict)
 
     return result
+
+
+def get_greedybear_news() -> list[dict]:
+    """
+    Fetch GreedyBear-related blog posts from the IntelOwl RSS feed.
+
+    Returns:
+        List of dicts with keys: title, date, link, subtext
+        Sorted newest first, or empty list on failure.
+    """
+    cached = cache.get(CACHE_KEY_GREEDYBEAR_NEWS)
+    if cached is not None:
+        return cached
+
+    try:
+        response = requests.get(RSS_FEED_URL, timeout=5)
+        response.raise_for_status()
+        feed = feedparser.parse(response.content)
+
+        filtered_entries = sorted(
+            [entry for entry in feed.entries if "greedybear" in entry.get("title", "").lower() and entry.get("published_parsed")],
+            key=lambda e: e.published_parsed,
+            reverse=True,
+        )
+
+        news_items: list[dict] = []
+        for entry in filtered_entries:
+            summary = entry.get("summary", "").strip().replace("\n", " ")
+
+            subtext = summary[:180].rsplit(" ", 1)[0] + "..." if len(summary) > 180 else summary
+
+            news_items.append(
+                {
+                    "title": entry.get("title"),
+                    "date": entry.get("published"),
+                    "link": entry.get("link"),
+                    "subtext": subtext,
+                }
+            )
+
+        cache.set(
+            CACHE_KEY_GREEDYBEAR_NEWS,
+            news_items,
+            CACHE_TIMEOUT_SECONDS,
+        )
+
+        return news_items
+
+    except Exception as exc:
+        logger.error(
+            "Failed to fetch GreedyBear news from RSS feed",
+            exc_info=exc,
+        )
+        return []
