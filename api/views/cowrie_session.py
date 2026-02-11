@@ -1,7 +1,6 @@
 # This file is a part of GreedyBear https://github.com/honeynet/GreedyBear
 # See the file 'LICENSE' for copying permission.
 import logging
-import re
 import socket
 
 from certego_saas.apps.auth.backend import CookieTokenAuthentication
@@ -25,17 +24,12 @@ logger = logging.getLogger(__name__)
 def cowrie_session_view(request):
     """
     Retrieve Cowrie honeypot session data including command sequences, credentials, and session details.
-    Queries can be performed using an IP address, SHA-256 hash or password.
+    Queries can be performed using either an IP address to find all sessions from that source, or a SHA-256 hash to find sessions containing a specific command sequence.
 
     Args:
         request: The HTTP request object containing query parameters
-        query (str, required): The search term, can be:
-            - An IP address to find all sessions from that
-            source
-            - A SHA-256 hash of a command sequence
-            (generated using Python's "\\n".join(sequence) format)
-            - A password string to find all sessions where
-            that password was used
+        query (str, required): The search term, can be either an IP address or the SHA-256 hash of a command sequence.
+            SHA-256 hashes should match command sequences generated using Python's "\\n".join(sequence) format.
         include_similar (bool, optional): When "true", expands the result to include all sessions that executed
             command sequences belonging to the same cluster(s) as command sequences found in the initial query result.
             Requires CLUSTER_COWRIE_COMMAND_SEQUENCES enabled in configuration. Default: false
@@ -84,33 +78,14 @@ def cowrie_session_view(request):
         if not sessions.exists():
             raise Http404(f"No information found for IP: {observable}")
 
-    # Validate IP format if it looks like an IP but isn't valid
-    elif re.match(r"^\d{1,3}(\.\d{1,3}){3}", observable):
-        return HttpResponseBadRequest(f"Invalid IP address format: {observable}")
-    elif re.match(r"^[0-9a-fA-F:]+:[0-9a-fA-F:]+", observable) and ":" in observable:
-        return HttpResponseBadRequest(f"Invalid IP address format: {observable}")
-
-    elif len(observable) == 64 and is_sha256hash(observable):
+    elif is_sha256hash(observable):
         try:
             commands = CommandSequence.objects.get(commands_hash=observable.lower())
-            sessions = CowrieSession.objects.filter(commands=commands, duration__gt=0).prefetch_related("source", "commands", "credentials")
-        except CommandSequence.DoesNotExist:
-            sessions = (
-                CowrieSession.objects.filter(credentials__password=observable, duration__gt=0).distinct().prefetch_related("source", "commands", "credentials")
-            )
-            if not sessions.exists():
-                raise Http404(f"No command sequences or sessions with password matching hash: {observable}") from None
+        except CommandSequence.DoesNotExist as exc:
+            raise Http404(f"No command sequences found with hash: {observable}") from exc
+        sessions = CowrieSession.objects.filter(commands=commands, duration__gt=0).prefetch_related("source", "commands", "credentials")
     else:
-        sessions = (
-            CowrieSession.objects.filter(
-                credentials__password=observable,
-                duration__gt=0,
-            )
-            .distinct()
-            .prefetch_related("source", "commands", "credentials")
-        )
-        if not sessions.exists():
-            raise Http404(f"No sessions found with password: {observable}")
+        return HttpResponseBadRequest("Query must be a valid IP address or SHA-256 hash")
 
     if include_similar:
         commands = {s.commands for s in sessions if s.commands}

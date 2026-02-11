@@ -321,72 +321,15 @@ class CowrieCredentialAPIIntegrationTestCase(CustomTestCase):
         self.client = APIClient()
         self.client.force_authenticate(user=self.superuser)
 
-    def test_password_query_returns_sessions(self):
-        """Test API password query returns correct sessions."""
-        response = self.client.get("/api/cowrie_session?query=root")
-        self.assertEqual(response.status_code, 200)
-        self.assertIn("sources", response.data)
-        self.assertIn(self.cowrie_session.source.name, response.data["sources"])
-
-    def test_password_query_case_sensitive(self):
-        """Test password queries are case-sensitive."""
-        response_lower = self.client.get("/api/cowrie_session?query=root")
-        response_upper = self.client.get("/api/cowrie_session?query=ROOT")
-
-        self.assertEqual(response_lower.status_code, 200)
-        self.assertEqual(response_upper.status_code, 404)
-
-    def test_password_query_nonexistent_returns_404(self):
-        """Test querying non-existent password returns 404."""
-        response = self.client.get("/api/cowrie_session?query=nonexistent_xyz")
-        self.assertEqual(response.status_code, 404)
-
-    def test_password_query_with_credentials_included(self):
-        """Test include_credentials parameter works."""
-        response = self.client.get("/api/cowrie_session?query=root&include_credentials=true")
-        self.assertEqual(response.status_code, 200)
-        self.assertIn("credentials", response.data)
-        self.assertIn("root | root", response.data["credentials"])
-
-    def test_password_query_with_session_data(self):
-        """Test include_session_data parameter works."""
-        response = self.client.get("/api/cowrie_session?query=root&include_session_data=true")
-        self.assertEqual(response.status_code, 200)
-        self.assertIn("sessions", response.data)
-        self.assertGreater(len(response.data["sessions"]), 0)
-
-        session_data = response.data["sessions"][0]
-        self.assertIn("credentials", session_data)
-        self.assertIn("root | root", session_data["credentials"])
-
     def test_credentials_format_in_response(self):
         """Test credentials are formatted as 'username | password'."""
-        response = self.client.get("/api/cowrie_session?query=root&include_credentials=true")
+        response = self.client.get("/api/cowrie_session?query=140.246.171.141&include_credentials=true")
         self.assertEqual(response.status_code, 200)
 
         for credential in response.data["credentials"]:
             self.assertIn(" | ", credential)
             parts = credential.split(" | ", 1)
             self.assertEqual(len(parts), 2)
-
-    def test_special_characters_in_password_query(self):
-        """Test password queries with special characters work (not treated as attacks)."""
-        # Create credential with special characters
-        special_password = "<script>alert('xss')</script>"
-        cred = CowrieCredential.objects.create(
-            username="test",
-            password=special_password,
-        )
-        self.cowrie_session.credentials.add(cred)
-
-        # Query should work (not be rejected as XSS)
-        from urllib.parse import quote
-
-        response = self.client.get(f"/api/cowrie_session?query={quote(special_password)}")
-        # Should return 200 (found) or 404 (not found due to duration filter)
-        # but NOT 400 (validation error)
-        self.assertIn(response.status_code, [200, 404])
-        self.assertNotEqual(response.status_code, 400)
 
     def test_ip_query_still_works(self):
         """Test IP queries still work after credential refactoring."""

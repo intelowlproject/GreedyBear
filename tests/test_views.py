@@ -11,8 +11,6 @@ from rest_framework.test import APIClient
 from api.views.utils import CACHE_KEY_GREEDYBEAR_NEWS, get_greedybear_news, is_ip_address, is_sha256hash
 from greedybear.models import (
     IOC,
-    CowrieCredential,
-    CowrieSession,
     GeneralHoneypot,
     Statistics,
     ViewType,
@@ -666,79 +664,6 @@ class CowrieSessionViewTestCase(CustomTestCase):
         self.assertEqual(len(response.data["credentials"]), 1)
         self.assertEqual(response.data["credentials"][0], "root | root")
 
-    ####### Password Query Tests #####
-    def test_password_query(self):
-        """Test view with a valid password query."""
-        response = self.client.get("/api/cowrie_session?query=root&include_credentials=true")
-        self.assertEqual(response.status_code, 200)
-        self.assertIn("query", response.data)
-        self.assertIn("credentials", response.data)
-        self.assertEqual(response.data["query"], "root")
-        self.assertEqual(len(response.data["credentials"]), 1)
-        self.assertEqual(response.data["credentials"][0], "root | root")
-
-    def test_password_substring_match_fails(self):
-        """Test that substring password queries return 404 (exact match only)."""
-        # Create a session with a longer password
-        long_pass = "supersecretpassword"
-        session = CowrieSession.objects.create(
-            session_id=int("123456789012", 16),
-            start_time=self.current_time,
-            duration=1.0,
-            source=self.ioc,
-            commands=self.command_sequence,
-        )
-        cred = CowrieCredential.objects.create(username="admin", password=long_pass)
-        session.credentials.add(cred)
-
-        # Search for a substring "supersecret"
-        response = self.client.get("/api/cowrie_session?query=supersecret")
-        self.assertEqual(response.status_code, 404)
-
-    def test_password_query_not_found(self):
-        """Test view with a password that doesn't exist."""
-        response = self.client.get("/api/cowrie_session?query=nonexistentpassword")
-        self.assertEqual(response.status_code, 404)
-
-    def test_password_query_with_session_data(self):
-        """Test password query with session data included."""
-        response = self.client.get("/api/cowrie_session?query=root&include_session_data=true")
-        self.assertEqual(response.status_code, 200)
-        self.assertIn("query", response.data)
-        self.assertIn("sessions", response.data)
-        self.assertEqual(response.data["query"], "root")
-        self.assertEqual(len(response.data["sessions"]), 1)
-        self.assertIn("time", response.data["sessions"][0])
-        self.assertEqual(response.data["sessions"][0]["source"], "140.246.171.141")
-        self.assertEqual(response.data["sessions"][0]["credentials"][0], "root | root")
-
-    def test_ip_address_query_with_sessions(self):
-        """Test view with a valid IP address query including session data."""
-        response = self.client.get("/api/cowrie_session?query=140.246.171.141&include_session_data=true")
-        self.assertEqual(response.status_code, 200)
-        self.assertIn("query", response.data)
-        self.assertIn("commands", response.data)
-        self.assertIn("sources", response.data)
-        self.assertNotIn("credentials", response.data)
-        self.assertIn("sessions", response.data)
-        self.assertEqual(len(response.data["sessions"]), 1)
-        self.assertIn("time", response.data["sessions"][0])
-        self.assertEqual(response.data["sessions"][0]["duration"], 1.234)
-        self.assertEqual(response.data["sessions"][0]["source"], "140.246.171.141")
-        self.assertEqual(response.data["sessions"][0]["interactions"], 5)
-        self.assertEqual(response.data["sessions"][0]["credentials"][0], "root | root")
-        self.assertEqual(response.data["sessions"][0]["commands"], "cd foo\nls -la")
-
-    def test_ip_address_query_with_all(self):
-        """Test view with a valid IP address query including everything."""
-        response = self.client.get("/api/cowrie_session?query=140.246.171.141&include_similar=true&include_credentials=true&include_session_data=true")
-        self.assertEqual(response.status_code, 200)
-        self.assertIn("query", response.data)
-        self.assertIn("commands", response.data)
-        self.assertIn("sources", response.data)
-        self.assertIn("credentials", response.data)
-        self.assertIn("sessions", response.data)
-
     # # # # # Basic Hash Query Test # # # # #
     def test_hash_query(self):
         """Test view with a valid hash query."""
@@ -789,11 +714,9 @@ class CowrieSessionViewTestCase(CustomTestCase):
         self.assertEqual(response.status_code, 400)
 
     def test_invalid_query_parameter(self):
-        """Test that view returns 404 for a string that doesn't match any format (treated as password search)."""
+        """Test that view returns 400 for a string that doesn't match any format."""
         response = self.client.get("/api/cowrie_session?query=invalid-input}")
-        # Special characters now allowed - treated as potential password
-        # Since it won't exist in DB, should return 404
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 400)
 
     def test_include_credentials_invalid_value(self):
         """Test that invalid boolean values default to false."""
@@ -818,33 +741,15 @@ class CowrieSessionViewTestCase(CustomTestCase):
         self.assertEqual(response.status_code, 404)
 
     def test_hash_wrong_length(self):
-        """Test that hashes with incorrect length are treated as password queries."""
+        """Test that hashes with incorrect length are rejected."""
         response = self.client.get("/api/cowrie_session?query=" + "a" * 32)  # 32 chars instead of 64
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 400)
 
     def test_hash_invalid_characters(self):
         """Test that hashes with invalid characters are rejected."""
         invalid_hash = "g" * 64  # 'g' is not a valid hex character
         response = self.client.get(f"/api/cowrie_session?query={invalid_hash}")
-        self.assertEqual(response.status_code, 404)
-
-    def test_password_query_64_chars(self):
-        """Test with a 64-character password (non-hash)."""
-        long_pass = "x" * 64
-        session = CowrieSession.objects.create(
-            session_id=int("111111111111", 16),
-            start_time=self.current_time,
-            duration=1.0,
-            source=self.ioc,
-            commands=self.command_sequence,
-        )
-        cred = CowrieCredential.objects.create(username="user", password=long_pass)
-        session.credentials.add(cred)
-
-        response = self.client.get(f"/api/cowrie_session?query={long_pass}&include_credentials=true")
-        self.assertEqual(response.status_code, 200)
-        self.assertIn("credentials", response.data)
-        self.assertEqual(response.data["credentials"][0], f"user | {long_pass}")
+        self.assertEqual(response.status_code, 400)
 
     def test_hash_case_insensitive(self):
         """Test that hash queries are case-insensitive."""
@@ -889,29 +794,6 @@ class CowrieSessionViewTestCase(CustomTestCase):
         response = self.client.get(f"/api/cowrie_session?query={self.hash}")
         self.assertEqual(response.status_code, 200)
         self.assertNotIn("license", response.data)
-
-    def test_query_with_special_characters_exists(self):
-        """Test that passwords with special characters return 200 when they exist."""
-        password = "<script>alert('xss')</script>"
-        session = CowrieSession.objects.create(
-            session_id=int("ABCDEF123456", 16),
-            start_time=self.current_time,
-            duration=1.0,
-            source=self.ioc,
-            commands=self.command_sequence,
-        )
-        cred = CowrieCredential.objects.create(username="attacker", password=password)
-        session.credentials.add(cred)
-
-        response = self.client.get(f"/api/cowrie_session?query={password}&include_credentials=true")
-        self.assertEqual(response.status_code, 200)
-        self.assertIn("credentials", response.data)
-        self.assertEqual(response.data["credentials"][0], f"attacker | {password}")
-
-    def test_query_with_special_characters_not_found(self):
-        """Test that passwords with special characters return 404 when they don't exist."""
-        response = self.client.get("/api/cowrie_session?query=%$^&*()_+-=")
-        self.assertEqual(response.status_code, 404)
 
     # # # # # Authentication & Authorization Tests # # # # #
     def test_unauthenticated_request(self):
