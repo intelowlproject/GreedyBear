@@ -467,8 +467,9 @@ init_env_files() {
 }
 
 # Execute docker compose command
-# Docker Compose reads COMPOSE_FILE, COMPOSE_PROJECT_NAME, and
-# REACT_APP_INTELOWL_VERSION from .env in the project directory.
+# --project-directory points to docker/ so that relative env_file paths
+# in compose files resolve correctly. --env-file loads .env from the
+# repo root for COMPOSE_FILE, COMPOSE_PROJECT_NAME, etc.
 execute_compose() {
     local cmd=$1
     shift
@@ -476,7 +477,8 @@ execute_compose() {
     log_info "Executing: docker compose $cmd $*"
 
     detect_docker_cmd
-    ${DOCKER_CMD} compose --project-directory "${SCRIPT_DIR}" "$cmd" "$@"
+    ${DOCKER_CMD} compose --project-directory "${SCRIPT_DIR}/docker" \
+        --env-file "${SCRIPT_DIR}/.env" "$cmd" "$@"
 }
 
 # Checkout the appropriate git branch/tag for the deployment mode
@@ -1128,6 +1130,11 @@ main() {
     if [ "$ENV_MODE" = "dev" ] && [ "$USE_VERSION" = true ]; then
         log_error "--dev and --release are mutually exclusive"
         log_info "--dev builds images locally, --release pins a remote image tag"
+        exit 1
+    fi
+    if [ "$ENABLE_ELASTIC" = true ] && [ -n "$ELASTIC_ENDPOINT" ]; then
+        log_error "--elastic and --elastic-endpoint are mutually exclusive"
+        log_info "--elastic runs a local container, --elastic-endpoint connects to an external instance"
         exit 1
     fi
 
