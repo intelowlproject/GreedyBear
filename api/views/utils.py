@@ -4,10 +4,10 @@ import csv
 import logging
 import re
 from datetime import datetime, timedelta
-from email.utils import parsedate_to_datetime
 from ipaddress import ip_address
 
 import feedparser
+import requests
 from django.conf import settings
 from django.contrib.postgres.aggregates import ArrayAgg
 from django.core.cache import cache
@@ -420,43 +420,37 @@ def get_greedybear_news() -> list[dict]:
         return cached
 
     try:
-        feed = feedparser.parse(RSS_FEED_URL)
+        response = requests.get(RSS_FEED_URL, timeout=5)
+        response.raise_for_status()
+        feed = feedparser.parse(response.content)
+
+        filtered_entries = sorted(
+            [entry for entry in feed.entries if "greedybear" in entry.get("title", "").lower() and entry.get("published_parsed")],
+            key=lambda e: e.published_parsed,
+            reverse=True,
+        )
+
         news_items: list[dict] = []
-
-        for entry in feed.entries:
-            title = entry.get("title", "")
-            if "greedybear" not in title.lower():
-                continue
-
+        for entry in filtered_entries:
             summary = entry.get("summary", "").strip().replace("\n", " ")
-            pub_date = entry.get("published")
-
-            if not pub_date:
-                continue
 
             subtext = summary[:180].rsplit(" ", 1)[0] + "..." if len(summary) > 180 else summary
 
             news_items.append(
                 {
-                    "title": title,
-                    "date": pub_date,
+                    "title": entry.get("title"),
+                    "date": entry.get("published"),
                     "link": entry.get("link"),
                     "subtext": subtext,
                 }
             )
-
-        # RSS feeds are typically chronological, but we sort explicitly
-        # to ensure consistency since the data source is external.
-        news_items.sort(
-            key=lambda x: parsedate_to_datetime(x["date"]),
-            reverse=True,
-        )
 
         cache.set(
             CACHE_KEY_GREEDYBEAR_NEWS,
             news_items,
             CACHE_TIMEOUT_SECONDS,
         )
+
         return news_items
 
     except Exception as exc:

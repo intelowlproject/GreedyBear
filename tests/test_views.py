@@ -1,6 +1,6 @@
-from email.utils import parsedate_to_datetime
 from unittest.mock import patch
 
+import requests
 from django.conf import settings
 from django.core.cache import cache
 from django.test import override_settings
@@ -904,18 +904,21 @@ class NewsTestCase(CustomTestCase):
                     title="IntelOwl Update",
                     summary="intelowl news",
                     published="Wed, 01 Jan 2026 00:00:00 GMT",
+                    published_parsed=(2026, 1, 1, 0, 0, 0, 2, 1, 0),
                     link="https://example.com/1",
                 ),
                 FeedParserDict(
                     title="GreedyBear v3 Release",
                     summary="greedybear release notes",
                     published="Thu, 29 Jan 2026 00:00:00 GMT",
+                    published_parsed=(2026, 1, 29, 0, 0, 0, 3, 29, 0),
                     link="https://example.com/2",
                 ),
                 FeedParserDict(
                     title="IntelOwl Improvements",
                     summary="Not related to GreedyBear",
                     published="Mon, 01 Sep 2025 00:00:00 GMT",
+                    published_parsed=(2025, 9, 1, 0, 0, 0, 0, 244, 0),
                     link="https://example.com/3",
                 ),
             ]
@@ -933,12 +936,14 @@ class NewsTestCase(CustomTestCase):
                     title="GreedyBear Old",
                     summary="old post",
                     published="Wed, 01 Jan 2026 00:00:00 GMT",
+                    published_parsed=(2026, 1, 1, 0, 0, 0, 0, 0, 0),
                     link="https://example.com/old",
                 ),
                 FeedParserDict(
                     title="GreedyBear New",
                     summary="new post",
                     published="Thu, 29 Jan 2026 00:00:00 GMT",
+                    published_parsed=(2026, 1, 29, 0, 0, 0, 0, 0, 0),
                     link="https://example.com/new",
                 ),
             ]
@@ -949,12 +954,6 @@ class NewsTestCase(CustomTestCase):
         self.assertEqual(result[0]["title"], "GreedyBear New")
         self.assertEqual(result[1]["title"], "GreedyBear Old")
 
-        # verifying sorting by date
-        self.assertGreater(
-            parsedate_to_datetime(result[0]["date"]),
-            parsedate_to_datetime(result[1]["date"]),
-        )
-
     @patch("api.views.utils.feedparser.parse")
     def test_truncates_long_summary(self, mock_parse):
         long_summary = "word " * 100
@@ -964,6 +963,7 @@ class NewsTestCase(CustomTestCase):
                     title="GreedyBear Long Post",
                     summary=long_summary,
                     published="Thu, 29 Jan 2026 00:00:00 GMT",
+                    published_parsed=(2026, 1, 29, 0, 0, 0, 3, 29, 0),
                     link="https://example.com",
                 )
             ]
@@ -1003,6 +1003,7 @@ class NewsTestCase(CustomTestCase):
                     title="GreedyBear Cached Test",
                     summary="cache test",
                     published="Thu, 29 Jan 2026 00:00:00 GMT",
+                    published_parsed=(2026, 1, 29, 0, 0, 0, 3, 29, 0),
                     link="https://example.com",
                 )
             ]
@@ -1019,3 +1020,11 @@ class NewsTestCase(CustomTestCase):
         result2 = get_greedybear_news()
         self.assertEqual(result1, result2)
         mock_parse.assert_not_called()
+
+    @patch("api.views.utils.requests.get")
+    def test_feed_request_timeout_returns_empty_list(self, mock_get):
+        mock_get.side_effect = requests.Timeout()
+
+        result = get_greedybear_news()
+
+        self.assertEqual(result, [])
