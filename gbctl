@@ -408,7 +408,16 @@ init_env_files() {
             cp "${SCRIPT_DIR}/docker/env_file_postgres_template" "${SCRIPT_DIR}/docker/env_file_postgres"
             log_success "Regenerated docker/env_file_postgres from template"
         else
-            log_info "docker/env_file_postgres already exists, skipping"
+            log_warning "docker/env_file_postgres already exists"
+            read -p "Do you want to regenerate it? This will backup the existing file. [y/N] " -n 1 -r
+            echo
+            if [[ $REPLY =~ ^[Yy]$ ]]; then
+                mv "${SCRIPT_DIR}/docker/env_file_postgres" "${SCRIPT_DIR}/docker/env_file_postgres.backup.$(date +%Y%m%d_%H%M%S)"
+                cp "${SCRIPT_DIR}/docker/env_file_postgres_template" "${SCRIPT_DIR}/docker/env_file_postgres"
+                log_success "Backed up old file and created new docker/env_file_postgres from template"
+            else
+                log_info "Keeping existing docker/env_file_postgres"
+            fi
         fi
     else
         if [ -f "${SCRIPT_DIR}/docker/env_file_postgres_template" ]; then
