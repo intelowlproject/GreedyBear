@@ -18,7 +18,7 @@ from django.db import connection
 from django.core.management import call_command
 try:
     if 'greedybear_cache' not in connection.introspection.table_names():
-        call_command('createcachetable')
+        call_command('createcachetable', 'greedybear_cache')
 except Exception as e:
     print(f'Warning: Failed to create cache table: {e}')
 "
