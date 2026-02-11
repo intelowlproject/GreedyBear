@@ -148,7 +148,7 @@ INIT OPTIONS (./gbctl init)
     --dev                       Development deployment with hot-reload
     --release <tag>             Pin a specific image tag (e.g. stag, 3.0.1)
     --https                     Enable HTTPS with custom certificates
-    --elastic                   Enable Elasticsearch (requires >=16GB RAM)
+    --elastic-local              Enable local Elasticsearch (requires >=16GB RAM)
     --elastic-endpoint <url>    Specify Elasticsearch endpoint
 
     Without --dev or --release, production mode with the "prod" image tag is used.
@@ -170,7 +170,7 @@ EXAMPLES
     ./gbctl init --elastic-endpoint http://tpot-host:64298
 
     # Initialize for development with a dummy Elasticsearch instance
-    ./gbctl init --dev --elastic
+    ./gbctl init --dev --elastic-local
 
     # Initialize staging deployment
     ./gbctl init --release stag
@@ -1021,9 +1021,9 @@ parse_args() {
                 PASSED_FLAGS+=("--https")
                 shift
                 ;;
-            --elastic)
+            --elastic-local)
                 ENABLE_ELASTIC=true
-                PASSED_FLAGS+=("--elastic")
+                PASSED_FLAGS+=("--elastic-local")
                 shift
                 ;;
             --release)
@@ -1124,7 +1124,7 @@ main() {
     parse_args "$@"
     
     # Validate flags and execute command
-    local init_flags=(--dev --https --elastic --release --elastic-endpoint --silent)
+    local init_flags=(--dev --https --elastic-local --release --elastic-endpoint --silent)
 
     # Reject conflicting flags
     if [ "$ENV_MODE" = "dev" ] && [ "$USE_VERSION" = true ]; then
@@ -1133,8 +1133,8 @@ main() {
         exit 1
     fi
     if [ "$ENABLE_ELASTIC" = true ] && [ -n "$ELASTIC_ENDPOINT" ]; then
-        log_error "--elastic and --elastic-endpoint are mutually exclusive"
-        log_info "--elastic runs a local container, --elastic-endpoint connects to an external instance"
+        log_error "--elastic-local and --elastic-endpoint are mutually exclusive"
+        log_info "--elastic-local runs a local container, --elastic-endpoint connects to an external instance"
         exit 1
     fi
 
