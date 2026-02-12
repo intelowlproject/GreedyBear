@@ -5,6 +5,7 @@ docker/env_file_postgres
 docker/env_file.backup.*
 docker/env_file_postgres.backup.*
 .env
+.env.backup.*
 __pycache__/
 mlmodels/
 # Backups created by gbctl
