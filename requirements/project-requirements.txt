@@ -1,4 +1,4 @@
-django-q2==1.7.0
+django-q2==1.9.0
 croniter==6.0.0
 
 # if you change this, update the documentation
