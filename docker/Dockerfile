@@ -26,8 +26,8 @@ RUN mkdir -p ${LOG_PATH}/django ${LOG_PATH}/uwsgi \
     && apt-get install -y --no-install-recommends \
        # Build dependencies (removed after pip install)
        gcc python3-dev \
-       # Runtime dependencies
-       # libgomp1 is required to train the model
+       # Runtime dependencies: 
+       # libgomp1 is required for model training, netcat-openbsd for healthcheck
        libgomp1 netcat-openbsd \
     && pip3 install --no-cache-dir --upgrade pip
 
@@ -58,7 +58,7 @@ RUN touch ${LOG_PATH}/django/api.log ${LOG_PATH}/django/api_errors.log \
     && /bin/bash ./docker/watchman_install.sh \
     && apt-get purge -y gcc python3-dev \
     && apt-get autoremove -y \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* # remove the apt package index cache
 
 # start period is high to allow data migration for 1.4.0
 HEALTHCHECK --interval=10s --timeout=2s --start-period=500s --retries=3 CMD nc -z localhost 8001 || exit 1
