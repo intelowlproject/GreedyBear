@@ -23,6 +23,7 @@ class FeedTypeAPITestCase(CustomTestCase):
     def test_feed_type_derived_from_m2m(self):
         """Verify feed_type is derived from general_honeypot M2M."""
         response = self.client.get("/api/feeds/all/all/recent.json")
+        print(response)
         self.assertEqual(response.status_code, 200)
 
         iocs = response.json()["iocs"]
