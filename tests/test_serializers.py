@@ -35,7 +35,7 @@ class FeedsRequestSerializersTestCase(CustomTestCase):
                 ["known attacker", "mass scanner"],
             ],
             "feed_size": [str(n) for n in [100, 200, 5000, 10_000_000]],
-            "ordering": [field.name for field in IOC._meta.get_fields()],
+            "ordering": [field.name for field in IOC._meta.get_fields()] + ["feed_type"],
             "verbose": ["true", "false"],
             "paginate": ["true", "false"],
             "format": ["txt", "json", "csv"],

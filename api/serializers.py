@@ -71,6 +71,9 @@ def feed_type_validation(feed_type: str, valid_feed_types: frozenset) -> str:
     return feed_type
 
 
+ANNOTATION_ORDERING_FIELDS = frozenset({"feed_type", "honeypots"})
+
+
 @cache
 def ordering_validation(ordering: str) -> str:
     """Validates that given ordering corresponds to a field in the IOC model.
@@ -86,8 +89,9 @@ def ordering_validation(ordering: str) -> str:
     """
     if not ordering:
         raise serializers.ValidationError("Invalid ordering: <empty string>")
-    # remove minus sign if present
     field_name = ordering[1:] if ordering.startswith("-") else ordering
+    if field_name in ANNOTATION_ORDERING_FIELDS:
+        return ordering
     try:
         IOC._meta.get_field(field_name)
     except FieldDoesNotExist as exc:

@@ -72,10 +72,11 @@ class FeedRequestParams:
         self.exclude_reputation = query_params["exclude_reputation"].split(";") if "exclude_reputation" in query_params else []
         self.feed_size = query_params.get("feed_size", "5000")
         self.ordering = query_params.get("ordering", "-last_seen").lower().replace("value", "name")
+        if "feed_type" in self.ordering:
+            self.ordering = self.ordering.replace("feed_type", "honeypots")
         self.verbose = query_params.get("verbose", "false").lower()
         self.paginate = query_params.get("paginate", "false").lower()
         self.format = query_params.get("format_", "json").lower()
-        self.feed_type_sorting = None
 
     def apply_default_filters(self, query_params):
         if not query_params:
@@ -90,15 +91,9 @@ class FeedRequestParams:
             case "recent":
                 self.max_age = "3"
                 self.min_days_seen = "1"
-                if "feed_type" in self.ordering:
-                    self.feed_type_sorting = self.ordering
-                    self.ordering = "-last_seen"
             case "persistent":
                 self.max_age = "14"
                 self.min_days_seen = "10"
-                if "feed_type" in self.ordering:
-                    self.feed_type_sorting = self.ordering
-                    self.ordering = "-attack_count"
             case "likely_to_recur":
                 self.max_age = "30"
                 self.min_days_seen = "1"
@@ -283,15 +278,6 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
 
                 # Skip validation - data_ is constructed internally and matches the API contract
                 json_list.append(data_)
-
-            # check if sorting the results by feed_type
-            if feed_params.feed_type_sorting is not None:
-                logger.info("Return feeds sorted by feed_type field")
-                json_list = sorted(
-                    json_list,
-                    key=lambda k: k["feed_type"],
-                    reverse=feed_params.feed_type_sorting == "-feed_type",
-                )
 
             logger.info(f"Number of feeds returned: {len(json_list)}")
             resp_data = {"iocs": json_list}

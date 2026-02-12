@@ -191,6 +191,14 @@ class FeedsViewTestCase(CustomTestCase):
         # Should return only domains (1 in test data)
         self.assertEqual(response.json()["count"], 1)
 
+    def test_200_feeds_pagination_ordering_feed_type(self):
+        response = self.client.get("/api/feeds/?page_size=10&page=1&feed_type=all&attack_type=all&age=recent&ordering=feed_type")
+        self.assertEqual(response.status_code, 200)
+
+    def test_200_feeds_pagination_ordering_feed_type_desc(self):
+        response = self.client.get("/api/feeds/?page_size=10&page=1&feed_type=all&attack_type=all&age=recent&ordering=-feed_type")
+        self.assertEqual(response.status_code, 200)
+
     def test_400_feeds_pagination(self):
         response = self.client.get("/api/feeds/?page_size=10&page=1&feed_type=all&attack_type=test&age=recent")
         self.assertEqual(response.status_code, 400)
