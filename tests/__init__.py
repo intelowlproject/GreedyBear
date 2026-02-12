@@ -189,6 +189,7 @@ class CustomTestCase(TestCase):
         IOC.objects.all().delete()
         CowrieSession.objects.all().delete()
         CommandSequence.objects.all().delete()
+        super().tearDownClass()
 
 
 class ExtractionTestCase(CustomTestCase):
