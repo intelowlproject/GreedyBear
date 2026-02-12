@@ -261,6 +261,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Set up Python
+        id: setup_python
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python_version }}
@@ -343,6 +344,7 @@ jobs:
         uses: ./.github/actions/python_requirements/restore_virtualenv/
         with:
           requirements_paths: "${{ inputs.requirements_path }} requirements-linters.txt requirements-dev.txt requirements-docs.txt"
+          python_version: ${{ steps.setup_python.outputs.python-version }}
 
       - name: Restore Python virtual environment related to target branch
         id: restore_python_virtual_environment_target_branch
@@ -351,6 +353,7 @@ jobs:
         with:
           requirements_paths: ${{ inputs.requirements_path }}
           git_reference: ${{ github.base_ref }}
+          python_version: ${{ steps.setup_python.outputs.python-version }}
 
       - name: Create Python virtual environment
         if: >
@@ -423,6 +426,7 @@ jobs:
         uses: ./.github/actions/python_requirements/save_virtualenv
         with:
           requirements_paths: "${{ inputs.requirements_path }} requirements-linters.txt requirements-dev.txt requirements-docs.txt"
+          python_version: ${{ steps.setup_python.outputs.python-version }}
 
       - name: Save pip cache related to PR event
         if: >
