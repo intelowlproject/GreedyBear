@@ -62,7 +62,7 @@ services:
       postgres:
         condition: service_started
       uwsgi:
-        condition: service_healthy
+        condition: service_started
     <<: *no-healthcheck
 
 volumes:

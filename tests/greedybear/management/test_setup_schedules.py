@@ -10,12 +10,13 @@ from django_q.models import Schedule
 class TestSetupSchedules(TestCase):
     """Test setup_schedules command with various EXTRACTION_INTERVAL values."""
 
-    @patch("greedybear.management.commands.setup_schedules.Schedule")
+    @patch("greedybear.cronjobs.schedules.Schedule")
     @override_settings(EXTRACTION_INTERVAL=10)
     def test_extraction_interval_10(self, mock_schedule):
         """Test schedules with EXTRACTION_INTERVAL=10."""
         mock_schedule.CRON = Schedule.CRON
         mock_schedule.objects.update_or_create = MagicMock()
+        mock_schedule.objects.exclude = MagicMock(return_value=MagicMock())
 
         call_command("setup_schedules")
 
@@ -29,12 +30,13 @@ class TestSetupSchedules(TestCase):
         train_call = next(c for c in calls if c[1]["name"] == "train_and_update")
         self.assertEqual(train_call[1]["defaults"]["cron"], "6 0 * * *")
 
-    @patch("greedybear.management.commands.setup_schedules.Schedule")
+    @patch("greedybear.cronjobs.schedules.Schedule")
     @override_settings(EXTRACTION_INTERVAL=60)
     def test_extraction_interval_60_clamps_minute(self, mock_schedule):
         """Test schedules with EXTRACTION_INTERVAL=60 (minute calculation: 60/3*2=40)."""
         mock_schedule.CRON = Schedule.CRON
         mock_schedule.objects.update_or_create = MagicMock()
+        mock_schedule.objects.exclude = MagicMock(return_value=MagicMock())
 
         call_command("setup_schedules")
 
@@ -47,12 +49,13 @@ class TestSetupSchedules(TestCase):
         train_call = next(c for c in calls if c[1]["name"] == "train_and_update")
         self.assertEqual(train_call[1]["defaults"]["cron"], "40 0 * * *")
 
-    @patch("greedybear.management.commands.setup_schedules.Schedule")
+    @patch("greedybear.cronjobs.schedules.Schedule")
     @override_settings(EXTRACTION_INTERVAL=5)
     def test_extraction_interval_5(self, mock_schedule):
         """Test schedules with EXTRACTION_INTERVAL=5."""
         mock_schedule.CRON = Schedule.CRON
         mock_schedule.objects.update_or_create = MagicMock()
+        mock_schedule.objects.exclude = MagicMock(return_value=MagicMock())
 
         call_command("setup_schedules")
 
