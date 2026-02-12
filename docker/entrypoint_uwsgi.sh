@@ -13,15 +13,7 @@ done
 # Apply database migrations
 echo "Waiting for db to be ready..."
 # Create cache table for Django Q monitoring (idempotent)
-python manage.py shell -c "
-from django.db import connection
-from django.core.management import call_command
-try:
-    if 'greedybear_cache' not in connection.introspection.table_names():
-        call_command('createcachetable', 'greedybear_cache')
-except Exception as e:
-    print(f'Warning: Failed to create cache table: {e}')
-"
+python manage.py createcachetable
 python manage.py makemigrations durin
 python manage.py migrate
 

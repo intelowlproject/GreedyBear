@@ -24,8 +24,6 @@ def monitor_logs():
 
 
 # SCORING
-
-
 def chain_train_and_update():
     from greedybear.cronjobs.scoring.scoring_jobs import TrainModels, UpdateScores
 
@@ -38,8 +36,6 @@ def chain_train_and_update():
 
 
 # COMMANDS
-
-
 def cluster_commands():
     from greedybear.cronjobs.commands.cluster import ClusterCommandSequences
 
@@ -48,8 +44,6 @@ def cluster_commands():
 
 
 # CLEAN UP
-
-
 def clean_up_db():
     from greedybear.cronjobs.cleanup import CleanUp
 
