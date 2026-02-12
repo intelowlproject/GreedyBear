@@ -15,11 +15,13 @@ echo "Waiting for db to be ready..."
 python manage.py makemigrations durin
 python manage.py migrate
 
-# Collect static files
+# Collect static files, overwriting existing ones
 python manage.py collectstatic --noinput --clear --verbosity 0
 
+# Obtain the current GreedyBear version number
 . /opt/deploy/greedybear/docker/.version
 export REACT_APP_GREEDYBEAR_VERSION
+
 echo "------------------------------"
 echo "GreedyBear $REACT_APP_GREEDYBEAR_VERSION"
 echo "DEBUG: " $DEBUG
