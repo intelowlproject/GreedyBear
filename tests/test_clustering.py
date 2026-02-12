@@ -5,7 +5,7 @@ from . import CustomTestCase
 
 class TokenizeTestCase(CustomTestCase):
     def test_tokenize_basic(self):
-        """Test basic tokenization of simple commands - just a dummy cahnge to trigger CI"""
+        """Test basic tokenization of simple commands"""
         input_seq = ["ls -l", "cd /home"]
         expected = ["ls", "-l", "cd", "/home"]
         self.assertEqual(tokenize(input_seq), expected)
