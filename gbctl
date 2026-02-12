@@ -509,6 +509,19 @@ checkout_git_ref() {
         return
     fi
 
+    if [ -n "$(git -C "$SCRIPT_DIR" status --porcelain)" ]; then
+        if [ "$SILENT_MODE" = true ]; then
+            log_warning "Uncommitted changes detected. Force checking out '$target_ref'..."
+        else
+            log_warning "You have uncommitted changes in the repository."
+            read -r -p "Continue checking out '$target_ref'? Uncommitted changes may be lost. [y/N] " response
+            if [[ ! "$response" =~ ^[Yy]$ ]]; then
+                log_info "Checkout aborted."
+                exit 0
+            fi
+        fi
+    fi
+
     log_info "Checking out '$target_ref'..."
     if git -C "$SCRIPT_DIR" checkout "$target_ref"; then
         log_success "Checked out '$target_ref'"
