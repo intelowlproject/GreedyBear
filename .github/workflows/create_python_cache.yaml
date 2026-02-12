@@ -33,6 +33,7 @@ jobs:
       #        sudo apt-get update && sudo apt install <package1> <package2>...
 
       - name: Set up Python
+        id: setup_python
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -52,4 +53,5 @@ jobs:
         uses: ./.github/actions/python_requirements/save_virtualenv
         with:
           requirements_paths: .github/test/python_test/requirements.txt
+          python_version: ${{ steps.setup_python.outputs.python-version }}
 

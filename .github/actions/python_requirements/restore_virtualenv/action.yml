@@ -12,6 +12,9 @@ inputs:
     description: A git reference (name of the branch, reference to the PR) that will be used to build the cache key.
     required: false
     default: ${{ github.ref_name }}
+  python_version:
+    description: Python version string to include in the cache key, preventing cross-version cache collisions.
+    required: true
 
 outputs:
   cache-hit:
@@ -32,7 +35,7 @@ runs:
       uses: actions/cache/restore@v4
       with:
         path: ${{ inputs.virtual_environment_path }}
-        key: ${{ inputs.git_reference }}-venv-${{ steps.compute_requirements_files_sha256_hash.outputs.computed_hash }}
+        key: ${{ inputs.git_reference }}-py${{ inputs.python_version }}-venv-${{ steps.compute_requirements_files_sha256_hash.outputs.computed_hash }}
     
     - name: Activate restored virtual environment
       if: >
