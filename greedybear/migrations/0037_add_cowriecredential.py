@@ -7,7 +7,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("greedybear", "0032_torexitnode"),
+        ("greedybear", "0036_add_sensors_to_ioc"),
     ]
 
     operations = [

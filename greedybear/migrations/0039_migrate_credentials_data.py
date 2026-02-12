@@ -54,7 +54,7 @@ def migrate_credentials_to_m2m(apps, schema_editor):
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("greedybear", "0035_add_unique_constraint_to_credentials"),
+        ("greedybear", "0038_add_unique_constraint_to_credentials"),
     ]
 
     operations = [
