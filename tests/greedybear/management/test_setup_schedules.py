@@ -66,3 +66,30 @@ class TestSetupSchedules(TestCase):
         # Training minute: 5 / 3 * 2 = 3
         train_call = next(c for c in calls if c[1]["name"] == "train_and_update")
         self.assertEqual(train_call[1]["defaults"]["cron"], "3 0 * * *")
+
+    def test_orphan_schedules_are_deleted(self):
+        """Test that orphaned schedules not in active_schedules list are deleted."""
+        # Create an orphan schedule that's not in the active_schedules list
+        Schedule.objects.create(
+            name="old_deprecated_task",
+            func="greedybear.tasks.deprecated_function",
+            schedule_type=Schedule.CRON,
+            cron="0 0 * * *",
+        )
+
+        # Create a valid schedule
+        Schedule.objects.create(
+            name="extract_all",
+            func="greedybear.tasks.extract_all",
+            schedule_type=Schedule.CRON,
+            cron="*/10 * * * *",
+        )
+
+        # Run setup_schedules
+        call_command("setup_schedules")
+
+        # Orphan schedule should be deleted
+        self.assertFalse(Schedule.objects.filter(name="old_deprecated_task").exists())
+
+        # Valid schedule should still exist
+        self.assertTrue(Schedule.objects.filter(name="extract_all").exists())

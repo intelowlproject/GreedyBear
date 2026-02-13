@@ -3,9 +3,22 @@ from django_q.models import Schedule
 
 
 def setup_schedules():
+    """
+    Configure Django Q2 scheduled tasks for the GreedyBear application.
+    This function reads the ``EXTRACTION_INTERVAL`` setting and creates or
+    updates a fixed set of Django Q2 ``Schedule`` entries corresponding to
+    the application's periodic tasks (e.g. extraction, monitoring, training,
+    clustering, and cleanup). Any existing schedules whose names are not in
+    the active schedule list are treated as orphaned and removed.
+    Returns:
+        None: This function is called for its side effects on the database.
+    """
     extraction_interval = settings.EXTRACTION_INTERVAL
 
     # Define all active schedules
+    # NOTE: This list defines all schedules that should exist. Orphaned schedules
+    # (those not in this list) are automatically removed during setup. When adding
+    # new schedules, ensure they are added to this list to prevent deletion.
     active_schedules = [
         "extract_all",
         "monitor_honeypots",
