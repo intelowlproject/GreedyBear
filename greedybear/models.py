@@ -140,8 +140,7 @@ class CowrieCredential(models.Model):
         db_table = "greedybear_cowriecredential"
         # Index Strategy:
         # 1. cowriecred_pass_idx: Essential for exact password searches which are the primary query pattern.
-        # 2. cowriecred_user_pass_idx: Composite index optimizes queries filtering by both username and password;
-        # uniqueness per session is enforced by the unique_together constraint below.
+        # 2. cowriecred_user_pass_idx: Composite index optimizes queries filtering by both username and password. The unique_together constraint below ensures global deduplication of credential pairs across all sessions.
         indexes = [
             models.Index(fields=["password"], name="cowriecred_pass_idx"),
             models.Index(fields=["username", "password"], name="cowriecred_user_pass_idx"),

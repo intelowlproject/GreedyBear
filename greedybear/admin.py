@@ -9,6 +9,7 @@ from django.utils.translation import ngettext
 from greedybear.models import (
     IOC,
     CommandSequence,
+    CowrieCredential,
     CowrieSession,
     FireHolList,
     GeneralHoneypot,
@@ -80,6 +81,19 @@ class SessionInline(admin.TabularInline):
     show_change_link = True
     extra = 0
     ordering = ["-start_time"]
+
+
+@admin.register(CowrieCredential)
+class CowrieCredentialModelAdmin(admin.ModelAdmin):
+    list_display = ["username", "password", "session_count"]
+    search_fields = ["username", "password"]
+    search_help_text = ["search for credentials by username or password"]
+    list_per_page = 50
+
+    def session_count(self, obj):
+        return obj.sessions.count()
+
+    session_count.short_description = "Sessions"
 
 
 @admin.register(CowrieSession)

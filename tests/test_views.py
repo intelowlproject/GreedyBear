@@ -550,8 +550,7 @@ class CommandSequenceViewTestCase(CustomTestCase):
     def test_invalid_query_parameter(self):
         """Test that view returns BadRequest when query parameter is invalid."""
         response = self.client.get("/api/command_sequence?query=invalid-input}")
-        # Special characters now allowed so they'll be treated as potential password/query
-        self.assertIn(response.status_code, [200, 400, 404])
+        self.assertEqual(response.status_code, 400)
 
     def test_ip_address_query(self):
         """Test view with a valid IP address query."""

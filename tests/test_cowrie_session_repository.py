@@ -235,9 +235,9 @@ class TestCowrieCredentialRepository(CustomTestCase):
 
         # List with duplicates
         credentials_list = [
-            ("admin", "admin"),
-            ("admin", "admin"),
-            ("root", "root"),
+            ("another_user", "another_pass"),
+            ("another_user", "another_pass"),
+            ("dupli_root", "dupli_root"),
         ]
         created_count = self.repo.save_credentials(session, credentials_list)
 

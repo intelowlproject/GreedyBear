@@ -150,7 +150,6 @@ class CustomTestCase(TestCase):
         )
         cls.cowrie_session.save()
         # Create normalized credential record
-        # Create normalized credential record
         cred = CowrieCredential.objects.create(username="root", password="root")
         cls.cowrie_session.credentials.add(cred)
 
@@ -175,7 +174,6 @@ class CustomTestCase(TestCase):
             commands=cls.command_sequence_2,
         )
         cls.cowrie_session_2.save()
-        # Create normalized credential record
         # Create normalized credential record
         cred_2 = CowrieCredential.objects.create(username="user", password="user")
         cls.cowrie_session_2.credentials.add(cred_2)
