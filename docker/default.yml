@@ -20,7 +20,6 @@ services:
       - ../configuration/uwsgi/greedybear.ini:/etc/uwsgi/sites/greedybear.ini
       - generic_logs:/var/log/greedybear
       - static_content:/opt/deploy/greedybear/static
-      - ./healthcheck_uwsgi.sh:/healthcheck.sh:ro
     entrypoint:
       - ./docker/entrypoint_uwsgi.sh
     expose:
