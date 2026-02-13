@@ -31,10 +31,10 @@ services:
     depends_on:
       - postgres
     healthcheck:
-      test: ["CMD", "/healthcheck.sh"]
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 8001 || exit 1"]
       interval: 10s
       timeout: 5s
-      retries: 12
+      retries: 30
       start_period: 60s
 
   nginx:
