@@ -3,6 +3,7 @@
 # See the file 'LICENSE' for copying permission.
 
 from django.db import migrations, models
+import sys
 
 
 def migrate_credentials_data(apps, schema_editor):
@@ -13,7 +14,12 @@ def migrate_credentials_data(apps, schema_editor):
     batch_size = 1000
     credential_cache = {}
 
+    i = 0
     for session in CowrieSession.objects.all().iterator(chunk_size=batch_size):
+        i += 1
+        if i % 10000 == 0:
+            print(f"Migrated {i} sessions", file=sys.stdout)
+
         legacy_creds = getattr(session, "legacy_credentials", []) or []
         credentials_to_add = []
 
@@ -38,6 +44,9 @@ def migrate_credentials_data(apps, schema_editor):
 
         if credentials_to_add:
             session.credentials.add(*credentials_to_add)
+
+        if len(credential_cache) > 10000:
+            credential_cache.clear()
 
 
 class Migration(migrations.Migration):
