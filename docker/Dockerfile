@@ -10,7 +10,7 @@ COPY docker/.version .env.local
 RUN npm install npm@latest --location=global
 RUN npm install
 
-RUN PUBLIC_URL=/static/reactapp/ npm run build
+RUN VITE_BASE_URL=/static/reactapp/ npm run build
 
 # Stage 2: Backend
 FROM python:3.13-alpine3.22
