@@ -20,6 +20,7 @@ services:
       - ../configuration/uwsgi/greedybear.ini:/etc/uwsgi/sites/greedybear.ini
       - generic_logs:/var/log/greedybear
       - static_content:/opt/deploy/greedybear/static
+      - ./healthcheck_uwsgi.sh:/healthcheck.sh:ro
     entrypoint:
       - ./docker/entrypoint_uwsgi.sh
     expose:
@@ -29,6 +30,12 @@ services:
       - env_file
     depends_on:
       - postgres
+    healthcheck:
+      test: ["CMD", "/healthcheck.sh"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
 
   nginx:
     image: intelowlproject/greedybear_nginx:prod
@@ -62,7 +69,8 @@ services:
       postgres:
         condition: service_started
       uwsgi:
-        condition: service_started
+        condition: service_healthy
+    user: "2000:82"
     <<: *no-healthcheck
 
 volumes:

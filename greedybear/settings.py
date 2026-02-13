@@ -190,7 +190,7 @@ DATABASES = {
 
 Q_CLUSTER = {
     "name": "greedybear_q",
-    "workers": 4,
+    "workers": 1,
     "recycle": 500,
     "retry": 1860,  # Must be larger than timeout
     "timeout": 1800,  # 30 minutes
