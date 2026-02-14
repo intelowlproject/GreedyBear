@@ -182,10 +182,6 @@ class CustomTestCase(TestCase):
         except User.DoesNotExist:
             cls.regular_user = User.objects.create_user(username="regular", email="regular@greedybear.com", password="regular")
 
-    @classmethod
-    def tearDownClass(cls):
-        super().tearDownClass()
-
 
 class ExtractionTestCase(CustomTestCase):
     def setUp(self):
