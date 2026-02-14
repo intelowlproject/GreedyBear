@@ -28,7 +28,9 @@ class CleanUp(Cronjob):
         """
         super().__init__()
         self.ioc_repo = ioc_repo if ioc_repo is not None else IocRepository()
-        self.cowrie_repo = cowrie_repo if cowrie_repo is not None else CowrieSessionRepository()
+        self.cowrie_repo = (
+            cowrie_repo if cowrie_repo is not None else CowrieSessionRepository()
+        )
 
     def run(self) -> None:
         """
@@ -45,26 +47,40 @@ class CleanUp(Cronjob):
         Each deletion operation is logged with the number of affected records.
         """
         ioc_expiration_date = datetime.now() - timedelta(days=IOC_RETENTION)
-        command_expiration_date = datetime.now() - timedelta(days=COMMAND_SEQUENCE_RETENTION)
+        command_expiration_date = datetime.now() - timedelta(
+            days=COMMAND_SEQUENCE_RETENTION
+        )
         session_expiration_date = datetime.now() - timedelta(days=30)
-        session_with_login_expiration_date = datetime.now() - timedelta(days=COWRIE_SESSION_RETENTION)
+        session_with_login_expiration_date = datetime.now() - timedelta(
+            days=COWRIE_SESSION_RETENTION
+        )
 
         self.log.info(f"deleting all IOC older then {IOC_RETENTION} days")
         n = self.ioc_repo.delete_old_iocs(ioc_expiration_date)
         self.log.info(f"{n} objects deleted")
 
-        self.log.info(f"deleting all command sequences older then {COMMAND_SEQUENCE_RETENTION} days")
+        self.log.info(
+            f"deleting all command sequences older then {COMMAND_SEQUENCE_RETENTION} days"
+        )
         n = self.cowrie_repo.delete_old_command_sequences(command_expiration_date)
         self.log.info(f"{n} objects deleted")
 
-        self.log.info("deleting all Cowrie sessions without start time (incomplete extractions)")
+        self.log.info(
+            "deleting all Cowrie sessions without start time (incomplete extractions)"
+        )
         n = self.cowrie_repo.delete_incomplete_sessions()
         self.log.info(f"{n} objects deleted")
 
-        self.log.info("deleting all Cowrie sessions without login attempts older then 30 days")
+        self.log.info(
+            "deleting all Cowrie sessions without login attempts older then 30 days"
+        )
         n = self.cowrie_repo.delete_sessions_without_login(session_expiration_date)
         self.log.info(f"{n} objects deleted")
 
-        self.log.info(f"deleting all Cowrie sessions without associated commands older then {COWRIE_SESSION_RETENTION} days")
-        n = self.cowrie_repo.delete_sessions_without_commands(session_with_login_expiration_date)
+        self.log.info(
+            f"deleting all Cowrie sessions without associated commands older then {COWRIE_SESSION_RETENTION} days"
+        )
+        n = self.cowrie_repo.delete_sessions_without_commands(
+            session_with_login_expiration_date
+        )
         self.log.info(f"{n} objects deleted")

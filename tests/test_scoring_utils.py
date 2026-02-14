@@ -1,7 +1,13 @@
 from datetime import datetime
 
 import pandas as pd
-from greedybear.cronjobs.scoring.utils import correlated_features, date_delta, get_current_data, get_features, multi_label_encode
+from greedybear.cronjobs.scoring.utils import (
+    correlated_features,
+    date_delta,
+    get_current_data,
+    get_features,
+    multi_label_encode,
+)
 
 from . import CustomTestCase
 
@@ -19,7 +25,9 @@ SAMPLE_DATA = pd.DataFrame(
 class TestCorrelatedFeatures(CustomTestCase):
     def test_with_sample_data(self):
         """Test with sample data"""
-        high_corr_pairs = correlated_features(SAMPLE_DATA.select_dtypes(include="number"))
+        high_corr_pairs = correlated_features(
+            SAMPLE_DATA.select_dtypes(include="number")
+        )
         self.assertEqual(len(high_corr_pairs), 1)
         self.assertEqual(high_corr_pairs[0], ("feature1", "feature2", 1.0))
 
@@ -43,12 +51,18 @@ class TestDateDelta(CustomTestCase):
     def test_leap_year(self):
         """Test dates across leap year February"""
         self.assertEqual(date_delta("2024-02-28", "2024-02-29"), 1)  # 2024 is leap year
-        self.assertEqual(date_delta("2024-02-01", "2024-03-01"), 29)  # February 2024 has 29 days
-        self.assertEqual(date_delta("2023-02-01", "2023-03-01"), 28)  # February 2023 has 28 days
+        self.assertEqual(
+            date_delta("2024-02-01", "2024-03-01"), 29
+        )  # February 2024 has 29 days
+        self.assertEqual(
+            date_delta("2023-02-01", "2023-03-01"), 28
+        )  # February 2023 has 28 days
 
     def test_long_range(self):
         """Test dates with multi-year difference"""
-        self.assertEqual(date_delta("2020-01-01", "2024-01-01"), 1461)  # Includes leap year 2020
+        self.assertEqual(
+            date_delta("2020-01-01", "2024-01-01"), 1461
+        )  # Includes leap year 2020
         self.assertEqual(date_delta("1999-12-31", "2000-01-01"), 1)
 
     def test_invalid_format(self):
@@ -68,8 +82,12 @@ class TestDateDelta(CustomTestCase):
 
     def test_edge_dates(self):
         """Test edge cases for valid dates"""
-        self.assertEqual(date_delta("0001-01-01", "0001-01-02"), 1)  # Minimum valid year
-        self.assertEqual(date_delta("9999-12-30", "9999-12-31"), 1)  # Maximum valid year
+        self.assertEqual(
+            date_delta("0001-01-01", "0001-01-02"), 1
+        )  # Minimum valid year
+        self.assertEqual(
+            date_delta("9999-12-30", "9999-12-31"), 1
+        )  # Maximum valid year
         self.assertEqual(date_delta("2024-01-31", "2024-02-01"), 1)  # Month boundary
         self.assertEqual(date_delta("2024-12-31", "2025-01-01"), 1)  # Year boundary
 
@@ -93,7 +111,11 @@ class TestFeatExtraction(CustomTestCase):
             self.assertEqual(str(feature["days_seen"][0]), today)
             self.assertEqual(feature["asn"], "12345")
             self.assertTrue(len(feature["honeypots"]) > 0)
-            self.assertTrue(set(feature["honeypots"]).issubset({"heralding", "ciscoasa", "log4j", "cowrie"}))
+            self.assertTrue(
+                set(feature["honeypots"]).issubset(
+                    {"heralding", "ciscoasa", "log4j", "cowrie"}
+                )
+            )
             self.assertEqual(feature["honeypot_count"], len(feature["honeypots"]))
             self.assertEqual(feature["destination_port_count"], 3)
             self.assertEqual(feature["days_seen_count"], 1)
@@ -121,7 +143,9 @@ class TestMultiLabelEncode(CustomTestCase):
 
     def test_multi_label_encode_sample(self):
         """Test with sample data"""
-        features = multi_label_encode(SAMPLE_DATA, "multi_val_feature").to_dict("records")
+        features = multi_label_encode(SAMPLE_DATA, "multi_val_feature").to_dict(
+            "records"
+        )
         for idx, feat in enumerate(SAMPLE_DATA["multi_val_feature"]):
             for f in ["A", "B", "C"]:
                 self.assertEqual(features[idx][f"has_{f}"], f in feat)

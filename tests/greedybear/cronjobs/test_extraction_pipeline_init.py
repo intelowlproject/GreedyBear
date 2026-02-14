@@ -35,7 +35,9 @@ class TestMinutesBackToLookup(ExtractionTestCase):
     @patch("greedybear.cronjobs.extraction.pipeline.SensorRepository")
     @patch("greedybear.cronjobs.extraction.pipeline.IocRepository")
     @patch("greedybear.cronjobs.extraction.pipeline.ElasticRepository")
-    def test_returns_initial_timespan_when_empty(self, mock_elastic, mock_ioc, mock_sensor):
+    def test_returns_initial_timespan_when_empty(
+        self, mock_elastic, mock_ioc, mock_sensor
+    ):
         """Should return INITIAL_EXTRACTION_TIMESPAN on first run (empty DB)."""
         from greedybear.cronjobs.extraction.pipeline import ExtractionPipeline
 
@@ -50,7 +52,9 @@ class TestMinutesBackToLookup(ExtractionTestCase):
     @patch("greedybear.cronjobs.extraction.pipeline.SensorRepository")
     @patch("greedybear.cronjobs.extraction.pipeline.IocRepository")
     @patch("greedybear.cronjobs.extraction.pipeline.ElasticRepository")
-    def test_returns_extraction_interval_when_not_empty(self, mock_elastic, mock_ioc, mock_sensor):
+    def test_returns_extraction_interval_when_not_empty(
+        self, mock_elastic, mock_ioc, mock_sensor
+    ):
         """Should return EXTRACTION_INTERVAL for subsequent runs."""
         from greedybear.cronjobs.extraction.pipeline import ExtractionPipeline
 

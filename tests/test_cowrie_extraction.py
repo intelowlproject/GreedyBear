@@ -320,7 +320,9 @@ class TestCowrieExtractionStrategy(ExtractionTestCase):
         session.commands.last_seen = "2023-01-01T10:00:10"
 
         existing_cmd_seq = Mock()
-        self.mock_session_repo.get_command_sequence_by_hash.return_value = existing_cmd_seq
+        self.mock_session_repo.get_command_sequence_by_hash.return_value = (
+            existing_cmd_seq
+        )
 
         result = self.strategy._deduplicate_command_sequence(session)
 
@@ -338,7 +340,9 @@ class TestCowrieExtractionStrategy(ExtractionTestCase):
         mock_ioc_record = Mock()
         self.strategy.ioc_processor.add_ioc.return_value = mock_ioc_record
 
-        hits = [{"src_ip": "1.2.3.4", "session": "s1", "eventid": "cowrie.session.connect"}]
+        hits = [
+            {"src_ip": "1.2.3.4", "session": "s1", "eventid": "cowrie.session.connect"}
+        ]
 
         with patch.object(self.strategy, "_get_sessions"):
             with patch.object(self.strategy, "_extract_possible_payload_in_messages"):

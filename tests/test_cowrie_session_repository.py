@@ -49,7 +49,9 @@ class TestCowrieSessionRepository(CustomTestCase):
         result = self.repo.save_session(session)
         self.assertEqual(result.interaction_count, 10)
         self.assertEqual(
-            CowrieSession.objects.get(session_id=int(existing_session_id, 16)).interaction_count,
+            CowrieSession.objects.get(
+                session_id=int(existing_session_id, 16)
+            ).interaction_count,
             10,
         )
 
@@ -57,7 +59,9 @@ class TestCowrieSessionRepository(CustomTestCase):
         result = self.repo.save_session(session)
         self.assertEqual(result.interaction_count, original_interaction_count)
         self.assertEqual(
-            CowrieSession.objects.get(session_id=int(existing_session_id, 16)).interaction_count,
+            CowrieSession.objects.get(
+                session_id=int(existing_session_id, 16)
+            ).interaction_count,
             original_interaction_count,
         )
 
@@ -91,7 +95,9 @@ class TestCowrieSessionRepository(CustomTestCase):
     def test_get_or_create_session_with_hex_session_id(self):
         session_id = "abc123"
         source_ioc = IOC.objects.create(name="1.2.3.4", type="ip")
-        result = self.repo.get_or_create_session(session_id=session_id, source=source_ioc)
+        result = self.repo.get_or_create_session(
+            session_id=session_id, source=source_ioc
+        )
         self.assertEqual(result.session_id, int(session_id, 16))
 
     def test_command_sequence_unique_hash_constraint(self):
@@ -113,21 +119,31 @@ class TestCowrieSessionRepositoryCleanup(CustomTestCase):
         old_date = datetime.now() - timedelta(days=40)
         recent_date = datetime.now() - timedelta(days=5)
 
-        CommandSequence.objects.create(commands=["ls"], commands_hash="old_hash", last_seen=old_date)
-        CommandSequence.objects.create(commands=["pwd"], commands_hash="recent_hash", last_seen=recent_date)
+        CommandSequence.objects.create(
+            commands=["ls"], commands_hash="old_hash", last_seen=old_date
+        )
+        CommandSequence.objects.create(
+            commands=["pwd"], commands_hash="recent_hash", last_seen=recent_date
+        )
 
         cutoff = datetime.now() - timedelta(days=30)
         deleted_count = self.repo.delete_old_command_sequences(cutoff)
 
         self.assertEqual(deleted_count, 1)
-        self.assertFalse(CommandSequence.objects.filter(commands_hash="old_hash").exists())
-        self.assertTrue(CommandSequence.objects.filter(commands_hash="recent_hash").exists())
+        self.assertFalse(
+            CommandSequence.objects.filter(commands_hash="old_hash").exists()
+        )
+        self.assertTrue(
+            CommandSequence.objects.filter(commands_hash="recent_hash").exists()
+        )
 
     def test_delete_incomplete_sessions(self):
         source = IOC.objects.create(name="1.2.3.4", type="ip")
 
         CowrieSession.objects.create(session_id=123, source=source, start_time=None)
-        CowrieSession.objects.create(session_id=456, source=source, start_time=datetime.now())
+        CowrieSession.objects.create(
+            session_id=456, source=source, start_time=datetime.now()
+        )
 
         deleted_count = self.repo.delete_incomplete_sessions()
 
@@ -141,11 +157,17 @@ class TestCowrieSessionRepositoryCleanup(CustomTestCase):
         recent_date = datetime.now() - timedelta(days=5)
 
         # Old session without login
-        CowrieSession.objects.create(session_id=111, source=source, start_time=old_date, login_attempt=False)
+        CowrieSession.objects.create(
+            session_id=111, source=source, start_time=old_date, login_attempt=False
+        )
         # Recent session without login
-        CowrieSession.objects.create(session_id=222, source=source, start_time=recent_date, login_attempt=False)
+        CowrieSession.objects.create(
+            session_id=222, source=source, start_time=recent_date, login_attempt=False
+        )
         # Old session with login
-        CowrieSession.objects.create(session_id=333, source=source, start_time=old_date, login_attempt=True)
+        CowrieSession.objects.create(
+            session_id=333, source=source, start_time=old_date, login_attempt=True
+        )
 
         cutoff = datetime.now() - timedelta(days=30)
         deleted_count = self.repo.delete_sessions_without_login(cutoff)
@@ -162,7 +184,9 @@ class TestCowrieSessionRepositoryCleanup(CustomTestCase):
         # Session without commands
         CowrieSession.objects.create(session_id=777, source=source, start_time=old_date)
         # Session with commands
-        session_with_cmd = CowrieSession.objects.create(session_id=888, source=source, start_time=old_date)
+        session_with_cmd = CowrieSession.objects.create(
+            session_id=888, source=source, start_time=old_date
+        )
         cmd_seq = CommandSequence.objects.create(commands=["ls"], commands_hash="hash1")
         session_with_cmd.commands = cmd_seq
         session_with_cmd.save()

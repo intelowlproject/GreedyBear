@@ -44,7 +44,9 @@ class StatisticsViewSet(viewsets.ViewSet):
                 )
             }
         elif pk == "downloads":
-            annotations = {"Downloads": Count("source", filter=Q(view=ViewType.FEEDS_VIEW.value))}
+            annotations = {
+                "Downloads": Count("source", filter=Q(view=ViewType.FEEDS_VIEW.value))
+            }
         else:
             logger.error("this is impossible. check the code")
             return HttpResponseServerError()
@@ -71,7 +73,11 @@ class StatisticsViewSet(viewsets.ViewSet):
                 )
             }
         elif pk == "requests":
-            annotations = {"Requests": Count("source", filter=Q(view=ViewType.ENRICHMENT_VIEW.value))}
+            annotations = {
+                "Requests": Count(
+                    "source", filter=Q(view=ViewType.ENRICHMENT_VIEW.value)
+                )
+            }
         else:
             logger.error("this is impossible. check the code")
             return HttpResponseServerError()
@@ -93,7 +99,9 @@ class StatisticsViewSet(viewsets.ViewSet):
         general_honeypots = Honeypot.objects.all().filter(active=True)
         for hp in general_honeypots:
             # Use M2M relationship instead of boolean fields
-            annotations[hp.name] = Count("name", distinct=True, filter=Q(general_honeypot__name__iexact=hp.name))
+            annotations[hp.name] = Count(
+                "name", distinct=True, filter=Q(general_honeypot__name__iexact=hp.name)
+            )
         return self.__aggregation_response_static_ioc(annotations)
 
     def __aggregation_response_static_statistics(self, annotations: dict) -> Response:
@@ -107,7 +115,12 @@ class StatisticsViewSet(viewsets.ViewSet):
             Response: A JSON response containing the aggregated statistics.
         """
         delta, basis = self.__parse_range(self.request)
-        qs = Statistics.objects.filter(request_date__gte=delta).annotate(date=Trunc("request_date", basis)).values("date").annotate(**annotations)
+        qs = (
+            Statistics.objects.filter(request_date__gte=delta)
+            .annotate(date=Trunc("request_date", basis))
+            .values("date")
+            .annotate(**annotations)
+        )
         return Response(qs)
 
     def __aggregation_response_static_ioc(self, annotations: dict) -> Response:

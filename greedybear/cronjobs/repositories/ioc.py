@@ -18,7 +18,9 @@ class IocRepository:
     def __init__(self):
         """Initialize the repository and populate the honeypot cache from the database."""
         self.log = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
-        self._honeypot_cache = {self._normalize_name(hp.name): hp.active for hp in Honeypot.objects.all()}
+        self._honeypot_cache = {
+            self._normalize_name(hp.name): hp.active for hp in Honeypot.objects.all()
+        }
 
     def _normalize_name(self, name: str) -> str:
         """Normalize honeypot names for consistent cache and DB usage."""
@@ -173,7 +175,12 @@ class IocRepository:
         Returns:
             QuerySet of IOC objects with only name and score fields loaded.
         """
-        return IOC.objects.filter(general_honeypot__active=True).filter(scanner=True).distinct().only("name", *score_fields)
+        return (
+            IOC.objects.filter(general_honeypot__active=True)
+            .filter(scanner=True)
+            .distinct()
+            .only("name", *score_fields)
+        )
 
     def get_scanners_by_pks(self, primary_keys: set[int]):
         """
@@ -217,7 +224,9 @@ class IocRepository:
             .values()
         )
 
-    def bulk_update_scores(self, iocs: list[IOC], score_fields: list[str], batch_size: int = 1000) -> int:
+    def bulk_update_scores(
+        self, iocs: list[IOC], score_fields: list[str], batch_size: int = 1000
+    ) -> int:
         """
         Bulk update IOC score fields in the database.
 

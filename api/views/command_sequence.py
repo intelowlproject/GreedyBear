@@ -48,14 +48,18 @@ def command_sequence_view(request):
     include_similar = request.query_params.get("include_similar") is not None
     logger.info(f"Command Sequence view requested by {request.user} for {observable}")
     source_ip = str(request.META["REMOTE_ADDR"])
-    request_source = Statistics(source=source_ip, view=ViewType.COMMAND_SEQUENCE_VIEW.value)
+    request_source = Statistics(
+        source=source_ip, view=ViewType.COMMAND_SEQUENCE_VIEW.value
+    )
     request_source.save()
 
     if not observable:
         return HttpResponseBadRequest("Missing required 'query' parameter")
 
     if is_ip_address(observable):
-        sessions = CowrieSession.objects.filter(source__name=observable, start_time__isnull=False, commands__isnull=False)
+        sessions = CowrieSession.objects.filter(
+            source__name=observable, start_time__isnull=False, commands__isnull=False
+        )
         sequences = {s.commands for s in sessions}
         seqs = [
             {
@@ -65,10 +69,20 @@ def command_sequence_view(request):
             }
             for s in sessions
         ]
-        related_iocs = IOC.objects.filter(cowriesession__commands__in=sequences).distinct().only("name")
+        related_iocs = (
+            IOC.objects.filter(cowriesession__commands__in=sequences)
+            .distinct()
+            .only("name")
+        )
         if include_similar:
             related_clusters = {s.cluster for s in sequences if s.cluster is not None}
-            related_iocs = IOC.objects.filter(cowriesession__commands__cluster__in=related_clusters).distinct().only("name")
+            related_iocs = (
+                IOC.objects.filter(
+                    cowriesession__commands__cluster__in=related_clusters
+                )
+                .distinct()
+                .only("name")
+            )
         if not seqs:
             raise Http404(f"No command sequences found for IP: {observable}")
         data = {
@@ -82,9 +96,15 @@ def command_sequence_view(request):
     if is_sha256hash(observable):
         try:
             seq = CommandSequence.objects.get(commands_hash=observable)
-            seqs = CommandSequence.objects.filter(cluster=seq.cluster) if include_similar and seq.cluster is not None else [seq]
+            seqs = (
+                CommandSequence.objects.filter(cluster=seq.cluster)
+                if include_similar and seq.cluster is not None
+                else [seq]
+            )
             commands = ["\n".join(seq.commands) for seq in seqs]
-            sessions = CowrieSession.objects.filter(commands__in=seqs, start_time__isnull=False)
+            sessions = CowrieSession.objects.filter(
+                commands__in=seqs, start_time__isnull=False
+            )
             iocs = [
                 {
                     "time": s.start_time,
@@ -100,6 +120,8 @@ def command_sequence_view(request):
                 data["license"] = settings.FEEDS_LICENSE
             return Response(data, status=status.HTTP_200_OK)
         except CommandSequence.DoesNotExist as exc:
-            raise Http404(f"No command sequences found with hash: {observable}") from exc
+            raise Http404(
+                f"No command sequences found with hash: {observable}"
+            ) from exc
 
     return HttpResponseBadRequest("Query must be a valid IP address or SHA-256 hash")

@@ -67,7 +67,9 @@ def get_firehol_categories(ip: str, extracted_ip) -> list[str]:
     firehol_categories = []
 
     # First check for exact IP match (for .ipset files)
-    exact_matches = FireHolList.objects.filter(ip_address=ip).values_list("source", flat=True)
+    exact_matches = FireHolList.objects.filter(ip_address=ip).values_list(
+        "source", flat=True
+    )
     # Filter out empty strings (from default='')
     firehol_categories.extend([source for source in exact_matches if source])
 
@@ -78,7 +80,11 @@ def get_firehol_categories(ip: str, extracted_ip) -> list[str]:
         try:
             network_range = ip_network(entry.ip_address, strict=False)
             # Check entry.source is not empty and not already in list
-            if extracted_ip in network_range and entry.source and entry.source not in firehol_categories:
+            if (
+                extracted_ip in network_range
+                and entry.source
+                and entry.source not in firehol_categories
+            ):
                 firehol_categories.append(entry.source)
         except (ValueError, IndexError):
             # Not a valid network range, skip
@@ -108,13 +114,23 @@ def iocs_from_hits(hits: list[dict]) -> list[IOC]:
     for ip, hits in hits_by_ip.items():
         dest_ports = [hit["dest_port"] for hit in hits if "dest_port" in hit]
         extracted_ip = ip_address(ip)
-        if extracted_ip.is_loopback or extracted_ip.is_private or extracted_ip.is_multicast or extracted_ip.is_link_local or extracted_ip.is_reserved:
+        if (
+            extracted_ip.is_loopback
+            or extracted_ip.is_private
+            or extracted_ip.is_multicast
+            or extracted_ip.is_link_local
+            or extracted_ip.is_reserved
+        ):
             continue
 
         firehol_categories = get_firehol_categories(ip, extracted_ip)
 
         # Collect unique sensors from hits, deduplicated by sensor ID
-        sensors_map = {hit["_sensor"].id: hit["_sensor"] for hit in hits if hit.get("_sensor") is not None and getattr(hit["_sensor"], "id", None)}
+        sensors_map = {
+            hit["_sensor"].id: hit["_sensor"]
+            for hit in hits
+            if hit.get("_sensor") is not None and getattr(hit["_sensor"], "id", None)
+        }
         sensors = list(sensors_map.values())
         # Sort sensors by ID for consistent processing order
         sensors.sort(key=lambda s: s.id)

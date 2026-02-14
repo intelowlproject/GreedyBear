@@ -12,7 +12,9 @@ class MassScannerRepository:
         """Initialize the repository."""
         self.log = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
 
-    def get_or_create(self, ip_address: str, reason: str = "") -> tuple[MassScanner, bool]:
+    def get_or_create(
+        self, ip_address: str, reason: str = ""
+    ) -> tuple[MassScanner, bool]:
         """
         Get an existing mass scanner entry or create a new one.
 
@@ -23,5 +25,7 @@ class MassScannerRepository:
         Returns:
             Tuple of (MassScanner object, created_flag) where created_flag is True if new.
         """
-        scanner, created = MassScanner.objects.get_or_create(ip_address=ip_address, defaults={"reason": reason})
+        scanner, created = MassScanner.objects.get_or_create(
+            ip_address=ip_address, defaults={"reason": reason}
+        )
         return scanner, created

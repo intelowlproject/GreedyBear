@@ -25,7 +25,9 @@ class TestUserAuth(CustomOAuthTestCase):
         self.assertEqual(201, response.status_code, msg=msg)
         self.assertEqual(content["username"], body["username"], msg=msg)
         self.assertEqual(content["email"], body["email"], msg=msg)
-        self.assertFalse(content["is_active"], msg="newly registered user must have is_active=False")
+        self.assertFalse(
+            content["is_active"], msg="newly registered user must have is_active=False"
+        )
 
     def setUp(self):
         # test data

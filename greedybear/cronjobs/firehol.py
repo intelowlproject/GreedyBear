@@ -21,7 +21,9 @@ class FireHolCron(Cronjob):
             firehol_repo: Optional FireHolRepository instance for testing.
         """
         super().__init__()
-        self.firehol_repo = firehol_repo if firehol_repo is not None else FireHolRepository()
+        self.firehol_repo = (
+            firehol_repo if firehol_repo is not None else FireHolRepository()
+        )
 
     def run(self) -> None:
         """

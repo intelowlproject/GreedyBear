@@ -86,9 +86,13 @@ class TestAddIoc(ExtractionTestCase):
         self.mock_ioc_repo.save.return_value = ioc
         self.mock_ioc_repo.add_honeypot_to_ioc.return_value = ioc
 
-        self.processor.add_ioc(ioc, attack_type=SCANNER, general_honeypot_name="TestHoneypot")
+        self.processor.add_ioc(
+            ioc, attack_type=SCANNER, general_honeypot_name="TestHoneypot"
+        )
 
-        self.mock_ioc_repo.add_honeypot_to_ioc.assert_called_once_with("TestHoneypot", ioc)
+        self.mock_ioc_repo.add_honeypot_to_ioc.assert_called_once_with(
+            "TestHoneypot", ioc
+        )
 
     def test_skips_general_honeypot_when_not_provided(self):
         self.mock_sensor_repo.cache = {}
@@ -118,7 +122,9 @@ class TestAddIoc(ExtractionTestCase):
     def test_updates_days_seen_on_add(self):
         self.mock_sensor_repo.cache = {}
         self.mock_ioc_repo.get_ioc_by_name.return_value = None
-        ioc = self._create_mock_ioc(days_seen=[], last_seen=datetime(2025, 1, 1, 12, 0, 0))
+        ioc = self._create_mock_ioc(
+            days_seen=[], last_seen=datetime(2025, 1, 1, 12, 0, 0)
+        )
         self.mock_ioc_repo.save.return_value = ioc
 
         result = self.processor.add_ioc(ioc, attack_type=SCANNER)
@@ -142,7 +148,9 @@ class TestAddIoc(ExtractionTestCase):
         result = self.processor.add_ioc(ioc, attack_type=SCANNER)
 
         self.mock_ioc_repo.get_ioc_by_name.assert_called_once()
-        self.assertEqual(self.mock_ioc_repo.save.call_count, 2)  # Once for create, once at end
+        self.assertEqual(
+            self.mock_ioc_repo.save.call_count, 2
+        )  # Once for create, once at end
         self.assertTrue(result.scanner)
         self.assertEqual(len(result.days_seen), 1)
 
@@ -235,7 +243,9 @@ class TestMergeIocs(ExtractionTestCase):
     def test_updating(self):
         old_time = datetime(2025, 1, 1, 12, 0, 0)
         new_time = datetime(2025, 1, 2, 12, 0, 0)
-        existing = self._create_mock_ioc(last_seen=old_time, ip_reputation="old", asn=12)
+        existing = self._create_mock_ioc(
+            last_seen=old_time, ip_reputation="old", asn=12
+        )
         new = self._create_mock_ioc(last_seen=new_time, ip_reputation="new", asn=23)
 
         result = self.processor._merge_iocs(existing, new)

@@ -24,7 +24,9 @@ class FireHolRepository:
         Returns:
             Tuple of (FireHolList object, created_flag) where created_flag is True if new.
         """
-        entry, created = FireHolList.objects.get_or_create(ip_address=ip_address, source=source)
+        entry, created = FireHolList.objects.get_or_create(
+            ip_address=ip_address, source=source
+        )
         return entry, created
 
     def save(self, entry: FireHolList) -> FireHolList:

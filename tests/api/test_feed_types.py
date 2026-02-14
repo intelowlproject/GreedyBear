@@ -17,8 +17,12 @@ class FeedTypeAPITestCase(CustomTestCase):
         self.client.force_authenticate(user=self.superuser)
 
         # Ensure Cowrie and Log4pot honeypots exist
-        self.cowrie_hp = Honeypot.objects.get_or_create(name="Cowrie", defaults={"active": True})[0]
-        self.log4pot_hp = Honeypot.objects.get_or_create(name="Log4pot", defaults={"active": True})[0]
+        self.cowrie_hp = Honeypot.objects.get_or_create(
+            name="Cowrie", defaults={"active": True}
+        )[0]
+        self.log4pot_hp = Honeypot.objects.get_or_create(
+            name="Log4pot", defaults={"active": True}
+        )[0]
 
     def test_feed_type_derived_from_m2m(self):
         """Verify feed_type is derived from general_honeypot M2M."""
@@ -39,7 +43,9 @@ class FeedTypeAPITestCase(CustomTestCase):
     def test_feed_filter_by_cowrie(self):
         """Verify filtering by cowrie feed type works via M2M."""
         # Include mass scanners and tor exit nodes since test IOCs have those reputations
-        response = self.client.get("/api/feeds/cowrie/all/recent.json?include_mass_scanners=true&include_tor_exit_nodes=true")
+        response = self.client.get(
+            "/api/feeds/cowrie/all/recent.json?include_mass_scanners=true&include_tor_exit_nodes=true"
+        )
         self.assertEqual(response.status_code, 200)
 
         iocs = response.json()["iocs"]
@@ -53,7 +59,9 @@ class FeedTypeAPITestCase(CustomTestCase):
     def test_feed_filter_by_log4pot(self):
         """Verify filtering by log4pot feed type works via M2M."""
         # Include mass scanners since ioc_2 has that reputation
-        response = self.client.get("/api/feeds/log4pot/all/recent.json?include_mass_scanners=true")
+        response = self.client.get(
+            "/api/feeds/log4pot/all/recent.json?include_mass_scanners=true"
+        )
         self.assertEqual(response.status_code, 200)
 
         iocs = response.json()["iocs"]

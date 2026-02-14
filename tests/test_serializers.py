@@ -100,7 +100,9 @@ class FeedsResponseSerializersTestCase(CustomTestCase):
         feed_type_choices = ["all", "log4pot", "cowrie", "adbhoney"]
 
         # generete all possible valid input data using cartesian product
-        valid_data_choices = product(scanner_choices, payload_request_choices, feed_type_choices)
+        valid_data_choices = product(
+            scanner_choices, payload_request_choices, feed_type_choices
+        )
 
         for element in valid_data_choices:
             data_ = {

@@ -95,7 +95,9 @@ class RegistrationSerializer(rest_email_auth.serializers.RegistrationSerializer)
         return user
 
 
-class EmailVerificationSerializer(rest_email_auth.serializers.EmailVerificationSerializer):
+class EmailVerificationSerializer(
+    rest_email_auth.serializers.EmailVerificationSerializer
+):
     def validate_key(self, key):
         try:
             return super().validate_key(key)
@@ -118,10 +120,15 @@ class EmailVerificationSerializer(rest_email_auth.serializers.EmailVerificationS
             super().save()
 
         # Send msg on slack
-        if certego_apps_settings.SLACK_TOKEN and certego_apps_settings.DEFAULT_SLACK_CHANNEL:
+        if (
+            certego_apps_settings.SLACK_TOKEN
+            and certego_apps_settings.DEFAULT_SLACK_CHANNEL
+        ):
             try:
                 userprofile = user.user_profile
-                user_admin_link = f"{settings.HOST_URI}/admin/certego_saas_user/user/{user.pk}"
+                user_admin_link = (
+                    f"{settings.HOST_URI}/admin/certego_saas_user/user/{user.pk}"
+                )
                 userprofile_admin_link = f"{settings.HOST_URI}/admin/authentication/userprofile/{userprofile.pk}"
                 slack = Slack()
                 slack.send_message(
@@ -136,7 +143,9 @@ class EmailVerificationSerializer(rest_email_auth.serializers.EmailVerificationS
                     channel=certego_apps_settings.DEFAULT_SLACK_CHANNEL,
                 )
             except SlackApiError as exc:
-                slack.log.error(f"Slack message failed for user(#{user.pk}) with error: {str(exc)}")
+                slack.log.error(
+                    f"Slack message failed for user(#{user.pk}) with error: {str(exc)}"
+                )
 
 
 class LoginSerializer(AuthTokenSerializer):
@@ -155,7 +164,9 @@ class LoginSerializer(AuthTokenSerializer):
         except rfs.ValidationError as exc:
             try:
                 # Check if either of the two, username or email exists
-                user = User.objects.get(Q(username=login_value) | Q(email__iexact=login_value))
+                user = User.objects.get(
+                    Q(username=login_value) | Q(email__iexact=login_value)
+                )
             except User.DoesNotExist:
                 # we do not want to leak info
                 # so just raise the original exception without context
@@ -169,5 +180,7 @@ class LoginSerializer(AuthTokenSerializer):
                         exc.detail = "Your account is pending activation by our team."
                     elif user.approved is False:
                         exc.detail = "Your account was declined."
-                    logger.info(f"User {user} is not active. Error message: {exc.detail}")
+                    logger.info(
+                        f"User {user} is not active. Error message: {exc.detail}"
+                    )
             raise exc from None

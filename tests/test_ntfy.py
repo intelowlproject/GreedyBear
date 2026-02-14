@@ -55,11 +55,15 @@ class SendNtfyMessageTests(CustomTestCase):
     @override_settings(NTFY_URL="")
     @patch("greedybear.ntfy.requests.post")
     @patch("greedybear.ntfy.logger")
-    def test_no_url_configured_logs_warning_and_skips_post(self, mock_logger, mock_post):
+    def test_no_url_configured_logs_warning_and_skips_post(
+        self, mock_logger, mock_post
+    ):
         send_ntfy_message("anything")
 
         mock_post.assert_not_called()
-        mock_logger.warning.assert_called_once_with("ntfy is not configured, message not sent")
+        mock_logger.warning.assert_called_once_with(
+            "ntfy is not configured, message not sent"
+        )
 
     @override_settings(NTFY_URL="https://ntfy.sh/greedybear")
     @patch("greedybear.ntfy.requests.post")

@@ -88,7 +88,9 @@ class TestRemoveUnusedLog4pot(MigrationTestCase):
 
     def test_log4pot_deleted_if_unused(self):
         """Log4pot should be deleted if it has no associated IOCs."""
-        GeneralHoneypot = self.old_state.apps.get_model(self.app_name, "GeneralHoneypot")
+        GeneralHoneypot = self.old_state.apps.get_model(
+            self.app_name, "GeneralHoneypot"
+        )
 
         # Ensure Log4pot exists (created by migration 0030)
         GeneralHoneypot.objects.get_or_create(name="Log4pot", defaults={"active": True})
@@ -103,10 +105,14 @@ class TestRemoveUnusedLog4pot(MigrationTestCase):
 
     def test_log4pot_kept_if_has_iocs(self):
         """Log4pot should NOT be deleted if it has associated IOCs."""
-        GeneralHoneypot = self.old_state.apps.get_model(self.app_name, "GeneralHoneypot")
+        GeneralHoneypot = self.old_state.apps.get_model(
+            self.app_name, "GeneralHoneypot"
+        )
         IOC = self.old_state.apps.get_model(self.app_name, "IOC")
 
-        log4pot_hp, _ = GeneralHoneypot.objects.get_or_create(name="Log4pot", defaults={"active": True})
+        log4pot_hp, _ = GeneralHoneypot.objects.get_or_create(
+            name="Log4pot", defaults={"active": True}
+        )
 
         # Create an IOC and link it to Log4pot
         ioc = IOC.objects.create()

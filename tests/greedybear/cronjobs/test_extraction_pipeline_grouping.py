@@ -37,7 +37,9 @@ class TestHitFiltering(ExtractionPipelineTestCase):
             [
                 MockElasticHit({"type": "Cowrie"}),  # missing src_ip
                 MockElasticHit({"src_ip": "", "type": "Cowrie"}),  # empty src_ip
-                MockElasticHit({"src_ip": "   ", "type": "Cowrie"}),  # whitespace-only src_ip
+                MockElasticHit(
+                    {"src_ip": "   ", "type": "Cowrie"}
+                ),  # whitespace-only src_ip
             ]
         ]
         pipeline.ioc_repo.is_empty.return_value = False
@@ -56,7 +58,9 @@ class TestHitFiltering(ExtractionPipelineTestCase):
             [
                 MockElasticHit({"src_ip": "1.2.3.4"}),  # missing type
                 MockElasticHit({"src_ip": "1.2.3.4", "type": ""}),  # empty type
-                MockElasticHit({"src_ip": "1.2.3.4", "type": "   "}),  # whitespace-only type
+                MockElasticHit(
+                    {"src_ip": "1.2.3.4", "type": "   "}
+                ),  # whitespace-only type
             ]
         ]
         pipeline.ioc_repo.is_empty.return_value = False
@@ -94,10 +98,16 @@ class TestSensorExtraction(ExtractionPipelineTestCase):
         """
         pipeline = self._create_pipeline_with_mocks()
         pipeline.elastic_repo.search.return_value = [
-            [MockElasticHit({"src_ip": "1.2.3.4", "type": "Cowrie", "t-pot_ip_ext": "10.0.0.1"})],
+            [
+                MockElasticHit(
+                    {"src_ip": "1.2.3.4", "type": "Cowrie", "t-pot_ip_ext": "10.0.0.1"}
+                )
+            ],
         ]
         pipeline.ioc_repo.is_empty.return_value = False
-        pipeline.ioc_repo.is_ready_for_extraction.return_value = False  # Skip strategy for this test
+        pipeline.ioc_repo.is_ready_for_extraction.return_value = (
+            False  # Skip strategy for this test
+        )
 
         pipeline.execute()
 
@@ -238,7 +248,9 @@ class TestHitGrouping(ExtractionPipelineTestCase):
         # Should only process the enabled honeypot
         self.assertEqual(result, 1)
         # Factory should only be called once (for EnabledHoneypot)
-        mock_factory.return_value.get_strategy.assert_called_once_with("EnabledHoneypot")
+        mock_factory.return_value.get_strategy.assert_called_once_with(
+            "EnabledHoneypot"
+        )
 
 
 class TestMultiChunkProcessing(ExtractionPipelineTestCase):
@@ -270,7 +282,9 @@ class TestMultiChunkProcessing(ExtractionPipelineTestCase):
         mock_strategy.ioc_records = []
 
         def set_ioc_records(hits):
-            mock_strategy.ioc_records = [self._create_mock_ioc(h["src_ip"]) for h in hits]
+            mock_strategy.ioc_records = [
+                self._create_mock_ioc(h["src_ip"]) for h in hits
+            ]
 
         mock_strategy.extract_from_hits.side_effect = set_ioc_records
         mock_factory.return_value.get_strategy.return_value = mock_strategy

@@ -98,8 +98,12 @@ class FeedsRequestSerializer(serializers.Serializer):
     attack_type = serializers.ChoiceField(choices=["scanner", "payload_request", "all"])
     max_age = serializers.IntegerField(min_value=1)
     min_days_seen = serializers.IntegerField(min_value=1)
-    include_reputation = serializers.ListField(child=serializers.CharField(max_length=120))
-    exclude_reputation = serializers.ListField(child=serializers.CharField(max_length=120))
+    include_reputation = serializers.ListField(
+        child=serializers.CharField(max_length=120)
+    )
+    exclude_reputation = serializers.ListField(
+        child=serializers.CharField(max_length=120)
+    )
     feed_size = serializers.IntegerField(min_value=1)
     ordering = serializers.CharField(max_length=120)
     verbose = serializers.ChoiceField(choices=["true", "false"])
@@ -174,7 +178,9 @@ class FeedsResponseSerializer(serializers.Serializer):
     attack_count = serializers.IntegerField(min_value=1)
     interaction_count = serializers.IntegerField(min_value=1)
     ip_reputation = serializers.CharField(allow_blank=True, max_length=32)
-    firehol_categories = serializers.ListField(child=serializers.CharField(max_length=64), allow_empty=True)
+    firehol_categories = serializers.ListField(
+        child=serializers.CharField(max_length=64), allow_empty=True
+    )
     asn = serializers.IntegerField(allow_null=True, min_value=1)
     destination_port_count = serializers.IntegerField(min_value=0)
     login_attempts = serializers.IntegerField(min_value=0)
@@ -183,4 +189,7 @@ class FeedsResponseSerializer(serializers.Serializer):
 
     def validate_feed_type(self, feed_type):
         logger.debug(f"FeedsResponseSerializer - validation feed_type: '{feed_type}'")
-        return [feed_type_validation(feed, self.context["valid_feed_types"]) for feed in feed_type]
+        return [
+            feed_type_validation(feed, self.context["valid_feed_types"])
+            for feed in feed_type
+        ]

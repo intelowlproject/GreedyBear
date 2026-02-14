@@ -6,6 +6,7 @@ This migration ensures that `Cowrie` and `Log4pot` entries exist in
 `GeneralHoneypot` and for each IOC that had the boolean flags set it
 adds the corresponding honeypot to the `general_honeypot` M2M.
 """
+
 from django.db import migrations
 
 
@@ -14,8 +15,12 @@ def migrate_cowrie_log4j_to_general(apps, schema_editor):
     IOC = apps.get_model("greedybear", "IOC")
 
     # Ensure honeypot entries exist
-    cowrie_hp, _ = GeneralHoneypot.objects.get_or_create(name="Cowrie", defaults={"active": True})
-    log4pot_hp, _ = GeneralHoneypot.objects.get_or_create(name="Log4pot", defaults={"active": True})
+    cowrie_hp, _ = GeneralHoneypot.objects.get_or_create(
+        name="Cowrie", defaults={"active": True}
+    )
+    log4pot_hp, _ = GeneralHoneypot.objects.get_or_create(
+        name="Log4pot", defaults={"active": True}
+    )
 
     # Migrate existing IOC rows
     for ioc in IOC.objects.all():
@@ -37,5 +42,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(migrate_cowrie_log4j_to_general, reverse_code=migrations.RunPython.noop),
+        migrations.RunPython(
+            migrate_cowrie_log4j_to_general, reverse_code=migrations.RunPython.noop
+        ),
     ]

@@ -24,7 +24,9 @@ class ExtractionStrategyFactory:
         self.ioc_repo = ioc_repo
         self.sensor_repo = sensor_repo
         self._strategies = {
-            "Cowrie": lambda: CowrieExtractionStrategy("Cowrie", self.ioc_repo, self.sensor_repo),
+            "Cowrie": lambda: CowrieExtractionStrategy(
+                "Cowrie", self.ioc_repo, self.sensor_repo
+            ),
         }
 
     def get_strategy(self, honeypot: str) -> BaseExtractionStrategy:

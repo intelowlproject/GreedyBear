@@ -18,7 +18,11 @@ class TestRFConfig(CustomTestCase):
         params = self.config["RFClassifier"]
         # Apply the same transformation logic as the class
         if "class_weight" in params:
-            params["class_weight"] = {(k.lower() == "true"): v for k, v in params["class_weight"].items() if k.lower() in ["true", "false"]}
+            params["class_weight"] = {
+                (k.lower() == "true"): v
+                for k, v in params["class_weight"].items()
+                if k.lower() in ["true", "false"]
+            }
 
         classifier = RFClassifier()
         model = classifier.untrained_model

@@ -25,7 +25,11 @@ class MassScannersCron(Cronjob):
             ioc_repo: Optional IocRepository instance for testing.
         """
         super().__init__()
-        self.mass_scanner_repo = mass_scanner_repo if mass_scanner_repo is not None else MassScannerRepository()
+        self.mass_scanner_repo = (
+            mass_scanner_repo
+            if mass_scanner_repo is not None
+            else MassScannerRepository()
+        )
         self.ioc_repo = ioc_repo if ioc_repo is not None else IocRepository()
 
     def run(self) -> None:
@@ -72,7 +76,9 @@ class MassScannersCron(Cronjob):
                     reason = comment_match.group(1)
 
                 # Add or update mass scanner entry
-                scanner, created = self.mass_scanner_repo.get_or_create(ip_address, reason)
+                scanner, created = self.mass_scanner_repo.get_or_create(
+                    ip_address, reason
+                )
                 if created:
                     self.log.info(f"added new mass scanner {ip_address}")
                     self._update_old_ioc(ip_address)

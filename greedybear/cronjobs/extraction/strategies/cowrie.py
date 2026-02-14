@@ -106,7 +106,9 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
         """Extract scanner IPs and sessions."""
         for ioc in iocs_from_hits(hits):
             self.log.info(f"found IP {ioc.name} by honeypot cowrie")
-            ioc_record = self.ioc_processor.add_ioc(ioc, attack_type=SCANNER, general_honeypot_name="Cowrie")
+            ioc_record = self.ioc_processor.add_ioc(
+                ioc, attack_type=SCANNER, general_honeypot_name="Cowrie"
+            )
             if ioc_record:
                 self.ioc_records.append(ioc_record)
                 threatfox_submission(ioc_record, ioc.related_urls, self.log)
@@ -139,7 +141,9 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
                 self.log.warning(f"Failed to parse hostname from URL: {payload_url}")
                 continue
 
-            self.log.info(f"found hidden URL {payload_url} in payload from attacker {scanner_ip}")
+            self.log.info(
+                f"found hidden URL {payload_url} in payload from attacker {scanner_ip}"
+            )
             self.log.info(f"extracted hostname {payload_hostname} from {payload_url}")
 
             ioc = IOC(
@@ -150,7 +154,9 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
             sensor = hit.get("_sensor")
             if sensor:
                 ioc._sensors_to_add = [sensor]
-            self.ioc_processor.add_ioc(ioc, attack_type=PAYLOAD_REQUEST, general_honeypot_name="Cowrie")
+            self.ioc_processor.add_ioc(
+                ioc, attack_type=PAYLOAD_REQUEST, general_honeypot_name="Cowrie"
+            )
             self._add_fks(scanner_ip, payload_hostname)
             self.payloads_in_message += 1
 
@@ -176,7 +182,9 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
             if download_url:
                 hostname = parse_url_hostname(download_url)
                 if not hostname:
-                    self.log.warning(f"Failed to parse hostname from download URL: {download_url}")
+                    self.log.warning(
+                        f"Failed to parse hostname from download URL: {download_url}"
+                    )
                     continue
 
                 ioc = IOC(
@@ -187,7 +195,9 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
                 sensor = hit.get("_sensor")
                 if sensor:
                     ioc._sensors_to_add = [sensor]
-                ioc_record = self.ioc_processor.add_ioc(ioc, attack_type=PAYLOAD_REQUEST, general_honeypot_name="Cowrie")
+                ioc_record = self.ioc_processor.add_ioc(
+                    ioc, attack_type=PAYLOAD_REQUEST, general_honeypot_name="Cowrie"
+                )
                 if ioc_record:
                     self.added_url_downloads += 1
                     threatfox_submission(ioc_record, ioc.related_urls, self.log)
@@ -210,7 +220,9 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
             hits_per_session[hit["session"]].append(hit)
 
         for sid, session_hits in hits_per_session.items():
-            session_record = self.session_repo.get_or_create_session(session_id=sid, source=ioc)
+            session_record = self.session_repo.get_or_create_session(
+                session_id=sid, source=ioc
+            )
 
             for hit in sorted(session_hits, key=lambda hit: hit["timestamp"]):
                 self._process_session_hit(session_record, hit, ioc)
@@ -218,14 +230,18 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
             if session_record.commands is not None:
                 self._deduplicate_command_sequence(session_record)
                 self.session_repo.save_command_sequence(session_record.commands)
-                self.log.info(f"saved new command execute from {ioc.name} with hash {session_record.commands.commands_hash}")
+                self.log.info(
+                    f"saved new command execute from {ioc.name} with hash {session_record.commands.commands_hash}"
+                )
 
             self.ioc_repo.save(session_record.source)
             self.session_repo.save_session(session_record)
 
         self.log.info(f"{len(hits_per_session)} sessions added")
 
-    def _process_session_hit(self, session_record: CowrieSession, hit: dict, ioc: IOC) -> None:
+    def _process_session_hit(
+        self, session_record: CowrieSession, hit: dict, ioc: IOC
+    ) -> None:
         """
         Process a single hit and update the session record.
 
@@ -302,7 +318,9 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
         commands_str = "\n".join(session.commands.commands)
         commands_hash = sha256(commands_str.encode()).hexdigest()
 
-        cmd_seq = self.session_repo.get_command_sequence_by_hash(commands_hash=commands_hash)
+        cmd_seq = self.session_repo.get_command_sequence_by_hash(
+            commands_hash=commands_hash
+        )
         if cmd_seq is None:
             session.commands.commands_hash = commands_hash
             return False

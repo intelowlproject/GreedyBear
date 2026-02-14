@@ -25,11 +25,18 @@ class Migration(migrations.Migration):
                 ),
                 ("ip_address", models.CharField(max_length=256, unique=True)),
                 ("added", models.DateTimeField(default=datetime.datetime.now)),
-                ("reason", models.CharField(blank=True, default="tor exit node", max_length=64)),
+                (
+                    "reason",
+                    models.CharField(
+                        blank=True, default="tor exit node", max_length=64
+                    ),
+                ),
             ],
         ),
         migrations.AddIndex(
             model_name="torexitnode",
-            index=models.Index(fields=["ip_address"], name="greedybear_ip_addr_tor_idx"),
+            index=models.Index(
+                fields=["ip_address"], name="greedybear_ip_addr_tor_idx"
+            ),
         ),
     ]

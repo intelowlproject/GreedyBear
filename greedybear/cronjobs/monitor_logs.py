@@ -30,7 +30,9 @@ class MonitorLogs(Cronjob):
     def run(self):
         """Check error logs for recent modifications and alert via Slack and ntfy."""
         cutoff_time = datetime.now() - timedelta(minutes=self.check_window_minutes)
-        self.log.info(f"checking {len(self.logs_to_monitor)} error logs for activity since {cutoff_time}")
+        self.log.info(
+            f"checking {len(self.logs_to_monitor)} error logs for activity since {cutoff_time}"
+        )
 
         for log_name in self.logs_to_monitor:
             log_file = f"{log_name}_errors.log"
@@ -40,7 +42,9 @@ class MonitorLogs(Cronjob):
                 self.log.warning(f"log file not found: {log_path}")
                 continue
 
-            self.log.info(f"checking if the log {log_file} was populated in the last hour")
+            self.log.info(
+                f"checking if the log {log_file} was populated in the last hour"
+            )
             last_modified = datetime.fromtimestamp(log_path.stat().st_mtime)
             self.log.info(f"file {log_file} was modified at {last_modified}")
 

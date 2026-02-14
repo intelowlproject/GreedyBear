@@ -44,7 +44,9 @@ class TestCowrieE2E(E2ETestCase):
 
         # Mock the IOC creation to return a mock IOC
         mock_ioc = self._create_mock_ioc("192.168.1.100")
-        with patch("greedybear.cronjobs.extraction.ioc_processor.IocProcessor.add_ioc") as mock_add:
+        with patch(
+            "greedybear.cronjobs.extraction.ioc_processor.IocProcessor.add_ioc"
+        ) as mock_add:
             mock_add.return_value = mock_ioc
             result = pipeline.execute()
 
@@ -81,7 +83,9 @@ class TestCowrieE2E(E2ETestCase):
         pipeline.ioc_repo.get_ioc_by_name.return_value = None
 
         mock_ioc = self._create_mock_ioc("10.20.30.40")
-        with patch("greedybear.cronjobs.extraction.ioc_processor.IocProcessor.add_ioc") as mock_add:
+        with patch(
+            "greedybear.cronjobs.extraction.ioc_processor.IocProcessor.add_ioc"
+        ) as mock_add:
             mock_add.return_value = mock_ioc
             result = pipeline.execute()
 
@@ -115,7 +119,9 @@ class TestGenericE2E(E2ETestCase):
         pipeline.ioc_repo.get_ioc_by_name.return_value = None
 
         mock_ioc = self._create_mock_ioc("172.16.0.100")
-        with patch("greedybear.cronjobs.extraction.ioc_processor.IocProcessor.add_ioc") as mock_add:
+        with patch(
+            "greedybear.cronjobs.extraction.ioc_processor.IocProcessor.add_ioc"
+        ) as mock_add:
             mock_add.return_value = mock_ioc
             result = pipeline.execute()
 
@@ -129,7 +135,9 @@ class TestMixedHoneypotE2E(E2ETestCase):
 
     @patch("greedybear.cronjobs.extraction.pipeline.UpdateScores")
     @patch("greedybear.cronjobs.repositories.CowrieSessionRepository")
-    def test_mixed_honeypots_use_correct_strategies(self, mock_session_repo, mock_scores):
+    def test_mixed_honeypots_use_correct_strategies(
+        self, mock_session_repo, mock_scores
+    ):
         """
         E2E: Mixed Cowrie + Dionaea → correct strategy for each.
         """
@@ -161,7 +169,9 @@ class TestMixedHoneypotE2E(E2ETestCase):
         pipeline.ioc_repo.get_ioc_by_name.return_value = None
 
         mock_ioc = self._create_mock_ioc("10.1.1.1")
-        with patch("greedybear.cronjobs.extraction.ioc_processor.IocProcessor.add_ioc") as mock_add:
+        with patch(
+            "greedybear.cronjobs.extraction.ioc_processor.IocProcessor.add_ioc"
+        ) as mock_add:
             mock_add.return_value = mock_ioc
             result = pipeline.execute()
 
@@ -197,7 +207,9 @@ class TestStrategyExceptionHandling(E2ETestCase):
         pipeline.ioc_repo.is_ready_for_extraction.return_value = True
 
         # Force an exception in the strategy
-        with patch("greedybear.cronjobs.extraction.strategies.cowrie.CowrieExtractionStrategy.extract_from_hits") as mock_extract:
+        with patch(
+            "greedybear.cronjobs.extraction.strategies.cowrie.CowrieExtractionStrategy.extract_from_hits"
+        ) as mock_extract:
             mock_extract.side_effect = Exception("Test error")
             result = pipeline.execute()
 
@@ -232,7 +244,9 @@ class TestScoringIntegration(E2ETestCase):
         pipeline.ioc_repo.get_ioc_by_name.return_value = None
 
         mock_ioc = self._create_mock_ioc("5.6.7.8")
-        with patch("greedybear.cronjobs.extraction.ioc_processor.IocProcessor.add_ioc") as mock_add:
+        with patch(
+            "greedybear.cronjobs.extraction.ioc_processor.IocProcessor.add_ioc"
+        ) as mock_add:
             mock_add.return_value = mock_ioc
             result = pipeline.execute()
 
@@ -289,7 +303,9 @@ class TestIocContentVerification(E2ETestCase):
         mock_ioc.name = "203.0.113.42"
         mock_ioc.scanner = ["Cowrie"]
 
-        with patch("greedybear.cronjobs.extraction.ioc_processor.IocProcessor.add_ioc") as mock_add:
+        with patch(
+            "greedybear.cronjobs.extraction.ioc_processor.IocProcessor.add_ioc"
+        ) as mock_add:
             mock_add.return_value = mock_ioc
             result = pipeline.execute()
 
@@ -362,7 +378,9 @@ class TestIocContentVerification(E2ETestCase):
             ip = args[0].name if args else kwargs.get("ioc", MagicMock()).name
             return mock_iocs.get(ip, self._create_mock_ioc(ip))
 
-        with patch("greedybear.cronjobs.extraction.ioc_processor.IocProcessor.add_ioc") as mock_add:
+        with patch(
+            "greedybear.cronjobs.extraction.ioc_processor.IocProcessor.add_ioc"
+        ) as mock_add:
             mock_add.side_effect = add_ioc_side_effect
             result = pipeline.execute()
 
@@ -411,7 +429,9 @@ class TestIocContentVerification(E2ETestCase):
         mock_ioc.name = "198.51.100.50"
         mock_ioc.scanner = ["Heralding"]
 
-        with patch("greedybear.cronjobs.extraction.ioc_processor.IocProcessor.add_ioc") as mock_add:
+        with patch(
+            "greedybear.cronjobs.extraction.ioc_processor.IocProcessor.add_ioc"
+        ) as mock_add:
             mock_add.return_value = mock_ioc
             result = pipeline.execute()
 

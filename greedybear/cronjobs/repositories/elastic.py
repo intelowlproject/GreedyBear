@@ -27,7 +27,9 @@ class ElasticRepository:
         self.log = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
         self.elastic_client = settings.ELASTIC_CLIENT
 
-    def has_honeypot_been_hit(self, minutes_back_to_lookup: int, honeypot_name: str) -> bool:
+    def has_honeypot_been_hit(
+        self, minutes_back_to_lookup: int, honeypot_name: str
+    ) -> bool:
         """
         Check if a specific honeypot has been hit within a given time window.
 
@@ -41,7 +43,9 @@ class ElasticRepository:
             the time window, False otherwise.
         """
         search = Search(using=self.elastic_client, index="logstash-*")
-        window_start, window_end = get_time_window(datetime.now(), minutes_back_to_lookup)
+        window_start, window_end = get_time_window(
+            datetime.now(), minutes_back_to_lookup
+        )
         q = Q("range", **{"@timestamp": {"gte": window_start, "lt": window_end}})
         search = search.query(q)
         search = search.filter("term", **{"type.keyword": honeypot_name})
@@ -63,11 +67,15 @@ class ElasticRepository:
         """
         self._healthcheck()
         self.log.debug(f"minutes_back_to_lookup: {minutes_back_to_lookup}")
-        window_start, window_end = get_time_window(datetime.now(), minutes_back_to_lookup)
+        window_start, window_end = get_time_window(
+            datetime.now(), minutes_back_to_lookup
+        )
         chunk_start = window_start
         while chunk_start < window_end:
             self.log.debug("querying elastic")
-            chunk_end = min(chunk_start + timedelta(minutes=EXTRACTION_INTERVAL), window_end)
+            chunk_end = min(
+                chunk_start + timedelta(minutes=EXTRACTION_INTERVAL), window_end
+            )
             self.log.debug(f"time window: {chunk_start} - {chunk_end}")
             search = Search(using=self.elastic_client, index="logstash-*")
             q = Q("range", **{"@timestamp": {"gte": chunk_start, "lt": chunk_end}})
@@ -88,7 +96,9 @@ class ElasticRepository:
         """
         self.log.debug("performing healthcheck")
         if not self.elastic_client.ping():
-            raise self.ElasticServerDownError("elastic server is not reachable, could be down")
+            raise self.ElasticServerDownError(
+                "elastic server is not reachable, could be down"
+            )
         self.log.debug("elastic server is reachable")
 
 
@@ -113,12 +123,18 @@ def get_time_window(
         ValueError: If extraction_interval is not a positive divisor of 60
     """
     if extraction_interval <= 0 or 60 % extraction_interval > 0:
-        raise ValueError("Argument extraction_interval must be a positive divisor of 60.")
+        raise ValueError(
+            "Argument extraction_interval must be a positive divisor of 60."
+        )
 
     if lookback_minutes < extraction_interval:
-        raise ValueError(f"Argument lookback_minutes size must be at least {extraction_interval} minutes.")
+        raise ValueError(
+            f"Argument lookback_minutes size must be at least {extraction_interval} minutes."
+        )
 
-    rounded_minute = (reference_time.minute // extraction_interval) * extraction_interval
+    rounded_minute = (
+        reference_time.minute // extraction_interval
+    ) * extraction_interval
     window_end = reference_time.replace(minute=rounded_minute, second=0, microsecond=0)
     window_start = window_end - timedelta(minutes=lookback_minutes)
     return (window_start, window_end)

@@ -51,7 +51,9 @@ class RFModel(MLModel):
         x_train, x_test, y_train, y_test = self.split_train_test(x, y)
 
         self.model = self.untrained_model.fit(x_train, y_train)
-        self.log.info(f"finished training {self.name} - recall AUC: {self.recall_auc(x_test, y_test):.4f}")
+        self.log.info(
+            f"finished training {self.name} - recall AUC: {self.recall_auc(x_test, y_test):.4f}"
+        )
         self.save()
 
     @property
@@ -93,7 +95,11 @@ class RFClassifier(RFModel, Classifier):
         params = config["RFClassifier"]
         # Convert class_weight keys from string to boolean
         if "class_weight" in params:
-            params["class_weight"] = {(k.lower() == "true"): v for k, v in params["class_weight"].items() if k.lower() in ["true", "false"]}
+            params["class_weight"] = {
+                (k.lower() == "true"): v
+                for k, v in params["class_weight"].items()
+                if k.lower() in ["true", "false"]
+            }
 
         return RandomForestClassifier(**params)
 

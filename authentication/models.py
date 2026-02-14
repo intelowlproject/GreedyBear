@@ -29,7 +29,9 @@ class UserProfile(models.Model):
     )
     company_name = models.CharField(max_length=32, validators=[MinLengthValidator(3)])
     company_role = models.CharField(max_length=32, validators=[MinLengthValidator(3)])
-    twitter_handle = models.CharField(max_length=16, default="", blank=True, validators=[MinLengthValidator(3)])
+    twitter_handle = models.CharField(
+        max_length=16, default="", blank=True, validators=[MinLengthValidator(3)]
+    )
     discover_from = models.CharField(
         max_length=32,
         choices=DiscoverFromChoices.choices,

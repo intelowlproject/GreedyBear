@@ -15,7 +15,9 @@ class TestExtractionStrategyFactory(ExtractionTestCase):
     def test_factory_creates_cowrie_strategy_for_cowrie(self):
         """Factory should return CowrieExtractionStrategy for 'Cowrie' honeypot."""
         from greedybear.cronjobs.extraction.strategies import CowrieExtractionStrategy
-        from greedybear.cronjobs.extraction.strategies.factory import ExtractionStrategyFactory
+        from greedybear.cronjobs.extraction.strategies.factory import (
+            ExtractionStrategyFactory,
+        )
 
         factory = ExtractionStrategyFactory(MagicMock(), MagicMock())
         strategy = factory.get_strategy("Cowrie")
@@ -25,7 +27,9 @@ class TestExtractionStrategyFactory(ExtractionTestCase):
     def test_factory_creates_generic_strategy_for_unknown(self):
         """Factory should return GenericExtractionStrategy for unknown honeypots."""
         from greedybear.cronjobs.extraction.strategies import GenericExtractionStrategy
-        from greedybear.cronjobs.extraction.strategies.factory import ExtractionStrategyFactory
+        from greedybear.cronjobs.extraction.strategies.factory import (
+            ExtractionStrategyFactory,
+        )
 
         factory = ExtractionStrategyFactory(MagicMock(), MagicMock())
         strategy = factory.get_strategy("UnknownHoneypot")
@@ -36,7 +40,9 @@ class TestExtractionStrategyFactory(ExtractionTestCase):
     def test_factory_case_sensitive_honeypot_names(self):
         """Factory honeypot matching should be case-sensitive."""
         from greedybear.cronjobs.extraction.strategies import GenericExtractionStrategy
-        from greedybear.cronjobs.extraction.strategies.factory import ExtractionStrategyFactory
+        from greedybear.cronjobs.extraction.strategies.factory import (
+            ExtractionStrategyFactory,
+        )
 
         factory = ExtractionStrategyFactory(MagicMock(), MagicMock())
 
@@ -50,7 +56,9 @@ class TestExtractionStrategyFactory(ExtractionTestCase):
 
     def test_factory_strategies_have_correct_honeypot_name(self):
         """Factory-created strategies should have the correct honeypot name."""
-        from greedybear.cronjobs.extraction.strategies.factory import ExtractionStrategyFactory
+        from greedybear.cronjobs.extraction.strategies.factory import (
+            ExtractionStrategyFactory,
+        )
 
         factory = ExtractionStrategyFactory(MagicMock(), MagicMock())
 
@@ -62,7 +70,9 @@ class TestExtractionStrategyFactory(ExtractionTestCase):
 
     def test_factory_passes_repositories_to_strategies(self):
         """Factory should pass repositories to created strategies."""
-        from greedybear.cronjobs.extraction.strategies.factory import ExtractionStrategyFactory
+        from greedybear.cronjobs.extraction.strategies.factory import (
+            ExtractionStrategyFactory,
+        )
 
         mock_ioc_repo = MagicMock()
         mock_sensor_repo = MagicMock()

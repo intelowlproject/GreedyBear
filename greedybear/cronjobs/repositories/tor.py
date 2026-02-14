@@ -9,7 +9,9 @@ class TorRepository:
     def __init__(self):
         self.log = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
 
-    def get_or_create(self, ip_address: str, reason: str = "tor exit node") -> tuple[TorExitNode, bool]:
+    def get_or_create(
+        self, ip_address: str, reason: str = "tor exit node"
+    ) -> tuple[TorExitNode, bool]:
         """
         Get an existing Tor exit node entry or create a new one.
 
@@ -20,5 +22,7 @@ class TorRepository:
         Returns:
             Tuple of (TorExitNode object, created_flag) where created_flag is True if new.
         """
-        node, created = TorExitNode.objects.get_or_create(ip_address=ip_address, defaults={"reason": reason})
+        node, created = TorExitNode.objects.get_or_create(
+            ip_address=ip_address, defaults={"reason": reason}
+        )
         return node, created

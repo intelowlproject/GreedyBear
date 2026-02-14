@@ -25,7 +25,9 @@ urlpatterns = [
     path("feeds/", feeds_pagination),
     path("feeds/advanced/", feeds_advanced),
     path("feeds/asn/", feeds_asn),
-    path("feeds/<str:feed_type>/<str:attack_type>/<str:prioritize>.<str:format_>", feeds),
+    path(
+        "feeds/<str:feed_type>/<str:attack_type>/<str:prioritize>.<str:format_>", feeds
+    ),
     path("enrichment", enrichment_view),
     path("cowrie_session", cowrie_session_view),
     path("command_sequence", command_sequence_view),

@@ -28,12 +28,22 @@ class CowrieSessionRepository:
         try:
             pk = int(session_id, 16)
         except ValueError as e:
-            raise ValueError(f"session_id must be a valid hex string, got: {session_id!r}") from e
-        record, created = CowrieSession.objects.get_or_create(session_id=pk, defaults={"source": source})
-        self.log.debug(f"created new session {session_id}" if created else f"{session_id} already exists")
+            raise ValueError(
+                f"session_id must be a valid hex string, got: {session_id!r}"
+            ) from e
+        record, created = CowrieSession.objects.get_or_create(
+            session_id=pk, defaults={"source": source}
+        )
+        self.log.debug(
+            f"created new session {session_id}"
+            if created
+            else f"{session_id} already exists"
+        )
         return record
 
-    def get_command_sequence_by_hash(self, commands_hash: str) -> CommandSequence | None:
+    def get_command_sequence_by_hash(
+        self, commands_hash: str
+    ) -> CommandSequence | None:
         """
         Retrieve a command sequence by its hash.
 
@@ -84,7 +94,9 @@ class CowrieSessionRepository:
         Returns:
             Number of CommandSequence objects deleted.
         """
-        deleted_count, _ = CommandSequence.objects.filter(last_seen__lte=cutoff_date).delete()
+        deleted_count, _ = CommandSequence.objects.filter(
+            last_seen__lte=cutoff_date
+        ).delete()
         return deleted_count
 
     def delete_incomplete_sessions(self) -> int:
@@ -94,7 +106,9 @@ class CowrieSessionRepository:
         Returns:
             Number of sessions deleted.
         """
-        deleted_count, _ = CowrieSession.objects.filter(start_time__isnull=True).delete()
+        deleted_count, _ = CowrieSession.objects.filter(
+            start_time__isnull=True
+        ).delete()
         return deleted_count
 
     def delete_sessions_without_login(self, cutoff_date) -> int:
@@ -107,7 +121,9 @@ class CowrieSessionRepository:
         Returns:
             Number of sessions deleted.
         """
-        deleted_count, _ = CowrieSession.objects.filter(start_time__lte=cutoff_date, login_attempt=False).delete()
+        deleted_count, _ = CowrieSession.objects.filter(
+            start_time__lte=cutoff_date, login_attempt=False
+        ).delete()
         return deleted_count
 
     def delete_sessions_without_commands(self, cutoff_date) -> int:
@@ -120,5 +136,7 @@ class CowrieSessionRepository:
         Returns:
             Number of sessions deleted.
         """
-        deleted_count, _ = CowrieSession.objects.filter(start_time__lte=cutoff_date, commands__isnull=True).delete()
+        deleted_count, _ = CowrieSession.objects.filter(
+            start_time__lte=cutoff_date, commands__isnull=True
+        ).delete()
         return deleted_count

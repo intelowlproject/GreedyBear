@@ -18,7 +18,9 @@ SECRET_KEY = os.environ.get("DJANGO_SECRET", None) or get_random_secret_key()
 DEBUG = os.environ.get("DEBUG", "False") == "True"
 
 DJANGO_LOG_DIRECTORY = "/var/log/greedybear/django"
-ML_MODEL_DIRECTORY = os.path.join(BASE_DIR, "mlmodels/")  # "/opt/deploy/greedybear/mlmodels"
+ML_MODEL_DIRECTORY = os.path.join(
+    BASE_DIR, "mlmodels/"
+)  # "/opt/deploy/greedybear/mlmodels"
 ML_CONFIG_FILE = os.path.join(BASE_DIR, "configuration/ml_config.json")
 MOCK_CONNECTIONS = os.environ.get("MOCK_CONNECTIONS", "False") == "True"
 STAGE = os.environ.get("ENVIRONMENT", "production")
@@ -34,7 +36,9 @@ ELASTIC_ENDPOINT = os.getenv("ELASTIC_ENDPOINT", "")
 if ELASTIC_ENDPOINT:
     ELASTIC_ENDPOINT = ELASTIC_ENDPOINT.split(",")
 else:
-    print("WARNING!!! You need an ElasticSearch TPOT instance to have the Greedybear to work correctly.")
+    print(
+        "WARNING!!! You need an ElasticSearch TPOT instance to have the Greedybear to work correctly."
+    )
     if not DEBUG:
         print("you are in production mode: closing the application")
         exit(9)
@@ -98,7 +102,9 @@ REST_FRAMEWORK = {
     # Exception Handling
     "EXCEPTION_HANDLER": "certego_saas.ext.exceptions.custom_exception_handler",
     # Auth
-    "DEFAULT_AUTHENTICATION_CLASSES": ["certego_saas.apps.auth.backend.CookieTokenAuthentication"],
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "certego_saas.apps.auth.backend.CookieTokenAuthentication"
+    ],
     # Pagination
     "DEFAULT_PAGINATION_CLASS": "certego_saas.ext.pagination.CustomPageNumberPagination",
     "PAGE_SIZE": 10,
@@ -409,8 +415,12 @@ else:
 
 
 EXTRACTION_INTERVAL = int(os.environ.get("EXTRACTION_INTERVAL", 10))
-INITIAL_EXTRACTION_TIMESPAN = int(os.environ.get("INITIAL_EXTRACTION_TIMESPAN", 60 * 24 * 3))  # 3 days
-CLUSTER_COWRIE_COMMAND_SEQUENCES = os.environ.get("CLUSTER_COWRIE_COMMAND_SEQUENCES", "False") == "True"
+INITIAL_EXTRACTION_TIMESPAN = int(
+    os.environ.get("INITIAL_EXTRACTION_TIMESPAN", 60 * 24 * 3)
+)  # 3 days
+CLUSTER_COWRIE_COMMAND_SEQUENCES = (
+    os.environ.get("CLUSTER_COWRIE_COMMAND_SEQUENCES", "False") == "True"
+)
 
 IOC_RETENTION = int(os.environ.get("IOC_RETENTION", "3650"))
 COWRIE_SESSION_RETENTION = int(os.environ.get("COWRIE_SESSION_RETENTION", "365"))

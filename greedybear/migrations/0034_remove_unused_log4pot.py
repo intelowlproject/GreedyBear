@@ -36,5 +36,7 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(remove_unused_log4pot, reverse_code=migrations.RunPython.noop),
+        migrations.RunPython(
+            remove_unused_log4pot, reverse_code=migrations.RunPython.noop
+        ),
     ]

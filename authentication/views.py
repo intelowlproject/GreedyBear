@@ -71,7 +71,9 @@ class ResendVerificationView(rest_email_auth.views.ResendVerificationView):
 @permission_classes([IsAuthenticated])
 def check_authentication(request):
     logger.info(f"User: {request.user}, Administrator: {request.user.is_superuser}")
-    return Response({"is_superuser": request.user.is_superuser}, status=status.HTTP_200_OK)
+    return Response(
+        {"is_superuser": request.user.is_superuser}, status=status.HTTP_200_OK
+    )
 
 
 @api_view([GET])

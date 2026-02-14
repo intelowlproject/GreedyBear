@@ -6,18 +6,18 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('greedybear', '0025_merge_20251223_2100'),
+        ("greedybear", "0025_merge_20251223_2100"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='firehollist',
-            name='source',
-            field=models.CharField(blank=True, default='', max_length=64),
+            model_name="firehollist",
+            name="source",
+            field=models.CharField(blank=True, default="", max_length=64),
         ),
         migrations.AlterField(
-            model_name='massscanner',
-            name='reason',
-            field=models.CharField(blank=True, default='', max_length=64),
+            model_name="massscanner",
+            name="reason",
+            field=models.CharField(blank=True, default="", max_length=64),
         ),
     ]

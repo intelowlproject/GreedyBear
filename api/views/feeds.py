@@ -2,11 +2,20 @@
 # See the file 'LICENSE' for copying permission.
 import logging
 
-from api.views.utils import FeedRequestParams, feeds_response, get_queryset, get_valid_feed_types
+from api.views.utils import (
+    FeedRequestParams,
+    feeds_response,
+    get_queryset,
+    get_valid_feed_types,
+)
 from certego_saas.apps.auth.backend import CookieTokenAuthentication
 from certego_saas.ext.pagination import CustomPageNumberPagination
 from greedybear.consts import GET
-from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from rest_framework.decorators import (
+    api_view,
+    authentication_classes,
+    permission_classes,
+)
 from rest_framework.permissions import IsAuthenticated
 
 logger = logging.getLogger(__name__)
@@ -31,9 +40,14 @@ def feeds(request, feed_type, attack_type, prioritize, format_):
     Returns:
         Response: The HTTP response with formatted IOC data.
     """
-    logger.info(f"request /api/feeds with params: feed type: {feed_type}, " f"attack_type: {attack_type}, prioritization: {prioritize}, format: {format_}")
+    logger.info(
+        f"request /api/feeds with params: feed type: {feed_type}, "
+        f"attack_type: {attack_type}, prioritization: {prioritize}, format: {format_}"
+    )
 
-    feed_params = FeedRequestParams({"feed_type": feed_type, "attack_type": attack_type, "format_": format_})
+    feed_params = FeedRequestParams(
+        {"feed_type": feed_type, "attack_type": attack_type, "format_": format_}
+    )
     feed_params.apply_default_filters(request.query_params)
     feed_params.set_prioritization(prioritize)
 
@@ -103,6 +117,8 @@ def feeds_advanced(request):
         feed_params.format = "json"
         paginator = CustomPageNumberPagination()
         iocs = paginator.paginate_queryset(iocs_queryset, request)
-        resp_data = feeds_response(iocs, feed_params, valid_feed_types, dict_only=True, verbose=verbose)
+        resp_data = feeds_response(
+            iocs, feed_params, valid_feed_types, dict_only=True, verbose=verbose
+        )
         return paginator.get_paginated_response(resp_data)
     return feeds_response(iocs_queryset, feed_params, valid_feed_types, verbose=verbose)

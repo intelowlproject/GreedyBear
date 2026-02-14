@@ -48,7 +48,9 @@ class MonitorLogsTestCase(CustomTestCase):
         cronjob = MonitorLogs()
         cronjob.execute()
 
-        mock_slack.assert_called_once_with("found errors in log file greedybear_errors.log")
+        mock_slack.assert_called_once_with(
+            "found errors in log file greedybear_errors.log"
+        )
         self.assertEqual(mock_ntfy.call_count, 1)
 
     @patch("greedybear.cronjobs.monitor_logs.send_ntfy_message")

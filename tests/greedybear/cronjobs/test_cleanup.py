@@ -47,7 +47,9 @@ class TestCleanUp(CustomTestCase):
         args, _ = ioc_repo.delete_old_iocs.call_args
         actual_date = args[0]
         time_diff = abs((actual_date - expected_ioc_date).total_seconds())
-        self.assertLess(time_diff, 1, f"Date difference ({time_diff}s) exceeds 1 second tolerance")
+        self.assertLess(
+            time_diff, 1, f"Date difference ({time_diff}s) exceeds 1 second tolerance"
+        )
 
         # Verify interactions with CowrieSessionRepository
 
@@ -57,7 +59,9 @@ class TestCleanUp(CustomTestCase):
         args, _ = cowrie_repo.delete_old_command_sequences.call_args
         actual_date = args[0]
         time_diff = abs((actual_date - expected_cmd_date).total_seconds())
-        self.assertLess(time_diff, 1, f"Date difference ({time_diff}s) exceeds 1 second tolerance")
+        self.assertLess(
+            time_diff, 1, f"Date difference ({time_diff}s) exceeds 1 second tolerance"
+        )
 
         # 2. delete_incomplete_sessions
         cowrie_repo.delete_incomplete_sessions.assert_called_once()
@@ -68,7 +72,9 @@ class TestCleanUp(CustomTestCase):
         args, _ = cowrie_repo.delete_sessions_without_login.call_args
         actual_date = args[0]
         time_diff = abs((actual_date - expected_session_login_date).total_seconds())
-        self.assertLess(time_diff, 1, f"Date difference ({time_diff}s) exceeds 1 second tolerance")
+        self.assertLess(
+            time_diff, 1, f"Date difference ({time_diff}s) exceeds 1 second tolerance"
+        )
 
         # 4. delete_sessions_without_commands
         cowrie_repo.delete_sessions_without_commands.assert_called_once()
@@ -76,7 +82,9 @@ class TestCleanUp(CustomTestCase):
         args, _ = cowrie_repo.delete_sessions_without_commands.call_args
         actual_date = args[0]
         time_diff = abs((actual_date - expected_session_cmd_date).total_seconds())
-        self.assertLess(time_diff, 1, f"Date difference ({time_diff}s) exceeds 1 second tolerance")
+        self.assertLess(
+            time_diff, 1, f"Date difference ({time_diff}s) exceeds 1 second tolerance"
+        )
 
         # Verify logging messages
         # We expect 5 pairs of logs (start + result)

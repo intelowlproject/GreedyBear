@@ -40,7 +40,9 @@ class TestIocRepository(CustomTestCase):
         ioc.attack_count = original_attack_count
         result = self.repo.save(ioc)
         self.assertEqual(result.attack_count, original_attack_count)
-        self.assertEqual(IOC.objects.get(name="140.246.171.141").attack_count, original_attack_count)
+        self.assertEqual(
+            IOC.objects.get(name="140.246.171.141").attack_count, original_attack_count
+        )
 
     def test_create_honeypot(self):
         self.repo.create_honeypot("NewHoneypot")
@@ -172,7 +174,9 @@ class TestIocRepository(CustomTestCase):
                 Honeypot.objects.create(name="testpot123", active=True)
 
         self.assertEqual(Honeypot.objects.count(), initial_count + 1)
-        self.assertEqual(Honeypot.objects.get(name__iexact="testpot123").name, "TestPot123")
+        self.assertEqual(
+            Honeypot.objects.get(name__iexact="testpot123").name, "TestPot123"
+        )
 
     def test_create_honeypot_integrity_error_handling(self):
         initial_count = Honeypot.objects.count()
@@ -212,21 +216,29 @@ class TestIocRepository(CustomTestCase):
 
     def test_get_scanners_for_scoring_returns_scanners(self):
         # Create scanners
-        cowrie_hp = Honeypot.objects.get_or_create(name="Cowrie", defaults={"active": True})[0]
-        log4pot_hp = Honeypot.objects.get_or_create(name="Log4pot", defaults={"active": True})[0]
+        cowrie_hp = Honeypot.objects.get_or_create(
+            name="Cowrie", defaults={"active": True}
+        )[0]
+        log4pot_hp = Honeypot.objects.get_or_create(
+            name="Log4pot", defaults={"active": True}
+        )[0]
         ioc1 = IOC.objects.create(name="1.2.3.4", type="ip", scanner=True)
         ioc1.general_honeypot.add(cowrie_hp)
         ioc2 = IOC.objects.create(name="5.6.7.8", type="ip", scanner=True)
         ioc2.general_honeypot.add(log4pot_hp)
 
-        result = self.repo.get_scanners_for_scoring(["recurrence_probability", "expected_interactions"])
+        result = self.repo.get_scanners_for_scoring(
+            ["recurrence_probability", "expected_interactions"]
+        )
 
         names = [ioc.name for ioc in result]
         self.assertIn("1.2.3.4", names)
         self.assertIn("5.6.7.8", names)
 
     def test_get_scanners_for_scoring_excludes_non_scanners(self):
-        cowrie_hp = Honeypot.objects.get_or_create(name="Cowrie", defaults={"active": True})[0]
+        cowrie_hp = Honeypot.objects.get_or_create(
+            name="Cowrie", defaults={"active": True}
+        )[0]
         ioc = IOC.objects.create(name="1.2.3.4", type="ip", scanner=False)
         ioc.general_honeypot.add(cowrie_hp)
 
@@ -236,8 +248,12 @@ class TestIocRepository(CustomTestCase):
         self.assertNotIn("1.2.3.4", names)
 
     def test_get_scanners_for_scoring_only_loads_specified_fields(self):
-        cowrie_hp = Honeypot.objects.get_or_create(name="Cowrie", defaults={"active": True})[0]
-        ioc = IOC.objects.create(name="1.2.3.4", type="ip", scanner=True, attack_count=100)
+        cowrie_hp = Honeypot.objects.get_or_create(
+            name="Cowrie", defaults={"active": True}
+        )[0]
+        ioc = IOC.objects.create(
+            name="1.2.3.4", type="ip", scanner=True, attack_count=100
+        )
         ioc.general_honeypot.add(cowrie_hp)
 
         result = list(self.repo.get_scanners_for_scoring(["recurrence_probability"]))
@@ -276,10 +292,16 @@ class TestIocRepository(CustomTestCase):
         recent_date = datetime.now() - timedelta(days=5)
         old_date = datetime.now() - timedelta(days=40)
 
-        cowrie_hp = Honeypot.objects.get_or_create(name="Cowrie", defaults={"active": True})[0]
-        ioc1 = IOC.objects.create(name="1.2.3.4", type="ip", scanner=True, last_seen=recent_date)
+        cowrie_hp = Honeypot.objects.get_or_create(
+            name="Cowrie", defaults={"active": True}
+        )[0]
+        ioc1 = IOC.objects.create(
+            name="1.2.3.4", type="ip", scanner=True, last_seen=recent_date
+        )
         ioc1.general_honeypot.add(cowrie_hp)
-        ioc2 = IOC.objects.create(name="5.6.7.8", type="ip", scanner=True, last_seen=old_date)
+        ioc2 = IOC.objects.create(
+            name="5.6.7.8", type="ip", scanner=True, last_seen=old_date
+        )
         ioc2.general_honeypot.add(cowrie_hp)
 
         cutoff = datetime.now() - timedelta(days=30)
@@ -291,8 +313,12 @@ class TestIocRepository(CustomTestCase):
 
     def test_get_recent_scanners_excludes_non_scanners(self):
         recent_date = datetime.now() - timedelta(days=5)
-        cowrie_hp = Honeypot.objects.get_or_create(name="Cowrie", defaults={"active": True})[0]
-        ioc = IOC.objects.create(name="1.2.3.4", type="ip", scanner=False, last_seen=recent_date)
+        cowrie_hp = Honeypot.objects.get_or_create(
+            name="Cowrie", defaults={"active": True}
+        )[0]
+        ioc = IOC.objects.create(
+            name="1.2.3.4", type="ip", scanner=False, last_seen=recent_date
+        )
         ioc.general_honeypot.add(cowrie_hp)
 
         cutoff = datetime.now() - timedelta(days=30)
@@ -321,12 +347,19 @@ class TestIocRepository(CustomTestCase):
         self.assertEqual(result, 0)
 
     def test_bulk_update_scores_updates_multiple_fields(self):
-        ioc = IOC.objects.create(name="1.2.3.4", type="ip", recurrence_probability=0.0, expected_interactions=0.0)
+        ioc = IOC.objects.create(
+            name="1.2.3.4",
+            type="ip",
+            recurrence_probability=0.0,
+            expected_interactions=0.0,
+        )
 
         ioc.recurrence_probability = 0.75
         ioc.expected_interactions = 10.5
 
-        result = self.repo.bulk_update_scores([ioc], ["recurrence_probability", "expected_interactions"])
+        result = self.repo.bulk_update_scores(
+            [ioc], ["recurrence_probability", "expected_interactions"]
+        )
 
         self.assertEqual(result, 1)
         updated = IOC.objects.get(name="1.2.3.4")
@@ -384,8 +417,12 @@ class TestIocRepository(CustomTestCase):
 
     def test_get_recent_scanners_all_iocs_older_than_cutoff(self):
         old_date = datetime.now() - timedelta(days=40)
-        cowrie_hp = Honeypot.objects.get_or_create(name="Cowrie", defaults={"active": True})[0]
-        ioc = IOC.objects.create(name="1.2.3.4", type="ip", scanner=True, last_seen=old_date)
+        cowrie_hp = Honeypot.objects.get_or_create(
+            name="Cowrie", defaults={"active": True}
+        )[0]
+        ioc = IOC.objects.create(
+            name="1.2.3.4", type="ip", scanner=True, last_seen=old_date
+        )
         ioc.general_honeypot.add(cowrie_hp)
 
         cutoff = datetime.now() - timedelta(days=30)
@@ -397,7 +434,9 @@ class TestIocRepository(CustomTestCase):
     def test_get_recent_scanners_with_inactive_honeypot(self):
         hp = Honeypot.objects.create(name="InactivePot", active=False)
         recent_date = datetime.now() - timedelta(days=5)
-        ioc = IOC.objects.create(name="1.2.3.4", type="ip", scanner=True, last_seen=recent_date)
+        ioc = IOC.objects.create(
+            name="1.2.3.4", type="ip", scanner=True, last_seen=recent_date
+        )
         ioc.general_honeypot.add(hp)
 
         cutoff = datetime.now() - timedelta(days=30)
@@ -413,7 +452,9 @@ class TestIocRepository(CustomTestCase):
         ioc1.recurrence_probability = 0.75
         ioc2.recurrence_probability = 0.85
 
-        result = self.repo.bulk_update_scores([ioc1, ioc2], ["recurrence_probability"], batch_size=1)
+        result = self.repo.bulk_update_scores(
+            [ioc1, ioc2], ["recurrence_probability"], batch_size=1
+        )
 
         self.assertEqual(result, 2)
         updated1 = IOC.objects.get(name="1.2.3.4")
@@ -435,11 +476,19 @@ class TestScoringIntegration(CustomTestCase):
         from greedybear.cronjobs.scoring.scoring_jobs import UpdateScores
 
         # Create test data
-        cowrie_hp = Honeypot.objects.get_or_create(name="Cowrie", defaults={"active": True})[0]
-        log4pot_hp = Honeypot.objects.get_or_create(name="Log4pot", defaults={"active": True})[0]
-        ioc1 = IOC.objects.create(name="10.1.2.3", type="ip", scanner=True, recurrence_probability=0.0)
+        cowrie_hp = Honeypot.objects.get_or_create(
+            name="Cowrie", defaults={"active": True}
+        )[0]
+        log4pot_hp = Honeypot.objects.get_or_create(
+            name="Log4pot", defaults={"active": True}
+        )[0]
+        ioc1 = IOC.objects.create(
+            name="10.1.2.3", type="ip", scanner=True, recurrence_probability=0.0
+        )
         ioc1.general_honeypot.add(cowrie_hp)
-        ioc2 = IOC.objects.create(name="10.5.6.7", type="ip", scanner=True, recurrence_probability=0.0)
+        ioc2 = IOC.objects.create(
+            name="10.5.6.7", type="ip", scanner=True, recurrence_probability=0.0
+        )
         ioc2.general_honeypot.add(log4pot_hp)
 
         # Create score dataframe
@@ -469,15 +518,29 @@ class TestScoringIntegration(CustomTestCase):
         from greedybear.cronjobs.scoring.scoring_jobs import UpdateScores
 
         # Create test data - one IOC will be missing from df
-        cowrie_hp = Honeypot.objects.get_or_create(name="Cowrie", defaults={"active": True})[0]
-        log4pot_hp = Honeypot.objects.get_or_create(name="Log4pot", defaults={"active": True})[0]
-        ioc1 = IOC.objects.create(name="10.2.3.4", type="ip", scanner=True, recurrence_probability=0.9)
+        cowrie_hp = Honeypot.objects.get_or_create(
+            name="Cowrie", defaults={"active": True}
+        )[0]
+        log4pot_hp = Honeypot.objects.get_or_create(
+            name="Log4pot", defaults={"active": True}
+        )[0]
+        ioc1 = IOC.objects.create(
+            name="10.2.3.4", type="ip", scanner=True, recurrence_probability=0.9
+        )
         ioc1.general_honeypot.add(cowrie_hp)
-        ioc2 = IOC.objects.create(name="10.6.7.8", type="ip", scanner=True, recurrence_probability=0.8)
+        ioc2 = IOC.objects.create(
+            name="10.6.7.8", type="ip", scanner=True, recurrence_probability=0.8
+        )
         ioc2.general_honeypot.add(log4pot_hp)
 
         # DataFrame only has one IOC
-        df = pd.DataFrame({"value": ["10.2.3.4"], "recurrence_probability": [0.75], "expected_interactions": [10.0]})
+        df = pd.DataFrame(
+            {
+                "value": ["10.2.3.4"],
+                "recurrence_probability": [0.75],
+                "expected_interactions": [10.0],
+            }
+        )
 
         job = UpdateScores(ioc_repo=self.repo)
         job.update_db(df)
@@ -493,8 +556,12 @@ class TestScoringIntegration(CustomTestCase):
         from greedybear.cronjobs.scoring.utils import get_current_data
 
         recent_date = datetime.now() - timedelta(days=5)
-        cowrie_hp = Honeypot.objects.get_or_create(name="Cowrie", defaults={"active": True})[0]
-        ioc = IOC.objects.create(name="1.2.3.4", type="ip", scanner=True, last_seen=recent_date)
+        cowrie_hp = Honeypot.objects.get_or_create(
+            name="Cowrie", defaults={"active": True}
+        )[0]
+        ioc = IOC.objects.create(
+            name="1.2.3.4", type="ip", scanner=True, last_seen=recent_date
+        )
         ioc.general_honeypot.add(cowrie_hp)
 
         result = get_current_data(days_lookback=30, ioc_repo=self.repo)
@@ -531,7 +598,13 @@ class TestScoringIntegration(CustomTestCase):
         mock_repo.bulk_update_scores.return_value = 1
 
         # Create score dataframe
-        df = pd.DataFrame({"value": ["1.2.3.4"], "recurrence_probability": [0.75], "expected_interactions": [10.0]})
+        df = pd.DataFrame(
+            {
+                "value": ["1.2.3.4"],
+                "recurrence_probability": [0.75],
+                "expected_interactions": [10.0],
+            }
+        )
 
         # Inject mock and verify it's used
         job = UpdateScores(ioc_repo=mock_repo)

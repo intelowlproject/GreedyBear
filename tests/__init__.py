@@ -3,7 +3,13 @@ from hashlib import sha256
 
 from certego_saas.apps.user.models import User
 from django.test import TestCase
-from greedybear.models import IOC, CommandSequence, CowrieSession, GeneralHoneypot, iocType
+from greedybear.models import (
+    IOC,
+    CommandSequence,
+    CowrieSession,
+    GeneralHoneypot,
+    iocType,
+)
 
 
 class CustomTestCase(TestCase):
@@ -115,7 +121,9 @@ class CustomTestCase(TestCase):
         try:
             cls.superuser = User.objects.get(is_superuser=True)
         except User.DoesNotExist:
-            cls.superuser = User.objects.create_superuser(username="test", email="test@greedybear.com", password="test")
+            cls.superuser = User.objects.create_superuser(
+                username="test", email="test@greedybear.com", password="test"
+            )
 
     @classmethod
     def tearDownClass(self):

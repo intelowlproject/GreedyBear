@@ -6,13 +6,13 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('greedybear', '0034_remove_unused_log4pot'),
+        ("greedybear", "0034_remove_unused_log4pot"),
     ]
 
     operations = [
         migrations.RenameIndex(
-            model_name='torexitnode',
-            new_name='greedybear__ip_addr_6bc095_idx',
-            old_name='greedybear_ip_addr_tor_idx',
+            model_name="torexitnode",
+            new_name="greedybear__ip_addr_6bc095_idx",
+            old_name="greedybear_ip_addr_tor_idx",
         ),
     ]

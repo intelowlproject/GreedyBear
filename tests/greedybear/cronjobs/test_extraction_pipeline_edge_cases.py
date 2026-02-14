@@ -49,7 +49,10 @@ class TestEdgeCases(E2ETestCase):
         mock_success = MagicMock()
         mock_success.ioc_records = [self._create_mock_ioc("2.2.2.2")]
 
-        mock_factory.return_value.get_strategy.side_effect = [mock_failing, mock_success]
+        mock_factory.return_value.get_strategy.side_effect = [
+            mock_failing,
+            mock_success,
+        ]
 
         result = pipeline.execute()
 
@@ -91,9 +94,13 @@ class TestLargeBatches(E2ETestCase):
         pipeline.ioc_repo.get_ioc_by_name.return_value = None
 
         # Mock add_ioc to return mock IOCs
-        mock_iocs = [self._create_mock_ioc(f"192.168.{i // 256}.{i % 256}") for i in range(100)]
+        mock_iocs = [
+            self._create_mock_ioc(f"192.168.{i // 256}.{i % 256}") for i in range(100)
+        ]
 
-        with patch("greedybear.cronjobs.extraction.ioc_processor.IocProcessor.add_ioc") as mock_add:
+        with patch(
+            "greedybear.cronjobs.extraction.ioc_processor.IocProcessor.add_ioc"
+        ) as mock_add:
             # Return different mock IOCs for each call
             mock_add.side_effect = mock_iocs
             result = pipeline.execute()

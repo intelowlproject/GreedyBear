@@ -7,25 +7,28 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('greedybear', '0033_disable_additional_honeypots'),
+        ("greedybear", "0033_disable_additional_honeypots"),
     ]
 
     operations = [
         migrations.RenameModel(
-            old_name='GeneralHoneypot',
-            new_name='Honeypot',
+            old_name="GeneralHoneypot",
+            new_name="Honeypot",
         ),
         migrations.RemoveConstraint(
-            model_name='honeypot',
-            name='unique_generalhoneypot_name_ci',
+            model_name="honeypot",
+            name="unique_generalhoneypot_name_ci",
         ),
         migrations.RenameIndex(
-            model_name='torexitnode',
-            new_name='greedybear__ip_addr_6bc095_idx',
-            old_name='greedybear_ip_addr_tor_idx',
+            model_name="torexitnode",
+            new_name="greedybear__ip_addr_6bc095_idx",
+            old_name="greedybear_ip_addr_tor_idx",
         ),
         migrations.AddConstraint(
-            model_name='honeypot',
-            constraint=models.UniqueConstraint(django.db.models.functions.text.Lower('name'), name='unique_honeypot_name_ci'),
+            model_name="honeypot",
+            constraint=models.UniqueConstraint(
+                django.db.models.functions.text.Lower("name"),
+                name="unique_honeypot_name_ci",
+            ),
         ),
     ]

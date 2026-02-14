@@ -55,6 +55,14 @@ class ClusterCommandSequences(Cronjob):
             if seq.cluster != label:
                 seq.cluster = label
                 seqs_to_update.append(seq)
-        self.log.info(f"writing updated clusters for {len(seqs_to_update)} command sequences to DB")
-        result = CommandSequence.objects.bulk_update(seqs_to_update, ["cluster"], batch_size=1000) if seqs_to_update else 0
+        self.log.info(
+            f"writing updated clusters for {len(seqs_to_update)} command sequences to DB"
+        )
+        result = (
+            CommandSequence.objects.bulk_update(
+                seqs_to_update, ["cluster"], batch_size=1000
+            )
+            if seqs_to_update
+            else 0
+        )
         self.log.info(f"{result} IoCs were updated")

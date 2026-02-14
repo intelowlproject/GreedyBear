@@ -29,8 +29,14 @@ class MonitorHoneypots(Cronjob):
         """Check all active honeypots for recent log activity."""
         for honeypot in self.ioc_repo.get_active_honeypots():
             honeypot_name = honeypot.name
-            self.log.info(f"checking if logs from the honeypot {honeypot} are available")
-            if self.elastic_repo.has_honeypot_been_hit(self.minutes_back, honeypot_name):
+            self.log.info(
+                f"checking if logs from the honeypot {honeypot} are available"
+            )
+            if self.elastic_repo.has_honeypot_been_hit(
+                self.minutes_back, honeypot_name
+            ):
                 self.log.info(f"logs available for {honeypot}")
                 continue
-            self.log.warning(f"no logs available for {honeypot} - something could be wrong with T-Pot")
+            self.log.warning(
+                f"no logs available for {honeypot} - something could be wrong with T-Pot"
+            )

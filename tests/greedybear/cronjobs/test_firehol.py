@@ -39,11 +39,31 @@ class FireHolCronTestCase(CustomTestCase):
         cronjob.execute()
 
         # Check that all FireHolList entries were created
-        self.assertTrue(FireHolList.objects.filter(ip_address="1.1.1.1", source="blocklist_de").exists())
-        self.assertTrue(FireHolList.objects.filter(ip_address="2.2.2.2", source="blocklist_de").exists())
-        self.assertTrue(FireHolList.objects.filter(ip_address="3.3.3.3", source="greensnow").exists())
-        self.assertTrue(FireHolList.objects.filter(ip_address="1.1.1.1", source="bruteforceblocker").exists())
-        self.assertTrue(FireHolList.objects.filter(ip_address="4.4.4.0/24", source="dshield").exists())
+        self.assertTrue(
+            FireHolList.objects.filter(
+                ip_address="1.1.1.1", source="blocklist_de"
+            ).exists()
+        )
+        self.assertTrue(
+            FireHolList.objects.filter(
+                ip_address="2.2.2.2", source="blocklist_de"
+            ).exists()
+        )
+        self.assertTrue(
+            FireHolList.objects.filter(
+                ip_address="3.3.3.3", source="greensnow"
+            ).exists()
+        )
+        self.assertTrue(
+            FireHolList.objects.filter(
+                ip_address="1.1.1.1", source="bruteforceblocker"
+            ).exists()
+        )
+        self.assertTrue(
+            FireHolList.objects.filter(
+                ip_address="4.4.4.0/24", source="dshield"
+            ).exists()
+        )
 
         # Verify FireHolList data is available for IOC enrichment at creation time
         # (Note: Enrichment now happens in iocs_from_hits during IOC creation, not here)
@@ -60,7 +80,9 @@ class FireHolCronTestCase(CustomTestCase):
         mock_response_blocklist_de.text = "# blocklist_de\n1.1.1.1\n2.2.2.2"
 
         mock_response_bruteforceblocker = MagicMock()
-        mock_response_bruteforceblocker.raise_for_status.side_effect = requests.exceptions.HTTPError("404 Client Error")
+        mock_response_bruteforceblocker.raise_for_status.side_effect = (
+            requests.exceptions.HTTPError("404 Client Error")
+        )
 
         # Side effect for multiple calls
         mock_get.side_effect = self._firehol_get_side_effect(
@@ -76,9 +98,19 @@ class FireHolCronTestCase(CustomTestCase):
         cronjob.execute()
 
         # Check that some FireHolList entries were created
-        self.assertTrue(FireHolList.objects.filter(ip_address="1.1.1.1", source="blocklist_de").exists())
-        self.assertTrue(FireHolList.objects.filter(ip_address="2.2.2.2", source="blocklist_de").exists())
-        self.assertFalse(FireHolList.objects.filter(source="bruteforceblocker").exists())
+        self.assertTrue(
+            FireHolList.objects.filter(
+                ip_address="1.1.1.1", source="blocklist_de"
+            ).exists()
+        )
+        self.assertTrue(
+            FireHolList.objects.filter(
+                ip_address="2.2.2.2", source="blocklist_de"
+            ).exists()
+        )
+        self.assertFalse(
+            FireHolList.objects.filter(source="bruteforceblocker").exists()
+        )
 
     @patch("greedybear.cronjobs.firehol.requests.get")
     def test_run_creates_no_firehol_entries(self, mock_get):
@@ -87,7 +119,9 @@ class FireHolCronTestCase(CustomTestCase):
         mock_response_blocklist_de.text = "# blocklist_de\n"
 
         mock_response_bruteforceblocker = MagicMock()
-        mock_response_bruteforceblocker.raise_for_status.side_effect = requests.exceptions.HTTPError("404 Client Error")
+        mock_response_bruteforceblocker.raise_for_status.side_effect = (
+            requests.exceptions.HTTPError("404 Client Error")
+        )
 
         # Side effect for multiple calls
         mock_get.side_effect = self._firehol_get_side_effect(
@@ -104,7 +138,9 @@ class FireHolCronTestCase(CustomTestCase):
 
         # Check that no FireHolList entries were created
         self.assertFalse(FireHolList.objects.filter(source="blocklist_de").exists())
-        self.assertFalse(FireHolList.objects.filter(source="bruteforceblocker").exists())
+        self.assertFalse(
+            FireHolList.objects.filter(source="bruteforceblocker").exists()
+        )
 
     @patch("greedybear.cronjobs.firehol.requests.get")
     def test_run_handles_network_errors(self, mock_get):
@@ -123,7 +159,9 @@ class FireHolCronTestCase(CustomTestCase):
     def test_run_handles_raise_for_status_errors(self, mock_get):
         # Setup mock to raise a 404 error
         mock_response = MagicMock()
-        mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError("404 Client Error")
+        mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError(
+            "404 Client Error"
+        )
         mock_get.return_value = mock_response
 
         # Run the cronjob
@@ -145,8 +183,16 @@ class FireHolCronTestCase(CustomTestCase):
         cronjob.log = MagicMock()
         cronjob.execute()
 
-        self.assertFalse(FireHolList.objects.filter(ip_address="256.1.1.1", source="blocklist_de").exists())
-        self.assertFalse(FireHolList.objects.filter(ip_address="999.999.999.999", source="blocklist_de").exists())
+        self.assertFalse(
+            FireHolList.objects.filter(
+                ip_address="256.1.1.1", source="blocklist_de"
+            ).exists()
+        )
+        self.assertFalse(
+            FireHolList.objects.filter(
+                ip_address="999.999.999.999", source="blocklist_de"
+            ).exists()
+        )
 
     @patch("greedybear.cronjobs.firehol.requests.get")
     def test_run_handles_invalid_cidr(self, mock_get):
@@ -160,7 +206,11 @@ class FireHolCronTestCase(CustomTestCase):
         cronjob.log = MagicMock()
         cronjob.execute()
 
-        self.assertFalse(FireHolList.objects.filter(ip_address="192.168.1.256", source="blocklist_de").exists())
+        self.assertFalse(
+            FireHolList.objects.filter(
+                ip_address="192.168.1.256", source="blocklist_de"
+            ).exists()
+        )
 
     def test_cleanup_old_entries(self):
         now = datetime.now()

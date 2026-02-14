@@ -122,7 +122,9 @@ class MLModel(Scorer):
         self.log.info(f"calculate {self.score_name} with {self.name}")
 
         if not self.is_available:
-            self.log.warning(f"no trained model available for {self.name}, skipping scoring")
+            self.log.warning(
+                f"no trained model available for {self.name}, skipping scoring"
+            )
             result_df = df.copy()
             result_df[self.score_name] = 0
             return result_df
@@ -159,11 +161,17 @@ class MLModel(Scorer):
         """
         y = y.reset_index(drop=True)
         predictions = pd.Series(self.predict(x))
-        ranked_data = pd.DataFrame({"target": y, "prediction": predictions}).sort_values(by="prediction", ascending=False)
+        ranked_data = pd.DataFrame(
+            {"target": y, "prediction": predictions}
+        ).sort_values(by="prediction", ascending=False)
         total_positives = y.sum()
         max_k = len(x) // 4  # look at the first quater of predictions
-        k_values = np.linspace(0, max_k, num=SAMPLE_COUNT, dtype=np.int32, endpoint=True)
-        recalls = [ranked_data.head(k)["target"].sum() / total_positives for k in k_values]
+        k_values = np.linspace(
+            0, max_k, num=SAMPLE_COUNT, dtype=np.int32, endpoint=True
+        )
+        recalls = [
+            ranked_data.head(k)["target"].sum() / total_positives for k in k_values
+        ]
         area = np.trapezoid(recalls) / SAMPLE_COUNT
         return area
 

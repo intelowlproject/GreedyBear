@@ -67,10 +67,20 @@ class FeedRequestParams:
         self.attack_type = query_params.get("attack_type", "all").lower()
         self.max_age = query_params.get("max_age", "3")
         self.min_days_seen = query_params.get("min_days_seen", "1")
-        self.include_reputation = query_params["include_reputation"].split(";") if "include_reputation" in query_params else []
-        self.exclude_reputation = query_params["exclude_reputation"].split(";") if "exclude_reputation" in query_params else []
+        self.include_reputation = (
+            query_params["include_reputation"].split(";")
+            if "include_reputation" in query_params
+            else []
+        )
+        self.exclude_reputation = (
+            query_params["exclude_reputation"].split(";")
+            if "exclude_reputation" in query_params
+            else []
+        )
         self.feed_size = query_params.get("feed_size", "5000")
-        self.ordering = query_params.get("ordering", "-last_seen").lower().replace("value", "name")
+        self.ordering = (
+            query_params.get("ordering", "-last_seen").lower().replace("value", "name")
+        )
         self.verbose = query_params.get("verbose", "false").lower()
         self.paginate = query_params.get("paginate", "false").lower()
         self.format = query_params.get("format_", "json").lower()
@@ -116,7 +126,10 @@ def get_valid_feed_types() -> frozenset[str]:
         frozenset[str]: An immutable set of valid feed type strings
     """
     general_honeypots = GeneralHoneypot.objects.all().filter(active=True)
-    return frozenset([Honeypots.LOG4J.value, Honeypots.COWRIE.value, "all"] + [hp.name.lower() for hp in general_honeypots])
+    return frozenset(
+        [Honeypots.LOG4J.value, Honeypots.COWRIE.value, "all"]
+        + [hp.name.lower() for hp in general_honeypots]
+    )
 
 
 def get_queryset(request, feed_params, valid_feed_types):
@@ -154,7 +167,9 @@ def get_queryset(request, feed_params, valid_feed_types):
     if feed_params.attack_type != "all":
         query_dict[feed_params.attack_type] = True
 
-    query_dict["last_seen__gte"] = datetime.now() - timedelta(days=int(feed_params.max_age))
+    query_dict["last_seen__gte"] = datetime.now() - timedelta(
+        days=int(feed_params.max_age)
+    )
     if int(feed_params.min_days_seen) > 1:
         query_dict["number_of_days_seen__gte"] = int(feed_params.min_days_seen)
     if feed_params.include_reputation:
@@ -246,7 +261,11 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
                 "recurrence_probability",
                 "expected_interactions",
             }
-            iocs = (ioc_as_dict(ioc, required_fields) for ioc in iocs) if isinstance(iocs, list) else iocs.values(*required_fields)
+            iocs = (
+                (ioc_as_dict(ioc, required_fields) for ioc in iocs)
+                if isinstance(iocs, list)
+                else iocs.values(*required_fields)
+            )
             for ioc in iocs:
                 ioc_feed_type = []
                 if ioc[Honeypots.LOG4J.value]:
@@ -254,7 +273,9 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
                 if ioc[Honeypots.COWRIE.value]:
                     ioc_feed_type.append(Honeypots.COWRIE.value)
                 if len(ioc["honeypots"]):
-                    ioc_feed_type.extend([hp.lower() for hp in ioc["honeypots"] if hp is not None])
+                    ioc_feed_type.extend(
+                        [hp.lower() for hp in ioc["honeypots"] if hp is not None]
+                    )
 
                 data_ = ioc | {
                     "first_seen": ioc["first_seen"].strftime("%Y-%m-%d"),
@@ -277,7 +298,11 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
             # check if sorting the results by feed_type
             if feed_params.feed_type_sorting is not None:
                 logger.info("Return feeds sorted by feed_type field")
-                json_list = sorted(json_list, key=lambda k: k["feed_type"], reverse=feed_params.feed_type_sorting == "-feed_type")
+                json_list = sorted(
+                    json_list,
+                    key=lambda k: k["feed_type"],
+                    reverse=feed_params.feed_type_sorting == "-feed_type",
+                )
 
             logger.info(f"Number of feeds returned: {len(json_list)}")
             resp_data = {"license": FEEDS_LICENSE, "iocs": json_list}
