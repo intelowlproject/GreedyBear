@@ -26,9 +26,10 @@ RUN mkdir -p ${LOG_PATH}/django ${LOG_PATH}/uwsgi \
     && apt-get install -y --no-install-recommends \
        # Build dependencies (removed after pip install)
        gcc python3-dev \
-       # Runtime dependencies: 
+       # Runtime dependencies:
+       # libexpat1 is required by uWSGI/Python,
        # libgomp1 is required for model training, netcat-openbsd for healthcheck
-       libgomp1 netcat-openbsd \
+       libexpat1 libgomp1 netcat-openbsd \
     && pip3 install --no-cache-dir --upgrade pip
 
 COPY requirements/project-requirements.txt $PYTHONPATH/project-requirements.txt
