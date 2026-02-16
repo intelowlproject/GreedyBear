@@ -29,6 +29,12 @@ services:
       - env_file
     depends_on:
       - postgres
+    healthcheck:
+      test: ["CMD-SHELL", "nc -z 127.0.0.1 8001 || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
 
   nginx:
     image: intelowlproject/greedybear_nginx:prod
@@ -45,59 +51,25 @@ services:
     depends_on:
       - uwsgi
 
-  rabbitmq:
-    image: library/rabbitmq:4-alpine
-    container_name: greedybear_rabbitmq
-    restart: unless-stopped
-    volumes:
-      - ../configuration/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
-    logging:
-      driver: none
-    depends_on:
-      - postgres
-    healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "check_running"]
-      interval: 10s
-      timeout: 5s
-      retries: 10
-      start_period: 10s
 
-  celery_beat:
-    image: intelowlproject/greedybear:prod
-    container_name: greedybear_celery_beat
-    restart: unless-stopped
-    command: /usr/local/bin/celery -A greedybear.celery beat --uid www-data --gid www-data --pidfile= --schedule=/tmp/celerybeat-schedule
-    volumes:
-      - generic_logs:/var/log/greedybear
-    env_file:
-      - env_file
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-      postgres:
-        condition: service_started
-      uwsgi:
-        condition: service_started
-    <<: *no-healthcheck
 
-  celery_worker_default:
+  qcluster:
     image: intelowlproject/greedybear:prod
-    container_name: greedybear_celery_worker_default
+    container_name: greedybear_qcluster
     restart: unless-stopped
     stop_grace_period: 3m
-    command: /usr/local/bin/celery -A greedybear.celery worker -n worker_default --uid www-data --gid www-data --time-limit=10000 --pidfile= -Ofair -Q default -E -c 1
+    command: sh -c "python manage.py setup_schedules && exec python manage.py qcluster"
     volumes:
       - generic_logs:/var/log/greedybear
       - mlmodels:/opt/deploy/greedybear/mlmodels
     env_file:
       - env_file
     depends_on:
-      rabbitmq:
-        condition: service_healthy
       postgres:
         condition: service_started
       uwsgi:
-        condition: service_started
+        condition: service_healthy
+    user: "2000:82"
     <<: *no-healthcheck
 
 volumes:

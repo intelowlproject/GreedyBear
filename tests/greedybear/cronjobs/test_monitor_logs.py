@@ -41,7 +41,7 @@ class MonitorLogsTestCase(CustomTestCase):
             MagicMock(st_mtime=recent_time),  # greedybear
             MagicMock(st_mtime=old_time),  # api
             MagicMock(st_mtime=old_time),  # django
-            MagicMock(st_mtime=old_time),  # celery
+            MagicMock(st_mtime=old_time),  # django_q
         ]
 
         # Run the cronjob
