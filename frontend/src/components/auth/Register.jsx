@@ -69,9 +69,9 @@ const INITIAL_VALUES = {
 };
 
 const REGISTRATION_FORM_STORAGE_KEY = "registrationForm";
-const initialValues =
-  JSON.parse(localStorage.getItem(REGISTRATION_FORM_STORAGE_KEY) || "{}") ||
-  INITIAL_VALUES;
+const storedString = localStorage.getItem(REGISTRATION_FORM_STORAGE_KEY);
+const savedValues = storedString ? JSON.parse(storedString) : null;
+const initialValues = savedValues || INITIAL_VALUES;
 
 console.debug("initialValues", initialValues);
 
