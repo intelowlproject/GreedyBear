@@ -13,6 +13,7 @@ from api.views import (
     feeds_asn,
     feeds_pagination,
     general_honeypot_list,
+    news_view,
 )
 
 # Routers provide an easy way of automatically determining the URL conf.
@@ -29,6 +30,7 @@ urlpatterns = [
     path("cowrie_session", cowrie_session_view),
     path("command_sequence", command_sequence_view),
     path("general_honeypot", general_honeypot_list),
+    path("news/", news_view),
     # router viewsets
     path("", include(router.urls)),
     # certego_saas:

@@ -182,14 +182,6 @@ class CustomTestCase(TestCase):
         except User.DoesNotExist:
             cls.regular_user = User.objects.create_user(username="regular", email="regular@greedybear.com", password="regular")
 
-    @classmethod
-    def tearDownClass(cls):
-        # db clean
-        GeneralHoneypot.objects.all().delete()
-        IOC.objects.all().delete()
-        CowrieSession.objects.all().delete()
-        CommandSequence.objects.all().delete()
-
 
 class ExtractionTestCase(CustomTestCase):
     def setUp(self):
