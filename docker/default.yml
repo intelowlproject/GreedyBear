@@ -58,7 +58,7 @@ services:
     container_name: greedybear_qcluster
     restart: unless-stopped
     stop_grace_period: 3m
-    command: sh -c "python manage.py setup_schedules && python manage.py qcluster"
+    command: sh -c "python manage.py setup_schedules && exec python manage.py qcluster"
     volumes:
       - generic_logs:/var/log/greedybear
       - mlmodels:/opt/deploy/greedybear/mlmodels
