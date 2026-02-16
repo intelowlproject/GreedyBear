@@ -20,6 +20,9 @@ python manage.py migrate
 # Collect static files, overwriting existing ones
 python manage.py collectstatic --noinput --clear --verbosity 0
 
+# Fix log file ownership (manage.py commands above run as root and may create new log files)
+chown -R 2000:82 /var/log/greedybear
+
 # Obtain the current GreedyBear version number
 . /opt/deploy/greedybear/docker/.version
 export REACT_APP_GREEDYBEAR_VERSION
