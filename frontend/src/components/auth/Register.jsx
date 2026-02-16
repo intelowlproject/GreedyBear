@@ -70,7 +70,7 @@ const INITIAL_VALUES = {
 
 const REGISTRATION_FORM_STORAGE_KEY = "registrationForm";
 const initialValues =
-  JSON.parse(localStorage.getItem(REGISTRATION_FORM_STORAGE_KEY, "{}")) ||
+  JSON.parse(localStorage.getItem(REGISTRATION_FORM_STORAGE_KEY) || "{}") ||
   INITIAL_VALUES;
 
 console.debug("initialValues", initialValues);
