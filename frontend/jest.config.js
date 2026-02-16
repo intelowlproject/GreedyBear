@@ -89,6 +89,8 @@ module.exports = {
     "^test-utils$": "<rootDir>/tests/testing-utils",
     "^lodash-es$": "lodash",
     "d3-(.*)$": "<rootDir>/node_modules/d3-$1/dist/d3-$1.min.js",
+    // Mock environment.js to fix Jest compatibility with Vite's import.meta.env
+    "^.*/constants/environment$": "<rootDir>/tests/environmentMock.js",
   },
 
   // An array of regexp pattern strings, matched against all module paths before considered 'visible' to the module loader
