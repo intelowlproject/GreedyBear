@@ -53,7 +53,7 @@ SLACK_TOKEN = os.environ.get("SLACK_TOKEN", "")
 DEFAULT_SLACK_CHANNEL = os.environ.get("DEFAULT_SLACK_CHANNEL", "")
 NTFY_URL = os.environ.get("NTFY_URL", "")
 
-VERSION = os.environ.get("REACT_APP_GREEDYBEAR_VERSION", "")
+VERSION = os.environ.get("VITE_GREEDYBEAR_VERSION", "")
 
 CSRF_COOKIE_SAMESITE = "Strict"
 CSRF_COOKIE_HTTPONLY = True
