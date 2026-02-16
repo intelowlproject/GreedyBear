@@ -26,12 +26,17 @@ class IocProcessor:
         self.ioc_repo = ioc_repo
         self.sensor_repo = sensor_repo
 
-    def add_ioc(self, ioc: IOC, attack_type: str, general_honeypot_name: str = None) -> IOC | None:
+    def add_ioc(
+        self,
+        ioc: IOC,
+        attack_type: str,
+        general_honeypot_name: str = None,
+    ) -> IOC | None:
         """
         Process an IOC record.
         Filters out sensor IPs and whats-my-ip domains, then creates a new
         IOC record or updates an existing one. Associates the IOC with a
-        general honeypot if specified.
+        general honeypot and/or sensor if specified.
 
         Args:
             ioc: IOC instance to process.
@@ -43,7 +48,7 @@ class IocProcessor:
         """
         self.log.info(f"processing ioc {ioc} for attack_type {attack_type}")
 
-        if ioc.name in self.sensor_repo.sensors:
+        if ioc.name in self.sensor_repo.cache:
             self.log.debug(f"not saved {ioc} because it is a sensor")
             return None
 
@@ -55,7 +60,12 @@ class IocProcessor:
         if ioc_record is None:  # Create
             self.log.debug(f"{ioc} was not seen before - creating a new record")
             ioc_record = self.ioc_repo.save(ioc)
-        else:  # Update
+            # Add sensors to newly saved IOC from temporary attribute.
+            # (See greedybear/cronjobs/extraction/utils.py for why we use this)
+            if hasattr(ioc, "_sensors_to_add") and ioc._sensors_to_add:
+                for sensor in ioc._sensors_to_add:
+                    ioc_record.sensors.add(sensor)
+        else:  # Update - sensors handled inside _merge_iocs
             self.log.debug(f"{ioc} is already known - updating record")
             ioc_record = self._merge_iocs(ioc_record, ioc)
 
@@ -72,7 +82,7 @@ class IocProcessor:
     def _merge_iocs(self, existing: IOC, new: IOC) -> IOC:
         """
         Merge a new IOC's data into an existing record.
-        Updates timestamps, increments counters, and combines list fields.
+        Updates timestamps, increments counters, combines list fields, and adds sensors.
 
         Args:
             existing: The existing IOC record from the database.
@@ -89,6 +99,13 @@ class IocProcessor:
         existing.ip_reputation = new.ip_reputation
         existing.asn = new.asn
         existing.login_attempts += new.login_attempts
+
+        # Add sensors from new IOC (existing is already saved, so ManyToMany works).
+        # We retrieve sensors from the temporary attribute of the input IOC object.
+        if hasattr(new, "_sensors_to_add") and new._sensors_to_add:
+            for sensor in new._sensors_to_add:
+                existing.sensors.add(sensor)
+
         return existing
 
     def _update_days_seen(self, ioc: IOC) -> IOC:

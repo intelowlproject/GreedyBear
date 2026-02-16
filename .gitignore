@@ -2,9 +2,14 @@ venv/
 docs/build
 docker/env_file
 docker/env_file_postgres
+docker/env_file.backup.*
+docker/env_file_postgres.backup.*
 .env
+.env.backup.*
 __pycache__/
 mlmodels/
+# Backups created by gbctl
+backups/
 # JetBrains IDEs (PyCharm, IntelliJ, etc.)
 .idea/
 # Ruff cache
@@ -16,3 +21,5 @@ coverage.xml
 *.cover
 .coverage.*
 
+# gbctl configuration file
+.gbctl.conf

@@ -85,3 +85,27 @@ class TestGenericExtractionStrategy(ExtractionTestCase):
 
         call_kwargs = self.strategy.ioc_processor.add_ioc.call_args[1]
         self.assertEqual(call_kwargs["general_honeypot_name"], "TestHoneypot")
+
+    @patch("greedybear.cronjobs.extraction.strategies.generic.iocs_from_hits")
+    @patch("greedybear.cronjobs.extraction.strategies.generic.threatfox_submission")
+    def test_processes_ioc_with_sensors(self, mock_threatfox, mock_iocs_from_hits):
+        """Test that sensors are passed to add_ioc when present"""
+        self.mock_ioc_repo.is_enabled.return_value = True
+
+        mock_ioc = self._create_mock_ioc()
+        mock_sensor1 = Mock()
+        mock_sensor1.address = "10.0.0.1"
+        mock_sensor2 = Mock()
+        mock_sensor2.address = "10.0.0.2"
+        # Attach sensors to IOC
+        mock_ioc._sensors_to_add = [mock_sensor1, mock_sensor2]
+        mock_iocs_from_hits.return_value = [mock_ioc]
+
+        self.strategy.ioc_processor.add_ioc = Mock(return_value=mock_ioc)
+
+        hits = [{"src_ip": "1.2.3.4", "dest_port": 80, "@timestamp": "2025-01-01T00:00:00"}]
+
+        self.strategy.extract_from_hits(hits)
+
+        # Should call add_ioc once with IOC object (sensors are attached to it)
+        self.strategy.ioc_processor.add_ioc.assert_called_once_with(mock_ioc, attack_type=SCANNER, general_honeypot_name="TestHoneypot")

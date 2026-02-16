@@ -147,6 +147,9 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
                 type=get_ioc_type(payload_hostname),
                 related_urls=[payload_url],
             )
+            sensor = hit.get("_sensor")
+            if sensor:
+                ioc._sensors_to_add = [sensor]
             self.ioc_processor.add_ioc(ioc, attack_type=PAYLOAD_REQUEST, general_honeypot_name="Cowrie")
             self._add_fks(scanner_ip, payload_hostname)
             self.payloads_in_message += 1
@@ -181,6 +184,9 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
                     type=get_ioc_type(hostname),
                     related_urls=[download_url],
                 )
+                sensor = hit.get("_sensor")
+                if sensor:
+                    ioc._sensors_to_add = [sensor]
                 ioc_record = self.ioc_processor.add_ioc(ioc, attack_type=PAYLOAD_REQUEST, general_honeypot_name="Cowrie")
                 if ioc_record:
                     self.added_url_downloads += 1
