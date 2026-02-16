@@ -41,10 +41,16 @@ class MassScannersCron(Cronjob):
         # Regex to extract optional comment/reason after '#'
         comment_regex = re.compile(r"#\s*(.+)")
 
-        r = requests.get(
-            "https://raw.githubusercontent.com/stamparm/maltrail/master/trails/static/mass_scanner.txt",
-            timeout=10,
-        )
+        try:
+            r = requests.get(
+                "https://raw.githubusercontent.com/stamparm/maltrail/master/trails/static/mass_scanner.txt",
+                timeout=10,
+            )
+            r.raise_for_status()
+        except requests.RequestException as e:
+            self.log.error(f"Failed to fetch mass scanner list: {e}")
+            raise
+
         for line_bytes in r.iter_lines():
             if line_bytes:
                 line = line_bytes.decode("utf-8")
