@@ -5,8 +5,5 @@ services:
   nginx:
     image: intelowlproject/greedybear_nginx:stag
 
-  celery_beat:
-    image: intelowlproject/greedybear:stag
-
-  celery_worker_default:
+  qcluster:
     image: intelowlproject/greedybear:stag

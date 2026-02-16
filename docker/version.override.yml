@@ -11,3 +11,5 @@ services:
 
   celery_worker_default:
     image: intelowlproject/greedybear:${GREEDYBEAR_VERSION}
+  qcluster:
+    image: intelowlproject/greedybear:${GREEDYBEAR_VERSION}

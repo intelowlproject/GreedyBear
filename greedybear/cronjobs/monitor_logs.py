@@ -25,7 +25,7 @@ class MonitorLogs(Cronjob):
         super().__init__()
         self.log_directory = Path(log_directory)
         self.check_window_minutes = check_window_minutes
-        self.logs_to_monitor = ["greedybear", "api", "django", "celery"]
+        self.logs_to_monitor = ["greedybear", "api", "django", "django_q"]
 
     def run(self):
         """Check error logs for recent modifications and alert via Slack and ntfy."""
