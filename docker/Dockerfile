@@ -9,7 +9,7 @@ RUN npm install
 # copy source code and build
 COPY frontend/ .
 COPY docker/.version .env.local
-RUN PUBLIC_URL=/static/reactapp/ npm run build
+RUN VITE_BASE_URL=/static/reactapp/ npm run build
 
 # Stage 2: Backend
 FROM python:3.13-slim-trixie

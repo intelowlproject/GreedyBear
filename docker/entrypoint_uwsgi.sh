@@ -25,10 +25,10 @@ chown -R 2000:82 /var/log/greedybear
 
 # Obtain the current GreedyBear version number
 . /opt/deploy/greedybear/docker/.version
-export REACT_APP_GREEDYBEAR_VERSION
+export VITE_GREEDYBEAR_VERSION
 
 echo "------------------------------"
-echo "GreedyBear $REACT_APP_GREEDYBEAR_VERSION"
+echo "GreedyBear $VITE_GREEDYBEAR_VERSION"
 echo "DEBUG: " $DEBUG
 echo "DJANGO_TEST_SERVER: " $DJANGO_TEST_SERVER
 echo "------------------------------"

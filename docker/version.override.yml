@@ -6,5 +6,11 @@ services:
   nginx:
     image: intelowlproject/greedybear_nginx:${REACT_APP_INTELOWL_VERSION}
 
+  celery_beat:
+    image: intelowlproject/greedybear:${REACT_APP_INTELOWL_VERSION}
+
+  celery_worker_default:
+    image: intelowlproject/greedybear:${REACT_APP_INTELOWL_VERSION}
+
   qcluster:
     image: intelowlproject/greedybear:${REACT_APP_INTELOWL_VERSION}

@@ -7,6 +7,8 @@ import {
 export function ComparePassword(password, confirmPassword) {
   const errors = {};
   if (
+    password &&
+    confirmPassword &&
     password.length > 0 &&
     confirmPassword.length > 0 &&
     password !== confirmPassword
