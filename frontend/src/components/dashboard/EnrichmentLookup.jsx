@@ -239,7 +239,11 @@ export default function EnrichmentLookup() {
                 {result.ioc.expected_interactions !== undefined && (
                   <Col md={6}>
                     <dt>Expected Interactions:</dt>
-                    <dd>{result.ioc.expected_interactions.toFixed(2)}</dd>
+                    <dd>
+                      {result.ioc.expected_interactions == null
+                        ? "N/A"
+                        : Number(result.ioc.expected_interactions).toFixed(2)}
+                    </dd>
                   </Col>
                 )}
               </Row>
