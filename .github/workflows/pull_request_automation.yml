@@ -35,7 +35,6 @@ jobs:
 
       use_react: true
       check_packages_licenses: false
-      use_jest: false
       use_vitest: true
 
       use_coverage: true
