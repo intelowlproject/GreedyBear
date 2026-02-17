@@ -198,13 +198,16 @@ export default function EnrichmentLookup() {
                       : "N/A"}
                   </dd>
 
-                  {result.ioc.firehol_category && (
+                  {Array.isArray(result.ioc.firehol_categories) &&
+                    result.ioc.firehol_categories.length > 0 && (
                     <>
-                      <dt className="col-sm-5">Firehol Category:</dt>
+                      <dt className="col-sm-5">Firehol Categories:</dt>
                       <dd className="col-sm-7">
-                        {Array.isArray(result.ioc.firehol_category)
-                          ? result.ioc.firehol_category.join(", ")
-                          : result.ioc.firehol_category}
+                        {result.ioc.firehol_categories.map((category, idx) => (
+                          <span key={idx} className="badge bg-secondary me-1">
+                            {category}
+                          </span>
+                        ))}
                       </dd>
                     </>
                   )}
