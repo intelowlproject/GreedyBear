@@ -5,7 +5,7 @@ import { BrowserRouter } from "react-router-dom";
 import userEvent from "@testing-library/user-event";
 import EmailForm from "../../../../src/components/auth/utils/EmailForm";
 
-jest.mock("axios");
+vi.mock("axios");
 
 describe("EmailForm component", () => {
   test("Submit email form", async () => {

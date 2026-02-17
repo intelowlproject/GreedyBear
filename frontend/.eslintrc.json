@@ -7,7 +7,8 @@
     },
     "globals": {
         "process": "readonly",
-        "global": "readonly"
+        "global": "readonly",
+        "vi": "readonly"
     },
     "extends": [
         "eslint:recommended"
