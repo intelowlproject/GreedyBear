@@ -29,11 +29,7 @@ on:
         type: boolean
         required: false
 
-      use_vitest:
-        description: Use vitest suite
-        default: false
-        type: boolean
-        required: false
+
 
       use_react:
         description: Use react library
