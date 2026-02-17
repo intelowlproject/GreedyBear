@@ -148,7 +148,7 @@ export default function EnrichmentLookup() {
 
                   <dt className="col-sm-5">Type:</dt>
                   <dd className="col-sm-7">
-                    <span className="badge bg-info">{result.ioc.ioc_type}</span>
+                    <span className="badge bg-info">{result.ioc.type}</span>
                   </dd>
 
                   <dt className="col-sm-5">Attack Count:</dt>
