@@ -70,7 +70,7 @@ COMPOSE_FILE=${compose_file}
 EOF
 
     if [ "$USE_VERSION" = true ]; then
-        echo "GREEDYBEAR_VERSION=${GREEDYBEAR_VERSION}" >> "$env_file"
+        echo "REACT_APP_INTELOWL_VERSION=${GREEDYBEAR_VERSION}" >> "$env_file"
     fi
 
     log_success "Configuration saved"
@@ -96,7 +96,7 @@ load_config() {
             value="${value#\"}"
             case "$key" in
                 COMPOSE_FILE) compose_file="$value" ;;
-                GREEDYBEAR_VERSION) version_pin="$value" ;;
+                REACT_APP_INTELOWL_VERSION) version_pin="$value" ;;
             esac
         done < "$env_file"
 

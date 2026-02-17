@@ -2,7 +2,7 @@
 // This is a temporary workaround until we migrate to Vitest
 
 export const GREEDYBEAR_DOCS_URL =
-  "https://greedybear.readthedocs.io/en/latest/";
+  "https://intelowlproject.github.io/docs/GreedyBear/Introduction/";
 export const VERSION = process.env.VITE_GREEDYBEAR_VERSION || "3.1.0";
 
 // Add any other exports from environment.js that tests might need
