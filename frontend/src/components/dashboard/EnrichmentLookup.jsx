@@ -33,52 +33,55 @@ export default function EnrichmentLookup() {
     React.useCallback((s) => s.isAuthenticated, [])
   );
 
-  const onSubmit = React.useCallback(async (values, { setSubmitting }) => {
-    setError(null);
-    setResult(null);
+  const onSubmit = React.useCallback(
+    async (values, { setSubmitting }) => {
+      setError(null);
+      setResult(null);
 
-    // Check authentication first
-    if (isAuthenticated !== AUTHENTICATION_STATUSES.TRUE) {
-      setError(
-        "You must be authenticated to use the enrichment feature. Please login to access this functionality."
-      );
-      setSubmitting(false);
-      return;
-    }
-
-    if (!values.query || values.query.trim() === "") {
-      setError("Please enter an IP address or domain to search.");
-      setSubmitting(false);
-      return;
-    }
-
-    setLoading(true);
-
-    try {
-      const resp = await axios.get(ENRICHMENT_URI, {
-        params: { query: values.query.trim() },
-        headers: { "Content-Type": "application/json" },
-      });
-
-      setResult(resp.data);
-      if (resp.data.found) {
-        addToast("Success!", "IOC data found", "success");
-      } else {
-        addToast("Not found", "No data found for this observable", "info");
+      // Check authentication first
+      if (isAuthenticated !== AUTHENTICATION_STATUSES.TRUE) {
+        setError(
+          "You must be authenticated to use the enrichment feature. Please login to access this functionality."
+        );
+        setSubmitting(false);
+        return;
       }
-    } catch (err) {
-      console.error("Enrichment error:", err);
-      const errorMsg =
-        err.response?.data?.errors?.query?.[0] ||
-        err.parsedMsg ||
-        "An error occurred while fetching enrichment data.";
-      setError(errorMsg);
-      addToast("Error", errorMsg, "danger");
-    } finally {
-      setLoading(false);
-      setSubmitting(false);
-    }
-  }, [isAuthenticated]);
+
+      if (!values.query || values.query.trim() === "") {
+        setError("Please enter an IP address or domain to search.");
+        setSubmitting(false);
+        return;
+      }
+
+      setLoading(true);
+
+      try {
+        const resp = await axios.get(ENRICHMENT_URI, {
+          params: { query: values.query.trim() },
+          headers: { "Content-Type": "application/json" },
+        });
+
+        setResult(resp.data);
+        if (resp.data.found) {
+          addToast("Success!", "IOC data found", "success");
+        } else {
+          addToast("Not found", "No data found for this observable", "info");
+        }
+      } catch (err) {
+        console.error("Enrichment error:", err);
+        const errorMsg =
+          err.response?.data?.errors?.query?.[0] ||
+          err.parsedMsg ||
+          "An error occurred while fetching enrichment data.";
+        setError(errorMsg);
+        addToast("Error", errorMsg, "danger");
+      } finally {
+        setLoading(false);
+        setSubmitting(false);
+      }
+    },
+    [isAuthenticated]
+  );
 
   return (
     <div className="enrichment-lookup">
@@ -128,8 +131,8 @@ export default function EnrichmentLookup() {
 
       {result && !result.found && (
         <Alert color="info" className="mt-3">
-          <strong>Not Found:</strong> No data available for "{result.query}"
-          in our database.
+          <strong>Not Found:</strong> No data available for "{result.query}" in
+          our database.
         </Alert>
       )}
 
@@ -174,7 +177,10 @@ export default function EnrichmentLookup() {
 
                   <dt className="col-sm-5">Payload Request:</dt>
                   <dd className="col-sm-7">
-                    <BooleanIcon truthy={result.ioc.payload_request} withColors />
+                    <BooleanIcon
+                      truthy={result.ioc.payload_request}
+                      withColors
+                    />
                   </dd>
 
                   <dt className="col-sm-5">IP Reputation:</dt>

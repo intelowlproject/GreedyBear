@@ -54,7 +54,7 @@ function Dashboard() {
           onChange={onTimeIntervalChange}
         />
       </div>
-      
+
       {/* Enrichment Lookup Section - Publicly visible */}
       <Row className="mb-4">
         <Col md={12}>
