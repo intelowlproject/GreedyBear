@@ -11,11 +11,11 @@ describe("EmailForm component", () => {
   test("Submit email form", async () => {
     // mock user interaction: reccomanded to put this at the start of the test
     const user = userEvent.setup();
-    const mockApi = jest.fn();
+    const mockApi = vi.fn();
 
     render(
       <BrowserRouter>
-        <EmailForm apiCallback={mockApi} onFormSubmit={jest.fn()} />
+        <EmailForm apiCallback={mockApi} onFormSubmit={vi.fn()} />
       </BrowserRouter>
     );
 

@@ -23,6 +23,18 @@ on:
         type: boolean
         required: false
 
+      use_vitest:
+        description: Use vitest suite
+        default: false
+        type: boolean
+        required: false
+
+      use_vitest:
+        description: Use vitest suite
+        default: false
+        type: boolean
+        required: false
+
       use_react:
         description: Use react library
         default: false
@@ -182,6 +194,20 @@ jobs:
           else
             $CMD
           fi
+        working-directory: ${{ inputs.working_directory }}
+        shell: bash
+
+      - name: Run vitest tests
+        if: ${{ inputs.use_vitest }}
+        id: vitest-tests
+        run: |
+          if [[ '${{ inputs.use_coverage }}' != 'false' ]]; then
+            CMD="npm run test-coverage"
+          else
+            CMD="npm test"
+          fi
+          echo "Running command: ${CMD}"
+          $CMD
         working-directory: ${{ inputs.working_directory }}
         shell: bash
 

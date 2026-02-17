@@ -68,7 +68,7 @@ vi.mock("@certego/certego-ui", async (importOriginal) => {
 
 describe("Feeds component", () => {
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   test("Feeds", async () => {
