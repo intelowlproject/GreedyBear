@@ -11,6 +11,12 @@ services:
       - postgres_data:/var/lib/postgresql
     env_file:
       - ./env_file_postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-greedybear}"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
 
   uwsgi:
     image: intelowlproject/greedybear:prod
@@ -28,7 +34,8 @@ services:
     env_file:
       - env_file
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "nc -z 127.0.0.1 8001 || exit 1"]
       interval: 10s

@@ -1,17 +1,11 @@
 #!/bin/bash
 
-date
-echo "starting wait_for_it for uwsgi"
-/opt/deploy/greedybear/docker/wait-for-it.sh -t 15 postgres:$DB_PORT
-date
-
 until cd /opt/deploy/greedybear
 do
     echo "Waiting for server volume..."
 done
 
 # Apply database migrations
-echo "Waiting for db to be ready..."
 # Create cache table for Django Q monitoring (idempotent)
 python manage.py createcachetable
 python manage.py makemigrations durin
