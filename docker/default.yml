@@ -12,7 +12,7 @@ services:
     env_file:
       - ./env_file_postgres
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready"]
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]  
       interval: 5s
       timeout: 3s
       retries: 5
@@ -73,7 +73,7 @@ services:
       - env_file
     depends_on:
       postgres:
-        condition: service_started
+        condition: service_healthy
       uwsgi:
         condition: service_healthy
     user: "2000:82"
