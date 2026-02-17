@@ -41,13 +41,10 @@
     "formatter-fix": "npm run formatter -- --write"
   },
   "devDependencies": {
-    "@babel/preset-env": "^7.21.4",
-    "@babel/preset-react": "^7.22.5",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^12.1.5",
     "@testing-library/react-hooks": "^8.0.1",
     "@testing-library/user-event": "^14.0.0",
-    "@types/jest": "^30.0.0",
     "@vitejs/plugin-react": "^4.7.0",
     "eslint-config-airbnb": "^19.0.4",
     "eslint-config-prettier": "^9.1.0",
