@@ -70,7 +70,8 @@ export default function EnrichmentLookup() {
       } catch (err) {
         console.error("Enrichment error:", err);
         const errorMsg =
-          err.response?.data?.errors?.query?.[0] ||
+          err.response?.data?.non_field_errors?.[0] ||
+          err.response?.data?.detail ||
           err.parsedMsg ||
           "An error occurred while fetching enrichment data.";
         setError(errorMsg);
