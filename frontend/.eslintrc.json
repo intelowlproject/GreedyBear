@@ -2,7 +2,6 @@
     "env": {
         "browser": true,
         "es2021": true,
-        "jest": true,
         "node": true
     },
     "globals": {
@@ -24,6 +23,27 @@
         "no-unused-vars": "off",
         "react/prop-types": "off",
         "react/display-name": "off",
-        "react/react-in-jsx-scope": "off"
-    }
+        "react/react-in-jsx-scope": "off",
+        "import/prefer-default-export": "off",
+        "no-console": "off",
+        "react/jsx-props-no-spreading": "off"
+    },
+    "overrides": [
+        {
+            "files": [
+                "tests/**/*.{js,jsx}"
+            ],
+            "globals": {
+                "describe": "readonly",
+                "it": "readonly",
+                "expect": "readonly",
+                "beforeEach": "readonly",
+                "afterEach": "readonly",
+                "test": "readonly",
+                "afterAll": "readonly",
+                "beforeAll": "readonly",
+                "vi": "readonly"
+            }
+        }
+    ]
 }

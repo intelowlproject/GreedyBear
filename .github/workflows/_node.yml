@@ -17,11 +17,7 @@ on:
         required: false
         default: true
 
-      use_jest:
-        description: Use jest suite
-        default: false
-        type: boolean
-        required: false
+
 
       use_vitest:
         description: Use vitest suite
@@ -54,7 +50,7 @@ on:
         required: false
 
       use_coverage:
-        description: Output coverage. Require jest to be set.
+        description: Output coverage. Require vitest to be set.
         default: false
         type: boolean
         required: false
@@ -112,12 +108,7 @@ jobs:
 
       - name: Add dependencies
         run: |
-          if [[ '${{ inputs.use_jest }}' != 'false' ]]; then
-            npm i -D --package-lock-only jest @testing-library/jest-dom babel-jest @babel/core @babel/preset-env
-            if [[ '${{ inputs.use_react }}' != 'false' ]]; then
-              npm i -D --package-lock-only  @testing-library/react
-            fi
-          fi
+
           if [[ '${{ inputs.use_eslint }}' != 'false' ]]; then
             npm i -D --package-lock-only eslint
           fi
@@ -171,28 +162,6 @@ jobs:
         working-directory: ${{ inputs.working_directory }}
         shell: bash
 
-      - name: Run jest tests
-        if: ${{ inputs.use_jest }}
-        id: jest-tests
-        run: |
-          if [[ '${{ inputs.use_coverage }}' != 'false' ]]; then
-            CMD="npm test -- --silent --coverage"
-          else
-            CMD="npm test"
-          fi
-          echo "Running command: ${CMD}"
-          if [[ '${{ inputs.use_coverage }}' != 'false' ]] && [[ '${{ inputs.upload_coverage }}' != 'false' ]]; then
-            echo "Uploading jest coverage report"
-            echo "## Jest coverage report" >> $GITHUB_STEP_SUMMARY
-            echo "$($CMD | grep -Ev "^(>|$)")" > jest-coverage.txt
-            head -n -1 jest-coverage.txt | tail -n +2 >> $GITHUB_STEP_SUMMARY
-            rm jest-coverage.txt
-          else
-            $CMD
-          fi
-        working-directory: ${{ inputs.working_directory }}
-        shell: bash
-
       - name: Run vitest tests
         if: ${{ inputs.use_vitest }}
         id: vitest-tests
@@ -203,7 +172,15 @@ jobs:
             CMD="npm test"
           fi
           echo "Running command: ${CMD}"
-          $CMD
+          if [[ '${{ inputs.use_coverage }}' != 'false' ]] && [[ '${{ inputs.upload_coverage }}' != 'false' ]]; then
+            echo "Uploading vitest coverage report"
+            echo "## Vitest coverage report" >> $GITHUB_STEP_SUMMARY
+            echo "$($CMD | grep -Ev "^(>|$)")" > vitest-coverage.txt
+            head -n -1 vitest-coverage.txt | tail -n +2 >> $GITHUB_STEP_SUMMARY
+            rm vitest-coverage.txt
+          else
+            $CMD
+          fi
         working-directory: ${{ inputs.working_directory }}
         shell: bash
 

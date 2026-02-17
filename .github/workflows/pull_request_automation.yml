@@ -42,7 +42,7 @@ jobs:
       upload_coverage: true
       max_timeout: 15
       node_versions: >-
-        ["20"]
+        ["24"]
       ubuntu_version: latest
 
 
