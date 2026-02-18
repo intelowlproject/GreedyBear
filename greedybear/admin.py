@@ -8,6 +8,7 @@ from django.utils.translation import ngettext
 
 from greedybear.models import (
     IOC,
+    AbuseIPDBFeed,
     CommandSequence,
     CowrieSession,
     FireHolList,
@@ -15,6 +16,8 @@ from greedybear.models import (
     MassScanner,
     Sensor,
     Statistics,
+    Tag,
+    ThreatFoxFeed,
     TorExitNode,
     WhatsMyIPDomain,
 )
@@ -65,6 +68,31 @@ class FireHolListModelAdmin(admin.ModelAdmin):
     list_filter = ["source"]
     search_fields = ["ip_address"]
     search_help_text = ["search for the IP address"]
+
+
+@admin.register(ThreatFoxFeed)
+class ThreatFoxFeedModelAdmin(admin.ModelAdmin):
+    list_display = ["ip_address", "malware_printable", "malware", "threat_type", "confidence_level", "added"]
+    list_filter = ["threat_type", "malware"]
+    search_fields = ["ip_address", "malware", "malware_printable"]
+    search_help_text = ["search for IP address or malware name"]
+
+
+@admin.register(AbuseIPDBFeed)
+class AbuseIPDBFeedModelAdmin(admin.ModelAdmin):
+    list_display = ["ip_address", "abuse_confidence_score", "usage_type", "country_code", "added"]
+    list_filter = ["usage_type", "country_code"]
+    search_fields = ["ip_address"]
+    search_help_text = ["search for the IP address"]
+
+
+@admin.register(Tag)
+class TagModelAdmin(admin.ModelAdmin):
+    list_display = ["ioc", "key", "value", "source", "added"]
+    list_filter = ["source", "key"]
+    search_fields = ["ioc__name", "key", "value"]
+    search_help_text = ["search for IOC name, tag key, or value"]
+    raw_id_fields = ["ioc"]
 
 
 class SessionInline(admin.TabularInline):

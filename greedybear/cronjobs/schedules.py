@@ -30,6 +30,8 @@ def setup_schedules():
         "get_whatsmyip",
         "extract_firehol_lists",
         "get_tor_exit_nodes",
+        "get_threatfox_feed",
+        "get_abuseipdb_feed",
     ]
 
     # 1. Extraction: Every EXTRACTION_INTERVAL minutes
@@ -138,6 +140,28 @@ def setup_schedules():
         name="get_tor_exit_nodes",
         defaults={
             "func": "greedybear.tasks.get_tor_exit_nodes",
+            "schedule_type": Schedule.CRON,
+            "cron": "7 1 * * 0",
+            "repeats": -1,
+        },
+    )
+
+    # 11. ThreatFox Feed: Weekly (Sunday) at 01:07
+    Schedule.objects.update_or_create(
+        name="get_threatfox_feed",
+        defaults={
+            "func": "greedybear.tasks.get_threatfox_feed",
+            "schedule_type": Schedule.CRON,
+            "cron": "7 1 * * 0",
+            "repeats": -1,
+        },
+    )
+
+    # 12. AbuseIPDB Feed: Weekly (Sunday) at 01:07
+    Schedule.objects.update_or_create(
+        name="get_abuseipdb_feed",
+        defaults={
+            "func": "greedybear.tasks.get_abuseipdb_feed",
             "schedule_type": Schedule.CRON,
             "cron": "7 1 * * 0",
             "repeats": -1,

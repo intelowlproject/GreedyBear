@@ -181,3 +181,60 @@ class WhatsMyIPDomain(models.Model):
 
     def __str__(self):
         return self.domain
+
+
+class ThreatFoxFeed(models.Model):
+    """Store ThreatFox feed data locally to avoid excessive API calls."""
+
+    ip_address = models.CharField(max_length=256, blank=False)
+    malware = models.CharField(max_length=128, blank=True, default="")
+    malware_printable = models.CharField(max_length=128, blank=True, default="")
+    threat_type = models.CharField(max_length=64, blank=True, default="")
+    confidence_level = models.IntegerField(blank=True, null=True)
+    tags = pg_fields.ArrayField(models.CharField(max_length=64, blank=True), blank=True, default=list)
+    added = models.DateTimeField(blank=False, default=datetime.now)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["ip_address"]),
+        ]
+
+    def __str__(self):
+        return f"{self.ip_address} - {self.malware_printable or self.malware}"
+
+
+class AbuseIPDBFeed(models.Model):
+    """Store AbuseIPDB blacklist data locally (max 10k entries)."""
+
+    ip_address = models.CharField(max_length=256, blank=False, unique=True)
+    abuse_confidence_score = models.IntegerField(blank=True, null=True)
+    usage_type = models.CharField(max_length=64, blank=True, default="")
+    country_code = models.CharField(max_length=2, blank=True, default="")
+    added = models.DateTimeField(blank=False, default=datetime.now)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["ip_address"]),
+        ]
+
+    def __str__(self):
+        return f"{self.ip_address} (confidence: {self.abuse_confidence_score}%)"
+
+
+class Tag(models.Model):
+    """Tags for IOCs from enrichment sources like ThreatFox and AbuseIPDB."""
+
+    ioc = models.ForeignKey(IOC, on_delete=models.CASCADE, related_name="tags")
+    key = models.CharField(max_length=128, blank=False)
+    value = models.CharField(max_length=256, blank=False)
+    source = models.CharField(max_length=64, blank=False)  # e.g., "threatfox", "abuseipdb"
+    added = models.DateTimeField(blank=False, default=datetime.now)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["ioc"]),
+            models.Index(fields=["source"]),
+        ]
+
+    def __str__(self):
+        return f"{self.ioc.name} - {self.key}: {self.value} ({self.source})"

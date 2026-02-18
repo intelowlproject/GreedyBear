@@ -179,6 +179,8 @@ class TestCowrieExtractionStrategy(ExtractionTestCase):
 
         self.mock_ioc_repo.get_ioc_by_name.side_effect = [scanner_mock, payload_mock]
         mock_payload_record = Mock()
+        mock_payload_record.related_urls = []
+        mock_payload_record.general_honeypot.all.return_value = []
         self.strategy.ioc_processor.add_ioc.return_value = mock_payload_record
 
         self.strategy._get_url_downloads(hits)
@@ -332,10 +334,13 @@ class TestCowrieExtractionStrategy(ExtractionTestCase):
     def test_extract_from_hits_integration(self, mock_iocs_from_hits):
         """Test the main extract_from_hits coordination."""
         mock_ioc = Mock(name="1.2.3.4")
+        mock_ioc.related_urls = []
         # Return list of IOCs as expected by the new format
         mock_iocs_from_hits.return_value = [mock_ioc]
 
         mock_ioc_record = Mock()
+        mock_ioc_record.related_urls = []
+        mock_ioc_record.general_honeypot.all.return_value = []
         self.strategy.ioc_processor.add_ioc.return_value = mock_ioc_record
 
         hits = [{"src_ip": "1.2.3.4", "session": "s1", "eventid": "cowrie.session.connect"}]

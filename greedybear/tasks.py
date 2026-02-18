@@ -72,3 +72,15 @@ def get_tor_exit_nodes():
     from greedybear.cronjobs.tor_exit_nodes import TorExitNodesCron
 
     TorExitNodesCron().execute()
+
+
+def get_threatfox_feed():
+    from greedybear.cronjobs.threatfox_feed import ThreatFoxCron
+
+    ThreatFoxCron().execute()
+
+
+def get_abuseipdb_feed():
+    from greedybear.cronjobs.abuseipdb_feed import AbuseIPDBCron
+
+    AbuseIPDBCron().execute()
