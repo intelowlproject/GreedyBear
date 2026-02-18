@@ -210,7 +210,8 @@ class TestScoringIntegration(E2ETestCase):
     """E2E tests for scoring integration."""
 
     @patch("greedybear.cronjobs.extraction.pipeline.UpdateScores")
-    def test_scoring_called_when_iocs_extracted(self, mock_scores):
+    @patch("greedybear.cronjobs.extraction.pipeline.enrich_iocs")
+    def test_scoring_called_when_iocs_extracted(self, mock_enrich, mock_scores):
         """
         E2E: IOCs extracted → UpdateScores.score_only called.
         """
@@ -239,9 +240,11 @@ class TestScoringIntegration(E2ETestCase):
         # IOCs should be extracted, and scoring should be called
         self.assertGreater(result, 0)
         mock_scores.return_value.score_only.assert_called()
+        mock_enrich.assert_called()
 
     @patch("greedybear.cronjobs.extraction.pipeline.UpdateScores")
-    def test_scoring_skipped_when_no_iocs(self, mock_scores):
+    @patch("greedybear.cronjobs.extraction.pipeline.enrich_iocs")
+    def test_scoring_skipped_when_no_iocs(self, mock_enrich, mock_scores):
         """
         E2E: No IOCs extracted → UpdateScores NOT called.
         """
@@ -253,6 +256,7 @@ class TestScoringIntegration(E2ETestCase):
 
         self.assertEqual(result, 0)
         mock_scores.return_value.score_only.assert_not_called()
+        mock_enrich.assert_not_called()
 
 
 class TestIocContentVerification(E2ETestCase):

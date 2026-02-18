@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 
-from greedybear.cronjobs.extraction.enrichment import enrich_ioc_with_tags
+from greedybear.cronjobs.enrichment.enrichment import enrich_ioc_with_tags
 from greedybear.models import IOC
 
 

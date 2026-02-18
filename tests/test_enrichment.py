@@ -1,4 +1,4 @@
-from greedybear.cronjobs.extraction.enrichment import enrich_ioc_with_tags
+from greedybear.cronjobs.enrichment.enrichment import enrich_ioc_with_tags
 from greedybear.cronjobs.repositories import TagRepository
 from greedybear.models import IOC, AbuseIPDBFeed, Tag, ThreatFoxFeed
 from tests import CustomTestCase

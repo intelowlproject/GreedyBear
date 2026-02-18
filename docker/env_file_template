@@ -67,7 +67,8 @@ COWRIE_SESSION_RETENTION = 365
 COMMAND_SEQUENCE_RETENTION = 365
 
 # ThreatFox API key.
-# Once added, your payload request domains will be submitted to ThreatFox
+# Once added, your payload request domains will be submitted to ThreatFox.
+# Also used to download ThreatFox indicators for enrichment.
 THREATFOX_API_KEY =
 
 # AbuseIPDB API key for downloading the blacklist feed

@@ -218,3 +218,10 @@ class TestThreatFoxCron(CustomTestCase):
 
         # Old entry should be deleted
         self.assertEqual(ThreatFoxFeed.objects.filter(ip_address="1.2.3.4").count(), 0)
+
+    @patch("greedybear.cronjobs.threatfox_feed.requests.post")
+    def test_run_skips_when_api_key_missing(self, mock_post):
+        """Test that run() returns early if API key is not configured."""
+        with self.settings(THREATFOX_API_KEY=""):
+            self.cron.run()
+            mock_post.assert_not_called()

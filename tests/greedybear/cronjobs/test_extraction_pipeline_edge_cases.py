@@ -26,7 +26,8 @@ class TestEdgeCases(E2ETestCase):
 
     @patch("greedybear.cronjobs.extraction.pipeline.UpdateScores")
     @patch("greedybear.cronjobs.extraction.pipeline.ExtractionStrategyFactory")
-    def test_partial_strategy_success(self, mock_factory, mock_scores):
+    @patch("greedybear.cronjobs.extraction.pipeline.enrich_iocs")
+    def test_partial_strategy_success(self, mock_enrich, mock_factory, mock_scores):
         """Some strategies succeed, some fail - pipeline continues.
 
         NOTE: This test mocks factory because we need to force one strategy

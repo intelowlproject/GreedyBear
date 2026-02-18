@@ -35,6 +35,11 @@ class ThreatFoxCron(Cronjob):
         IP-based IOCs, and stores them in the local database for enrichment.
         """
         try:
+            api_key = settings.THREATFOX_API_KEY
+            if not api_key:
+                self.log.warning("ThreatFox API key not configured. Skipping download.")
+                return
+
             self.log.info("Starting ThreatFox feed download")
 
             # Clear old entries first
@@ -44,7 +49,7 @@ class ThreatFoxCron(Cronjob):
             url = "https://threatfox-api.abuse.ch/api/v1/"
             headers = {
                 "Content-Type": "application/json",
-                "Auth-Key": settings.THREATFOX_API_KEY,
+                "Auth-Key": api_key,
             }
             data = {"query": "get_iocs", "days": 7}
 

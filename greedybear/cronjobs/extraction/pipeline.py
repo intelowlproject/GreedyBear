@@ -1,6 +1,7 @@
 import logging
 from collections import defaultdict
 
+from greedybear.cronjobs.enrichment.enrichment import enrich_iocs
 from greedybear.cronjobs.extraction.strategies.factory import ExtractionStrategyFactory
 from greedybear.cronjobs.repositories import (
     ElasticRepository,
@@ -92,10 +93,16 @@ class ExtractionPipeline:
                 except Exception as exc:
                     self.log.error(f"Extraction failed for honeypot {honeypot}: {exc}")
 
-            # 4. Update scores
+            # 4. Update scores and enrich IOCs
             self.log.info("Updating scores")
             if ioc_records:
                 UpdateScores().score_only(ioc_records)
+                self.log.info("Enriching IOCs")
+                try:
+                    enrich_iocs(ioc_records)
+                except Exception as e:
+                    self.log.error(f"Enrichment failed: {e}")
+
             ioc_record_count += len(ioc_records)
 
         return ioc_record_count

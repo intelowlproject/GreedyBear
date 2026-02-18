@@ -1,7 +1,6 @@
 import logging
 
 from greedybear.consts import PAYLOAD_REQUEST, SCANNER
-from greedybear.cronjobs.extraction.enrichment import enrich_ioc_with_tags
 from greedybear.cronjobs.extraction.utils import is_whatsmyip_domain
 from greedybear.cronjobs.repositories import IocRepository, SensorRepository
 from greedybear.models import IOC, IocType
@@ -66,12 +65,6 @@ class IocProcessor:
             if hasattr(ioc, "_sensors_to_add") and ioc._sensors_to_add:
                 for sensor in ioc._sensors_to_add:
                     ioc_record.sensors.add(sensor)
-
-            # Enrich newly created IOC with tags from local feeds
-            try:
-                enrich_ioc_with_tags(ioc_record)
-            except Exception as e:
-                self.log.error(f"Failed to enrich IOC {ioc_record.name} with tags: {e}")
         else:  # Update - sensors handled inside _merge_iocs
             self.log.debug(f"{ioc} is already known - updating record")
             ioc_record = self._merge_iocs(ioc_record, ioc)
