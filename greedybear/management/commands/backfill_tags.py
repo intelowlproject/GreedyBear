@@ -1,6 +1,6 @@
 from django.core.management.base import BaseCommand
 
-from greedybear.cronjobs.enrichment.enrichment import enrich_ioc_with_tags
+from greedybear.cronjobs.enrichment.enrichment import enrich_iocs
 from greedybear.models import IOC
 
 
@@ -41,24 +41,18 @@ class Command(BaseCommand):
         enriched_count = 0
         error_count = 0
 
-        for idx, ioc in enumerate(queryset, 1):
+        # Process in batches
+        batch_size = 1000
+        for start_idx in range(0, total_iocs, batch_size):
+            end_idx = start_idx + batch_size
+            batch_iocs = list(queryset[start_idx:end_idx])
+
             try:
-                # Check if IOC already has tags
-                existing_tags = ioc.tags.count()
-
-                # Enrich the IOC
-                enrich_ioc_with_tags(ioc)
-
-                # Count new tags
-                new_tags = ioc.tags.count()
-                if new_tags > existing_tags:
-                    enriched_count += 1
-                    self.stdout.write(f"[{idx}/{total_iocs}] Enriched {ioc.name} with {new_tags - existing_tags} new tags (total: {new_tags})")
-                else:
-                    self.stdout.write(f"[{idx}/{total_iocs}] No new tags for {ioc.name}")
-
+                self.stdout.write(f"Processing batch {start_idx}-{min(end_idx, total_iocs)}/{total_iocs}...")
+                enrich_iocs(batch_iocs)
+                enriched_count += len(batch_iocs)
             except Exception as e:
                 error_count += 1
-                self.stdout.write(self.style.ERROR(f"[{idx}/{total_iocs}] Error enriching {ioc.name}: {e}"))
+                self.stdout.write(self.style.ERROR(f"Error processing batch starting at {start_idx}: {e}"))
 
-        self.stdout.write(self.style.SUCCESS(f"\nBackfill complete! Enriched {enriched_count}/{total_iocs} IOCs. Errors: {error_count}"))
+        self.stdout.write(self.style.SUCCESS(f"\nBackfill complete! Processed {enriched_count}/{total_iocs} IOCs in batches. Batch Errors: {error_count}"))

@@ -5,6 +5,8 @@ Enrichment utilities for adding tags to IOCs from local feeds.
 import logging
 from collections import defaultdict
 
+from django.db import transaction
+
 from greedybear.models import IOC, AbuseIPDBFeed, Tag, ThreatFoxFeed
 
 logger = logging.getLogger(__name__)
@@ -44,108 +46,115 @@ def enrich_iocs(iocs: list[IOC]) -> None:
 
     tags_to_create = []
 
-    # --- ThreatFox Enrichment ---
-    # Delete existing ThreatFox tags for these IOCs before enriching (allows re-enrichment)
-    Tag.objects.filter(ioc__in=valid_iocs, source="threatfox").delete()
+    # Use a transaction to ensure atomic updates and lock the IOC rows to prevent race conditions
+    with transaction.atomic():
+        # Lock the IOC rows. This ensures that no other process can modify these IOCs
+        # or their related tags while we are working on them.
+        # We must evaluate the queryset (e.g., list()) to actually acquire the lock.
+        list(IOC.objects.filter(id__in=[ioc.id for ioc in valid_iocs]).select_for_update())
 
-    for ip, feeds in threatfox_map.items():
-        ioc = ioc_map.get(ip)
-        if not ioc:
-            continue
+        # --- ThreatFox Enrichment ---
+        # Delete existing ThreatFox tags for these IOCs before enriching (allows re-enrichment)
+        Tag.objects.filter(ioc__in=valid_iocs, source="threatfox").delete()
 
-        for entry in feeds:
-            # Add malware tag
-            if entry.malware_printable or entry.malware:
-                tags_to_create.append(
-                    Tag(
-                        ioc=ioc,
-                        key="malware",
-                        value=entry.malware_printable or entry.malware,
-                        source="threatfox",
-                    )
-                )
+        for ip, feeds in threatfox_map.items():
+            ioc = ioc_map.get(ip)
+            if not ioc:
+                continue
 
-            # Add threat type tag
-            if entry.threat_type:
-                tags_to_create.append(
-                    Tag(
-                        ioc=ioc,
-                        key="threat_type",
-                        value=entry.threat_type,
-                        source="threatfox",
-                    )
-                )
-
-            # Add confidence level tag
-            if entry.confidence_level is not None:
-                tags_to_create.append(
-                    Tag(
-                        ioc=ioc,
-                        key="confidence_level",
-                        value=str(entry.confidence_level),
-                        source="threatfox",
-                    )
-                )
-
-            # Add individual tags from ThreatFox
-            if entry.tags:
-                for tag_value in entry.tags:
-                    if tag_value:
-                        tags_to_create.append(
-                            Tag(
-                                ioc=ioc,
-                                key="tag",
-                                value=tag_value,
-                                source="threatfox",
-                            )
+            for entry in feeds:
+                # Add malware tag
+                if entry.malware_printable or entry.malware:
+                    tags_to_create.append(
+                        Tag(
+                            ioc=ioc,
+                            key="malware",
+                            value=entry.malware_printable or entry.malware,
+                            source="threatfox",
                         )
+                    )
 
-    # --- AbuseIPDB Enrichment ---
-    # Delete existing AbuseIPDB tags for these IOCs
-    Tag.objects.filter(ioc__in=valid_iocs, source="abuseipdb").delete()
+                # Add threat type tag
+                if entry.threat_type:
+                    tags_to_create.append(
+                        Tag(
+                            ioc=ioc,
+                            key="threat_type",
+                            value=entry.threat_type,
+                            source="threatfox",
+                        )
+                    )
 
-    for ip, entry in abuseipdb_map.items():
-        ioc = ioc_map.get(ip)
-        if not ioc:
-            continue
+                # Add confidence level tag
+                if entry.confidence_level is not None:
+                    tags_to_create.append(
+                        Tag(
+                            ioc=ioc,
+                            key="confidence_level",
+                            value=str(entry.confidence_level),
+                            source="threatfox",
+                        )
+                    )
 
-        # Add abuse confidence score
-        if entry.abuse_confidence_score is not None:
-            tags_to_create.append(
-                Tag(
-                    ioc=ioc,
-                    key="confidence_of_abuse",
-                    value=f"{entry.abuse_confidence_score}%",
-                    source="abuseipdb",
+                # Add individual tags from ThreatFox
+                if entry.tags:
+                    for tag_value in entry.tags:
+                        if tag_value:
+                            tags_to_create.append(
+                                Tag(
+                                    ioc=ioc,
+                                    key="tag",
+                                    value=tag_value,
+                                    source="threatfox",
+                                )
+                            )
+
+        # --- AbuseIPDB Enrichment ---
+        # Delete existing AbuseIPDB tags for these IOCs
+        Tag.objects.filter(ioc__in=valid_iocs, source="abuseipdb").delete()
+
+        for ip, entry in abuseipdb_map.items():
+            ioc = ioc_map.get(ip)
+            if not ioc:
+                continue
+
+            # Add abuse confidence score
+            if entry.abuse_confidence_score is not None:
+                tags_to_create.append(
+                    Tag(
+                        ioc=ioc,
+                        key="confidence_of_abuse",
+                        value=f"{entry.abuse_confidence_score}%",
+                        source="abuseipdb",
+                    )
                 )
-            )
 
-        # Add usage type
-        if entry.usage_type:
-            tags_to_create.append(
-                Tag(
-                    ioc=ioc,
-                    key="usage_type",
-                    value=entry.usage_type,
-                    source="abuseipdb",
+            # Add usage type
+            if entry.usage_type:
+                tags_to_create.append(
+                    Tag(
+                        ioc=ioc,
+                        key="usage_type",
+                        value=entry.usage_type,
+                        source="abuseipdb",
+                    )
                 )
-            )
 
-        # Add country code
-        if entry.country_code:
-            tags_to_create.append(
-                Tag(
-                    ioc=ioc,
-                    key="country",
-                    value=entry.country_code,
-                    source="abuseipdb",
+            # Add country code
+            if entry.country_code:
+                tags_to_create.append(
+                    Tag(
+                        ioc=ioc,
+                        key="country",
+                        value=entry.country_code,
+                        source="abuseipdb",
+                    )
                 )
-            )
 
-    # Bulk create all tags
-    if tags_to_create:
-        Tag.objects.bulk_create(tags_to_create)
-        logger.info(f"Created {len(tags_to_create)} enrichment tags")
+        # Bulk create all tags
+        if tags_to_create:
+            Tag.objects.bulk_create(tags_to_create)
+            logger.info(f"Created {len(tags_to_create)} enrichment tags")
 
 
 def enrich_ioc_with_tags(ioc: IOC) -> None:

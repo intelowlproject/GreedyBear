@@ -98,6 +98,13 @@ class TestThreatFoxCron(CustomTestCase):
     def setUp(self):
         self.repo = ThreatFoxRepository()
         self.cron = ThreatFoxCron(threatfox_repo=self.repo)
+        # Ensure API key is set for all tests unless explicitly overridden
+        self.api_key_override = self.settings(THREATFOX_API_KEY="test_key")
+        self.api_key_override.enable()
+
+    def tearDown(self):
+        self.api_key_override.disable()
+        super().tearDown()
 
     def _create_mock_response(self, iocs_data):
         """Helper to create a mock response."""
