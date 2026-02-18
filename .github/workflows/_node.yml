@@ -174,9 +174,11 @@ jobs:
           echo "Running command: ${CMD}"
           if [[ '${{ inputs.use_coverage }}' != 'false' ]] && [[ '${{ inputs.upload_coverage }}' != 'false' ]]; then
             echo "Uploading vitest coverage report"
+            $CMD --no-color 2>&1 | sed -n '/^-\{3,\}/,$ p' > vitest-coverage.txt
             echo "## Vitest coverage report" >> $GITHUB_STEP_SUMMARY
-            echo "$($CMD | grep -Ev "^(>|$)")" > vitest-coverage.txt
-            head -n -1 vitest-coverage.txt | tail -n +2 >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
+            cat vitest-coverage.txt >> $GITHUB_STEP_SUMMARY
+            echo '```' >> $GITHUB_STEP_SUMMARY
             rm vitest-coverage.txt
           else
             $CMD
