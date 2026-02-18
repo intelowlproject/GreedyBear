@@ -4,7 +4,7 @@ import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import EmailVerification from "../../../src/components/auth/EmailVerification";
 
-jest.mock("axios");
+vi.mock("axios");
 
 describe("EmailVerification component", () => {
   test("Valid key", async () => {

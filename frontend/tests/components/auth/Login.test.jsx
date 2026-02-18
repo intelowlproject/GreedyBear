@@ -7,7 +7,7 @@ import userEvent from "@testing-library/user-event";
 import Login from "../../../src/components/auth/Login";
 import { LOGIN_URI } from "../../../src/constants/api";
 
-jest.mock("axios");
+vi.mock("axios");
 
 describe("Login component", () => {
   // mock login request

@@ -28,7 +28,7 @@ describe("registration-alert", () => {
 
     render(
       <BrowserRouter>
-        <AfterRegistrationModalAlert isOpen setIsOpen={jest.fn()} />
+        <AfterRegistrationModalAlert isOpen setIsOpen={vi.fn()} />
       </BrowserRouter>
     );
 
@@ -52,7 +52,7 @@ describe("registration-alert", () => {
       <BrowserRouter>
         <ConfigurationModalAlert
           isOpen
-          setIsOpen={jest.fn()}
+          setIsOpen={vi.fn()}
           title="The Registration Feature has not been configured!"
         />
       </BrowserRouter>
