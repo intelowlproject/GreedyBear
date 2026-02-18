@@ -268,6 +268,7 @@ class TestUserAuth(CustomOAuthTestCase):
         body = {
             **self.creds,
             "email": self.testregisteruser["email"],
+            "profile": self.testregisteruser["profile"],
             "username": "blahblah",
             "first_name": "blahblah",
             "last_name": "blahblah",
