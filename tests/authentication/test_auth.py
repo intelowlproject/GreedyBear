@@ -275,7 +275,7 @@ class TestUserAuth(CustomOAuthTestCase):
             "password": "greedybeargreedybear$",
         }
 
-        response = self.client.post(register_uri, body)
+        response = self.client.post(register_uri, body, format="json")
         content = response.json()
         msg = (response, content)
 
