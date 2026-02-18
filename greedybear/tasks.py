@@ -10,10 +10,12 @@ from greedybear.settings import CLUSTER_COWRIE_COMMAND_SEQUENCES, EXTRACTION_INT
 def extract_all():
     from greedybear.cronjobs.extract import ExtractionJob
 
+    # Check if this is the extraction run immediately after midnight
     midnight_extraction = datetime.now().hour == 0 and datetime.now().minute < EXTRACTION_INTERVAL
 
     ExtractionJob().execute()
 
+    # If so, execute the training task
     if midnight_extraction:
         train_and_update()
 
