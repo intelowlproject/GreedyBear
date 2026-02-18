@@ -8,7 +8,7 @@ import { LOGOUT_URI } from "../../../src/constants/api";
 import Logout from "../../../src/components/auth/Logout";
 import { useAuthStore } from "../../../src/stores";
 
-jest.mock("axios");
+vi.mock("axios");
 
 describe("Logout component", () => {
   // mock login request

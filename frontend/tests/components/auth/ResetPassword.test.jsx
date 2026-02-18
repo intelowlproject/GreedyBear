@@ -7,7 +7,7 @@ import userEvent from "@testing-library/user-event";
 import { AUTH_BASE_URI } from "../../../src/constants/api";
 import ResetPassword from "../../../src/components/auth/ResetPassword";
 
-jest.mock("axios");
+vi.mock("axios");
 
 describe("ResetPassword component", () => {
   test("Valid key", async () => {

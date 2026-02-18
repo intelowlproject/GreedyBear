@@ -4,28 +4,28 @@ import { render, screen } from "@testing-library/react";
 import { BrowserRouter } from "react-router-dom";
 import Dashboard from "../../../src/components/dashboard/Dashboard";
 
-jest.mock("axios");
+vi.mock("axios");
 // mock charts module
-jest.mock("../../../src/components/dashboard/utils/charts", () => {
-  const originalChartModule = jest.requireActual(
-    "../../../src/components/dashboard/utils/charts"
-  );
-  const FeedsSourcesChart = () => <div />;
-  const FeedsDownloadsChart = () => <div />;
-  const EnrichmentSourcesChart = () => <div />;
-  const EnrichmentRequestsChart = () => <div />;
-  const FeedsTypesChart = () => <div />;
+vi.mock(
+  "../../../src/components/dashboard/utils/charts",
+  async (importOriginal) => {
+    const originalChartModule = await importOriginal();
+    const FeedsSourcesChart = () => <div />;
+    const FeedsDownloadsChart = () => <div />;
+    const EnrichmentSourcesChart = () => <div />;
+    const EnrichmentRequestsChart = () => <div />;
+    const FeedsTypesChart = () => <div />;
 
-  return {
-    __esModule: true,
-    ...originalChartModule,
-    FeedsSourcesChart,
-    FeedsDownloadsChart,
-    EnrichmentSourcesChart,
-    EnrichmentRequestsChart,
-    FeedsTypesChart,
-  };
-});
+    return {
+      ...originalChartModule,
+      FeedsSourcesChart,
+      FeedsDownloadsChart,
+      EnrichmentSourcesChart,
+      EnrichmentRequestsChart,
+      FeedsTypesChart,
+    };
+  }
+);
 
 describe("Dashboard component", () => {
   test("Dashboard", () => {

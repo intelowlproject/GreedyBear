@@ -7,7 +7,7 @@ import userEvent from "@testing-library/user-event";
 import Register from "../../../src/components/auth/Register";
 import { AUTH_BASE_URI } from "../../../src/constants/api";
 
-jest.mock("axios");
+vi.mock("axios");
 
 describe("Registration component", () => {
   test("User registration", async () => {
