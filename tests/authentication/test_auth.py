@@ -261,10 +261,10 @@ class TestUserAuth(CustomOAuthTestCase):
         # db assertions
         self.assertEqual(User.objects.count(), 1, msg="no new user was created")
 
-    def test_special_characters_password_400(self):
+    def test_special_characters_password_success_201(self):
         self.assertEqual(User.objects.count(), 1)
 
-        # register new user with invalid password
+        # register new user with special characters password
         body = {
             **self.creds,
             "email": self.testregisteruser["email"],
@@ -276,16 +276,14 @@ class TestUserAuth(CustomOAuthTestCase):
 
         response = self.client.post(register_uri, body)
         content = response.json()
+        msg = (response, content)
 
         # response assertions
-        self.assertEqual(400, response.status_code)
-        self.assertIn(
-            "Invalid password",
-            content["errors"]["password"],
-        )
+        self.assertEqual(201, response.status_code, msg=msg)
+        self.assertEqual(content["username"], body["username"], msg=msg)
 
         # db assertions
-        self.assertEqual(User.objects.count(), 1, msg="no new user was created")
+        self.assertEqual(User.objects.count(), 2, msg="new user should be created")
 
     # utils
     def __register_user(self, body: dict):

@@ -15,7 +15,7 @@ export const AUTHENTICATION_STATUSES = {
   FALSE: "false",
 };
 
-export const PASSWORD_REGEX = /^(?=.*[a-zA-Z])[a-zA-Z0-9]{12,}$/i;
+export const PASSWORD_REGEX = /^(?=.*[a-zA-Z]).{12,}$/i;
 export const HACKER_MEME_STRING =
   "LoOk At YoU hAcKeR a PaThEtIc CrEaTuRe Of MeAt AnD bOnE";
 export const EMAIL_REGEX = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i;
