@@ -8,7 +8,7 @@ POST = "POST"
 
 REGEX_DOMAIN = r"^[a-zA-Z\d-]{1,60}(\.[a-zA-Z\d-]{1,60})*$"
 REGEX_IP = r"^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$"
-REGEX_PASSWORD = r"^[a-zA-Z0-9]{12,}$"
+REGEX_PASSWORD = r"^(?=.*[a-zA-Z])\S{12,}$"
 
 DOMAIN = "domain"
 IP = "ip"

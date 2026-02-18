@@ -261,20 +261,20 @@ class TestUserAuth(CustomOAuthTestCase):
         # db assertions
         self.assertEqual(User.objects.count(), 1, msg="no new user was created")
 
-    def test_special_characters_password_400(self):
+    def test_password_with_spaces_400(self):
         self.assertEqual(User.objects.count(), 1)
 
-        # register new user with invalid password
+        # register new user with password containing spaces
         body = {
             **self.creds,
             "email": self.testregisteruser["email"],
             "username": "blahblah",
             "first_name": "blahblah",
             "last_name": "blahblah",
-            "password": "greedybeargreedybear$",
+            "password": "Greedy Bear Password 123",
         }
 
-        response = self.client.post(register_uri, body)
+        response = self.client.post(register_uri, body, format="json")
         content = response.json()
 
         # response assertions
@@ -286,6 +286,31 @@ class TestUserAuth(CustomOAuthTestCase):
 
         # db assertions
         self.assertEqual(User.objects.count(), 1, msg="no new user was created")
+
+    def test_special_characters_password_success_201(self):
+        self.assertEqual(User.objects.count(), 1)
+
+        # register new user with special characters password
+        body = {
+            **self.creds,
+            "email": self.testregisteruser["email"],
+            "profile": self.testregisteruser["profile"],
+            "username": "blahblah",
+            "first_name": "blahblah",
+            "last_name": "blahblah",
+            "password": "greedybeargreedybear$",
+        }
+
+        response = self.client.post(register_uri, body, format="json")
+        content = response.json()
+        msg = (response, content)
+
+        # response assertions
+        self.assertEqual(201, response.status_code, msg=msg)
+        self.assertEqual(content["username"], body["username"], msg=msg)
+
+        # db assertions
+        self.assertEqual(User.objects.count(), 2, msg="new user should be created")
 
     # utils
     def __register_user(self, body: dict):
