@@ -84,18 +84,14 @@ describe("Enrichment Lookup Integration Tests", () => {
     const inputElement = screen.getByLabelText("IP Address or Domain:");
     const submitButton = screen.getByRole("button", { name: /Search/i });
 
-    // Attempt to search for an IP without authentication
-    await user.type(inputElement, "192.168.1.100");
-    await user.click(submitButton);
+    // Input and submit should be disabled for unauthenticated users
+    expect(inputElement).toBeDisabled();
+    expect(submitButton).toBeDisabled();
 
-    // Should show authentication error without calling the API
-    await waitFor(() => {
-      expect(
-        screen.getByText(
-          /You must be authenticated to use the enrichment feature/i
-        )
-      ).toBeInTheDocument();
-    });
+    // Helper text should indicate authentication is required
+    expect(
+      screen.getByPlaceholderText(/You need to be logged in to search!/i)
+    ).toBeInTheDocument();
 
     // Verify API was NOT called
     expect(axios.get).not.toHaveBeenCalled();

@@ -32,6 +32,7 @@ export default function EnrichmentLookup() {
   const isAuthenticated = useAuthStore(
     React.useCallback((s) => s.isAuthenticated, [])
   );
+  const isAuth = isAuthenticated === AUTHENTICATION_STATUSES.TRUE;
 
   const onSubmit = React.useCallback(
     async (values, { setSubmitting }) => {
@@ -85,11 +86,11 @@ export default function EnrichmentLookup() {
   );
 
   return (
-    <div className="enrichment-lookup">
+    <div className="enrichment-lookup p-3">
       <Formik initialValues={initialValues} onSubmit={onSubmit}>
         {(formik) => (
           <Form>
-            <FormGroup row className="align-items-end">
+            <FormGroup row className="align-items-end mx-1">
               <Col sm={12} md={9}>
                 <Label
                   className="form-control-label"
@@ -101,17 +102,21 @@ export default function EnrichmentLookup() {
                   id="EnrichmentLookup__query"
                   name="query"
                   type="text"
-                  placeholder="e.g., 192.168.1.1 or example.com"
+                  placeholder={
+                    isAuth
+                      ? "e.g., 192.168.1.1 or example.com"
+                      : "You need to be logged in to search!"
+                  }
                   value={formik.values.query}
                   onChange={formik.handleChange}
-                  disabled={formik.isSubmitting}
+                  disabled={!isAuth || formik.isSubmitting}
                 />
               </Col>
-              <Col sm={12} md={3}>
+              <Col sm={12} md={3} className="mt-2 mt-md-0">
                 <Button
                   type="submit"
                   color="primary"
-                  disabled={formik.isSubmitting}
+                  disabled={!isAuth || formik.isSubmitting}
                   block
                 >
                   <MdSearch />
@@ -164,14 +169,19 @@ export default function EnrichmentLookup() {
                   <dt className="col-sm-5">First Seen:</dt>
                   <dd className="col-sm-7">
                     {result.ioc.first_seen
-                      ? new Date(result.ioc.first_seen).toLocaleString()
+                      ? new Date(result.ioc.first_seen).toLocaleString(
+                          "en-US",
+                          { timeZone: "UTC" }
+                        )
                       : "N/A"}
                   </dd>
 
                   <dt className="col-sm-5">Last Seen:</dt>
                   <dd className="col-sm-7">
                     {result.ioc.last_seen
-                      ? new Date(result.ioc.last_seen).toLocaleString()
+                      ? new Date(result.ioc.last_seen).toLocaleString("en-US", {
+                          timeZone: "UTC",
+                        })
                       : "N/A"}
                   </dd>
                 </dl>
