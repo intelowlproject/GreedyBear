@@ -1,21 +1,14 @@
-import json
-import logging
-
 from django.conf import settings
 from django_q.models import Schedule
-
-from greedybear.settings import CRON_CONFIG_FILE
-
-logger = logging.getLogger(__name__)
 
 
 def setup_schedules():
     """
     Configure Django Q2 scheduled tasks for the GreedyBear application.
 
-    Reads schedule definitions from cron_config.json and creates or updates
+    Reads schedule definitions and creates or updates
     the corresponding Django Q2 Schedule entries. Any existing schedules
-    whose names are not present in the JSON config are treated as orphaned
+    whose names are not present in the schedule definitions are treated as orphaned
     and automatically removed.
 
     Returns:
@@ -23,32 +16,73 @@ def setup_schedules():
     """
     extraction_interval = settings.EXTRACTION_INTERVAL
 
-    try:
-        with open(CRON_CONFIG_FILE) as f:
-            cron_jobs = json.load(f)
-    except FileNotFoundError:
-        logger.error(f"Cron config file not found: {CRON_CONFIG_FILE}")
-        raise
-    except json.JSONDecodeError as e:
-        logger.error(f"Failed to parse cron config file {CRON_CONFIG_FILE}: {e}")
-        raise
+    schedules = [
+        {
+            "name": "extract_all",
+            "func": "greedybear.tasks.extract_all",
+            "cron": f"*/{extraction_interval} * * * *",
+        },
+        {
+            "name": "monitor_honeypots",
+            "func": "greedybear.tasks.monitor_honeypots",
+            "cron": "7 * * * *",
+        },
+        {
+            "name": "monitor_logs",
+            "func": "greedybear.tasks.monitor_logs",
+            "cron": "7 * * * *",
+        },
+        {
+            "name": "train_and_update",
+            "func": "greedybear.tasks.chain_train_and_update",
+            "cron": f"{min(59, int(extraction_interval * 2 / 3))} 0 * * *",
+        },
+        {
+            "name": "cluster_commands",
+            "func": "greedybear.tasks.cluster_commands",
+            "cron": "7 1 * * *",
+        },
+        {
+            "name": "clean_up_db",
+            "func": "greedybear.tasks.clean_up_db",
+            "cron": "7 1 * * *",
+        },
+        {
+            "name": "get_mass_scanners",
+            "func": "greedybear.tasks.get_mass_scanners",
+            "cron": "7 1 * * 0",
+        },
+        {
+            "name": "get_whatsmyip",
+            "func": "greedybear.tasks.get_whatsmyip",
+            "cron": "7 1 * * 0",
+        },
+        {
+            "name": "extract_firehol_lists",
+            "func": "greedybear.tasks.extract_firehol_lists",
+            "cron": "7 1 * * 0",
+        },
+        {
+            "name": "get_tor_exit_nodes",
+            "func": "greedybear.tasks.get_tor_exit_nodes",
+            "cron": "7 1 * * 0",
+        },
+    ]
 
-    for name, cfg in cron_jobs.items():
-        cron_value = cfg["cron"]
-        if cron_value == "interval":
-            cron_value = f"*/{extraction_interval} * * * *"
-        elif cron_value == "calc_train_time":
-            cron_value = f"{min(59, int(extraction_interval / 3 * 2))} 0 * * *"
+    active_names = []
+
+    for job in schedules:
+        active_names.append(job["name"])
 
         Schedule.objects.update_or_create(
-            name=name,
+            name=job["name"],
             defaults={
-                "func": cfg["func"],
+                "func": job["func"],
                 "schedule_type": Schedule.CRON,
-                "cron": cron_value,
-                "repeats": cfg.get("repeats", -1),
+                "cron": job["cron"],
+                "repeats": -1,
             },
         )
 
-    # Remove orphaned schedules that are no longer defined in the config
-    Schedule.objects.exclude(name__in=cron_jobs.keys()).delete()
+    # Remove orphaned schedules
+    Schedule.objects.exclude(name__in=active_names).delete()

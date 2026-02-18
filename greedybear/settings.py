@@ -439,7 +439,6 @@ if EXTRACTION_INTERVAL < 1 or EXTRACTION_INTERVAL > 60:
 if 60 % EXTRACTION_INTERVAL:
     raise ValueError(f"EXTRACTION_INTERVAL must be a divisor of 60, got {EXTRACTION_INTERVAL}")
 INITIAL_EXTRACTION_TIMESPAN = int(os.environ.get("INITIAL_EXTRACTION_TIMESPAN", 60 * 24 * 3))  # 3 days
-CRON_CONFIG_FILE = os.path.join(BASE_DIR, "configuration/cron_config.json")
 CLUSTER_COWRIE_COMMAND_SEQUENCES = os.environ.get("CLUSTER_COWRIE_COMMAND_SEQUENCES", "False") == "True"
 
 IOC_RETENTION = int(os.environ.get("IOC_RETENTION", "3650"))

@@ -1,38 +1,14 @@
 """Tests for the setup_schedules management command."""
 
-from unittest.mock import MagicMock, mock_open, patch
+from unittest.mock import MagicMock, patch
 
 from django.core.management import call_command
 from django.test import TestCase, override_settings
 from django_q.models import Schedule
 
-from greedybear.cronjobs.schedules import setup_schedules
-
 
 class TestSetupSchedules(TestCase):
     """Test setup_schedules command with various EXTRACTION_INTERVAL values."""
-
-    @patch(
-        "greedybear.cronjobs.schedules.open", new_callable=mock_open, read_data='{"extract_all": {"func": "greedybear.tasks.extract_all", "cron": "interval"}}'
-    )
-    @patch("greedybear.cronjobs.schedules.json.load")
-    @patch("greedybear.cronjobs.schedules.Schedule")
-    @override_settings(EXTRACTION_INTERVAL=10)
-    def test_json_based_cron_config(self, mock_schedule, mock_json_load, mock_file):
-        """Test setup_schedules() using a JSON-based cron configuration."""
-        mock_schedule.CRON = Schedule.CRON
-        mock_schedule.objects.update_or_create = MagicMock()
-        mock_schedule.objects.exclude = MagicMock(return_value=MagicMock())
-
-        # json.load returns the JSON dict
-        mock_json_load.return_value = {"extract_all": {"func": "greedybear.tasks.extract_all", "cron": "interval"}}
-
-        setup_schedules()
-
-        # Verify update_or_create called with correct cron
-        calls = mock_schedule.objects.update_or_create.call_args_list
-        extract_call = next(c for c in calls if c[1]["name"] == "extract_all")
-        self.assertEqual(extract_call[1]["defaults"]["cron"], "*/10 * * * *")
 
     @patch("greedybear.cronjobs.schedules.Schedule")
     @override_settings(EXTRACTION_INTERVAL=10)
