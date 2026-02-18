@@ -721,8 +721,12 @@ cmd_update() {
     log_info "Pulling latest Docker images..."
     execute_compose pull
 
-    # Restart services using cmd_up to ensure version env vars are applied
-    log_info "Restarting services with new images..."
+    # Stop existing services and remove orphaned containers from removed services
+    log_info "Stopping existing services..."
+    execute_compose down --remove-orphans
+
+    # Start services using cmd_up to ensure version env vars are applied
+    log_info "Starting services with new images..."
     cmd_up "$@"
 
     log_success "GreedyBear updated successfully!"
