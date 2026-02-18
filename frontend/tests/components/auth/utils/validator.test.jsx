@@ -46,6 +46,10 @@ describe("Password", () => {
     });
     const password = "$GreedyBearPassword$";
     expect(PasswordValidator(password)).toEqual({});
+    const passwordWithSpaces = "Greedy Bear Password";
+    expect(PasswordValidator(passwordWithSpaces)).toEqual({
+      password: "The password does not contain any letters",
+    });
   });
 });
 

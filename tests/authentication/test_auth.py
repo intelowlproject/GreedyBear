@@ -261,6 +261,32 @@ class TestUserAuth(CustomOAuthTestCase):
         # db assertions
         self.assertEqual(User.objects.count(), 1, msg="no new user was created")
 
+    def test_password_with_spaces_400(self):
+        self.assertEqual(User.objects.count(), 1)
+
+        # register new user with password containing spaces
+        body = {
+            **self.creds,
+            "email": self.testregisteruser["email"],
+            "username": "blahblah",
+            "first_name": "blahblah",
+            "last_name": "blahblah",
+            "password": "Greedy Bear Password 123",
+        }
+
+        response = self.client.post(register_uri, body, format="json")
+        content = response.json()
+
+        # response assertions
+        self.assertEqual(400, response.status_code)
+        self.assertIn(
+            "Invalid password",
+            content["errors"]["password"],
+        )
+
+        # db assertions
+        self.assertEqual(User.objects.count(), 1, msg="no new user was created")
+
     def test_special_characters_password_success_201(self):
         self.assertEqual(User.objects.count(), 1)
 
