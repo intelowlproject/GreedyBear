@@ -3,6 +3,8 @@
 
 from unittest.mock import MagicMock, patch
 
+import requests
+
 from greedybear.cronjobs import whatsmyip
 from greedybear.models import IOC, WhatsMyIPDomain
 from tests import CustomTestCase
@@ -118,3 +120,67 @@ class WhatsMyIPTestCase(CustomTestCase):
             call_args[0][0],
         )
         self.assertEqual(call_args[1]["timeout"], 10)
+
+    @patch("greedybear.cronjobs.whatsmyip.requests.get")
+    def test_raises_on_http_error(self, mock_get):
+        """Test that HTTP errors (4xx/5xx) are raised instead of silently ignored."""
+        mock_response = MagicMock()
+        mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError("404 Client Error")
+        mock_get.return_value = mock_response
+
+        cron = whatsmyip.WhatsMyIPCron()
+        with self.assertRaises(requests.exceptions.HTTPError):
+            cron.run()
+
+        self.assertEqual(WhatsMyIPDomain.objects.count(), 0)
+
+    @patch("greedybear.cronjobs.whatsmyip.requests.get")
+    def test_raises_on_network_error(self, mock_get):
+        """Test that network errors (DNS failure, timeout) are raised."""
+        mock_get.side_effect = requests.exceptions.ConnectionError("DNS resolution failed")
+
+        cron = whatsmyip.WhatsMyIPCron()
+        with self.assertRaises(requests.exceptions.ConnectionError):
+            cron.run()
+
+        self.assertEqual(WhatsMyIPDomain.objects.count(), 0)
+
+    @patch("greedybear.cronjobs.whatsmyip.requests.get")
+    def test_raises_on_invalid_json(self, mock_get):
+        """Test that non-JSON responses raise an error."""
+        mock_response = MagicMock()
+        mock_response.raise_for_status.return_value = None
+        mock_response.json.side_effect = ValueError("No JSON object could be decoded")
+        mock_get.return_value = mock_response
+
+        cron = whatsmyip.WhatsMyIPCron()
+        with self.assertRaises(ValueError):
+            cron.run()
+
+        self.assertEqual(WhatsMyIPDomain.objects.count(), 0)
+
+    @patch("greedybear.cronjobs.whatsmyip.requests.get")
+    def test_raises_on_missing_list_key(self, mock_get):
+        """Test that a JSON response missing the 'list' key raises KeyError."""
+        mock_response = MagicMock()
+        mock_response.raise_for_status.return_value = None
+        mock_response.json.return_value = {"unexpected_key": ["domain.com"]}
+        mock_get.return_value = mock_response
+
+        cron = whatsmyip.WhatsMyIPCron()
+        with self.assertRaises(KeyError):
+            cron.run()
+
+        self.assertEqual(WhatsMyIPDomain.objects.count(), 0)
+
+    @patch("greedybear.cronjobs.whatsmyip.requests.get")
+    def test_execute_sets_success_false_on_http_error(self, mock_get):
+        """Test that base class execute() marks task as failed on HTTP error."""
+        mock_response = MagicMock()
+        mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError("500 Server Error")
+        mock_get.return_value = mock_response
+
+        cron = whatsmyip.WhatsMyIPCron()
+        cron.execute()
+
+        self.assertFalse(cron.success)
