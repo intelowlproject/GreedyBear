@@ -39,7 +39,8 @@ def setup_schedules():
         {
             "name": "train_and_update",
             "func": "greedybear.tasks.chain_train_and_update",
-            "cron": f"{min(59, int(extraction_interval * 2 / 3))} 0 * * *",
+            "cron": f"{min(59, extraction_interval + (extraction_interval // 2))} 0 * * *",# Schedule training 1.5× extraction interval after midnight to run after extraction
+
         },
         # 5. Cluster Commands: Daily at 01:07
         {
