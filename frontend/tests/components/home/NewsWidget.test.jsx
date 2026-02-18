@@ -4,15 +4,15 @@ import { NewsWidget } from "../../../src/components/home/NewsWidget";
 import { GREEDYBEAR_NEWS_URL } from "../../../src/constants/api";
 import "@testing-library/jest-dom";
 
-global.fetch = jest.fn();
+global.fetch = vi.fn();
 
 describe("NewsWidget", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   afterEach(() => {
-    jest.resetAllMocks();
+    vi.resetAllMocks();
   });
 
   describe("Loading State", () => {
@@ -135,7 +135,7 @@ describe("NewsWidget", () => {
     });
 
     it("should log error to console when fetch fails", async () => {
-      const consoleErrorSpy = jest
+      const consoleErrorSpy = vi
         .spyOn(console, "error")
         .mockImplementation(() => {});
       const mockError = new Error("Network error");

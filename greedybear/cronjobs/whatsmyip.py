@@ -5,12 +5,29 @@ from greedybear.models import IOC, WhatsMyIPDomain
 
 
 class WhatsMyIPCron(Cronjob):
+    """Fetch and store 'What's My IP' domains from MISP warning lists."""
+
     def run(self) -> None:
-        r = requests.get(
-            "https://raw.githubusercontent.com/MISP/misp-warninglists/refs/heads/main/lists/whats-my-ip/list.json",
-            timeout=10,
-        )
-        json_file = r.json()
+        try:
+            r = requests.get(
+                "https://raw.githubusercontent.com/MISP/misp-warninglists/refs/heads/main/lists/whats-my-ip/list.json",
+                timeout=10,
+            )
+            r.raise_for_status()
+        except requests.RequestException as e:
+            self.log.error(f"Failed to fetch whats-my-ip list: {e}")
+            raise
+
+        try:
+            json_file = r.json()
+        except ValueError as e:
+            self.log.error(f"Failed to parse whats-my-ip response as JSON: {e}")
+            raise
+
+        if "list" not in json_file:
+            self.log.error("Unexpected JSON structure: missing 'list' key")
+            raise KeyError("Missing 'list' key in whats-my-ip JSON response")
+
         for domain in json_file["list"]:
             try:
                 WhatsMyIPDomain.objects.get(domain=domain)

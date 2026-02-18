@@ -15,6 +15,8 @@ import {
   FeedsTypesChart,
 } from "./utils/charts";
 
+import EnrichmentLookup from "./EnrichmentLookup";
+
 const feedsChartList = [
   ["FeedsSourcesChart", "Feeds: Sources", FeedsSourcesChart],
   ["FeedsDownloadsChart", "Feeds: Downloads", FeedsDownloadsChart],
@@ -52,6 +54,22 @@ function Dashboard() {
           onChange={onTimeIntervalChange}
         />
       </div>
+
+      {/* Enrichment Lookup Section - Publicly visible */}
+      <Row className="mb-4">
+        <Col md={12}>
+          <SmallInfoCard
+            id="enrichment-lookup"
+            header="Enrichment Lookup"
+            body={
+              <div className="pt-2">
+                <EnrichmentLookup />
+              </div>
+            }
+          />
+        </Col>
+      </Row>
+
       <Row className="d-flex flex-wrap flex-lg-nowrap">
         {feedsTypesChartList.map(([id, header, Component]) => (
           <Col key={id} md={12} lg={12}>
