@@ -21,6 +21,9 @@ export const APIACCESS_BASE_URI = `${AUTH_BASE_URI}/apiaccess`;
 //feeds
 export const FEEDS_BASE_URI = `${API_BASE_URI}/feeds`;
 
+//enrichment
+export const ENRICHMENT_URI = `${API_BASE_URI}/enrichment`;
+
 //honeypot
 export const GENERAL_HONEYPOT_URI = `${API_BASE_URI}/general_honeypot`;
 
