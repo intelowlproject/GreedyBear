@@ -157,13 +157,13 @@ def setup_schedules():
         },
     )
 
-    # 12. AbuseIPDB Feed: Weekly (Sunday) at 01:07
+    # 12. AbuseIPDB Feed: Weekly (Sunday) at 01:10
     Schedule.objects.update_or_create(
         name="get_abuseipdb_feed",
         defaults={
             "func": "greedybear.tasks.get_abuseipdb_feed",
             "schedule_type": Schedule.CRON,
-            "cron": "7 1 * * 0",
+            "cron": "10 1 * * 0",
             "repeats": -1,
         },
     )

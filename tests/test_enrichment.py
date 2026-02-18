@@ -265,3 +265,4 @@ class TestTagRepository(CustomTestCase):
         # Second enrichment should not duplicate tags
         enrich_ioc_with_tags(ioc)
         # Tags should not be duplicated - enrichment only happens once at creation
+        self.assertEqual(Tag.objects.filter(ioc=ioc, source="abuseipdb").count(), 1)

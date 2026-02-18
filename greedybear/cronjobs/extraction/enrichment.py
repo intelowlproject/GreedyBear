@@ -33,6 +33,8 @@ def enrich_ioc_with_tags(ioc: IOC) -> None:
     abuseipdb_repo = AbuseIPDBRepository()
 
     # Enrich from ThreatFox feed
+    # Delete existing ThreatFox tags before enriching (allows re-enrichment)
+    tag_repo.get_tags_by_ioc(ioc).filter(source="threatfox").delete()
     threatfox_entries = threatfox_repo.get_by_ip(ioc.name)
     for entry in threatfox_entries:
         # Add malware tag
@@ -76,6 +78,8 @@ def enrich_ioc_with_tags(ioc: IOC) -> None:
         logger.info(f"Enriched IOC {ioc.name} with {len(threatfox_entries)} ThreatFox entries")
 
     # Enrich from AbuseIPDB feed
+    # Delete existing AbuseIPDB tags before enriching (allows re-enrichment)
+    tag_repo.get_tags_by_ioc(ioc).filter(source="abuseipdb").delete()
     abuseipdb_entry = abuseipdb_repo.get_by_ip(ioc.name)
     if abuseipdb_entry:
         # Add abuse confidence score
