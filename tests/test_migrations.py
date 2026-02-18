@@ -94,7 +94,7 @@ class TestRemoveUnusedLog4pot(MigrationTestCase):
         GeneralHoneypot.objects.get_or_create(name="Log4pot", defaults={"active": True})
 
         new_state = self.apply_tested_migration()
-        hp_new = new_state.apps.get_model(self.app_name, "GeneralHoneypot")
+        hp_new = new_state.apps.get_model(self.app_name, "Honeypot")
 
         self.assertFalse(
             hp_new.objects.filter(name="Log4pot").exists(),
@@ -113,7 +113,7 @@ class TestRemoveUnusedLog4pot(MigrationTestCase):
         ioc.general_honeypot.add(log4pot_hp)
 
         new_state = self.apply_tested_migration()
-        hp_new = new_state.apps.get_model(self.app_name, "GeneralHoneypot")
+        hp_new = new_state.apps.get_model(self.app_name, "Honeypot")
 
         self.assertTrue(
             hp_new.objects.filter(name="Log4pot").exists(),

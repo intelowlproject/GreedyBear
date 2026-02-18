@@ -10,7 +10,7 @@ from greedybear.models import (
     IOC,
     CommandSequence,
     CowrieSession,
-    GeneralHoneypot,
+    Honeypot,
     IocType,
 )
 
@@ -20,15 +20,15 @@ class CustomTestCase(TestCase):
     def setUpTestData(cls):
         super().setUpTestData()
 
-        cls.heralding = GeneralHoneypot.objects.get_or_create(name="Heralding", defaults={"active": True})[0]
-        cls.ciscoasa = GeneralHoneypot.objects.get_or_create(name="Ciscoasa", defaults={"active": True})[0]
-        cls.ddospot = GeneralHoneypot.objects.get_or_create(name="Ddospot", defaults={"active": False})[0]
+        cls.heralding = Honeypot.objects.get_or_create(name="Heralding", defaults={"active": True})[0]
+        cls.ciscoasa = Honeypot.objects.get_or_create(name="Ciscoasa", defaults={"active": True})[0]
+        cls.ddospot = Honeypot.objects.get_or_create(name="Ddospot", defaults={"active": False})[0]
 
         cls.current_time = datetime.now()
 
         # Create honeypots for Cowrie and Log4pot (replacing boolean fields)
-        cls.cowrie_hp = GeneralHoneypot.objects.get_or_create(name="Cowrie", defaults={"active": True})[0]
-        cls.log4pot_hp = GeneralHoneypot.objects.get_or_create(name="Log4pot", defaults={"active": True})[0]
+        cls.cowrie_hp = Honeypot.objects.get_or_create(name="Cowrie", defaults={"active": True})[0]
+        cls.log4pot_hp = Honeypot.objects.get_or_create(name="Log4pot", defaults={"active": True})[0]
 
         cls.ioc = IOC.objects.create(
             name="140.246.171.141",
@@ -182,6 +182,17 @@ class CustomTestCase(TestCase):
         except User.DoesNotExist:
             cls.regular_user = User.objects.create_user(username="regular", email="regular@greedybear.com", password="regular")
 
+<<<<<<< HEAD
+=======
+    @classmethod
+    def tearDownClass(cls):
+        # db clean
+        Honeypot.objects.all().delete()
+        IOC.objects.all().delete()
+        CowrieSession.objects.all().delete()
+        CommandSequence.objects.all().delete()
+
+>>>>>>> ba5aabb (Renamed remaining instances to Honeypot from tests and api folders)
 
 class ExtractionTestCase(CustomTestCase):
     def setUp(self):

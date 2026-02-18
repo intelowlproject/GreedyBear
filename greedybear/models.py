@@ -26,12 +26,12 @@ class Sensor(models.Model):
         return self.address
 
 
-class GeneralHoneypot(models.Model):
+class Honeypot(models.Model):
     name = models.CharField(max_length=15, blank=False)
     active = models.BooleanField(blank=False, default=True)
 
     class Meta:
-        constraints = [models.UniqueConstraint(Lower("name"), name="unique_generalhoneypot_name_ci")]
+        constraints = [models.UniqueConstraint(Lower("name"), name="unique_honeypot_name_ci")]
 
     def __str__(self):
         return self.name
@@ -61,7 +61,7 @@ class IOC(models.Model):
     attack_count = models.IntegerField(default=1)
     interaction_count = models.IntegerField(default=1)
     # FEEDS - list of honeypots from general list, from which the IOC was detected
-    general_honeypot = models.ManyToManyField(GeneralHoneypot, blank=True)
+    general_honeypot = models.ManyToManyField(Honeypot, blank=True)
     # SENSORS - list of T-Pot sensors that detected this IOC
     sensors = models.ManyToManyField(Sensor, blank=True)
     scanner = models.BooleanField(blank=False, default=False)
