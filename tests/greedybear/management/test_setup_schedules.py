@@ -26,7 +26,6 @@ class TestSetupSchedules(TestCase):
         self.assertEqual(extract_call[1]["defaults"]["schedule_type"], Schedule.CRON)
         self.assertEqual(extract_call[1]["defaults"]["cron"], "*/10 * * * *")
 
-
     @patch("greedybear.cronjobs.schedules.Schedule")
     @override_settings(EXTRACTION_INTERVAL=60)
     def test_extraction_interval_60_clamps_minute(self, mock_schedule):
@@ -42,7 +41,6 @@ class TestSetupSchedules(TestCase):
         extract_call = next(c for c in calls if c[1]["name"] == "extract_all")
         self.assertEqual(extract_call[1]["defaults"]["cron"], "*/60 * * * *")
 
-
     @patch("greedybear.cronjobs.schedules.Schedule")
     @override_settings(EXTRACTION_INTERVAL=5)
     def test_extraction_interval_5(self, mock_schedule):
@@ -56,7 +54,6 @@ class TestSetupSchedules(TestCase):
         calls = mock_schedule.objects.update_or_create.call_args_list
         extract_call = next(c for c in calls if c[1]["name"] == "extract_all")
         self.assertEqual(extract_call[1]["defaults"]["cron"], "*/5 * * * *")
-
 
     def test_orphan_schedules_are_deleted(self):
         """Test that orphaned schedules not in active_schedules list are deleted."""
