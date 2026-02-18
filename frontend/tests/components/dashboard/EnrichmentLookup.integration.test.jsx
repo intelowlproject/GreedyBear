@@ -112,7 +112,6 @@ describe("Enrichment Lookup Integration Tests", () => {
     // Mock successful API response with IOC data
     const mockIocData = {
       name: "192.168.1.100",
-      ioc_type: "ip",
       type: "ip",
       attack_count: 42,
       interaction_count: 150,
@@ -124,7 +123,7 @@ describe("Enrichment Lookup Integration Tests", () => {
       ip_reputation: "malicious",
       asn: "12345",
       destination_ports: [22, 80, 443],
-      firehol_category: ["abuse"],
+      firehol_categories: ["abuse"],
       general_honeypot: ["Cowrie", "Heralding"],
       recurrence_probability: 0.85,
       expected_interactions: 120.5,

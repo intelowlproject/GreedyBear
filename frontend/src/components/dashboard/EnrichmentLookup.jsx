@@ -111,7 +111,7 @@ export default function EnrichmentLookup() {
                 <Button
                   type="submit"
                   color="primary"
-                  disabled={formik.isSubmitting || loading}
+                  disabled={formik.isSubmitting}
                   block
                 >
                   <MdSearch />
@@ -162,10 +162,18 @@ export default function EnrichmentLookup() {
                   <dd className="col-sm-7">{result.ioc.login_attempts}</dd>
 
                   <dt className="col-sm-5">First Seen:</dt>
-                  <dd className="col-sm-7">{result.ioc.first_seen}</dd>
+                  <dd className="col-sm-7">
+                    {result.ioc.first_seen
+                      ? new Date(result.ioc.first_seen).toLocaleString()
+                      : "N/A"}
+                  </dd>
 
                   <dt className="col-sm-5">Last Seen:</dt>
-                  <dd className="col-sm-7">{result.ioc.last_seen}</dd>
+                  <dd className="col-sm-7">
+                    {result.ioc.last_seen
+                      ? new Date(result.ioc.last_seen).toLocaleString()
+                      : "N/A"}
+                  </dd>
                 </dl>
               </Col>
 
@@ -242,7 +250,11 @@ export default function EnrichmentLookup() {
                 <Col md={6}>
                   <dt>Recurrence Probability:</dt>
                   <dd>
-                    {(result.ioc.recurrence_probability * 100).toFixed(2)}%
+                    {result.ioc.recurrence_probability == null
+                      ? "N/A"
+                      : `${(result.ioc.recurrence_probability * 100).toFixed(
+                          2
+                        )}%`}
                   </dd>
                 </Col>
                 {result.ioc.expected_interactions !== undefined && (
