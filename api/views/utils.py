@@ -15,6 +15,7 @@ from django.db.models import Count, F, Max, Min, Sum
 from django.http import HttpResponse, HttpResponseBadRequest, StreamingHttpResponse
 from rest_framework import status
 from rest_framework.response import Response
+from stix2 import Bundle, ExternalReference, Indicator
 
 from api.serializers import FeedsRequestSerializer
 from greedybear.consts import CACHE_KEY_GREEDYBEAR_NEWS, CACHE_TIMEOUT_SECONDS, RSS_FEED_URL
@@ -80,6 +81,11 @@ class FeedRequestParams:
         self.paginate = query_params.get("paginate", "false").lower()
         self.format = query_params.get("format_", "json").lower()
         self.feed_type_sorting = None
+        self.asn = query_params.get("asn")
+        self.min_score = query_params.get("min_score")
+        self.port = query_params.get("port")
+        self.start_date = query_params.get("start_date")
+        self.end_date = query_params.get("end_date")
 
     def apply_default_filters(self, query_params):
         if not query_params:
@@ -152,8 +158,9 @@ def get_queryset(request, feed_params, valid_feed_types, is_aggregated=False, se
         f"Age: {feed_params.max_age}, format: {feed_params.format}"
     )
 
+    feed_params_data = {k: v for k, v in vars(feed_params).items() if v is not None}
     serializer = serializer_class(
-        data=vars(feed_params),
+        data=feed_params_data,
         context={"valid_feed_types": valid_feed_types},
     )
     serializer.is_valid(raise_exception=True)
@@ -168,7 +175,24 @@ def get_queryset(request, feed_params, valid_feed_types, is_aggregated=False, se
     if feed_params.ioc_type != "all":
         query_dict["type"] = feed_params.ioc_type
 
-    query_dict["last_seen__gte"] = datetime.now() - timedelta(days=int(feed_params.max_age))
+    # Advanced filters
+    if feed_params.asn:
+        query_dict["asn"] = feed_params.asn
+    if feed_params.min_score:
+        query_dict["recurrence_probability__gte"] = feed_params.min_score
+    if feed_params.port:
+        query_dict["destination_ports__contains"] = [int(feed_params.port)]
+
+    # Date handling
+    if feed_params.start_date:
+        query_dict["last_seen__gte"] = feed_params.start_date
+    if feed_params.end_date:
+        query_dict["last_seen__lte"] = feed_params.end_date
+
+    # Fallback to max_age ONLY if no date range is specified
+    if not (feed_params.start_date or feed_params.end_date):
+        query_dict["last_seen__gte"] = datetime.now() - timedelta(days=int(feed_params.max_age))
+
     if int(feed_params.min_days_seen) > 1:
         query_dict["number_of_days_seen__gte"] = int(feed_params.min_days_seen)
     if feed_params.include_reputation:
@@ -305,6 +329,61 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
                 return resp_data
             else:
                 return Response(resp_data, status=status.HTTP_200_OK)
+        case "stix21":
+            stix_fields = {
+                "value",
+                "type",
+                "first_seen",
+                "last_seen",
+                "recurrence_probability",
+                "honeypots",
+                "ip_reputation",
+            }
+            # Fetch fields from database
+            iocs = (ioc_as_dict(ioc, stix_fields) for ioc in iocs) if isinstance(iocs, list) else iocs.values(*stix_fields)
+
+            stix_objects = []
+            for ioc in iocs:
+                # determine pattern kind
+                pattern = ""
+                if ioc["type"] == "ip":
+                    # simple heuristic for ipv4 vs ipv6
+                    if ":" in ioc["value"]:
+                        pattern = f"[ipv6-addr:value = '{ioc['value']}']"
+                    else:
+                        pattern = f"[ipv4-addr:value = '{ioc['value']}']"
+                elif ioc["type"] == "domain":
+                    pattern = f"[domain-name:value = '{ioc['value']}']"
+                else:
+                    # fallback or skip
+                    continue
+
+                # Confidence 0-100
+                confidence = int((ioc.get("recurrence_probability") or 0) * 100)
+
+                # Labels
+                labels = [hp.lower() for hp in ioc.get("honeypots", []) if hp]
+                if ioc.get("ip_reputation"):
+                    labels.append(ioc["ip_reputation"])
+
+                # Create Indicator
+                # Note: GreedyBear uses naive datetimes in some places, ensuring UTC or awareness is good practice,
+                # but stix2 handles datetime objects.
+                indicator = Indicator(
+                    name=ioc["value"],
+                    pattern=pattern,
+                    pattern_type="stix",
+                    valid_from=ioc["first_seen"],
+                    valid_until=ioc["last_seen"] + timedelta(days=1),
+                    labels=labels,
+                    confidence=confidence,
+                    description=f"Detected by GreedyBear honeypots: {', '.join(labels)}",
+                    external_references=[ExternalReference(source_name="GreedyBear", url=f"https://greedybear.honeynet.org/?query={ioc['value']}")],
+                )
+                stix_objects.append(indicator)
+
+            bundle = Bundle(objects=stix_objects)
+            return HttpResponse(bundle.serialize(), content_type="application/json")
         case _:
             return HttpResponseBadRequest()
 

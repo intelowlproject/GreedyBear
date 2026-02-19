@@ -4,13 +4,17 @@ import logging
 
 from certego_saas.apps.auth.backend import CookieTokenAuthentication
 from certego_saas.ext.pagination import CustomPageNumberPagination
+from django.core import signing
+from rest_framework import status
 from rest_framework.decorators import (
     api_view,
     authentication_classes,
     permission_classes,
+    throttle_classes,
 )
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 
 from api.serializers import ASNFeedsOrderingSerializer
 from api.views.utils import (
@@ -161,3 +165,49 @@ def feeds_asn(request):
     asn_aggregates = asn_aggregated_queryset(iocs_qs, request, feed_params)
     data = list(asn_aggregates)
     return Response(data)
+
+
+@api_view([GET])
+@authentication_classes([CookieTokenAuthentication])
+@permission_classes([IsAuthenticated])
+def feeds_share(request):
+    """
+    Generate a shareable link for the current feed configuration.
+    """
+    logger.info(f"request /api/feeds/share with params: {request.query_params}")
+    feed_params = FeedRequestParams(request.query_params)
+    data = vars(feed_params)
+    # Remove internal or non-serializable objects if any
+    data.pop("feed_type_sorting", None)
+
+    # Generate signed token
+    token = signing.dumps(data, salt="greedybear-feeds")
+    host = request.build_absolute_uri("/")
+    share_url = f"{host}api/feeds/consume/{token}"
+    return Response({"url": share_url})
+
+
+@api_view([GET])
+@authentication_classes([])
+@permission_classes([])
+@throttle_classes([ScopedRateThrottle])
+def feeds_consume(request, token):
+    """
+    Consume a shared feed using a token.
+    Exposed publically but rate-limited.
+    """
+    logger.info("request /api/feeds/consume with token")
+    try:
+        data = signing.loads(token, salt="greedybear-feeds", max_age=86400 * 30)  # 30 days validity
+    except signing.BadSignature:
+        return Response({"error": "Invalid or expired token"}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Reconstruct params
+    feed_params = FeedRequestParams(data)
+
+    valid_feed_types = get_valid_feed_types()
+    iocs_queryset = get_queryset(request, feed_params, valid_feed_types)
+    return feeds_response(iocs_queryset, feed_params, valid_feed_types)
+
+
+feeds_consume.throttle_scope = "feeds_shared"

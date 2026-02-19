@@ -11,7 +11,9 @@ from api.views import (
     feeds,
     feeds_advanced,
     feeds_asn,
+    feeds_consume,
     feeds_pagination,
+    feeds_share,
     general_honeypot_list,
     news_view,
 )
@@ -23,6 +25,8 @@ router.register(r"statistics", StatisticsViewSet, basename="statistics")
 # These come after /api/..
 urlpatterns = [
     path("feeds/", feeds_pagination),
+    path("feeds/share", feeds_share),
+    path("feeds/consume/<str:token>", feeds_consume),
     path("feeds/advanced/", feeds_advanced),
     path("feeds/asn/", feeds_asn),
     path("feeds/<str:feed_type>/<str:attack_type>/<str:prioritize>.<str:format_>", feeds),
