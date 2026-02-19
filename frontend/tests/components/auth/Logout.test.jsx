@@ -18,7 +18,7 @@ describe("Logout component", () => {
     // user logged in before the logout action:
     // Another option is to mock zustand and useAuthStore, but this solution is easier
     const { result } = renderHook(() =>
-      useAuthStore((s) => [s.isAuthenticated, s.service.loginUser])
+      useAuthStore((s) => [s.isAuthenticated, s.service.loginUser]),
     );
     // we need to do this because the class to mock the hook return a tuple
     const isAuthenticatedPos = 0;
@@ -29,7 +29,7 @@ describe("Logout component", () => {
     render(
       <BrowserRouter>
         <Logout />
-      </BrowserRouter>
+      </BrowserRouter>,
     );
 
     await waitFor(() => {

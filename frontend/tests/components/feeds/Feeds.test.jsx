@@ -77,7 +77,7 @@ describe("Feeds component", () => {
     render(
       <BrowserRouter>
         <Feeds />
-      </BrowserRouter>
+      </BrowserRouter>,
     );
 
     const buttonFeedsLicense = screen.getByRole("link", {
@@ -85,7 +85,7 @@ describe("Feeds component", () => {
     });
     expect(buttonFeedsLicense).toHaveAttribute(
       "href",
-      "https://github.com/intelowlproject/GreedyBear/blob/main/FEEDS_LICENSE.md"
+      "https://github.com/intelowlproject/GreedyBear/blob/main/FEEDS_LICENSE.md",
     );
 
     const feedTypeSelectElement = screen.getByLabelText("Feed type:");
@@ -100,7 +100,7 @@ describe("Feeds component", () => {
     const buttonRawData = screen.getByRole("link", { name: /Raw data/i });
     expect(buttonRawData).toHaveAttribute(
       "href",
-      "/api/feeds/all/all/recent.json"
+      "/api/feeds/all/all/recent.json",
     );
 
     await user.selectOptions(feedTypeSelectElement, "cowrie");
@@ -112,7 +112,7 @@ describe("Feeds component", () => {
       // check link has been changed including ioc_type parameter
       expect(buttonRawData).toHaveAttribute(
         "href",
-        "/api/feeds/cowrie/scanner/persistent.json?ioc_type=ip"
+        "/api/feeds/cowrie/scanner/persistent.json?ioc_type=ip",
       );
     });
 
@@ -121,7 +121,7 @@ describe("Feeds component", () => {
     await waitFor(() => {
       expect(buttonRawData).toHaveAttribute(
         "href",
-        "/api/feeds/cowrie/scanner/persistent.json?ioc_type=domain"
+        "/api/feeds/cowrie/scanner/persistent.json?ioc_type=domain",
       );
     });
   });

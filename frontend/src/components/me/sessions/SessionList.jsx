@@ -21,7 +21,7 @@ export default function SessionsList() {
       headers: { "Content-Type": "application/json" },
     },
     (respData) =>
-      respData.sort((a, b) => !a.is_current || a.created - b.created)
+      respData.sort((a, b) => !a.is_current || a.created - b.created),
   );
 
   // callbacks
@@ -35,7 +35,7 @@ export default function SessionsList() {
         // handled inside deleteTokenById
       }
     },
-    [refetch]
+    [refetch],
   );
 
   return (
@@ -101,7 +101,7 @@ export default function SessionsList() {
                   </Col>
                 </Row>
               </li>
-            )
+            ),
           )}
         </ol>
       )}

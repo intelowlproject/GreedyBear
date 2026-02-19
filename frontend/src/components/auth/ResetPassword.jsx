@@ -30,7 +30,7 @@ const onValidate = (values) => {
   }
   const comparePasswordErrors = ComparePassword(
     values.password,
-    values.confirmPassword
+    values.confirmPassword,
   );
   if (comparePasswordErrors.password) {
     errors.password = comparePasswordErrors.password;
@@ -77,7 +77,7 @@ export default function ResetPassword() {
         // handled inside resetPassword
       }
     },
-    [key, navigate]
+    [key, navigate],
   );
 
   return (

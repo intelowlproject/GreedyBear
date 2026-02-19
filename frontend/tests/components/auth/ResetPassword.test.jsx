@@ -21,14 +21,14 @@ describe("ResetPassword component", () => {
         ]}
       >
         <ResetPassword />
-      </MemoryRouter>
+      </MemoryRouter>,
     );
 
     // page before reset password
     const passwordInputElement = screen.getByLabelText("New Password");
     expect(passwordInputElement).toBeInTheDocument();
     const confirmPasswordInputElement = screen.getByLabelText(
-      "Confirm New Password"
+      "Confirm New Password",
     );
     expect(confirmPasswordInputElement).toBeInTheDocument();
     const submitButtonElement = screen.getByRole("button", { name: /Submit/i });
@@ -46,7 +46,7 @@ describe("ResetPassword component", () => {
         {
           key: "c0236120-c905-4534-b8ba-aca5e94aa5da",
           password: "NewPassword1234",
-        }
+        },
       );
     });
   });
@@ -57,7 +57,7 @@ describe("ResetPassword component", () => {
         initialEntries={["/reset-password?key=c0236120-c905-4534-b8ba"]}
       >
         <ResetPassword />
-      </MemoryRouter>
+      </MemoryRouter>,
     );
 
     const element = screen.getByText("Error: Invalid key.");

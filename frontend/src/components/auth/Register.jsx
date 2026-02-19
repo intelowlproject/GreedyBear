@@ -113,7 +113,7 @@ const onValidate = (values) => {
       ...values,
       password: "",
       confirmPassword: "",
-    })
+    }),
   );
   Object.keys(initialValues).forEach((key) => {
     initialValues[key] = values[key];
@@ -130,7 +130,7 @@ const onValidate = (values) => {
   }
   const comparePasswordErrors = ComparePassword(
     values.password,
-    values.confirmPassword
+    values.confirmPassword,
   );
   if (comparePasswordErrors.password) {
     errors.password = comparePasswordErrors.password;
@@ -203,7 +203,7 @@ export default function Register() {
         // handled inside registerUser
       }
     },
-    [setShowAfterRegistrationModal]
+    [setShowAfterRegistrationModal],
   );
 
   return (

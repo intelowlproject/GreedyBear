@@ -17,8 +17,8 @@ function withAuth(WrappedComponent) {
             s.checkAuthentication,
             s.service.fetchUserAccess,
           ],
-          []
-        )
+          [],
+        ),
       );
 
     React.useLayoutEffect(() => {

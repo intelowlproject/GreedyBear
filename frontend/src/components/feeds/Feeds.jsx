@@ -72,7 +72,7 @@ function FeedsTable({ tableParams, onDataLoad, onSortChange }) {
       },
     },
     toPassTableProps,
-    (data) => data.results.iocs
+    (data) => data.results.iocs,
   );
 
   // Notify parent of data changes so it can display the count
@@ -106,7 +106,7 @@ export default function Feeds() {
   const navigate = useNavigate();
 
   const [url, setUrl] = React.useState(
-    `${FEEDS_BASE_URI}/${initialValues.feeds_type}/${initialValues.attack_type}/${initialValues.prioritize}.json`
+    `${FEEDS_BASE_URI}/${initialValues.feeds_type}/${initialValues.attack_type}/${initialValues.prioritize}.json`,
   );
 
   // Counter used to force remount FeedsTable
@@ -136,7 +136,7 @@ export default function Feeds() {
   const handleSortChange = React.useCallback(() => {
     initialValues.prioritize = "recent";
     setUrl(
-      `${FEEDS_BASE_URI}/${initialValues.feeds_type}/${initialValues.attack_type}/recent.json?ioc_type=${initialValues.ioc_type}`
+      `${FEEDS_BASE_URI}/${initialValues.feeds_type}/${initialValues.attack_type}/recent.json?ioc_type=${initialValues.ioc_type}`,
     );
     setTableKey((prev) => prev + 1);
   }, [setUrl]);
@@ -146,7 +146,7 @@ export default function Feeds() {
     (values) => {
       try {
         setUrl(
-          `${FEEDS_BASE_URI}/${values.feeds_type}/${values.attack_type}/${values.prioritize}.json?ioc_type=${values.ioc_type}`
+          `${FEEDS_BASE_URI}/${values.feeds_type}/${values.attack_type}/${values.prioritize}.json?ioc_type=${values.ioc_type}`,
         );
         initialValues.feeds_type = values.feeds_type;
         initialValues.attack_type = values.attack_type;
@@ -162,7 +162,7 @@ export default function Feeds() {
         console.debug(e);
       }
     },
-    [setUrl, navigate]
+    [setUrl, navigate],
   );
 
   return (

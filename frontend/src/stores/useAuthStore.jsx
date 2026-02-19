@@ -49,7 +49,7 @@ const useAuthStore = create((set, get) => ({
         addToast(
           "Error fetching user access information!",
           err.parsedMsg,
-          "danger"
+          "danger",
         );
       }
     },
@@ -62,7 +62,7 @@ const useAuthStore = create((set, get) => ({
           { headers: { "Content-Type": "application/json" } },
           {
             certegoUIenableProgressBar: false,
-          }
+          },
         );
         set({ isAuthenticated: AUTHENTICATION_STATUSES.TRUE });
         addToast("You've been logged in!", null, "success");
