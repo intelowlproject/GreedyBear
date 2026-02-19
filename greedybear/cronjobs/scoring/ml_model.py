@@ -161,6 +161,9 @@ class MLModel(Scorer):
         predictions = pd.Series(self.predict(x))
         ranked_data = pd.DataFrame({"target": y, "prediction": predictions}).sort_values(by="prediction", ascending=False)
         total_positives = y.sum()
+        if total_positives == 0:
+            self.log.warning("no positive samples in test set, recall AUC is undefined — returning 0.0")
+            return 0.0
         max_k = len(x) // 4  # look at the first quater of predictions
         k_values = np.linspace(0, max_k, num=SAMPLE_COUNT, dtype=np.int32, endpoint=True)
         recalls = [ranked_data.head(k)["target"].sum() / total_positives for k in k_values]
@@ -248,6 +251,9 @@ class Classifier(MLModel):
         """
         Split data into training and test sets while preserving class distribution.
 
+        Falls back to non-stratified split when the target has fewer than 2
+        distinct classes, which makes stratification impossible.
+
         Args:
             x: Feature matrix
             y: Binary target values
@@ -255,6 +261,9 @@ class Classifier(MLModel):
         Returns:
             list: (x_train, x_test, y_train, y_test) split datasets
         """
+        if y.nunique() < 2:
+            self.log.warning("only one class present in target — falling back to non-stratified split")
+            return train_test_split(x, y, test_size=0.2)
         return train_test_split(x, y, test_size=0.2, stratify=y)
 
     def predict(self, x: pd.DataFrame) -> np.ndarray:
