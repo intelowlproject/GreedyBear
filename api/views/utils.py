@@ -73,13 +73,25 @@ class FeedRequestParams:
         self.ioc_type = query_params.get("ioc_type", "all").lower()
         self.max_age = query_params.get("max_age", "3")
         self.min_days_seen = query_params.get("min_days_seen", "1")
-        self.include_reputation = query_params["include_reputation"].split(";") if "include_reputation" in query_params else []
-        self.exclude_reputation = query_params["exclude_reputation"].split(";") if "exclude_reputation" in query_params else []
+        # Handle reputation lists (could be list from JSON or string from QueryDict)
+        inc_rep = query_params.get("include_reputation", [])
+        if isinstance(inc_rep, list):
+            self.include_reputation = inc_rep
+        else:
+            self.include_reputation = inc_rep.split(";") if inc_rep else []
+
+        exc_rep = query_params.get("exclude_reputation", [])
+        if isinstance(exc_rep, list):
+            self.exclude_reputation = exc_rep
+        else:
+            self.exclude_reputation = exc_rep.split(";") if exc_rep else []
+
         self.feed_size = query_params.get("feed_size", "5000")
         self.ordering = query_params.get("ordering", "-last_seen").lower().replace("value", "name")
         self.verbose = query_params.get("verbose", "false").lower()
         self.paginate = query_params.get("paginate", "false").lower()
-        self.format = query_params.get("format_", "json").lower()
+        # Support both format_ and format
+        self.format = query_params.get("format_", query_params.get("format", "json")).lower()
         self.feed_type_sorting = None
         self.asn = query_params.get("asn")
         self.min_score = query_params.get("min_score")

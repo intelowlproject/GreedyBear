@@ -173,6 +173,25 @@ def feeds_asn(request):
 def feeds_share(request):
     """
     Generate a shareable link for the current feed configuration.
+
+    Args:
+        request: The incoming request object.
+        feed_type (str): Type of feed to retrieve.
+        attack_type (str): Type of attack to filter.
+        max_age (int): Maximum number of days since last occurrence.
+        min_days_seen (int): Minimum number of days on which an IOC must have been seen.
+        include_reputation (str): `;`-separated list of reputation values to include.
+        exclude_reputation (str): `;`-separated list of reputation values to exclude.
+        ordering (str): Field to order results by.
+        verbose (bool): `true` to include IOC properties that contain a lot of data.
+        asn (int): Filter by ASN.
+        min_score (float): Filter by minimum recurrence_probability (0-1).
+        port (int): Filter by destination port.
+        start_date (str): Filter by start date (YYYY-MM-DD).
+        end_date (str): Filter by end date (YYYY-MM-DD).
+
+    Returns:
+        Response: A JSON object containing the signed shareable URL.
     """
     logger.info(f"request /api/feeds/share with params: {request.query_params}")
     feed_params = FeedRequestParams(request.query_params)
@@ -193,8 +212,15 @@ def feeds_share(request):
 @throttle_classes([ScopedRateThrottle])
 def feeds_consume(request, token):
     """
-    Consume a shared feed using a token.
-    Exposed publically but rate-limited.
+    Consume a shared feed using a signed token.
+    This endpoint is publicly accessible but strictly rate-limited.
+
+    Args:
+        request: The incoming request object.
+        token (str): The signed token containing feed configuration.
+
+    Returns:
+        Response: The HTTP response with formatted IOC data in JSON/CSV/TXT/STIX2.1.
     """
     logger.info("request /api/feeds/consume with token")
     try:
