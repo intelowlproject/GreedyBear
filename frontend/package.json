@@ -2,6 +2,7 @@
   "name": "frontend",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "config": {
     "eslint": ".github/configurations/node_linters/eslint/.eslintrc.json",
     "stylelint": ".github/configurations/node_linters/stylelint/.stylelintrc.json",
