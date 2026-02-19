@@ -74,15 +74,13 @@ class TestThreatFoxRepository(CustomTestCase):
         self.assertEqual(count, 2)
 
     def test_cleanup_old_entries(self):
-        from datetime import timedelta
-
-        from django.utils import timezone
+        from datetime import datetime, timedelta
 
         # Create entries with different ages
         ThreatFoxFeed.objects.create(ip_address="1.1.1.1", malware="win.recent")
 
         old = ThreatFoxFeed.objects.create(ip_address="2.2.2.2", malware="win.old")
-        old.added = timezone.now() - timedelta(days=31)
+        old.added = datetime.utcnow() - timedelta(days=31)
         old.save()
 
         deleted = self.repo.cleanup_old_entries(days=30)
@@ -206,16 +204,14 @@ class TestThreatFoxCron(CustomTestCase):
 
     @patch("greedybear.cronjobs.threatfox_feed.requests.post")
     def test_cleanup_old_entries(self, mock_post):
-        from datetime import timedelta
-
-        from django.utils import timezone
+        from datetime import datetime, timedelta
 
         # Create an old entry
         old_entry = ThreatFoxFeed.objects.create(
             ip_address="1.2.3.4",
             malware="win.old",
         )
-        old_entry.added = timezone.now() - timedelta(days=31)
+        old_entry.added = datetime.utcnow() - timedelta(days=31)
         old_entry.save()
 
         # Mock empty response

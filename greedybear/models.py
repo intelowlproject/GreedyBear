@@ -212,11 +212,6 @@ class AbuseIPDBFeed(models.Model):
     country_code = models.CharField(max_length=2, blank=True, default="")
     added = models.DateTimeField(blank=False, default=datetime.now)
 
-    class Meta:
-        indexes = [
-            models.Index(fields=["ip_address"]),
-        ]
-
     def __str__(self):
         return f"{self.ip_address} (confidence: {self.abuse_confidence_score}%)"
 
@@ -229,12 +224,6 @@ class Tag(models.Model):
     value = models.CharField(max_length=256, blank=False)
     source = models.CharField(max_length=64, blank=False)  # e.g., "threatfox", "abuseipdb"
     added = models.DateTimeField(blank=False, default=datetime.now)
-
-    class Meta:
-        indexes = [
-            models.Index(fields=["ioc"]),
-            models.Index(fields=["source"]),
-        ]
 
     def __str__(self):
         return f"{self.ioc.name} - {self.key}: {self.value} ({self.source})"

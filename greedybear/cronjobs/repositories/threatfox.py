@@ -67,8 +67,7 @@ class ThreatFoxRepository:
         Returns:
             Number of entries deleted.
         """
-        count = ThreatFoxFeed.objects.count()
-        ThreatFoxFeed.objects.all().delete()
+        count, _ = ThreatFoxFeed.objects.all().delete()
         self.log.info(f"Cleared all ThreatFox feed entries ({count} total)")
         return count
 
@@ -83,8 +82,7 @@ class ThreatFoxRepository:
             Number of entries deleted.
         """
         cutoff_date = datetime.now() - timedelta(days=days)
-        count = ThreatFoxFeed.objects.filter(added__lt=cutoff_date).count()
-        ThreatFoxFeed.objects.filter(added__lt=cutoff_date).delete()
+        count, _ = ThreatFoxFeed.objects.filter(added__lt=cutoff_date).delete()
         self.log.info(f"Deleted {count} ThreatFox entries older than {days} days")
         return count
 

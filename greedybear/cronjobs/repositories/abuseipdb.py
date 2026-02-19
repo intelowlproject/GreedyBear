@@ -79,8 +79,7 @@ class AbuseIPDBRepository:
         Returns:
             Number of entries deleted.
         """
-        count = AbuseIPDBFeed.objects.count()
-        AbuseIPDBFeed.objects.all().delete()
+        count, _ = AbuseIPDBFeed.objects.all().delete()
         self.log.info(f"Cleared all AbuseIPDB feed entries ({count} total)")
         return count
 
@@ -95,8 +94,7 @@ class AbuseIPDBRepository:
             Number of entries deleted.
         """
         cutoff_date = datetime.now() - timedelta(days=days)
-        count = AbuseIPDBFeed.objects.filter(added__lt=cutoff_date).count()
-        AbuseIPDBFeed.objects.filter(added__lt=cutoff_date).delete()
+        count, _ = AbuseIPDBFeed.objects.filter(added__lt=cutoff_date).delete()
         self.log.info(f"Deleted {count} AbuseIPDB entries older than {days} days")
         return count
 
@@ -123,13 +121,14 @@ class AbuseIPDBRepository:
         if current_count <= max_entries:
             return 0
 
+        self.log.info(f"Enforced limit of {max_entries} entries")
+
         # Delete oldest entries beyond the limit
         entries_to_delete = current_count - max_entries
         old_entries = AbuseIPDBFeed.objects.order_by("added")[:entries_to_delete]
         old_entry_ids = list(old_entries.values_list("id", flat=True))
 
-        count = AbuseIPDBFeed.objects.filter(id__in=old_entry_ids).count()
-        AbuseIPDBFeed.objects.filter(id__in=old_entry_ids).delete()
+        count, _ = AbuseIPDBFeed.objects.filter(id__in=old_entry_ids).delete()
 
-        self.log.info(f"Enforced limit of {max_entries} entries, deleted {count} oldest entries")
+        self.log.info(f"Deleted {count} oldest entries")
         return count

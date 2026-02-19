@@ -77,15 +77,13 @@ class TestAbuseIPDBRepository(CustomTestCase):
         self.assertEqual(AbuseIPDBFeed.objects.count(), 1)
 
     def test_cleanup_old_entries(self):
-        from datetime import timedelta
-
-        from django.utils import timezone
+        from datetime import datetime, timedelta
 
         # Create entries with different ages
         AbuseIPDBFeed.objects.create(ip_address="1.1.1.1", abuse_confidence_score=80)
 
         old = AbuseIPDBFeed.objects.create(ip_address="2.2.2.2", abuse_confidence_score=80)
-        old.added = timezone.now() - timedelta(days=31)
+        old.added = datetime.utcnow() - timedelta(days=31)
         old.save()
 
         deleted = self.repo.cleanup_old_entries(days=30)
@@ -194,9 +192,7 @@ class TestAbuseIPDBCron(CustomTestCase):
     @patch("greedybear.cronjobs.abuseipdb_feed.settings")
     @patch("greedybear.cronjobs.abuseipdb_feed.requests.get")
     def test_cleanup_old_entries(self, mock_get, mock_settings):
-        from datetime import timedelta
-
-        from django.utils import timezone
+        from datetime import datetime, timedelta
 
         mock_settings.ABUSEIPDB_API_KEY = "test-api-key"
 
@@ -205,7 +201,7 @@ class TestAbuseIPDBCron(CustomTestCase):
             ip_address="1.2.3.4",
             abuse_confidence_score=80,
         )
-        old_entry.added = timezone.now() - timedelta(days=31)
+        old_entry.added = datetime.utcnow() - timedelta(days=31)
         old_entry.save()
 
         # Mock empty response
