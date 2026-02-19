@@ -17,61 +17,55 @@ def setup_schedules():
     extraction_interval = settings.EXTRACTION_INTERVAL
 
     schedules = [
-        # 1. Extraction: Every EXTRACTION_INTERVAL minutes
+        # Extraction: Every EXTRACTION_INTERVAL minutes
         {
             "name": "extract_all",
             "func": "greedybear.tasks.extract_all",
             "cron": f"*/{extraction_interval} * * * *",
         },
-        # 2. Monitor Honeypots: Hourly at :07
+        # Monitor Honeypots: Hourly at :07
         {
             "name": "monitor_honeypots",
             "func": "greedybear.tasks.monitor_honeypots",
             "cron": "7 * * * *",
         },
-        # 3. Monitor Logs: Hourly at :07
+        # Monitor Logs: Hourly at :07
         {
             "name": "monitor_logs",
             "func": "greedybear.tasks.monitor_logs",
             "cron": "7 * * * *",
         },
-        # 4. Training: Daily at 00:XX (calculated)
-        {
-            "name": "train_and_update",
-            "func": "greedybear.tasks.chain_train_and_update",
-            "cron": f"{min(59, int(extraction_interval * 2 / 3))} 0 * * *",
-        },
-        # 5. Cluster Commands: Daily at 01:07
+        # Cluster Commands: Daily at 01:07
         {
             "name": "cluster_commands",
             "func": "greedybear.tasks.cluster_commands",
             "cron": "7 1 * * *",
         },
-        # 6. Clean Up DB: Daily at 01:07
+        # Clean Up DB: Daily at 01:07
         {
             "name": "clean_up_db",
             "func": "greedybear.tasks.clean_up_db",
             "cron": "7 1 * * *",
         },
-        # 7. Mass Scanners: Weekly (Sunday) at 01:07
+        # Mass Scanners: Weekly (Sunday) at 01:07
         {
             "name": "get_mass_scanners",
             "func": "greedybear.tasks.get_mass_scanners",
             "cron": "7 1 * * 0",
         },
-        # 8. WhatsMyIP: Weekly (Sunday) at 01:07
+        # WhatsMyIP: Weekly (Sunday) at 01:07
         {
             "name": "get_whatsmyip",
             "func": "greedybear.tasks.get_whatsmyip",
             "cron": "7 1 * * 0",
         },
-        # 9. Firehol Lists: Weekly (Sunday) at 01:07
+        # Firehol Lists: Weekly (Sunday) at 01:07
         {
             "name": "extract_firehol_lists",
             "func": "greedybear.tasks.extract_firehol_lists",
             "cron": "7 1 * * 0",
         },
-        # 10. Tor Exit Nodes: Weekly (Sunday) at 01:07
+        # Tor Exit Nodes: Weekly (Sunday) at 01:07
         {
             "name": "get_tor_exit_nodes",
             "func": "greedybear.tasks.get_tor_exit_nodes",

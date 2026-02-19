@@ -2,13 +2,22 @@
 # See the file 'LICENSE' for copying permission.
 
 
-from greedybear.settings import CLUSTER_COWRIE_COMMAND_SEQUENCES
+from datetime import datetime
+
+from greedybear.settings import CLUSTER_COWRIE_COMMAND_SEQUENCES, EXTRACTION_INTERVAL
 
 
 def extract_all():
     from greedybear.cronjobs.extract import ExtractionJob
 
+    # Check if this is the extraction run immediately after midnight
+    midnight_extraction = datetime.now().hour == 0 and datetime.now().minute < EXTRACTION_INTERVAL
+
     ExtractionJob().execute()
+
+    # If so, execute the training task
+    if midnight_extraction:
+        train_and_update()
 
 
 def monitor_honeypots():
@@ -24,7 +33,7 @@ def monitor_logs():
 
 
 # SCORING
-def chain_train_and_update():
+def train_and_update():
     from greedybear.cronjobs.scoring.scoring_jobs import TrainModels, UpdateScores
 
     trainer = TrainModels()
