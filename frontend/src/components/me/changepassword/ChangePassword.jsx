@@ -43,7 +43,7 @@ export default function ChangePassword() {
   useTitle("IntelOwl | Change Password", { restoreOnUnmount: true });
 
   const [isAuthenticated, changePassword] = useAuthStore(
-    React.useCallback((s) => [s.isAuthenticated, s.service.changePassword], [])
+    React.useCallback((s) => [s.isAuthenticated, s.service.changePassword], []),
   );
 
   // callback
@@ -54,7 +54,7 @@ export default function ChangePassword() {
         addToast(
           "New password must be different from old password!",
           null,
-          "danger"
+          "danger",
         );
         setSubmitting(false);
         return;
@@ -65,7 +65,7 @@ export default function ChangePassword() {
         addToast(
           "Password must be at least 12 characters long and contain at least one letter!",
           null,
-          "info"
+          "info",
         );
         setSubmitting(false);
         return;
@@ -75,7 +75,7 @@ export default function ChangePassword() {
       setSubmitting(false);
       resetForm();
     },
-    [changePassword]
+    [changePassword],
   );
 
   return (

@@ -16,7 +16,7 @@ import { useAuthStore } from "../../stores";
 function UserMenu(props) {
   // auth store
   const [user, isSuperuser] = useAuthStore(
-    React.useCallback((s) => [s.user, s.isSuperuser], [])
+    React.useCallback((s) => [s.user, s.isSuperuser], []),
   );
 
   return (
