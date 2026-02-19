@@ -7,6 +7,7 @@ import {
 } from "reactstrap";
 import { FiLogOut } from "react-icons/fi";
 import { IoMdKey, IoMdSettings } from "react-icons/io";
+import { MdPassword } from "react-icons/md";
 
 import { UserBubble, DropdownNavLink } from "@certego/certego-ui";
 
@@ -15,7 +16,7 @@ import { useAuthStore } from "../../stores";
 function UserMenu(props) {
   // auth store
   const [user, isSuperuser] = useAuthStore(
-    React.useCallback((s) => [s.user, s.isSuperuser], []),
+    React.useCallback((s) => [s.user, s.isSuperuser], [])
   );
 
   return (
@@ -35,6 +36,9 @@ function UserMenu(props) {
         {/* API Access/Sessions */}
         <DropdownNavLink to="/me/sessions">
           <IoMdKey className="me-2" /> API Access / Sessions
+        </DropdownNavLink>
+        <DropdownNavLink to="/me/changepassword">
+          <MdPassword className="me-2" /> Change Password
         </DropdownNavLink>
         <DropdownItem divider />
         {/* Logout */}
