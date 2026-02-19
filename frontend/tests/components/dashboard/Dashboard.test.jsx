@@ -24,7 +24,7 @@ vi.mock(
       EnrichmentRequestsChart,
       FeedsTypesChart,
     };
-  }
+  },
 );
 
 describe("Dashboard component", () => {
@@ -32,7 +32,7 @@ describe("Dashboard component", () => {
     render(
       <BrowserRouter>
         <Dashboard />
-      </BrowserRouter>
+      </BrowserRouter>,
     );
 
     const FeedsSourcesChart = screen.getByText("Feeds: Sources");
@@ -42,11 +42,11 @@ describe("Dashboard component", () => {
     const FeedsTypesChart = screen.getByText("Feeds: Types");
     expect(FeedsTypesChart).toBeInTheDocument();
     const EnrichmentSourcesChart = screen.getByText(
-      "Enrichment Service: Sources"
+      "Enrichment Service: Sources",
     );
     expect(EnrichmentSourcesChart).toBeInTheDocument();
     const EnrichmentRequestsChart = screen.getByText(
-      "Enrichment Service: Requests"
+      "Enrichment Service: Requests",
     );
     expect(EnrichmentRequestsChart).toBeInTheDocument();
   });

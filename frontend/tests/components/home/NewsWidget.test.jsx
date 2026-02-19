@@ -105,7 +105,7 @@ describe("NewsWidget", () => {
       render(<NewsWidget />);
 
       expect(
-        await screen.findByText("No news available at the moment.")
+        await screen.findByText("No news available at the moment."),
       ).toBeInTheDocument();
     });
   });
@@ -117,7 +117,7 @@ describe("NewsWidget", () => {
       render(<NewsWidget />);
 
       expect(
-        await screen.findByText("Unable to load news. Please try again later.")
+        await screen.findByText("Unable to load news. Please try again later."),
       ).toBeInTheDocument();
     });
 
@@ -130,7 +130,7 @@ describe("NewsWidget", () => {
       render(<NewsWidget />);
 
       expect(
-        await screen.findByText("Unable to load news. Please try again later.")
+        await screen.findByText("Unable to load news. Please try again later."),
       ).toBeInTheDocument();
     });
 
@@ -147,7 +147,7 @@ describe("NewsWidget", () => {
       await waitFor(() => {
         expect(consoleErrorSpy).toHaveBeenCalledWith(
           "Error fetching news:",
-          mockError
+          mockError,
         );
       });
 

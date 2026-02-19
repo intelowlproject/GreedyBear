@@ -12,7 +12,7 @@ Wrapper for Routes which should be accessible only to a non-authenticated user
 export default function IfAuthRedirectGuard({ children }) {
   // store
   const isAuthenticated = useAuthStore(
-    React.useCallback((s) => s.isAuthenticated, [])
+    React.useCallback((s) => s.isAuthenticated, []),
   );
 
   const next = useSearchParam("next") || "/";

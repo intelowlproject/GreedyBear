@@ -47,7 +47,7 @@ function Login() {
 
   // auth store
   const loginUser = useAuthStore(
-    React.useCallback((s) => s.service.loginUser, [])
+    React.useCallback((s) => s.service.loginUser, []),
   );
 
   // callbacks
@@ -59,7 +59,7 @@ function Login() {
         // handled inside loginUser
       }
     },
-    [loginUser]
+    [loginUser],
   );
 
   return (

@@ -30,7 +30,7 @@ export default function EnrichmentLookup() {
 
   // auth store
   const isAuthenticated = useAuthStore(
-    React.useCallback((s) => s.isAuthenticated, [])
+    React.useCallback((s) => s.isAuthenticated, []),
   );
   const isAuth = isAuthenticated === AUTHENTICATION_STATUSES.TRUE;
 
@@ -42,7 +42,7 @@ export default function EnrichmentLookup() {
       // Check authentication first
       if (isAuthenticated !== AUTHENTICATION_STATUSES.TRUE) {
         setError(
-          "You must be authenticated to use the enrichment feature. Please login to access this functionality."
+          "You must be authenticated to use the enrichment feature. Please login to access this functionality.",
         );
         setSubmitting(false);
         return;
@@ -82,7 +82,7 @@ export default function EnrichmentLookup() {
         setSubmitting(false);
       }
     },
-    [isAuthenticated]
+    [isAuthenticated],
   );
 
   return (
@@ -171,7 +171,7 @@ export default function EnrichmentLookup() {
                     {result.ioc.first_seen
                       ? new Date(result.ioc.first_seen).toLocaleString(
                           "en-US",
-                          { timeZone: "UTC" }
+                          { timeZone: "UTC" },
                         )
                       : "N/A"}
                   </dd>
@@ -230,7 +230,7 @@ export default function EnrichmentLookup() {
                               >
                                 {category}
                               </span>
-                            )
+                            ),
                           )}
                         </dd>
                       </>
@@ -263,7 +263,7 @@ export default function EnrichmentLookup() {
                     {result.ioc.recurrence_probability == null
                       ? "N/A"
                       : `${(result.ioc.recurrence_probability * 100).toFixed(
-                          2
+                          2,
                         )}%`}
                   </dd>
                 </Col>

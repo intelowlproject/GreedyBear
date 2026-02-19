@@ -8,7 +8,7 @@ describe("Feeds table details popover", () => {
   test("shows details button and popover content on click", async () => {
     const user = userEvent.setup();
     const detailsColumn = feedsTableColumns.find(
-      (column) => column.accessor === "details"
+      (column) => column.accessor === "details",
     );
     expect(detailsColumn).toBeDefined();
 
@@ -36,10 +36,10 @@ describe("Feeds table details popover", () => {
     await user.click(detailsButton);
 
     expect(
-      await screen.findByText(/Recurrence:\s*25\.0%/i)
+      await screen.findByText(/Recurrence:\s*25\.0%/i),
     ).toBeInTheDocument();
     expect(
-      await screen.findByText(/Expected Interactions:\s*13/i)
+      await screen.findByText(/Expected Interactions:\s*13/i),
     ).toBeInTheDocument();
   });
 });

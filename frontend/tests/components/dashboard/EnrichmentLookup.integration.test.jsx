@@ -29,7 +29,7 @@ vi.mock(
       EnrichmentRequestsChart,
       FeedsTypesChart,
     };
-  }
+  },
 );
 
 // Mock useAuthStore
@@ -46,13 +46,13 @@ describe("Enrichment Lookup Integration Tests", () => {
   test("enrichment lookup section is visible on dashboard page", () => {
     // Mock authenticated state to see the enrichment section
     mockUseAuthStore.mockImplementation((selector) =>
-      selector({ isAuthenticated: AUTHENTICATION_STATUSES.TRUE })
+      selector({ isAuthenticated: AUTHENTICATION_STATUSES.TRUE }),
     );
 
     render(
       <BrowserRouter>
         <Dashboard />
-      </BrowserRouter>
+      </BrowserRouter>,
     );
 
     // Verify the Enrichment Lookup section header is present
@@ -68,13 +68,13 @@ describe("Enrichment Lookup Integration Tests", () => {
 
     // Mock unauthenticated state
     mockUseAuthStore.mockImplementation((selector) =>
-      selector({ isAuthenticated: AUTHENTICATION_STATUSES.FALSE })
+      selector({ isAuthenticated: AUTHENTICATION_STATUSES.FALSE }),
     );
 
     render(
       <BrowserRouter>
         <Dashboard />
-      </BrowserRouter>
+      </BrowserRouter>,
     );
 
     // Verify enrichment lookup section is still visible (publicly visible)
@@ -90,7 +90,7 @@ describe("Enrichment Lookup Integration Tests", () => {
 
     // Helper text should indicate authentication is required
     expect(
-      screen.getByPlaceholderText(/You need to be logged in to search!/i)
+      screen.getByPlaceholderText(/You need to be logged in to search!/i),
     ).toBeInTheDocument();
 
     // Verify API was NOT called
@@ -102,7 +102,7 @@ describe("Enrichment Lookup Integration Tests", () => {
 
     // Mock authenticated state
     mockUseAuthStore.mockImplementation((selector) =>
-      selector({ isAuthenticated: AUTHENTICATION_STATUSES.TRUE })
+      selector({ isAuthenticated: AUTHENTICATION_STATUSES.TRUE }),
     );
 
     // Mock successful API response with IOC data
@@ -136,7 +136,7 @@ describe("Enrichment Lookup Integration Tests", () => {
     render(
       <BrowserRouter>
         <Dashboard />
-      </BrowserRouter>
+      </BrowserRouter>,
     );
 
     // Get form elements
@@ -158,7 +158,7 @@ describe("Enrichment Lookup Integration Tests", () => {
     // Verify IOC details are displayed
     await waitFor(() => {
       expect(
-        screen.getByText(/IOC Details for: 192.168.1.100/i)
+        screen.getByText(/IOC Details for: 192.168.1.100/i),
       ).toBeInTheDocument();
       expect(screen.getByText("42")).toBeInTheDocument(); // attack_count
       expect(screen.getByText("150")).toBeInTheDocument(); // interaction_count
@@ -172,7 +172,7 @@ describe("Enrichment Lookup Integration Tests", () => {
 
     // Mock authenticated state
     mockUseAuthStore.mockImplementation((selector) =>
-      selector({ isAuthenticated: AUTHENTICATION_STATUSES.TRUE })
+      selector({ isAuthenticated: AUTHENTICATION_STATUSES.TRUE }),
     );
 
     // Mock API response - IP not found in database
@@ -187,7 +187,7 @@ describe("Enrichment Lookup Integration Tests", () => {
     render(
       <BrowserRouter>
         <Dashboard />
-      </BrowserRouter>
+      </BrowserRouter>,
     );
 
     // Get form elements
@@ -209,7 +209,7 @@ describe("Enrichment Lookup Integration Tests", () => {
     // Verify "not found" message is displayed
     await waitFor(() => {
       expect(
-        screen.getByText(/No data available for "1.2.3.4" in our database/i)
+        screen.getByText(/No data available for "1.2.3.4" in our database/i),
       ).toBeInTheDocument();
     });
   });
@@ -219,7 +219,7 @@ describe("Enrichment Lookup Integration Tests", () => {
 
     // Mock authenticated state
     mockUseAuthStore.mockImplementation((selector) =>
-      selector({ isAuthenticated: AUTHENTICATION_STATUSES.TRUE })
+      selector({ isAuthenticated: AUTHENTICATION_STATUSES.TRUE }),
     );
 
     // Mock API validation error
@@ -235,7 +235,7 @@ describe("Enrichment Lookup Integration Tests", () => {
     render(
       <BrowserRouter>
         <Dashboard />
-      </BrowserRouter>
+      </BrowserRouter>,
     );
 
     // Get form elements

@@ -16,7 +16,7 @@ describe("EmailForm component", () => {
     render(
       <BrowserRouter>
         <EmailForm apiCallback={mockApi} onFormSubmit={vi.fn()} />
-      </BrowserRouter>
+      </BrowserRouter>,
     );
 
     const emailInputElement = screen.getByLabelText("Email Address");
