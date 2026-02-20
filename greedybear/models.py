@@ -51,6 +51,14 @@ class FireHolList(models.Model):
         return f"{self.ip_address} ({self.source or 'unknown'})"
 
 
+class AutonomousSystem(models.Model):
+    asn = models.IntegerField(unique=True, primary_key=True)
+    name = models.CharField(max_length=256, blank=True, default="")
+
+    def __str__(self):
+        return f"AS{self.asn} - {self.name}" if self.name else f"AS{self.asn}"
+
+
 class IOC(models.Model):
     name = models.CharField(max_length=256, blank=False)
     type = models.CharField(max_length=32, blank=False, choices=IocType.choices)
@@ -70,7 +78,13 @@ class IOC(models.Model):
     related_urls = pg_fields.ArrayField(models.CharField(max_length=900, blank=True), blank=True, default=list)
     ip_reputation = models.CharField(max_length=32, blank=True)
     firehol_categories = pg_fields.ArrayField(models.CharField(max_length=64, blank=True), blank=True, default=list)
-    asn = models.IntegerField(blank=True, null=True)
+    autonomous_system = models.ForeignKey(
+        AutonomousSystem,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="iocs",
+    )
     destination_ports = pg_fields.ArrayField(models.IntegerField(), blank=False, null=False, default=list)
     login_attempts = models.IntegerField(blank=False, null=False, default=0)
     # SCORES
