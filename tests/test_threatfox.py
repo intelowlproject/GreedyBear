@@ -80,7 +80,7 @@ class TestThreatFoxRepository(CustomTestCase):
         ThreatFoxFeed.objects.create(ip_address="1.1.1.1", malware="win.recent")
 
         old = ThreatFoxFeed.objects.create(ip_address="2.2.2.2", malware="win.old")
-        old.added = datetime.utcnow() - timedelta(days=31)
+        old.added = datetime.now() - timedelta(days=31)
         old.save()
 
         deleted = self.repo.cleanup_old_entries(days=30)
@@ -211,7 +211,7 @@ class TestThreatFoxCron(CustomTestCase):
             ip_address="1.2.3.4",
             malware="win.old",
         )
-        old_entry.added = datetime.utcnow() - timedelta(days=31)
+        old_entry.added = datetime.now() - timedelta(days=31)
         old_entry.save()
 
         # Mock empty response

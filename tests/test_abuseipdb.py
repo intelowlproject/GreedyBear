@@ -83,7 +83,7 @@ class TestAbuseIPDBRepository(CustomTestCase):
         AbuseIPDBFeed.objects.create(ip_address="1.1.1.1", abuse_confidence_score=80)
 
         old = AbuseIPDBFeed.objects.create(ip_address="2.2.2.2", abuse_confidence_score=80)
-        old.added = datetime.utcnow() - timedelta(days=31)
+        old.added = datetime.now() - timedelta(days=31)
         old.save()
 
         deleted = self.repo.cleanup_old_entries(days=30)
@@ -201,7 +201,7 @@ class TestAbuseIPDBCron(CustomTestCase):
             ip_address="1.2.3.4",
             abuse_confidence_score=80,
         )
-        old_entry.added = datetime.utcnow() - timedelta(days=31)
+        old_entry.added = datetime.now() - timedelta(days=31)
         old_entry.save()
 
         # Mock empty response

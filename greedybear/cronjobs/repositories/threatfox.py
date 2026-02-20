@@ -46,6 +46,27 @@ class ThreatFoxRepository:
                 "tags": tags,
             },
         )
+
+        if not created:
+            updated = False
+            if malware_printable and entry.malware_printable != malware_printable:
+                entry.malware_printable = malware_printable
+                updated = True
+            if threat_type and entry.threat_type != threat_type:
+                entry.threat_type = threat_type
+                updated = True
+            if confidence_level is not None and entry.confidence_level != confidence_level:
+                entry.confidence_level = confidence_level
+                updated = True
+            if tags and entry.tags != tags:
+                entry.tags = tags
+                updated = True
+
+            if updated:
+                entry.added = datetime.now()
+                entry.save()
+                self.log.debug(f"Updated ThreatFox entry for {ip_address}")
+
         return entry, created
 
     def get_by_ip(self, ip_address: str) -> list[ThreatFoxFeed]:
