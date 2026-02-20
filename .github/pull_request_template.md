@@ -2,11 +2,11 @@
 
 Please include a short summary of the change. Don't just paste LLM output here.
 
-## Related issues
+### Related issues
 
 Please add related issues: the issues you are trying to solve as well as other issues that are important in the context of this pull request.
 
-## Type of change
+### Type of change
 
 - [ ] Bug fix (non-breaking change which fixes an issue).
 - [ ] New feature (non-breaking change which adds functionality).
@@ -17,7 +17,7 @@ Please add related issues: the issues you are trying to solve as well as other i
 
 Please complete this checklist carefully. It helps guide your contribution and lets maintainers verify that all requirements are met.
 
-## Formalities
+### Formalities
 
 - [ ] I have read and understood the rules about [how to Contribute](https://intelowlproject.github.io/docs/GreedyBear/Contribute/) to this project.
 - [ ] I chose an appropriate title for the pull request in the form: `<feature name>. Closes #999`
@@ -25,7 +25,7 @@ Please complete this checklist carefully. It helps guide your contribution and l
 - [ ] The pull request is for the branch `develop`.
 - [ ] I have reviewed and verified any LLM-generated code included in this PR.
 
-## Docs and tests
+### Docs and tests
 
 - [ ] I documented my code changes with docstrings and/or comments.
 - [ ] I have checked if my changes affect user-facing behavior that is described in the [docs](https://intelowlproject.github.io/docs/GreedyBear/). If so, I also created a pull request in the [docs repository](https://github.com/intelowlproject/docs).
@@ -33,7 +33,7 @@ Please complete this checklist carefully. It helps guide your contribution and l
 - [ ] I have added tests for the feature/bug I solved.
 - [ ] All the tests gave 0 errors.
 
-## GUI changes
+### GUI changes
 
 Ignore this section if you did not make any changes to the GUI.
 
