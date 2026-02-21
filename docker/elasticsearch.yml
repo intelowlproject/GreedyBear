@@ -7,4 +7,5 @@ services:
     image: docker.elastic.co/elasticsearch/elasticsearch:9.2.3
     environment:
       - "discovery.type=single-node"
-
+      # disable security for local development/testing so we can access it without credentials
+      - xpack.security.enabled=false
