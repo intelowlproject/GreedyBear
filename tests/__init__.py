@@ -182,17 +182,6 @@ class CustomTestCase(TestCase):
         except User.DoesNotExist:
             cls.regular_user = User.objects.create_user(username="regular", email="regular@greedybear.com", password="regular")
 
-<<<<<<< HEAD
-=======
-    @classmethod
-    def tearDownClass(cls):
-        # db clean
-        Honeypot.objects.all().delete()
-        IOC.objects.all().delete()
-        CowrieSession.objects.all().delete()
-        CommandSequence.objects.all().delete()
-
->>>>>>> ba5aabb (Renamed remaining instances to Honeypot from tests and api folders)
 
 class ExtractionTestCase(CustomTestCase):
     def setUp(self):

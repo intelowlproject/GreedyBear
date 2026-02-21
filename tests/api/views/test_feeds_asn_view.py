@@ -1,7 +1,7 @@
 from django.utils import timezone
 from rest_framework.test import APIClient
 
-from greedybear.models import IOC, GeneralHoneypot
+from greedybear.models import IOC, Honeypot
 from tests import CustomTestCase
 
 
@@ -12,8 +12,8 @@ class FeedsASNViewTestCase(CustomTestCase):
     def setUpClass(cls):
         super().setUpClass()
         IOC.objects.all().delete()
-        cls.testpot1, _ = GeneralHoneypot.objects.get_or_create(name="testpot1", active=True)
-        cls.testpot2, _ = GeneralHoneypot.objects.get_or_create(name="testpot2", active=True)
+        cls.testpot1, _ = Honeypot.objects.get_or_create(name="testpot1", active=True)
+        cls.testpot2, _ = Honeypot.objects.get_or_create(name="testpot2", active=True)
 
         cls.high_asn = "13335"
         cls.low_asn = "16276"

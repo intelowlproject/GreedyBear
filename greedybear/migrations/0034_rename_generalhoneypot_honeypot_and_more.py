@@ -19,11 +19,6 @@ class Migration(migrations.Migration):
             model_name='honeypot',
             name='unique_generalhoneypot_name_ci',
         ),
-        migrations.RenameIndex(
-            model_name='torexitnode',
-            new_name='greedybear__ip_addr_6bc095_idx',
-            old_name='greedybear_ip_addr_tor_idx',
-        ),
         migrations.AddConstraint(
             model_name='honeypot',
             constraint=models.UniqueConstraint(django.db.models.functions.text.Lower('name'), name='unique_honeypot_name_ci'),

@@ -1,4 +1,4 @@
-from greedybear.models import GeneralHoneypot, Statistics, ViewType
+from greedybear.models import Honeypot, Statistics, ViewType
 from tests import CustomTestCase
 
 
@@ -37,10 +37,10 @@ class StatisticsViewTestCase(CustomTestCase):
 
     def test_200_feed_types(self):
         # Count honeypots before adding new one
-        initial_count = GeneralHoneypot.objects.count()
+        initial_count = Honeypot.objects.count()
         # add a general honeypot without associated ioc
-        GeneralHoneypot(name="Tanner", active=True).save()
-        self.assertEqual(GeneralHoneypot.objects.count(), initial_count + 1)
+        Honeypot(name="Tanner", active=True).save()
+        self.assertEqual(Honeypot.objects.count(), initial_count + 1)
 
         response = self.client.get("/api/statistics/feeds_types")
         self.assertEqual(response.status_code, 200)
