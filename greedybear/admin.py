@@ -158,11 +158,7 @@ class IOCModelAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request):
         """Override to prefetch related sensors and honeypots, avoiding N+1 queries."""
-        return (
-            super()
-            .get_queryset(request)
-            .prefetch_related("sensors", "general_honeypot", "autonomous_system")
-        )
+        return super().get_queryset(request).prefetch_related("sensors", "general_honeypot", "autonomous_system")
 
 
 @admin.register(GeneralHoneypot)
