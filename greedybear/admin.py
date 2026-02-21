@@ -8,7 +8,6 @@ from django.utils.translation import ngettext
 
 from greedybear.models import (
     IOC,
-    AutonomousSystem,
     CommandSequence,
     CowrieSession,
     FireHolList,
