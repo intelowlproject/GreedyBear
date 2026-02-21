@@ -28,7 +28,7 @@ Please complete this checklist carefully. It helps guide your contribution and l
 ### Docs and tests
 
 - [ ] I documented my code changes with docstrings and/or comments.
-- [ ] I have checked if my changes affect user-facing behavior that is described in the [docs](https://intelowlproject.github.io/docs/GreedyBear/). If so, I also created a pull request in the [docs repository](https://github.com/intelowlproject/docs).
+- [ ] I have checked if my changes affect user-facing behavior that is described in the [docs](https://intelowlproject.github.io/docs/GreedyBear/Introduction/). If so, I also created a pull request in the [docs repository](https://github.com/intelowlproject/docs).
 - [ ] Linter (`Ruff`) gave 0 errors. If you have correctly installed [pre-commit](https://intelowlproject.github.io/docs/GreedyBear/Contribute/#how-to-start-setup-project-and-development-instance), it does these checks and adjustments on your behalf.
 - [ ] I have added tests for the feature/bug I solved.
 - [ ] All the tests gave 0 errors.
