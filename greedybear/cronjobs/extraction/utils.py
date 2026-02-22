@@ -185,10 +185,13 @@ def get_ioc_type(ioc: str) -> str:
         ioc: IOC name string (IP address or domain).
 
     Returns:
-        IP if the value is a valid IPv4 address, DOMAIN otherwise.
+        IP if the value is a valid IPv4 or IPv6 address, DOMAIN otherwise.
     """
-    is_valid, _ = is_valid_ipv4(ioc)
-    return IP if is_valid else DOMAIN
+    try:
+        ip_address(ioc.strip())
+        return IP
+    except ValueError:
+        return DOMAIN
 
 
 def threatfox_submission(ioc_record: IOC, related_urls: list, log: Logger) -> None:

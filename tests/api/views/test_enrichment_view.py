@@ -54,6 +54,12 @@ class EnrichmentViewTestCase(CustomTestCase):
             self.ioc.expected_interactions,
         )
 
+    def test_for_valid_unregistered_ipv6(self):
+        """Check that a valid IPv6 address that is not in DB returns found=False instead of 400."""
+        response = self.client.get("/api/enrichment?query=2001:db8::1")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["found"], False)
+
     def test_for_invalid_authentication(self):
         """Check for a invalid authentication"""
         self.client.logout()

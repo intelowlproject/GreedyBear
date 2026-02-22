@@ -20,7 +20,7 @@ class IocType(models.TextChoices):
 
 
 class Sensor(models.Model):
-    address = models.CharField(max_length=15, blank=False, unique=True)
+    address = models.CharField(max_length=39, blank=False, unique=True)
 
     def __str__(self):
         return self.address
@@ -129,7 +129,7 @@ class CowrieSession(models.Model):
 
 
 class Statistics(models.Model):
-    source = models.CharField(max_length=15, blank=False)
+    source = models.CharField(max_length=39, blank=False)
     view = models.CharField(
         max_length=32,
         blank=False,

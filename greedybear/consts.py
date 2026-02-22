@@ -7,7 +7,7 @@ GET = "GET"
 POST = "POST"
 
 REGEX_DOMAIN = r"^[a-zA-Z\d-]{1,60}(\.[a-zA-Z\d-]{1,60})*$"
-REGEX_IP = r"^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$"
+REGEX_IP = r"^(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})$"  # IPv4 only; prefer ipaddress.ip_address() for IPv6 support
 REGEX_PASSWORD = r"^(?=.*[a-zA-Z])\S{12,}$"
 
 DOMAIN = "domain"
