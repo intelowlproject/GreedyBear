@@ -8,9 +8,8 @@ import {
   NavbarToggler,
 } from "reactstrap";
 import { NavLink as RRNavLink } from "react-router-dom";
-import { MdHome, MdOutlineFeed } from "react-icons/md";
+import { MdHome, MdOutlineFeed, MdDashboard } from "react-icons/md";
 import { RiBookReadFill } from "react-icons/ri";
-import { GoDashboard } from "react-icons/go";
 
 // lib
 import { NavLink } from "@certego/certego-ui";
@@ -88,7 +87,7 @@ function AppHeader() {
             </NavItem>
             <NavItem>
               <NavLink className="d-flex-start-center" end to="/dashboard">
-                <GoDashboard />
+                <MdDashboard />
                 <span className="ms-1">Dashboard</span>
               </NavLink>
             </NavItem>
