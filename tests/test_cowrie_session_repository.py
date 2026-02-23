@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from django.db import IntegrityError
 
 from greedybear.cronjobs.repositories import CowrieSessionRepository
-from greedybear.models import IOC, CommandSequence, CowrieSession
+from greedybear.models import IOC, CommandSequence, CowrieFileTransfer, CowrieSession
 
 from . import CustomTestCase
 
@@ -101,6 +101,28 @@ class TestCowrieSessionRepository(CustomTestCase):
                 commands=["different", "commands"],
                 commands_hash=existing.commands_hash,
             )
+
+    def test_save_file_transfer_creates_new(self):
+        """Test that save_file_transfer persists a new CowrieFileTransfer record."""
+        ft = CowrieFileTransfer(
+            transfers=[{"shasum": "a" * 64, "url": "http://malware.com/bad.exe", "dst_filename": "/tmp/bad.exe"}],
+        )
+        result = self.repo.save_file_transfer(ft)
+        self.assertIsNotNone(result.pk)
+        self.assertTrue(CowrieFileTransfer.objects.filter(pk=result.pk).exists())
+        self.assertEqual(len(result.transfers), 1)
+        self.assertEqual(result.transfers[0]["shasum"], "a" * 64)
+
+    def test_save_file_transfer_updates_existing(self):
+        """Test that save_file_transfer updates an existing record."""
+        ft = CowrieFileTransfer(
+            transfers=[{"shasum": "a" * 64, "url": "http://malware.com/bad.exe", "dst_filename": "/tmp/bad.exe"}],
+        )
+        ft.save()
+        ft.transfers.append({"shasum": "b" * 64, "url": "http://evil.com/payload.bin", "dst_filename": "/tmp/payload.bin"})
+        result = self.repo.save_file_transfer(ft)
+        updated = CowrieFileTransfer.objects.get(pk=result.pk)
+        self.assertEqual(len(updated.transfers), 2)
 
 
 class TestCowrieSessionRepositoryCleanup(CustomTestCase):

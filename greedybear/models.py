@@ -103,6 +103,16 @@ class CommandSequence(models.Model):
         return cmd_string[:29] + "..." if len(cmd_string) > 32 else cmd_string
 
 
+class CowrieFileTransfer(models.Model):
+    first_seen = models.DateTimeField(blank=False, default=datetime.now)
+    last_seen = models.DateTimeField(blank=False, default=datetime.now)
+    transfers = models.JSONField(blank=False, null=False, default=list)
+
+    def __str__(self):
+        count = len(self.transfers)
+        return f"{count} file transfer{'s' if count != 1 else ''}"
+
+
 class CowrieSession(models.Model):
     session_id = models.BigIntegerField(primary_key=True)
     start_time = models.DateTimeField(blank=True, null=True)
@@ -118,6 +128,7 @@ class CowrieSession(models.Model):
     interaction_count = models.IntegerField(blank=False, null=False, default=0)
     source = models.ForeignKey(IOC, on_delete=models.CASCADE, blank=False, null=False)
     commands = models.ForeignKey(CommandSequence, on_delete=models.SET_NULL, blank=True, null=True)
+    file_transfers = models.ForeignKey(CowrieFileTransfer, on_delete=models.SET_NULL, blank=True, null=True)
 
     class Meta:
         indexes = [

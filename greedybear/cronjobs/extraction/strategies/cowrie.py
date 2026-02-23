@@ -17,7 +17,7 @@ from greedybear.cronjobs.repositories import (
     IocRepository,
     SensorRepository,
 )
-from greedybear.models import IOC, CommandSequence, CowrieSession
+from greedybear.models import IOC, CommandSequence, CowrieFileTransfer, CowrieSession
 from greedybear.regex import REGEX_URL_PROTOCOL
 
 
@@ -170,7 +170,8 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
             scanner_ip = str(hit["src_ip"])
             download_url = str(hit["url"])
 
-            self.log.info(f"found IP {scanner_ip} downloading from {download_url}")
+            shasum = hit.get("shasum", "")
+            self.log.info(f"found IP {scanner_ip} downloading from {download_url}" + (f" (SHA256: {shasum})" if shasum else ""))
 
             # Extract and track download URL
             if download_url:
@@ -220,6 +221,10 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
                 self.session_repo.save_command_sequence(session_record.commands)
                 self.log.info(f"saved new command execute from {ioc.name} with hash {session_record.commands.commands_hash}")
 
+            if session_record.file_transfers is not None:
+                self.session_repo.save_file_transfer(session_record.file_transfers)
+                self.log.info(f"saved {len(session_record.file_transfers.transfers)} file transfers from {ioc.name}")
+
             self.ioc_repo.save(session_record.source)
             self.session_repo.save_session(session_record)
 
@@ -258,6 +263,24 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
                 command = normalize_command(hit["message"])
                 session_record.commands.last_seen = hit["timestamp"]
                 session_record.commands.commands.append(command)
+
+            case "cowrie.session.file_download" | "cowrie.session.file_upload":
+                shasum = hit.get("shasum")
+                if shasum:
+                    self.log.info(f"found file with shasum {shasum[:8]}... from {ioc.name}")
+
+                    if session_record.file_transfers is None:
+                        session_record.file_transfers = CowrieFileTransfer()
+                        session_record.file_transfers.first_seen = hit["timestamp"]
+
+                    session_record.file_transfers.transfers.append(
+                        {
+                            "shasum": shasum,
+                            "url": hit.get("url", ""),
+                            "dst_filename": hit.get("destfile", ""),
+                        }
+                    )
+                    session_record.file_transfers.last_seen = hit["timestamp"]
 
             case "cowrie.session.closed":
                 session_record.duration = hit["duration"]
