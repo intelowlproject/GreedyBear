@@ -23,7 +23,7 @@
     "react-use": "^17.6.0",
     "reactstrap": "^9.2.3",
     "recharts": "^2.15.4",
-    "sass": "^1.72.0",
+    "sass": "^1.97.3",
     "zustand": "^4.5.7"
   },
   "scripts": {
