@@ -1,6 +1,6 @@
 import logging
 
-from greedybear.models import IOC, CommandSequence, CowrieSession
+from greedybear.models import IOC, CommandSequence, CowrieSession, Download
 
 
 class CowrieSessionRepository:
@@ -73,6 +73,28 @@ class CowrieSessionRepository:
         """
         cmd.save()
         return cmd
+
+    def save_download(self, download: Download) -> Download:
+        """
+        Persist a Download record, deduplicating by shasum and session.
+
+        Args:
+            download: The Download instance to save.
+
+        Returns:
+            The saved or existing Download instance.
+        """
+        record, created = Download.objects.get_or_create(
+            shasum=download.shasum,
+            session=download.session,
+            defaults={
+                "url": download.url,
+                "dst_filename": download.dst_filename,
+                "timestamp": download.timestamp,
+            },
+        )
+        self.log.debug(f"saved new download {download.shasum[:8]}..." if created else f"download {download.shasum[:8]}... already exists")
+        return record
 
     def delete_old_command_sequences(self, cutoff_date) -> int:
         """

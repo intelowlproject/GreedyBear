@@ -28,6 +28,8 @@ REQUIRED_FIELDS = [
     "username",
     "password",
     "t-pot_ip_ext",
+    "shasum",
+    "destfile",
 ]
 
 

@@ -10,7 +10,7 @@ from greedybear.cronjobs.extraction.strategies.cowrie import (
     normalize_credential_field,
     parse_url_hostname,
 )
-from greedybear.models import CommandSequence
+from greedybear.models import CommandSequence, CowrieSession, Download
 from tests import ExtractionTestCase
 
 
@@ -327,6 +327,91 @@ class TestCowrieExtractionStrategy(ExtractionTestCase):
         self.assertTrue(result)
         self.assertEqual(session.commands, existing_cmd_seq)
         self.assertEqual(session.commands.last_seen, "2023-01-01T10:00:10")
+
+    def test_process_session_hit_file_download_with_shasum(self):
+        """Test that file_download events with shasum add a pending Download."""
+        session_record = CowrieSession(session_id=0x123456, source=self.ioc)
+        hit = {
+            "eventid": "cowrie.session.file_download",
+            "timestamp": "2023-01-01T10:00:05",
+            "url": "http://malware.com/bad.exe",
+            "shasum": "a" * 64,
+            "destfile": "/tmp/bad.exe",
+        }
+        ioc = Mock(name="1.2.3.4")
+
+        self.strategy._process_session_hit(session_record, hit, ioc)
+
+        self.assertTrue(hasattr(session_record, "_pending_downloads"))
+        self.assertEqual(len(session_record._pending_downloads), 1)
+        download = session_record._pending_downloads[0]
+        self.assertIsInstance(download, Download)
+        self.assertEqual(download.shasum, "a" * 64)
+        self.assertEqual(download.url, "http://malware.com/bad.exe")
+        self.assertEqual(download.dst_filename, "/tmp/bad.exe")
+        self.assertEqual(session_record.interaction_count, 1)
+
+    def test_process_session_hit_file_download_without_shasum(self):
+        """Test that file_download events without shasum are skipped gracefully."""
+        session_record = CowrieSession(session_id=0x789012, source=self.ioc)
+        hit = {
+            "eventid": "cowrie.session.file_download",
+            "timestamp": "2023-01-01T10:00:05",
+            "url": "http://malware.com/bad.exe",
+        }
+        ioc = Mock(name="1.2.3.4")
+
+        self.strategy._process_session_hit(session_record, hit, ioc)
+
+        self.assertFalse(hasattr(session_record, "_pending_downloads"))
+        self.assertEqual(session_record.interaction_count, 1)
+
+    def test_process_session_hit_file_upload_with_shasum(self):
+        """Test that file_upload events with shasum add a pending Download."""
+        session_record = CowrieSession(session_id=0x345678, source=self.ioc)
+        hit = {
+            "eventid": "cowrie.session.file_upload",
+            "timestamp": "2023-01-01T10:00:07",
+            "shasum": "c" * 64,
+            "destfile": "/tmp/upload.sh",
+        }
+        ioc = Mock(name="1.2.3.4")
+
+        self.strategy._process_session_hit(session_record, hit, ioc)
+
+        self.assertTrue(hasattr(session_record, "_pending_downloads"))
+        self.assertEqual(len(session_record._pending_downloads), 1)
+        download = session_record._pending_downloads[0]
+        self.assertEqual(download.shasum, "c" * 64)
+        self.assertEqual(download.dst_filename, "/tmp/upload.sh")
+        self.assertEqual(session_record.interaction_count, 1)
+
+    def test_get_sessions_saves_pending_downloads(self):
+        """Test that _get_sessions calls save_download for each pending download."""
+        ioc = Mock()
+        ioc.name = "1.2.3.4"
+
+        mock_download = Mock(spec=Download)
+        mock_session = Mock()
+        mock_session.commands = None
+        mock_session._pending_downloads = [mock_download]
+
+        self.mock_session_repo.get_or_create_session.return_value = mock_session
+
+        hits = [
+            {
+                "src_ip": "1.2.3.4",
+                "session": "abc123",
+                "eventid": "cowrie.session.connect",
+                "timestamp": "2023-01-01T10:00:00",
+            }
+        ]
+
+        with patch.object(self.strategy, "_process_session_hit"):
+            self.strategy._get_sessions(ioc, hits)
+
+        self.mock_session_repo.save_session.assert_called_once_with(mock_session)
+        self.mock_session_repo.save_download.assert_called_once_with(mock_download)
 
     @patch("greedybear.cronjobs.extraction.strategies.cowrie.iocs_from_hits")
     def test_extract_from_hits_integration(self, mock_iocs_from_hits):

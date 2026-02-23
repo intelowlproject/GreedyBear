@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from django.db import IntegrityError
 
 from greedybear.cronjobs.repositories import CowrieSessionRepository
-from greedybear.models import IOC, CommandSequence, CowrieSession
+from greedybear.models import IOC, CommandSequence, CowrieSession, Download
 
 from . import CustomTestCase
 
@@ -101,6 +101,42 @@ class TestCowrieSessionRepository(CustomTestCase):
                 commands=["different", "commands"],
                 commands_hash=existing.commands_hash,
             )
+
+    def test_save_download_creates_new(self):
+        """Test that save_download persists a new Download record."""
+        shasum = "a" * 64
+        download = Download(
+            shasum=shasum,
+            url="http://malware.com/bad.exe",
+            dst_filename="/tmp/bad.exe",
+            timestamp=datetime.now(),
+            session=self.cowrie_session,
+        )
+        result = self.repo.save_download(download)
+        self.assertIsNotNone(result.pk)
+        self.assertTrue(Download.objects.filter(shasum=shasum).exists())
+        self.assertEqual(result.url, "http://malware.com/bad.exe")
+
+    def test_save_download_deduplicates_same_hash_and_session(self):
+        """Test that saving the same shasum+session returns the existing record."""
+        shasum = "b" * 64
+        Download.objects.create(
+            shasum=shasum,
+            url="http://malware.com/bad.exe",
+            dst_filename="/tmp/bad.exe",
+            timestamp=datetime.now(),
+            session=self.cowrie_session,
+        )
+        duplicate = Download(
+            shasum=shasum,
+            url="http://different-url.com/other.exe",
+            dst_filename="/tmp/other.exe",
+            timestamp=datetime.now(),
+            session=self.cowrie_session,
+        )
+        result = self.repo.save_download(duplicate)
+        self.assertEqual(Download.objects.filter(shasum=shasum).count(), 1)
+        self.assertEqual(result.url, "http://malware.com/bad.exe")
 
 
 class TestCowrieSessionRepositoryCleanup(CustomTestCase):
