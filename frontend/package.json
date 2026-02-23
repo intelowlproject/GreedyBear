@@ -12,7 +12,7 @@
     "@certego/certego-ui": "0.1.14",
     "axios": "^1.13.5",
     "axios-hooks": "^3.0.4",
-    "bootstrap": ">=5.3.0",
+    "bootstrap": ">=5.3.8",
     "formik": "^2.4.9",
     "prop-types": "^15.8.1",
     "react": "^17.0.2",
