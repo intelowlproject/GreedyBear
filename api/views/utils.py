@@ -3,7 +3,6 @@
 import csv
 import logging
 import re
-import time
 from datetime import datetime, timedelta
 from ipaddress import ip_address
 
@@ -12,17 +11,14 @@ import requests
 from django.conf import settings
 from django.contrib.postgres.aggregates import ArrayAgg
 from django.core.cache import cache
-from django.db import connection
-from django.db.models import Count, F, Max, Min, Q, Sum
+from django.db.models import Count, F, Max, Min, Sum
 from django.http import HttpResponse, HttpResponseBadRequest, StreamingHttpResponse
-from django.utils import timezone
-from django_q.models import Schedule, Task
 from rest_framework import status
 from rest_framework.response import Response
 
 from api.serializers import FeedsRequestSerializer
-from greedybear.consts import CACHE_KEY_GREEDYBEAR_NEWS, CACHE_TIMEOUT_SECONDS, RSS_FEED_URL, START_TIME
-from greedybear.models import IOC, CowrieSession, FireHolList, GeneralHoneypot, MassScanner, Statistics, TorExitNode
+from greedybear.consts import CACHE_KEY_GREEDYBEAR_NEWS, CACHE_TIMEOUT_SECONDS, RSS_FEED_URL
+from greedybear.models import IOC, GeneralHoneypot, Statistics
 
 logger = logging.getLogger(__name__)
 
@@ -463,113 +459,3 @@ def get_greedybear_news() -> list[dict]:
             exc_info=exc,
         )
         return []
-
-
-def get_status_overview():
-    """
-    Fetches the current system health and aggregated overview of IOCs, sessions, honeypots, threat lists, and Django-Q jobs.
-    Returns a dictionary with 'system' and 'overview' keys summarizing statuses and counts.
-    """
-    now = timezone.now()
-    last_24h = now - timedelta(hours=24)
-    last_10min = now - timedelta(minutes=10)
-
-    # checking db status first
-    db_status = "up"
-    try:
-        with connection.cursor() as cursor:
-            cursor.execute("SELECT 1")
-            cursor.fetchone()
-    except Exception:
-        logger.exception("Database connectivity check failed")
-        db_status = "down"
-
-    # elasticsearch status
-    es_status = "not configured"
-    es_client = getattr(settings, "ELASTIC_CLIENT", None)
-    if es_client:
-        try:
-            health = es_client.cluster.health(timeout="5s")
-            es_status = {
-                "green": "up",
-                "yellow": "up",
-                "red": "down",
-            }.get(health.get("status"), "unknown")
-        except Exception as e:
-            print(e)
-            logger.exception("Elasticsearch health check failed")
-            es_status = "down"
-
-    overview = {}
-    q_status = "unknown"
-
-    # techinically if  db is down then trying to query the data is waste cycle.
-    # also qcluster is depends on the db so we need to have db up to check qcluster status
-    if db_status == "up":
-        try:
-            ioc_stats = IOC.objects.aggregate(
-                total=Count("id"),
-                new_last_24h=Count("id", filter=Q(first_seen__gte=last_24h)),
-            )
-
-            session_stats = CowrieSession.objects.aggregate(
-                total=Count("session_id"),
-                last_24h=Count("session_id", filter=Q(start_time__gte=last_24h)),
-            )
-
-            job_stats = Task.objects.aggregate(
-                failed_last_24h=Count("id", filter=Q(success=False, stopped__gte=last_24h)),
-                successful_last_24h=Count("id", filter=Q(success=True, stopped__gte=last_24h)),
-                recent_activity=Count("id", filter=Q(stopped__gte=last_10min)),
-            )
-            scheduled_count = Schedule.objects.count()
-
-            # As django_q monitor supports fast shared memory behavior
-            # which is not configured in our system so we are depended to
-            # check status via db
-            # for more details: https://django-q2.readthedocs.io/en/master/monitor.html#status
-            if job_stats["recent_activity"] > 0:
-                q_status = "up"
-            elif scheduled_count > 0:
-                q_status = "idle"
-            else:
-                q_status = "down"
-
-            overview = {
-                "iocs": {
-                    "total": ioc_stats["total"],
-                    "new_last_24h": ioc_stats["new_last_24h"],
-                },
-                "sessions": {
-                    "total": session_stats["total"],
-                    "last_24h": session_stats["last_24h"],
-                },
-                "honeypots": {
-                    "total": GeneralHoneypot.objects.count(),
-                    "active": GeneralHoneypot.objects.filter(active=True).count(),
-                },
-                "threat_lists": {
-                    "firehol": FireHolList.objects.count(),
-                    "mass_scanners": MassScanner.objects.count(),
-                    "tor_exit_nodes": TorExitNode.objects.count(),
-                },
-                "jobs": {
-                    "scheduled": scheduled_count,
-                    "failed_last_24h": job_stats["failed_last_24h"],
-                    "successful_last_24h": job_stats["successful_last_24h"],
-                },
-            }
-
-        except Exception:
-            logger.exception("Status aggregation failed db may be degraded")
-            db_status = "degraded"
-
-    return {
-        "system": {
-            "uptime_seconds": int(time.time() - START_TIME),
-            "database": db_status,
-            "qcluster": q_status,
-            "elasticsearch": es_status,
-        },
-        "overview": overview,
-    }
