@@ -45,7 +45,7 @@ urlpatterns = [
     ),
     path("reset-password", PasswordResetView.as_view(), name="auth_reset-password"),
     path("login", LoginView.as_view(), name="auth_login"),
-    path("changepassword", ChangePasswordView.as_view(), name="auth_changepassword"),
+    path("change-password", ChangePasswordView.as_view(), name="auth_change-password"),
     path("configuration", check_configuration),
     # auth
     path("", include("certego_saas.apps.auth.urls")),

@@ -37,7 +37,7 @@ function UserMenu(props) {
         <DropdownNavLink to="/me/sessions">
           <IoMdKey className="me-2" /> API Access / Sessions
         </DropdownNavLink>
-        <DropdownNavLink to="/me/changepassword">
+        <DropdownNavLink to="/me/change-password">
           <MdPassword className="me-2" /> Change Password
         </DropdownNavLink>
         <DropdownItem divider />

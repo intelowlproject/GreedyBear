@@ -1,5 +1,4 @@
 import logging
-import re
 
 import rest_email_auth.views
 from certego_saas.apps.auth import views as certego_views
@@ -7,7 +6,6 @@ from certego_saas.apps.auth.backend import CookieTokenAuthentication
 from certego_saas.ext.throttling import POSTUserRateThrottle
 from django.conf import settings
 from django.contrib.auth import get_user_model, login
-from django.contrib.auth.hashers import check_password
 from django.core.cache import cache
 from durin import views as durin_views
 from rest_framework import status
@@ -21,11 +19,12 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from greedybear.consts import GET, REGEX_PASSWORD
+from greedybear.consts import GET
 from greedybear.enums import FrontendPage
 from greedybear.settings import AUTH_USER_MODEL
 
 from .serializers import (
+    ChangePasswordSerializer,
     EmailVerificationSerializer,
     LoginSerializer,
     RegistrationSerializer,
@@ -145,10 +144,10 @@ class ChangePasswordView(APIView):
     """
 
     permission_classes = [IsAuthenticated]
+    throttle_classes = [POSTUserRateThrottle]
 
     @staticmethod
     def post(request: Request) -> Response:
-        # Get the old password and new password from the request data
         """
         Handles POST request for changing user password.
 
@@ -158,24 +157,11 @@ class ChangePasswordView(APIView):
         Returns:
             Response: The response object.
         """
-        old_password = request.data.get("old_password")
-        new_password = request.data.get("new_password")
+        serializer = ChangePasswordSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
 
-        # Check if the old password matches the user's current password
         user = request.user
-        uname = user.username
-        if not check_password(old_password, user.password):
-            logger.info(f"'{uname}' has inputted invalid old password.")
-            # Return an error response if the old password doesn't match
-            return Response({"error": "Invalid old password"}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Validate the new password
-        if not re.match(REGEX_PASSWORD, new_password):
-            logger.info(f"'{uname}' has inputted invalid new password.")
-            return Response(
-                {"error": "Invalid new password."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+        new_password = serializer.validated_data["new_password"]
 
         # Set the new password for the user
         user.set_password(new_password)

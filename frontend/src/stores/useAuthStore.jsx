@@ -57,14 +57,10 @@ const useAuthStore = create((set, get) => ({
     loginUser: async (body) => {
       try {
         set({ isAuthenticated: AUTHENTICATION_STATUSES.PENDING });
-        const resp = await axios.post(
-          LOGIN_URI,
-          body,
-          { headers: { "Content-Type": "application/json" } },
-          {
-            certegoUIenableProgressBar: false,
-          },
-        );
+        const resp = await axios.post(LOGIN_URI, body, {
+          certegoUIenableProgressBar: false,
+          headers: { "Content-Type": "application/json" },
+        });
         set({ isAuthenticated: AUTHENTICATION_STATUSES.TRUE });
         addToast("You've been logged in!", null, "success");
         return Promise.resolve(resp);
@@ -89,14 +85,10 @@ const useAuthStore = create((set, get) => ({
     },
     changePassword: async (body) => {
       try {
-        const resp = await axios.post(
-          CHANGE_PASSWORD_URI,
-          body,
-          { headers: { "Content-Type": "application/json" } },
-          {
-            certegoUIenableProgressBar: false,
-          },
-        );
+        const resp = await axios.post(CHANGE_PASSWORD_URI, body, {
+          headers: { "Content-Type": "application/json" },
+          certegoUIenableProgressBar: false,
+        });
         addToast("Password changed successfully!", null, "success");
         return Promise.resolve(resp);
       } catch (err) {

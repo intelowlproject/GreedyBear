@@ -3,7 +3,6 @@ import { FallBackLoading } from "@certego/certego-ui";
 
 import IfAuthRedirectGuard from "../wrappers/ifAuthRedirectGuard";
 import AuthGuard from "../wrappers/AuthGuard";
-import ChangePassword from "./me/changepassword/ChangePassword";
 
 const Home = React.lazy(() => import("./home/Home"));
 const Login = React.lazy(() => import("./auth/Login"));
@@ -14,6 +13,9 @@ const ResetPassword = React.lazy(() => import("./auth/ResetPassword"));
 const Dashboard = React.lazy(() => import("./dashboard/Dashboard"));
 const Sessions = React.lazy(() => import("./me/sessions/Sessions"));
 const Feeds = React.lazy(() => import("./feeds/Feeds"));
+const ChangePassword = React.lazy(
+  () => import("./me/changepassword/ChangePassword"),
+);
 
 // public components
 const publicRoutesLazy = [
@@ -98,7 +100,7 @@ const authRoutesLazy = [
   },
   /* Change Password */
   {
-    path: "/me/changepassword",
+    path: "/me/change-password",
     element: (
       <Suspense fallback={<FallBackLoading />}>
         <ChangePassword />

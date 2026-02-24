@@ -40,7 +40,7 @@ const validateForm = (values) => {
 // Component
 export default function ChangePassword() {
   // page title
-  useTitle("GreedyBear", { restoreOnUnmount: true });
+  useTitle("GreedyBear | Change Password", { restoreOnUnmount: true });
 
   const [isAuthenticated, changePassword] = useAuthStore(
     React.useCallback((s) => [s.isAuthenticated, s.service.changePassword], []),
