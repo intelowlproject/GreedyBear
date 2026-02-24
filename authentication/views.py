@@ -8,6 +8,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model, login
 from django.core.cache import cache
 from durin import views as durin_views
+from durin.models import AuthToken
 from rest_framework import status
 from rest_framework.decorators import (
     api_view,
@@ -166,6 +167,11 @@ class ChangePasswordView(APIView):
         # Set the new password for the user
         user.set_password(new_password)
         user.save()
+
+        if request.auth:
+            AuthToken.objects.filter(user=user).exclude(pk=request.auth.pk).delete()
+        else:
+            AuthToken.objects.filter(user=user).delete()
 
         # Return a success response
         return Response({"message": "Password changed successfully"})
