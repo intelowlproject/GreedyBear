@@ -16,9 +16,8 @@ describe("IntelOwl Analyze column", () => {
       INTELOWL_URL: "https://intelowl.example.com",
       PUBLIC_URL: "",
     }));
-    const { feedsTableColumns: columns } = await import(
-      "../../../src/components/feeds/tableColumns"
-    );
+    const { feedsTableColumns: columns } =
+      await import("../../../src/components/feeds/tableColumns");
     const col = columns.find((c) => c.id === "intelowl");
     expect(col).toBeDefined();
     render(<col.Cell row={row} />);
@@ -34,9 +33,8 @@ describe("IntelOwl Analyze column", () => {
       INTELOWL_URL: "",
       PUBLIC_URL: "",
     }));
-    const { feedsTableColumns: columns } = await import(
-      "../../../src/components/feeds/tableColumns"
-    );
+    const { feedsTableColumns: columns } =
+      await import("../../../src/components/feeds/tableColumns");
     const col = columns.find((c) => c.id === "intelowl");
     expect(col).toBeUndefined();
   });
@@ -46,9 +44,8 @@ describe("IntelOwl Analyze column", () => {
       INTELOWL_URL: "https://intelowl.example.com",
       PUBLIC_URL: "",
     }));
-    const { feedsTableColumns: columns } = await import(
-      "../../../src/components/feeds/tableColumns"
-    );
+    const { feedsTableColumns: columns } =
+      await import("../../../src/components/feeds/tableColumns");
     const col = columns.find((c) => c.id === "intelowl");
     const specialRow = { original: { value: "evil domain.com/path?q=1&x=2" } };
     render(<col.Cell row={specialRow} />);
