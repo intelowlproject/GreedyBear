@@ -18,11 +18,7 @@ function Home() {
   return (
     <>
       {/* BG Image */}
-      <Container
-        fluid
-        id="home__bgImg"
-        style={{ backgroundImage: logoBgImg }}
-      >
+      <Container fluid id="home__bgImg" style={{ backgroundImage: logoBgImg }}>
         <h2
           id="home__versionText"
           className="text-accent"
