@@ -66,8 +66,10 @@ describe("ChangePassword component", () => {
           old_password: "oldPassword123!",
           new_password: "newValidPassword123!",
         }),
-        { headers: { "Content-Type": "application/json" } },
-        { certegoUIenableProgressBar: false },
+        {
+          headers: { "Content-Type": "application/json" },
+          certegoUIenableProgressBar: false,
+        },
       );
     });
   });
