@@ -174,3 +174,21 @@ class WhatsMyIPDomain(models.Model):
 
     def __str__(self):
         return self.domain
+
+
+class Tag(models.Model):
+    """Tags for IOCs from enrichment sources like ThreatFox and AbuseIPDB."""
+
+    ioc = models.ForeignKey(IOC, on_delete=models.CASCADE, related_name="tags")
+    key = models.CharField(max_length=128, blank=False)
+    value = models.CharField(max_length=256, blank=False)
+    source = models.CharField(max_length=64, blank=False)  # e.g., "threatfox", "abuseipdb"
+    added = models.DateTimeField(blank=False, default=datetime.now)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["ioc", "source"]),
+        ]
+
+    def __str__(self):
+        return f"{self.ioc.name} - {self.key}: {self.value} ({self.source})"

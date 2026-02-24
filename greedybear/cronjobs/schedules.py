@@ -71,6 +71,18 @@ def setup_schedules():
             "func": "greedybear.tasks.get_tor_exit_nodes",
             "cron": "7 1 * * 0",
         },
+        # 11. ThreatFox Enrichment: Weekly (Sunday) at 01:07
+        {
+            "name": "enrich_threatfox",
+            "func": "greedybear.tasks.enrich_threatfox",
+            "cron": "7 1 * * 0",
+        },
+        # 12. AbuseIPDB Enrichment: Weekly (Sunday) at 01:07
+        {
+            "name": "enrich_abuseipdb",
+            "func": "greedybear.tasks.enrich_abuseipdb",
+            "cron": "7 1 * * 0",
+        },
     ]
 
     # create or update schedules
