@@ -24,7 +24,7 @@
     "reactstrap": "^9.2.3",
     "recharts": "^2.15.4",
     "sass": "^1.97.3",
-    "zustand": "^4.5.7"
+    "zustand": "^5.0.11"
   },
   "scripts": {
     "start": "vite --port 3001",
