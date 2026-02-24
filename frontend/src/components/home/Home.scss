@@ -18,6 +18,7 @@ html {
   background-size: 15%;
   background-repeat: no-repeat;
   min-height: 100% !important;
+  background-size: clamp(200px, 15vw, 300px) auto;
 }
 
 #home__versionText {

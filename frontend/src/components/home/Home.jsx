@@ -21,10 +21,7 @@ function Home() {
       <Container
         fluid
         id="home__bgImg"
-        style={{
-          backgroundImage: logoBgImg,
-          backgroundSize: "clamp(200px, 15vw, 300px) auto",
-        }}
+        style={{ backgroundImage: logoBgImg }}
       >
         <h2
           id="home__versionText"
