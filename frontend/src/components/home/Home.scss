@@ -15,10 +15,9 @@ html {
   left: -50px;
   opacity: 1;
   background-position: center;
-  background-size: 15%;
+  background-size: clamp(200px, 15vw, 300px) auto;
   background-repeat: no-repeat;
   min-height: 100% !important;
-  background-size: clamp(200px, 15vw, 300px) auto;
 }
 
 #home__versionText {
