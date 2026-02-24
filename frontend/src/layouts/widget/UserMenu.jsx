@@ -7,6 +7,7 @@ import {
 } from "reactstrap";
 import { FiLogOut } from "react-icons/fi";
 import { IoMdKey, IoMdSettings } from "react-icons/io";
+import { MdPassword } from "react-icons/md";
 
 import { UserBubble, DropdownNavLink } from "@certego/certego-ui";
 
@@ -35,6 +36,9 @@ function UserMenu(props) {
         {/* API Access/Sessions */}
         <DropdownNavLink to="/me/sessions">
           <IoMdKey className="me-2" /> API Access / Sessions
+        </DropdownNavLink>
+        <DropdownNavLink to="/me/change-password">
+          <MdPassword className="me-2" /> Change Password
         </DropdownNavLink>
         <DropdownItem divider />
         {/* Logout */}

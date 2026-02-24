@@ -8,6 +8,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model, login
 from django.core.cache import cache
 from durin import views as durin_views
+from durin.models import AuthToken
 from rest_framework import status
 from rest_framework.decorators import (
     api_view,
@@ -15,13 +16,16 @@ from rest_framework.decorators import (
     permission_classes,
 )
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.request import Request
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from greedybear.consts import GET
 from greedybear.enums import FrontendPage
 from greedybear.settings import AUTH_USER_MODEL
 
 from .serializers import (
+    ChangePasswordSerializer,
     EmailVerificationSerializer,
     LoginSerializer,
     RegistrationSerializer,
@@ -133,6 +137,44 @@ class LoginView(certego_views.LoginView):
         # as this is the first endpoint hit by a user.
         cache.set("current_site", request.get_host(), timeout=60 * 60 * 24)
         return response
+
+
+class ChangePasswordView(APIView):
+    """
+    Handles changing user password.
+    """
+
+    permission_classes = [IsAuthenticated]
+    throttle_classes = [POSTUserRateThrottle]
+
+    @staticmethod
+    def post(request: Request) -> Response:
+        """
+        Handles POST request for changing user password.
+
+        Args:
+            request (Request): The request object containing old and new passwords.
+
+        Returns:
+            Response: The response object.
+        """
+        serializer = ChangePasswordSerializer(data=request.data, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+
+        user = request.user
+        new_password = serializer.validated_data["new_password"]
+
+        # Set the new password for the user
+        user.set_password(new_password)
+        user.save()
+
+        if request.auth:
+            AuthToken.objects.filter(user=user).exclude(pk=request.auth.pk).delete()
+        else:
+            AuthToken.objects.filter(user=user).delete()
+
+        # Return a success response
+        return Response({"message": "Password changed successfully"})
 
 
 TokenSessionsViewSet = durin_views.TokenSessionsViewSet
