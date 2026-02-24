@@ -132,7 +132,7 @@ const feedsTableColumns = [
           Cell: ({ row }) => (
             <div className="d-flex justify-content-center">
               <a
-                href={`${INTELOWL_URL}/scan?observable_name=${row.original.value}`}
+                href={`${INTELOWL_URL}/scan?observable_name=${encodeURIComponent(row.original.value)}`}
                 target="_blank"
                 rel="noreferrer"
                 title={`Analyze ${row.original.value} on IntelOwl`}
