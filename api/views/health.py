@@ -1,11 +1,10 @@
 import logging
 import time
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from django.conf import settings
 from django.db import connection
 from django.db.models import Count, Q
-from django.utils import timezone
 from django_q.models import Schedule, Task
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAdminUser
@@ -129,7 +128,7 @@ def get_status_overview():
     Builds the complete health overview response.
     """
 
-    now = timezone.now()
+    now = datetime.now()
     last_24h = now - timedelta(hours=24)
     last_10min = now - timedelta(minutes=10)
 
@@ -152,8 +151,8 @@ def get_status_overview():
                 "jobs": job_data,
             }
 
-        except Exception:
-            logger.exception("Status aggregation failed : {e}")
+        except Exception as e:
+            logger.exception(f"Status aggregation failed : {e}")
             db_status = "degraded"
 
     return {

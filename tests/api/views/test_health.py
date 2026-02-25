@@ -1,8 +1,8 @@
+from datetime import datetime, timedelta
 from unittest.mock import MagicMock, patch
 
 from django.contrib.auth import get_user_model
 from django.test import override_settings
-from django.utils import timezone
 from rest_framework.test import APIClient
 
 from greedybear.models import IOC, GeneralHoneypot
@@ -35,7 +35,7 @@ class HealthViewTestCase(CustomTestCase):
             attack_count=5,
             interaction_count=10,
             login_attempts=2,
-            first_seen=timezone.now() - timezone.timedelta(days=2),
+            first_seen=datetime.now() - timedelta(days=2),
         )
         cls.ioc1.general_honeypot.add(cls.testpot1, cls.testpot2)
 
@@ -45,14 +45,14 @@ class HealthViewTestCase(CustomTestCase):
             attack_count=2,
             interaction_count=5,
             login_attempts=1,
-            first_seen=timezone.now() - timezone.timedelta(hours=5),
+            first_seen=datetime.now() - timedelta(hours=5),
         )
         cls.ioc2.general_honeypot.add(cls.testpot1)
 
     def setUp(self):
         self.client = APIClient()
         self.client.force_authenticate(user=self.superuser)
-        self.url = "/api/health/overview/"
+        self.url = "/api/health/"
 
     def _get_payload(self, response):
         self.assertEqual(response.status_code, 200)
