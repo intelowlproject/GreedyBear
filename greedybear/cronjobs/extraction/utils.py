@@ -8,7 +8,7 @@ import requests
 from django.conf import settings
 
 from greedybear.consts import DOMAIN, IP
-from greedybear.models import IOC, FireHolList, MassScanner, WhatsMyIPDomain
+from greedybear.models import IOC, AutonomousSystem, FireHolList, MassScanner, WhatsMyIPDomain
 
 
 def is_whatsmyip_domain(domain: str) -> bool:
@@ -31,6 +31,7 @@ def is_whatsmyip_domain(domain: str) -> bool:
 def correct_ip_reputation(ip: str, ip_reputation: str) -> str:
     """
     Correct IP reputation based on mass scanner database.
+
     Overrides reputation to "mass scanner" if the IP is found in the MassScanners table.
     This is necessary because we have seen "mass scanners" incorrectly flagged.
 
@@ -54,6 +55,7 @@ def correct_ip_reputation(ip: str, ip_reputation: str) -> str:
 def get_firehol_categories(ip: str, extracted_ip) -> list[str]:
     """
     Get FireHol categories for an IP address.
+
     Checks both exact IP matches (for .ipset files) and network range
     membership (for .netset files with CIDR notation).
 
@@ -65,12 +67,10 @@ def get_firehol_categories(ip: str, extracted_ip) -> list[str]:
         List of FireHol source categories.
     """
     firehol_categories = []
-
     # First check for exact IP match (for .ipset files)
     exact_matches = FireHolList.objects.filter(ip_address=ip).values_list("source", flat=True)
     # Filter out empty strings (from default='')
     firehol_categories.extend([source for source in exact_matches if source])
-
     # Then check if IP is within any network ranges (for .netset files)
     # Only query entries that contain '/' (CIDR notation)
     network_entries = FireHolList.objects.filter(ip_address__contains="/")
@@ -83,13 +83,13 @@ def get_firehol_categories(ip: str, extracted_ip) -> list[str]:
         except (ValueError, IndexError):
             # Not a valid network range, skip
             continue
-
     return firehol_categories
 
 
 def iocs_from_hits(hits: list[dict]) -> list[IOC]:
     """
     Convert Elasticsearch hits into IOC objects with associated sensors.
+
     Groups hits by source IP, filters out non-global addresses, and
     constructs IOC objects with aggregated data.
     Enriches IOCs with FireHol categories at creation time to ensure
@@ -104,6 +104,7 @@ def iocs_from_hits(hits: list[dict]) -> list[IOC]:
     hits_by_ip = defaultdict(list)
     for hit in hits:
         hits_by_ip[hit["src_ip"]].append(hit)
+
     iocs = []
     for ip, hits in hits_by_ip.items():
         dest_ports = [hit["dest_port"] for hit in hits if "dest_port" in hit]
@@ -119,13 +120,23 @@ def iocs_from_hits(hits: list[dict]) -> list[IOC]:
         # Sort sensors by ID for consistent processing order
         sensors.sort(key=lambda s: s.id)
 
+        # Get or create AutonomousSystem
+        asn_number = hits[0].get("geoip", {}).get("asn")
+        as_name = hits[0].get("geoip", {}).get("as_organization", "")
+        autonomous_system = None
+        if asn_number:
+            autonomous_system, _ = AutonomousSystem.objects.get_or_create(
+                asn=asn_number,
+                defaults={"name": as_name},
+            )
+
         ioc = IOC(
             name=ip,
             type=get_ioc_type(ip),
             interaction_count=len(hits),
             ip_reputation=correct_ip_reputation(ip, hits[0].get("ip_rep", "")),
-            asn=hits[0].get("geoip", {}).get("asn"),
             destination_ports=sorted(set(dest_ports)),
+            autonomous_system=autonomous_system,
             login_attempts=len(hits) if hits[0].get("type", "") == "Heralding" else 0,
             firehol_categories=firehol_categories,
         )
@@ -194,6 +205,7 @@ def get_ioc_type(ioc: str) -> str:
 def threatfox_submission(ioc_record: IOC, related_urls: list, log: Logger) -> None:
     """
     Submit IOC URLs to ThreatFox threat intelligence platform.
+
     Only submits payload request IOCs with URLs containing paths,
     because they are more reliable than scanners.
     Requires THREATFOX_API_KEY to be configured in settings.
@@ -205,11 +217,9 @@ def threatfox_submission(ioc_record: IOC, related_urls: list, log: Logger) -> No
     """
     if not ioc_record.payload_request:
         return
-
     if not settings.THREATFOX_API_KEY:
         log.warning("Threatfox API Key not available")
         return
-
     urls_to_submit = []
     # submit only URLs with paths to avoid false positives
     for related_url in related_urls:
@@ -218,17 +228,13 @@ def threatfox_submission(ioc_record: IOC, related_urls: list, log: Logger) -> No
             urls_to_submit.append(related_url)
         else:
             log.info(f"skipping export of {related_url} cause has no path")
-
     if not urls_to_submit:
         log.info("No URLs with paths to submit")
         return
-
     headers = {"Auth-Key": settings.THREATFOX_API_KEY}
     log.info(f"submitting IOC {urls_to_submit} to Threatfox")
-
     seen_honeypots = [hp.name for hp in ioc_record.general_honeypot.all()]
     seen_honeypots_str = ", ".join(seen_honeypots)
-
     json_data = {
         "query": "submit_ioc",
         "threat_type": "payload_delivery",

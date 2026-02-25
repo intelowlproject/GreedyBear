@@ -8,6 +8,7 @@ from django_test_migrations.migrator import Migrator
 
 from greedybear.models import (
     IOC,
+    AutonomousSystem,
     CommandSequence,
     CowrieSession,
     GeneralHoneypot,
@@ -19,17 +20,17 @@ class CustomTestCase(TestCase):
     @classmethod
     def setUpTestData(cls):
         super().setUpTestData()
-
         cls.heralding = GeneralHoneypot.objects.get_or_create(name="Heralding", defaults={"active": True})[0]
         cls.ciscoasa = GeneralHoneypot.objects.get_or_create(name="Ciscoasa", defaults={"active": True})[0]
         cls.ddospot = GeneralHoneypot.objects.get_or_create(name="Ddospot", defaults={"active": False})[0]
-
         cls.current_time = datetime.now()
-
         # Create honeypots for Cowrie and Log4pot (replacing boolean fields)
         cls.cowrie_hp = GeneralHoneypot.objects.get_or_create(name="Cowrie", defaults={"active": True})[0]
         cls.log4pot_hp = GeneralHoneypot.objects.get_or_create(name="Log4pot", defaults={"active": True})[0]
-
+        cls.autonomous_system = AutonomousSystem.objects.get_or_create(
+            asn=12345,
+            defaults={"name": "Test AS"},
+        )[0]
         cls.ioc = IOC.objects.create(
             name="140.246.171.141",
             type=IocType.IP.value,
@@ -43,13 +44,12 @@ class CustomTestCase(TestCase):
             payload_request=True,
             related_urls=[],
             ip_reputation="",
-            asn="12345",
+            autonomous_system=cls.autonomous_system,
             destination_ports=[22, 23, 24],
             login_attempts=1,
             recurrence_probability=0.1,
             expected_interactions=11.1,
         )
-
         cls.ioc_2 = IOC.objects.create(
             name="99.99.99.99",
             type=IocType.IP.value,
@@ -63,13 +63,12 @@ class CustomTestCase(TestCase):
             payload_request=True,
             related_urls=[],
             ip_reputation="mass scanner",
-            asn="12345",
+            autonomous_system=cls.autonomous_system,
             destination_ports=[22, 23, 24],
             login_attempts=1,
             recurrence_probability=0.1,
             expected_interactions=11.1,
         )
-
         cls.ioc_3 = IOC.objects.create(
             name="100.100.100.100",
             type=IocType.IP.value,
@@ -83,13 +82,12 @@ class CustomTestCase(TestCase):
             payload_request=True,
             related_urls=[],
             ip_reputation="tor exit node",
-            asn="12345",
+            autonomous_system=cls.autonomous_system,
             destination_ports=[22, 23, 24],
             login_attempts=1,
             recurrence_probability=0.1,
             expected_interactions=11.1,
         )
-
         cls.ioc_domain = IOC.objects.create(
             name="malicious.example.com",
             type=IocType.DOMAIN.value,
@@ -103,13 +101,12 @@ class CustomTestCase(TestCase):
             payload_request=True,
             related_urls=[],
             ip_reputation="",
-            asn=None,
+            autonomous_system=None,
             destination_ports=[],
             login_attempts=0,
             recurrence_probability=0.2,
             expected_interactions=5.5,
         )
-
         cls.ioc.general_honeypot.add(cls.heralding)  # FEEDS
         cls.ioc.general_honeypot.add(cls.ciscoasa)  # FEEDS
         cls.ioc.general_honeypot.add(cls.cowrie_hp)  # Cowrie honeypot
@@ -125,7 +122,6 @@ class CustomTestCase(TestCase):
         cls.ioc_domain.general_honeypot.add(cls.heralding)  # FEEDS
         cls.ioc_domain.general_honeypot.add(cls.log4pot_hp)  # Log4pot honeypot
         cls.ioc_domain.save()
-
         cls.cmd_seq = ["cd foo", "ls -la"]
         cls.hash = sha256("\n".join(cls.cmd_seq).encode()).hexdigest()
         cls.command_sequence = CommandSequence.objects.create(
@@ -136,7 +132,6 @@ class CustomTestCase(TestCase):
             cluster=11,
         )
         cls.command_sequence.save()
-
         cls.cowrie_session = CowrieSession.objects.create(
             session_id=int("ffffffffffff", 16),
             start_time=cls.current_time,
@@ -149,7 +144,6 @@ class CustomTestCase(TestCase):
             commands=cls.command_sequence,
         )
         cls.cowrie_session.save()
-
         cls.cmd_seq_2 = ["cd bar", "ls -la"]
         cls.command_sequence_2 = CommandSequence.objects.create(
             first_seen=cls.current_time,
@@ -159,7 +153,6 @@ class CustomTestCase(TestCase):
             cluster=11,
         )
         cls.command_sequence_2.save()
-
         cls.cowrie_session_2 = CowrieSession.objects.create(
             session_id=int("eeeeeeeeeeee", 16),
             start_time=cls.current_time,
@@ -172,7 +165,6 @@ class CustomTestCase(TestCase):
             commands=cls.command_sequence_2,
         )
         cls.cowrie_session_2.save()
-
         try:
             cls.superuser = User.objects.get(is_superuser=True)
         except User.DoesNotExist:
@@ -265,7 +257,6 @@ class MigrationTestCase(TransactionTestCase):
 
 class E2ETestCase(ExtractionTestCase):
     """Base test case for E2E pipeline tests with real strategies.
-
     This base class provides helpers for creating pipelines with mocked
     repositories but REAL strategies, enabling true integration testing.
     """
@@ -273,10 +264,8 @@ class E2ETestCase(ExtractionTestCase):
     def _create_pipeline_with_real_factory(self):
         """
         Create a pipeline with mocked repositories but REAL factory/strategies.
-
         This approach tests the actual integration:
-        Pipeline → real Factory → real Strategy → IOC extraction
-
+        Pipeline -> real Factory -> real Strategy -> IOC extraction
         Returns:
             ExtractionPipeline: Pipeline with mocked repos, real strategies.
         """
@@ -290,4 +279,4 @@ class E2ETestCase(ExtractionTestCase):
             from greedybear.cronjobs.extraction.pipeline import ExtractionPipeline
 
             pipeline = ExtractionPipeline()
-            return pipeline
+        return pipeline
