@@ -428,3 +428,40 @@ class TestIocContentVerification(E2ETestCase):
                         "IOC scanner field should contain 'Heralding'",
                     )
                     break
+
+
+class TestGeoIPEnrichmentE2E(E2ETestCase):
+    """E2E test for sensor GeoIP enrichment."""
+
+    @patch("greedybear.cronjobs.extraction.pipeline.UpdateScores")
+    def test_geoip_enrichment_sensor_only(self, mock_scores):
+        pipeline = self._create_pipeline_with_real_factory()
+
+        hits = [
+            MockElasticHit(
+                {
+                    "src_ip": "203.0.113.10",
+                    "type": "Heralding",
+                    "dest_port": 22,
+                    "@timestamp": "2025-01-01T10:00:00",
+                    "geoip_ext": {"country_name": "Nepal"},
+                    "t-pot_ip_ext": "10.10.10.10",
+                }
+            ),
+        ]
+
+        pipeline.elastic_repo.search.return_value = [hits]
+        pipeline.ioc_repo.is_empty.return_value = False
+
+        # running the pipeline
+        result = pipeline.execute()
+
+        # sensor enrichment should happen here
+        sensor = pipeline.sensor_repo.get_or_create_sensor("10.10.10.10")
+        self.assertEqual(sensor.country, "Nepal")
+
+        # since no IOC is created here, so result is 0
+        self.assertEqual(result, 0)
+
+        #  UpdateScores should NOT be called
+        mock_scores.return_value.score_only.assert_not_called()

@@ -119,6 +119,9 @@ def iocs_from_hits(hits: list[dict]) -> list[IOC]:
         # Sort sensors by ID for consistent processing order
         sensors.sort(key=lambda s: s.id)
 
+        geoip = hits[0].get("geoip", {}) if hits else {}
+        attacker_country = geoip.get("country_name") or ""
+
         ioc = IOC(
             name=ip,
             type=get_ioc_type(ip),
@@ -128,6 +131,7 @@ def iocs_from_hits(hits: list[dict]) -> list[IOC]:
             destination_ports=sorted(set(dest_ports)),
             login_attempts=len(hits) if hits[0].get("type", "") == "Heralding" else 0,
             firehol_categories=firehol_categories,
+            attacker_country=attacker_country,
         )
         # Attach sensors to temporary attribute for later processing.
         # We cannot use `ioc.sensors.add()` here because the IOC instance is not yet saved
