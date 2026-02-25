@@ -11,7 +11,7 @@ from greedybear.models import (
     CommandSequence,
     CowrieSession,
     FireHolList,
-    GeneralHoneypot,
+    Honeypot,
     MassScanner,
     Sensor,
     Statistics,
@@ -155,8 +155,8 @@ class IOCModelAdmin(admin.ModelAdmin):
         return super().get_queryset(request).prefetch_related("sensors", "general_honeypot")
 
 
-@admin.register(GeneralHoneypot)
-class GeneralHoneypotAdmin(admin.ModelAdmin):
+@admin.register(Honeypot)
+class HoneypotAdmin(admin.ModelAdmin):
     list_display = [
         "name",
         "active",
