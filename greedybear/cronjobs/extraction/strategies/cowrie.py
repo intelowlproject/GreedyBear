@@ -216,10 +216,18 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
                 self._process_session_hit(session_record, hit, ioc)
 
             if session_record.commands is not None:
-                self._deduplicate_command_sequence(session_record)
+                is_duplicate = self._deduplicate_command_sequence(session_record)
+            if not is_duplicate:
                 self.session_repo.save_command_sequence(session_record.commands)
-                self.log.info(f"saved new command execute from {ioc.name} with hash {session_record.commands.commands_hash}")
-
+                self.log.info(
+                    f"saved new command sequence from {ioc.name} "
+                    f"with hash {session_record.commands.commands_hash}"
+                )
+            else:
+                self.log.info(
+                    f"merged session with existing command sequence "
+                    f"(hash: {session_record.commands.commands_hash})"
+                )
             self.ioc_repo.save(session_record.source)
             self.session_repo.save_session(session_record)
 

@@ -10,6 +10,7 @@ from greedybear.cronjobs.extraction.strategies.cowrie import (
     normalize_credential_field,
     parse_url_hostname,
 )
+from greedybear.cronjobs.repositories import ioc
 from greedybear.models import CommandSequence
 from tests import ExtractionTestCase
 
@@ -348,3 +349,62 @@ class TestCowrieExtractionStrategy(ExtractionTestCase):
         self.strategy.ioc_processor.add_ioc.assert_called()
         call_args = self.strategy.ioc_processor.add_ioc.call_args
         self.assertEqual(call_args.kwargs.get("general_honeypot_name"), "Cowrie")
+
+    def test_get_sessions_saves_new_command_sequence(self):
+        """New command sequences should be saved to the database."""
+        ioc = Mock()
+        ioc.name = "1.2.3.4"
+
+        session_record = Mock()
+        session_record.commands = Mock()
+        session_record.commands.commands_hash = "abc123"
+        session_record.interaction_count = 0  # fix: must be int
+        session_record.credentials = []
+        session_record.source = Mock(login_attempts=0)
+
+        self.mock_session_repo.get_or_create_session.return_value = session_record
+        self.mock_ioc_repo.save = Mock()
+
+        hits = [
+            {
+            "src_ip": "1.2.3.4",
+            "session": "aabbcc",
+            "eventid": "cowrie.command.input",
+            "timestamp": "2024-01-01T10:00:00",
+            "message": "CMD: ls -la",
+            }
+        ]
+
+        with patch.object(self.strategy, "_deduplicate_command_sequence", return_value=False) as mock_dedup:
+            self.strategy._get_sessions(ioc, hits)
+            mock_dedup.assert_called_once()
+            self.mock_session_repo.save_command_sequence.assert_called_once_with(session_record.commands)
+
+    def test_get_sessions_skips_save_for_duplicate_command_sequence(self):
+        """Duplicate command sequences should NOT be saved again."""
+        ioc = Mock()
+        ioc.name = "1.2.3.4"
+
+        session_record = Mock()
+        session_record.commands = Mock()
+        session_record.commands.commands_hash = "abc123"
+        session_record.interaction_count = 0  # fix: must be int
+        session_record.credentials = []
+        session_record.source = Mock(login_attempts=0)
+        self.mock_session_repo.get_or_create_session.return_value = session_record
+        self.mock_ioc_repo.save = Mock()
+
+        hits = [
+            {
+                "src_ip": "1.2.3.4",
+                "session": "aabbcc",
+                "eventid": "cowrie.command.input",
+                "timestamp": "2024-01-01T10:00:00",
+                "message": "CMD: ls -la",
+            }
+        ]
+
+        with patch.object(self.strategy, "_deduplicate_command_sequence", return_value=True) as mock_dedup:
+            self.strategy._get_sessions(ioc, hits)
+            mock_dedup.assert_called_once()
+            self.mock_session_repo.save_command_sequence.assert_not_called()
