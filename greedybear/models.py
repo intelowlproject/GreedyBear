@@ -180,10 +180,10 @@ class Tag(models.Model):
     """Tags for IOCs from enrichment sources like ThreatFox and AbuseIPDB."""
 
     ioc = models.ForeignKey(IOC, on_delete=models.CASCADE, related_name="tags")
-    key = models.CharField(max_length=128, blank=False)
-    value = models.CharField(max_length=256, blank=False)
-    source = models.CharField(max_length=64, blank=False)  # e.g., "threatfox", "abuseipdb"
-    added = models.DateTimeField(blank=False, default=datetime.now)
+    key = models.CharField(max_length=128)
+    value = models.CharField(max_length=256)
+    source = models.CharField(max_length=64)  # e.g., "threatfox", "abuseipdb"
+    added = models.DateTimeField(db_default=Now())
 
     class Meta:
         indexes = [

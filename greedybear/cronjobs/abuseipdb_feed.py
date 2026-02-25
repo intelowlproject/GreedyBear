@@ -11,9 +11,9 @@ SOURCE_NAME = "abuseipdb"
 
 class AbuseIPDBCron(Cronjob):
     """
-    Fetch AbuseIPDB blacklist and directly enrich matching IOCs with tags.
+    Fetch AbuseIPDB blocklist and directly enrich matching IOCs with tags.
 
-    Downloads the AbuseIPDB blacklist (top 10k malicious IPs), joins them
+    Downloads the AbuseIPDB blocklist (top 10k malicious IPs), joins them
     directly against the IOC table, and writes Tag entries for any matches.
     All existing AbuseIPDB tags are replaced on each run to ensure data freshness.
     """
@@ -32,9 +32,9 @@ class AbuseIPDBCron(Cronjob):
 
     def run(self) -> None:
         """
-        Fetch AbuseIPDB blacklist, match against our IOC table, and create tags.
+        Fetch AbuseIPDB blocklist, match against our IOC table, and create tags.
 
-        1. Download the blacklist from AbuseIPDB /blacklist endpoint
+        1. Download the blocklist from AbuseIPDB /blacklist endpoint
         2. Validate IP addresses
         3. Query our IOC table for matching IPs (WHERE name IN ...)
         4. Replace all AbuseIPDB tags with fresh data
@@ -46,9 +46,9 @@ class AbuseIPDBCron(Cronjob):
             return
 
         try:
-            self.log.info("Starting AbuseIPDB blacklist download for enrichment")
+            self.log.info("Starting AbuseIPDB blocklist download for enrichment")
 
-            # Fetch blacklist from AbuseIPDB
+            # Fetch blocklist from AbuseIPDB
             url = "https://api.abuseipdb.com/api/v2/blacklist"
             headers = {"Key": api_key, "Accept": "application/json"}
             params = {
@@ -60,12 +60,12 @@ class AbuseIPDBCron(Cronjob):
             response.raise_for_status()
 
             json_data = response.json()
-            blacklist_data = json_data.get("data", [])
+            blocklist_data = json_data.get("data", [])
 
-            self.log.info(f"Retrieved {len(blacklist_data)} IPs from AbuseIPDB blacklist")
+            self.log.info(f"Retrieved {len(blocklist_data)} IPs from AbuseIPDB blocklist")
 
             # Parse feed into a dict keyed by IP
-            feed_by_ip = self._parse_feed(blacklist_data)
+            feed_by_ip = self._parse_feed(blocklist_data)
             self.log.info(f"Parsed {len(feed_by_ip)} valid IPs from AbuseIPDB feed")
 
             if not feed_by_ip:
@@ -103,22 +103,22 @@ class AbuseIPDBCron(Cronjob):
             self.log.info(f"AbuseIPDB enrichment completed. Matched {matching_iocs.count()} IOCs, created {created_count} tags.")
 
         except requests.RequestException as e:
-            self.log.error(f"Failed to fetch AbuseIPDB blacklist: {e}")
+            self.log.error(f"Failed to fetch AbuseIPDB blocklist: {e}")
             raise
 
-    def _parse_feed(self, blacklist_data: list) -> dict[str, dict]:
+    def _parse_feed(self, blocklist_data: list) -> dict[str, dict]:
         """
-        Parse AbuseIPDB blacklist data into a dict keyed by validated IP address.
+        Parse AbuseIPDB blocklist data into a dict keyed by validated IP address.
 
         Args:
-            blacklist_data: Raw blacklist data from AbuseIPDB API.
+            blocklist_data: Raw blocklist data from AbuseIPDB API.
 
         Returns:
             Dict mapping IP address -> enrichment dict.
         """
         feed_by_ip: dict[str, dict] = {}
 
-        for entry in blacklist_data:
+        for entry in blocklist_data:
             ip_addr = entry.get("ipAddress")
             if not ip_addr:
                 continue

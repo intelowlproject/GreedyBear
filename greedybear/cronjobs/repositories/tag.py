@@ -1,5 +1,7 @@
 import logging
 
+from django.db import transaction
+
 from greedybear.models import Tag
 
 
@@ -17,8 +19,8 @@ class TagRepository:
         1. Delete all existing tags from this source
         2. Bulk-create new tags from the current feed data
 
-        This ensures tags always reflect the latest feed state and avoids
-        stale data issues.
+        Wrapped in a transaction to ensure atomicity — API consumers never
+        see incomplete tag data during the replacement.
 
         Args:
             source: Source name (e.g., "threatfox", "abuseipdb").
@@ -27,28 +29,26 @@ class TagRepository:
         Returns:
             Number of tags created.
         """
-        # Delete all existing tags from this source
-        deleted_count, _ = Tag.objects.filter(source=source).delete()
-        if deleted_count:
-            self.log.info(f"Deleted {deleted_count} existing tags from source '{source}'")
+        with transaction.atomic():
+            self.delete_tags_by_source(source)
 
-        if not tag_entries:
-            return 0
+            if not tag_entries:
+                return 0
 
-        # Bulk-create new tags
-        tags_to_create = [
-            Tag(
-                ioc_id=entry["ioc_id"],
-                key=entry["key"],
-                value=entry["value"],
-                source=source,
-            )
-            for entry in tag_entries
-        ]
+            # Bulk-create new tags
+            tags_to_create = [
+                Tag(
+                    ioc_id=entry["ioc_id"],
+                    key=entry["key"],
+                    value=entry["value"],
+                    source=source,
+                )
+                for entry in tag_entries
+            ]
 
-        Tag.objects.bulk_create(tags_to_create, batch_size=1000)
-        self.log.info(f"Created {len(tags_to_create)} tags from source '{source}'")
-        return len(tags_to_create)
+            Tag.objects.bulk_create(tags_to_create, batch_size=1000)
+            self.log.info(f"Created {len(tags_to_create)} tags from source '{source}'")
+            return len(tags_to_create)
 
     def get_tags_by_ioc(self, ioc):
         """

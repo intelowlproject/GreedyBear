@@ -27,7 +27,7 @@ class TestAbuseIPDBCron(CustomTestCase):
     @patch("greedybear.cronjobs.abuseipdb_feed.requests.get")
     @patch("greedybear.cronjobs.abuseipdb_feed.settings")
     def test_enriches_matching_iocs(self, mock_settings, mock_get):
-        """Should create tags for IOCs that match blacklist IPs."""
+        """Should create tags for IOCs that match blocklist IPs."""
         mock_settings.ABUSEIPDB_API_KEY = "test_key"
 
         mock_response = Mock()
@@ -114,13 +114,13 @@ class TestAbuseIPDBCron(CustomTestCase):
     @patch("greedybear.cronjobs.abuseipdb_feed.requests.get")
     @patch("greedybear.cronjobs.abuseipdb_feed.settings")
     def test_clears_tags_when_ip_delisted(self, mock_settings, mock_get):
-        """Tags should be removed when an IP is no longer in the blacklist."""
+        """Tags should be removed when an IP is no longer in the blocklist."""
         mock_settings.ABUSEIPDB_API_KEY = "test_key"
 
         # Pre-existing tag
         Tag.objects.create(ioc=self.ioc, key="confidence_of_abuse", value="84%", source="abuseipdb")
 
-        # New run with empty blacklist (IP delisted)
+        # New run with empty blocklist (IP delisted)
         mock_response = Mock()
         mock_response.json.return_value = {"data": []}
         mock_response.raise_for_status = Mock()
