@@ -10,7 +10,6 @@ from greedybear.cronjobs.extraction.strategies.cowrie import (
     normalize_credential_field,
     parse_url_hostname,
 )
-from greedybear.cronjobs.repositories import ioc
 from greedybear.models import CommandSequence
 from tests import ExtractionTestCase
 
