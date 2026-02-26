@@ -30,7 +30,7 @@ WORKDIR $PYTHONPATH
 #  - netcat-openbsd for healthcheck
 RUN apt-get update && apt-get install -y --no-install-recommends \
        libgomp1 netcat-openbsd \
-	&& rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/*
 
 # Install python packages
 COPY requirements/project-requirements.txt requirements/project-requirements.txt
@@ -42,10 +42,10 @@ COPY --from=frontend-build /app/build /var/www/reactapp
 
 # separation is required to avoid to re-execute os installation in case of change of python requirements
 RUN mkdir -p ${LOG_PATH}/django ${LOG_PATH}/uwsgi \
-	&& touch ${LOG_PATH}/django/api.log ${LOG_PATH}/django/api_errors.log \
+    && touch ${LOG_PATH}/django/api.log ${LOG_PATH}/django/api_errors.log \
     && touch ${LOG_PATH}/django/greedybear.log ${LOG_PATH}/django/greedybear_errors.log \
     && touch ${LOG_PATH}/django/django_q.log ${LOG_PATH}/django/django_q_errors.log \
-    && touch ${LOG_PATH}/django/django_errors.log ${LOG_PATH}/django/elasticsearch.log\
+    && touch ${LOG_PATH}/django/django_errors.log ${LOG_PATH}/django/elasticsearch.log \
     && touch ${LOG_PATH}/django/authentication.log ${LOG_PATH}/django/authentication_errors.log \
     && mkdir -p ${PYTHONPATH}/mlmodels \
     && usermod -u 2000 www-data \
