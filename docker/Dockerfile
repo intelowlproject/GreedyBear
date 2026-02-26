@@ -27,9 +27,9 @@ WORKDIR $PYTHONPATH
 
 # Install runtime dependencies
 #  - libgomp1 is required for model training
-#  - netcat-openbsd for healthcheck
+#  - curl for healthcheck
 RUN apt-get update && apt-get install -y --no-install-recommends \
-       libgomp1 netcat-openbsd \
+       libgomp1 curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Install python packages
