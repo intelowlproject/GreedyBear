@@ -57,6 +57,12 @@ services:
       - "80:80"
     depends_on:
       - uwsgi
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost/hc || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
 
 
 
