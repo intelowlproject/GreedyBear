@@ -28,6 +28,7 @@ services:
       - static_content:/opt/deploy/greedybear/static
     entrypoint:
       - ./docker/entrypoint_uwsgi.sh
+    command: ["uwsgi", "--ini", "/etc/uwsgi/sites/greedybear.ini", "--stats", "127.0.0.1:1717", "--stats-http"]
     expose:
       - "8001"
       - "1717"

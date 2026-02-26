@@ -1,13 +1,10 @@
 #!/bin/bash
 
-until cd /opt/deploy/greedybear
-do
-    echo "Waiting for server volume..."
-done
-
 # Apply database migrations
 # Create cache table for Django Q monitoring (idempotent)
 python manage.py createcachetable
+
+# Make durin migrations and migrate
 python manage.py makemigrations durin
 python manage.py migrate
 
@@ -23,13 +20,8 @@ export VITE_GREEDYBEAR_VERSION
 
 echo "------------------------------"
 echo "GreedyBear $VITE_GREEDYBEAR_VERSION"
-echo "DEBUG: " $DEBUG
-echo "DJANGO_TEST_SERVER: " $DJANGO_TEST_SERVER
+echo "DEBUG: $DEBUG"
+echo "DJANGO_TEST_SERVER: $DJANGO_TEST_SERVER"
 echo "------------------------------"
 
-if [[ $DEBUG == "True" ]] && [[ $DJANGO_TEST_SERVER == "True" ]];
-then
-    python manage.py runserver 0.0.0.0:8001
-else
-    /usr/local/bin/uwsgi --ini /etc/uwsgi/sites/greedybear.ini  --stats 127.0.0.1:1717 --stats-http
-fi
+exec "$@"
