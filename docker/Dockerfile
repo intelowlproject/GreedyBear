@@ -58,3 +58,8 @@ FROM production AS development
 
 # Install dev requirements
 RUN pip install --no-cache-dir --root-user-action=ignore --disable-pip-version-check -q -r requirements/dev-requirements.txt
+
+## ------------------------------- Default Stage ------------------------------ ##
+
+# Ensure the default build target is production
+FROM production
