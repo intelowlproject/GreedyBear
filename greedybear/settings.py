@@ -446,6 +446,7 @@ COWRIE_SESSION_RETENTION = int(os.environ.get("COWRIE_SESSION_RETENTION", "365")
 COMMAND_SEQUENCE_RETENTION = int(os.environ.get("COMMAND_SEQUENCE_RETENTION", "365"))
 
 THREATFOX_API_KEY = os.environ.get("THREATFOX_API_KEY", "")
+ABUSEIPDB_API_KEY = os.environ.get("ABUSEIPDB_API_KEY", "")
 
 # Optional feed license URL to include in API responses
 # If not set, no license information will be included in feeds
