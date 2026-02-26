@@ -42,13 +42,13 @@ describe("Password", () => {
   test("Invalid password", () => {
     const numericPassword = "123456123456";
     expect(PasswordValidator(numericPassword)).toEqual({
-      password:
-        "The password is entirely numeric or contains special characters",
+      password: "The password does not contain any letters",
     });
     const password = "$GreedyBearPassword$";
-    expect(PasswordValidator(password)).toEqual({
-      password:
-        "The password is entirely numeric or contains special characters",
+    expect(PasswordValidator(password)).toEqual({});
+    const passwordWithSpaces = "Greedy Bear Password";
+    expect(PasswordValidator(passwordWithSpaces)).toEqual({
+      password: "The password does not contain any letters",
     });
   });
 });
@@ -120,10 +120,16 @@ describe("Profile fields", () => {
   });
   test("Too long profile", () => {
     expect(
-      ProfileValidator("company_name", "company_nametoolongcompany_nametoolong")
+      ProfileValidator(
+        "company_name",
+        "company_nametoolongcompany_nametoolong",
+      ),
     ).toEqual({ company_name: "Must be 30 characters or less" });
     expect(
-      ProfileValidator("company_role", "company_roletoolongcompany_roletoolong")
+      ProfileValidator(
+        "company_role",
+        "company_roletoolongcompany_roletoolong",
+      ),
     ).toEqual({ company_role: "Must be 30 characters or less" });
   });
 });

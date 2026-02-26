@@ -102,7 +102,7 @@ const feedsTableColumns = [
                 {formatInteger(
                   expected_interactions != null
                     ? Math.round(expected_interactions)
-                    : null
+                    : null,
                 )}
               </div>
               <hr className="my-2" />

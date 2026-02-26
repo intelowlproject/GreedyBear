@@ -4,15 +4,15 @@ import { NewsWidget } from "../../../src/components/home/NewsWidget";
 import { GREEDYBEAR_NEWS_URL } from "../../../src/constants/api";
 import "@testing-library/jest-dom";
 
-global.fetch = jest.fn();
+global.fetch = vi.fn();
 
 describe("NewsWidget", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   afterEach(() => {
-    jest.resetAllMocks();
+    vi.resetAllMocks();
   });
 
   describe("Loading State", () => {
@@ -105,7 +105,7 @@ describe("NewsWidget", () => {
       render(<NewsWidget />);
 
       expect(
-        await screen.findByText("No news available at the moment.")
+        await screen.findByText("No news available at the moment."),
       ).toBeInTheDocument();
     });
   });
@@ -117,7 +117,7 @@ describe("NewsWidget", () => {
       render(<NewsWidget />);
 
       expect(
-        await screen.findByText("Unable to load news. Please try again later.")
+        await screen.findByText("Unable to load news. Please try again later."),
       ).toBeInTheDocument();
     });
 
@@ -130,12 +130,12 @@ describe("NewsWidget", () => {
       render(<NewsWidget />);
 
       expect(
-        await screen.findByText("Unable to load news. Please try again later.")
+        await screen.findByText("Unable to load news. Please try again later."),
       ).toBeInTheDocument();
     });
 
     it("should log error to console when fetch fails", async () => {
-      const consoleErrorSpy = jest
+      const consoleErrorSpy = vi
         .spyOn(console, "error")
         .mockImplementation(() => {});
       const mockError = new Error("Network error");
@@ -147,7 +147,7 @@ describe("NewsWidget", () => {
       await waitFor(() => {
         expect(consoleErrorSpy).toHaveBeenCalledWith(
           "Error fetching news:",
-          mockError
+          mockError,
         );
       });
 

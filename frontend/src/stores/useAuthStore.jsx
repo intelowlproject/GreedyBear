@@ -1,5 +1,5 @@
 import axios from "axios";
-import create from "zustand";
+import { create } from "zustand";
 
 import { addToast } from "@certego/certego-ui";
 
@@ -8,6 +8,7 @@ import {
   CHECK_AUTHENTICATION_URI,
   LOGIN_URI,
   LOGOUT_URI,
+  CHANGE_PASSWORD_URI,
 } from "../constants/api";
 import { AUTHENTICATION_STATUSES } from "../constants";
 
@@ -49,21 +50,17 @@ const useAuthStore = create((set, get) => ({
         addToast(
           "Error fetching user access information!",
           err.parsedMsg,
-          "danger"
+          "danger",
         );
       }
     },
     loginUser: async (body) => {
       try {
         set({ isAuthenticated: AUTHENTICATION_STATUSES.PENDING });
-        const resp = await axios.post(
-          LOGIN_URI,
-          body,
-          { headers: { "Content-Type": "application/json" } },
-          {
-            certegoUIenableProgressBar: false,
-          }
-        );
+        const resp = await axios.post(LOGIN_URI, body, {
+          certegoUIenableProgressBar: false,
+          headers: { "Content-Type": "application/json" },
+        });
         set({ isAuthenticated: AUTHENTICATION_STATUSES.TRUE });
         addToast("You've been logged in!", null, "success");
         return Promise.resolve(resp);
@@ -85,6 +82,19 @@ const useAuthStore = create((set, get) => ({
         })
         .then(onLogoutCb)
         .catch(onLogoutCb);
+    },
+    changePassword: async (body) => {
+      try {
+        const resp = await axios.post(CHANGE_PASSWORD_URI, body, {
+          headers: { "Content-Type": "application/json" },
+          certegoUIenableProgressBar: false,
+        });
+        addToast("Password changed successfully!", null, "success");
+        return Promise.resolve(resp);
+      } catch (err) {
+        addToast("Failed to change password!", err.parsedMsg, "danger", true);
+        return Promise.reject(err);
+      }
     },
   },
 }));

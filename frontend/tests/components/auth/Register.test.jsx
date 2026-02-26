@@ -7,7 +7,7 @@ import userEvent from "@testing-library/user-event";
 import Register from "../../../src/components/auth/Register";
 import { AUTH_BASE_URI } from "../../../src/constants/api";
 
-jest.mock("axios");
+vi.mock("axios");
 
 describe("Registration component", () => {
   test("User registration", async () => {
@@ -17,7 +17,7 @@ describe("Registration component", () => {
     render(
       <BrowserRouter>
         <Register />
-      </BrowserRouter>
+      </BrowserRouter>,
     );
 
     // page before registration
@@ -35,7 +35,7 @@ describe("Registration component", () => {
       screen.getByLabelText("Confirm Password");
     expect(confirmPasswordInputElement).toBeInTheDocument();
     const companyNameInputElement = screen.getByLabelText(
-      "Company/ Organization"
+      "Company/ Organization",
     );
     expect(companyNameInputElement).toBeInTheDocument();
     const companyRoleInputElement = screen.getByLabelText("Role");
@@ -80,7 +80,7 @@ describe("Registration component", () => {
     render(
       <BrowserRouter>
         <Register />
-      </BrowserRouter>
+      </BrowserRouter>,
     );
 
     const checkBoxElement = screen.getByRole("checkbox");

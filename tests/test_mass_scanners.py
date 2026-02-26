@@ -1,5 +1,7 @@
 from unittest.mock import Mock, patch
 
+import requests
+
 from greedybear.cronjobs.mass_scanners import MassScannersCron
 from greedybear.models import MassScanner
 
@@ -225,3 +227,45 @@ class TestMassScannersCron(CustomTestCase):
         scanner2 = MassScanner.objects.get(ip_address="91.196.152.38")
         self.assertEqual(scanner1.reason, "probe.onyphe.net")
         self.assertEqual(scanner2.reason, "probe.onyphe.net")
+
+    def test_raises_on_http_error(self):
+        """Test that HTTP errors (4xx/5xx) are raised instead of silently ignored."""
+        mock_response = Mock()
+        mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError("404 Client Error")
+        with patch("greedybear.cronjobs.mass_scanners.requests.get") as mock_get:
+            mock_get.return_value = mock_response
+            with self.assertRaises(requests.exceptions.HTTPError):
+                self.cron.run()
+
+        self.cron.log.error.assert_called_once()
+        self.assertEqual(MassScanner.objects.count(), 0)
+
+    def test_raises_on_network_error(self):
+        """Test that network errors (DNS failure, timeout) are raised."""
+        with patch("greedybear.cronjobs.mass_scanners.requests.get") as mock_get:
+            mock_get.side_effect = requests.exceptions.ConnectionError("DNS resolution failed")
+            with self.assertRaises(requests.exceptions.ConnectionError):
+                self.cron.run()
+
+        self.cron.log.error.assert_called_once()
+        self.assertEqual(MassScanner.objects.count(), 0)
+
+    def test_raises_on_timeout(self):
+        """Test that request timeouts are raised."""
+        with patch("greedybear.cronjobs.mass_scanners.requests.get") as mock_get:
+            mock_get.side_effect = requests.exceptions.Timeout("Connection timed out")
+            with self.assertRaises(requests.exceptions.Timeout):
+                self.cron.run()
+
+        self.cron.log.error.assert_called_once()
+        self.assertEqual(MassScanner.objects.count(), 0)
+
+    def test_execute_sets_success_false_on_http_error(self):
+        """Test that base class execute() marks task as failed on HTTP error."""
+        mock_response = Mock()
+        mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError("500 Server Error")
+        with patch("greedybear.cronjobs.mass_scanners.requests.get") as mock_get:
+            mock_get.return_value = mock_response
+            self.cron.execute()
+
+        self.assertFalse(self.cron.success)

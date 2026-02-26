@@ -53,7 +53,7 @@ SLACK_TOKEN = os.environ.get("SLACK_TOKEN", "")
 DEFAULT_SLACK_CHANNEL = os.environ.get("DEFAULT_SLACK_CHANNEL", "")
 NTFY_URL = os.environ.get("NTFY_URL", "")
 
-VERSION = os.environ.get("REACT_APP_GREEDYBEAR_VERSION", "")
+VERSION = os.environ.get("VITE_GREEDYBEAR_VERSION", "")
 
 CSRF_COOKIE_SAMESITE = "Strict"
 CSRF_COOKIE_HTTPONLY = True
@@ -85,6 +85,7 @@ INSTALLED_APPS = [
     "certego_saas.apps.organization",
     # greedybear apps
     "greedybear.apps.GreedyBearConfig",
+    "django_q",
     "authentication",
     # auth
     "rest_email_auth",
@@ -187,8 +188,32 @@ DATABASES = {
     },
 }
 
-BROKER_URL = os.environ.get("BROKER_URL", "amqp://guest:guest@rabbitmq:5672")
-RESULT_BACKEND = "django-db"
+Q_CLUSTER = {
+    "name": "greedybear_q",
+    "workers": 1,
+    "recycle": 500,
+    "retry": 1860,  # Must be larger than timeout
+    "timeout": 1800,  # 30 minutes
+    "compress": True,
+    "save_limit": 250,
+    "queue_limit": 500,
+    "cpu_affinity": 1,
+    "label": "Django Q",
+    "orm": "default",
+    "cache": "django-q",
+}
+
+# Cache configuration
+CACHES = {
+    "default": {
+        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+        "LOCATION": "greedybear-default",
+    },
+    "django-q": {
+        "BACKEND": "django.core.cache.backends.db.DatabaseCache",
+        "LOCATION": "greedybear_cache",
+    },
+}
 
 AUTH_USER_MODEL = "certego_saas_user.User"  # custom user model
 AUTHENTICATION_BACKENDS = [
@@ -245,16 +270,16 @@ LOGGING = (
             },
         },
         "handlers": {
-            "celery": {
+            "django_q": {
                 "level": INFO_OR_DEBUG_LEVEL,
                 "class": "logging.handlers.WatchedFileHandler",
-                "filename": f"{DJANGO_LOG_DIRECTORY}/celery.log",
+                "filename": f"{DJANGO_LOG_DIRECTORY}/django_q.log",
                 "formatter": "stdfmt",
             },
-            "celery_error": {
+            "django_q_error": {
                 "level": "ERROR",
                 "class": "logging.handlers.WatchedFileHandler",
-                "filename": f"{DJANGO_LOG_DIRECTORY}/celery_errors.log",
+                "filename": f"{DJANGO_LOG_DIRECTORY}/django_q_errors.log",
                 "formatter": "stdfmt",
             },
             "elasticsearch": {
@@ -327,8 +352,8 @@ LOGGING = (
             },
         },
         "loggers": {
-            "celery": {
-                "handlers": ["celery", "celery_error"],
+            "django_q": {
+                "handlers": ["django_q", "django_q_error"],
                 "level": INFO_OR_DEBUG_LEVEL,
                 "propagate": True,
             },
@@ -409,6 +434,10 @@ else:
 
 
 EXTRACTION_INTERVAL = int(os.environ.get("EXTRACTION_INTERVAL", 10))
+if EXTRACTION_INTERVAL < 1 or EXTRACTION_INTERVAL > 60:
+    raise ValueError(f"EXTRACTION_INTERVAL must be between 1 and 60 minutes, got {EXTRACTION_INTERVAL}")
+if 60 % EXTRACTION_INTERVAL:
+    raise ValueError(f"EXTRACTION_INTERVAL must be a divisor of 60, got {EXTRACTION_INTERVAL}")
 INITIAL_EXTRACTION_TIMESPAN = int(os.environ.get("INITIAL_EXTRACTION_TIMESPAN", 60 * 24 * 3))  # 3 days
 CLUSTER_COWRIE_COMMAND_SEQUENCES = os.environ.get("CLUSTER_COWRIE_COMMAND_SEQUENCES", "False") == "True"
 

@@ -69,9 +69,9 @@ const INITIAL_VALUES = {
 };
 
 const REGISTRATION_FORM_STORAGE_KEY = "registrationForm";
-const initialValues =
-  JSON.parse(localStorage.getItem(REGISTRATION_FORM_STORAGE_KEY, "{}")) ||
-  INITIAL_VALUES;
+const storedString = localStorage.getItem(REGISTRATION_FORM_STORAGE_KEY);
+const savedValues = storedString ? JSON.parse(storedString) : null;
+const initialValues = savedValues || INITIAL_VALUES;
 
 console.debug("initialValues", initialValues);
 
@@ -113,7 +113,7 @@ const onValidate = (values) => {
       ...values,
       password: "",
       confirmPassword: "",
-    })
+    }),
   );
   Object.keys(initialValues).forEach((key) => {
     initialValues[key] = values[key];
@@ -130,7 +130,7 @@ const onValidate = (values) => {
   }
   const comparePasswordErrors = ComparePassword(
     values.password,
-    values.confirmPassword
+    values.confirmPassword,
   );
   if (comparePasswordErrors.password) {
     errors.password = comparePasswordErrors.password;
@@ -203,7 +203,7 @@ export default function Register() {
         // handled inside registerUser
       }
     },
-    [setShowAfterRegistrationModal]
+    [setShowAfterRegistrationModal],
   );
 
   return (

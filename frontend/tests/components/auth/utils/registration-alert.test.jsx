@@ -14,11 +14,11 @@ describe("registration-alert", () => {
     render(
       <BrowserRouter>
         <InviteOnlyAlert />
-      </BrowserRouter>
+      </BrowserRouter>,
     );
 
     const titleElement = screen.getByText(
-      "Sign up below to join the waitlist!"
+      "Sign up below to join the waitlist!",
     );
     expect(titleElement).toBeInTheDocument();
   });
@@ -28,8 +28,8 @@ describe("registration-alert", () => {
 
     render(
       <BrowserRouter>
-        <AfterRegistrationModalAlert isOpen setIsOpen={jest.fn()} />
-      </BrowserRouter>
+        <AfterRegistrationModalAlert isOpen setIsOpen={vi.fn()} />
+      </BrowserRouter>,
     );
 
     const elementText = screen.getByText("Registration successful! 🥳");
@@ -52,16 +52,16 @@ describe("registration-alert", () => {
       <BrowserRouter>
         <ConfigurationModalAlert
           isOpen
-          setIsOpen={jest.fn()}
+          setIsOpen={vi.fn()}
           title="The Registration Feature has not been configured!"
         />
-      </BrowserRouter>
+      </BrowserRouter>,
     );
 
     const elementText = screen.getByText("Warning");
     expect(elementText).toBeInTheDocument();
     const elementAlertText = screen.getByText(
-      "The Registration Feature has not been configured!"
+      "The Registration Feature has not been configured!",
     );
     expect(elementAlertText).toBeInTheDocument();
     const buttonElement = screen.getByRole("button");

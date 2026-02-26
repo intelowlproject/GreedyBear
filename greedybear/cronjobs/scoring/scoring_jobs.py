@@ -132,11 +132,12 @@ class TrainModels(Cronjob):
         for f1, f2, corr in high_corr_pairs:
             self.log.debug(f"{f1} & {f2}: {corr:.2f}")
 
-        for s in SCORERS:
-            if s.trainable:
-                s.train(training_df)
-
-        self.save_training_data()
+        try:
+            for s in SCORERS:
+                if s.trainable:
+                    s.train(training_df)
+        finally:
+            self.save_training_data()
 
 
 class UpdateScores(Cronjob):

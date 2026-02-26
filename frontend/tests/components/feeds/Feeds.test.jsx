@@ -5,8 +5,8 @@ import { BrowserRouter } from "react-router-dom";
 import userEvent from "@testing-library/user-event";
 import Feeds from "../../../src/components/feeds/Feeds";
 
-jest.mock("@certego/certego-ui", () => {
-  const originalModule = jest.requireActual("@certego/certego-ui");
+vi.mock("@certego/certego-ui", async (importOriginal) => {
+  const originalModule = await importOriginal();
 
   const feeds = {
     count: 1,
@@ -32,28 +32,43 @@ jest.mock("@certego/certego-ui", () => {
     return <originalModule.Loader loading={false} {...props} />;
   };
 
-  //Mock the useAxiosComponentLoader and useDataTable
-  return {
-    __esModule: true,
-    ...originalModule,
+  // Mock the Select component to render a real select for testing
+  const Select = ({ id, choices, value, onChange, name }) => (
+    <select
+      id={id}
+      data-testid={id}
+      value={value}
+      onChange={onChange}
+      name={name}
+    >
+      {choices.map((c) => (
+        <option key={c.value} value={c.value}>
+          {c.label}
+        </option>
+      ))}
+    </select>
+  );
 
-    useAxiosComponentLoader: jest.fn(() => [
+  return {
+    ...originalModule,
+    Select,
+    useAxiosComponentLoader: vi.fn(() => [
       ["Honeytrap", "Glutton", "CitrixHoneypot", "Cowrie"],
       loader,
     ]),
 
-    useDataTable: jest.fn(() => [
+    useDataTable: vi.fn(() => [
       feeds,
       <MockTableComponent />,
-      jest.fn(),
-      jest.fn(),
+      vi.fn(),
+      vi.fn(),
     ]),
   };
 });
 
 describe("Feeds component", () => {
   afterEach(() => {
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
   });
 
   test("Feeds", async () => {
@@ -62,7 +77,7 @@ describe("Feeds component", () => {
     render(
       <BrowserRouter>
         <Feeds />
-      </BrowserRouter>
+      </BrowserRouter>,
     );
 
     const buttonFeedsLicense = screen.getByRole("link", {
@@ -70,7 +85,7 @@ describe("Feeds component", () => {
     });
     expect(buttonFeedsLicense).toHaveAttribute(
       "href",
-      "https://github.com/intelowlproject/GreedyBear/blob/main/FEEDS_LICENSE.md"
+      "https://github.com/intelowlproject/GreedyBear/blob/main/FEEDS_LICENSE.md",
     );
 
     const feedTypeSelectElement = screen.getByLabelText("Feed type:");
@@ -85,7 +100,7 @@ describe("Feeds component", () => {
     const buttonRawData = screen.getByRole("link", { name: /Raw data/i });
     expect(buttonRawData).toHaveAttribute(
       "href",
-      "/api/feeds/all/all/recent.json"
+      "/api/feeds/all/all/recent.json",
     );
 
     await user.selectOptions(feedTypeSelectElement, "cowrie");
@@ -97,7 +112,7 @@ describe("Feeds component", () => {
       // check link has been changed including ioc_type parameter
       expect(buttonRawData).toHaveAttribute(
         "href",
-        "/api/feeds/cowrie/scanner/persistent.json?ioc_type=ip"
+        "/api/feeds/cowrie/scanner/persistent.json?ioc_type=ip",
       );
     });
 
@@ -106,7 +121,7 @@ describe("Feeds component", () => {
     await waitFor(() => {
       expect(buttonRawData).toHaveAttribute(
         "href",
-        "/api/feeds/cowrie/scanner/persistent.json?ioc_type=domain"
+        "/api/feeds/cowrie/scanner/persistent.json?ioc_type=domain",
       );
     });
   });

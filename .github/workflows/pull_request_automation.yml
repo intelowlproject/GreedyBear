@@ -35,13 +35,13 @@ jobs:
 
       use_react: true
       check_packages_licenses: false
-      use_jest: true
+      use_vitest: true
 
       use_coverage: true
       upload_coverage: true
       max_timeout: 15
       node_versions: >-
-        ["20"]
+        ["24"]
       ubuntu_version: latest
 
 
@@ -78,8 +78,7 @@ jobs:
       postgres_version: 18
       use_memcached: false
       use_elastic_search: false
-      use_rabbitmq: true
-      rabbitmq_version: "4"
+      use_rabbitmq: false
       use_mongo: false
       use_celery: false
 
@@ -105,7 +104,6 @@ jobs:
         "POSTGRES_USER": "user",
         "POSTGRES_DB": "greedybear_db",
         "HTTPS_ENABLED": "not_enabled",
-        "BROKER_URL": "amqp://guest:guest@rabbitmq:5672",
         }
       python_versions: >-
         ["3.13"]

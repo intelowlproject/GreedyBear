@@ -4,14 +4,14 @@ import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import EmailVerification from "../../../src/components/auth/EmailVerification";
 
-jest.mock("axios");
+vi.mock("axios");
 
 describe("EmailVerification component", () => {
   test("Valid key", async () => {
     render(
       <MemoryRouter initialEntries={["/verify-email?key=testkey"]}>
         <EmailVerification />
-      </MemoryRouter>
+      </MemoryRouter>,
     );
 
     const element = screen.getByText("Verifying...");
@@ -22,7 +22,7 @@ describe("EmailVerification component", () => {
     render(
       <MemoryRouter initialEntries={["/verify-email?key="]}>
         <EmailVerification />
-      </MemoryRouter>
+      </MemoryRouter>,
     );
 
     const element = screen.getByText("Error: Invalid key.");

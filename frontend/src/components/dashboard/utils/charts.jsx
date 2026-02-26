@@ -35,7 +35,7 @@ export const FeedsSourcesChart = React.memo(() => {
             />
           )),
     }),
-    []
+    [],
   );
 
   return <AnyChartWidget {...chartProps} />;
@@ -61,7 +61,7 @@ export const FeedsDownloadsChart = React.memo(() => {
             />
           )),
     }),
-    []
+    [],
   );
 
   return <AnyChartWidget {...chartProps} />;
@@ -87,7 +87,7 @@ export const EnrichmentSourcesChart = React.memo(() => {
             />
           )),
     }),
-    []
+    [],
   );
 
   return <AnyChartWidget {...chartProps} />;
@@ -113,7 +113,7 @@ export const EnrichmentRequestsChart = React.memo(() => {
             />
           )),
     }),
-    []
+    [],
   );
 
   return <AnyChartWidget {...chartProps} />;
@@ -144,7 +144,7 @@ export const FeedsTypesChart = React.memo(() => {
         ));
       },
     }),
-    []
+    [],
   );
 
   return <AnyChartWidget {...chartProps} />;

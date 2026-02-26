@@ -7,7 +7,7 @@ import userEvent from "@testing-library/user-event";
 import Login from "../../../src/components/auth/Login";
 import { LOGIN_URI } from "../../../src/constants/api";
 
-jest.mock("axios");
+vi.mock("axios");
 
 describe("Login component", () => {
   // mock login request
@@ -33,7 +33,7 @@ describe("Login component", () => {
     render(
       <BrowserRouter>
         <Login />
-      </BrowserRouter>
+      </BrowserRouter>,
     );
 
     // page before login
@@ -54,8 +54,10 @@ describe("Login component", () => {
       expect(axios.post).toHaveBeenCalledWith(
         LOGIN_URI,
         { password: "dummyPwd1", username: "test_user" },
-        { headers: { "Content-Type": "application/json" } },
-        { certegoUIenableProgressBar: false }
+        {
+          headers: { "Content-Type": "application/json" },
+          certegoUIenableProgressBar: false,
+        },
       );
     });
   });

@@ -13,7 +13,7 @@ Wrapper for Routes which should be accessible only to a authenticated user
 export default function AuthGuard({ children }) {
   // store
   const isAuthenticated = useAuthStore(
-    React.useCallback((s) => s.isAuthenticated, [])
+    React.useCallback((s) => s.isAuthenticated, []),
   );
 
   const location = useLocation();

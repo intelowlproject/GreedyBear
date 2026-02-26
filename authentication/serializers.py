@@ -25,6 +25,7 @@ __all__ = [
     "UserProfileSerializer",
     "RegistrationSerializer",
     "EmailVerificationSerializer",
+    "ChangePasswordSerializer",
 ]
 
 
@@ -171,3 +172,25 @@ class LoginSerializer(AuthTokenSerializer):
                         exc.detail = "Your account was declined."
                     logger.info(f"User {user} is not active. Error message: {exc.detail}")
             raise exc from None
+
+
+class ChangePasswordSerializer(rfs.Serializer):
+    old_password = rfs.CharField(required=True)
+    new_password = rfs.CharField(required=True)
+
+    def validate_old_password(self, value):
+        request = self.context.get("request")
+        if request and hasattr(request, "user"):
+            user = request.user
+            if not user.check_password(value):
+                logger.info(f"'{user.username}' has inputted invalid old password.")
+                raise rfs.ValidationError("Invalid old password")
+        return value
+
+    def validate_new_password(self, value):
+        if not re.match(REGEX_PASSWORD, value):
+            request = self.context.get("request")
+            if request and hasattr(request, "user"):
+                logger.info(f"'{request.user.username}' has inputted invalid new password.")
+            raise rfs.ValidationError("Invalid new password.")
+        return value

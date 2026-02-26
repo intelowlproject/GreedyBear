@@ -2,6 +2,7 @@ import React from "react";
 import { Container, Button, Col, Label, FormGroup, Row } from "reactstrap";
 import { VscJson } from "react-icons/vsc";
 import { TbLicense } from "react-icons/tb";
+import { useNavigate, useLocation } from "react-router-dom";
 import { FEEDS_BASE_URI, GENERAL_HONEYPOT_URI } from "../../constants/api";
 import {
   ContentSection,
@@ -13,7 +14,7 @@ import { Form, Formik } from "formik";
 import { feedsTableColumns } from "./tableColumns";
 import { FEEDS_LICENSE } from "../../constants";
 
-// costants
+// constants
 const feedTypeChoices = [{ label: "All", value: "all" }];
 
 const attackTypeChoices = [
@@ -42,10 +43,6 @@ const initialValues = {
   prioritize: "recent",
 };
 
-const initialState = {
-  pageIndex: 0,
-};
-
 const toPassTableProps = {
   columns: feedsTableColumns,
   tableEmptyNode: (
@@ -56,16 +53,67 @@ const toPassTableProps = {
   ),
 };
 
+// prioritizations where backend overrides "ordering" query param.
+const OVERRIDING_PRIORITIZATIONS = ["likely_to_recur", "most_expected_hits"];
+
 let honeypotFeedsType = [];
+
+// extracted child component so useDataTable hooks are owned here.
+// changing the `key` on this component forces a full unmount/remount.
+function FeedsTable({ tableParams, onDataLoad, onSortChange }) {
+  const location = useLocation();
+
+  const [feedsData, tableNode] = useDataTable(
+    {
+      url: FEEDS_BASE_URI,
+      params: tableParams,
+      initialParams: {
+        page: "1",
+      },
+    },
+    toPassTableProps,
+    (data) => data.results.iocs,
+  );
+
+  // Notify parent of data changes so it can display the count
+  React.useEffect(() => {
+    if (onDataLoad) {
+      onDataLoad(feedsData);
+    }
+  }, [feedsData, onDataLoad]);
+
+  // if the current prioritization mode overrides ordering on the backend
+  // notify the parent so it can reset prioritization to "recent".
+  React.useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (
+      params.has("ordering") &&
+      OVERRIDING_PRIORITIZATIONS.includes(tableParams.prioritize) &&
+      onSortChange
+    ) {
+      onSortChange();
+    }
+  }, [location.search, tableParams.prioritize, onSortChange]);
+
+  return tableNode;
+}
 
 export default function Feeds() {
   console.debug("Feeds rendered!");
 
   console.debug("Feeds-initialValues", initialValues);
 
+  const navigate = useNavigate();
+
   const [url, setUrl] = React.useState(
-    `${FEEDS_BASE_URI}/${initialValues.feeds_type}/${initialValues.attack_type}/${initialValues.prioritize}.json`
+    `${FEEDS_BASE_URI}/${initialValues.feeds_type}/${initialValues.attack_type}/${initialValues.prioritize}.json`,
   );
+
+  // Counter used to force remount FeedsTable
+  const [tableKey, setTableKey] = React.useState(0);
+
+  // feedsData is lifted from FeedsTable so we can show the count in the header
+  const [feedsData, setFeedsData] = React.useState(null);
 
   // API to extract general honeypot
   const [honeypots, Loader] = useAxiosComponentLoader({
@@ -84,45 +132,37 @@ export default function Feeds() {
       });
   });
 
-  const [feedsData, tableNode, , tableStateReducer] = useDataTable(
-    {
-      url: FEEDS_BASE_URI,
-      params: {
-        feed_type: initialValues.feeds_type,
-        attack_type: initialValues.attack_type,
-        ioc_type: initialValues.ioc_type,
-        prioritize: initialValues.prioritize,
-      },
-      initialParams: {
-        page: "1",
-      },
-    },
-    toPassTableProps,
-    (data) => data.results.iocs
-  );
+  // reset the prioritize dropdown to "recent"
+  const handleSortChange = React.useCallback(() => {
+    initialValues.prioritize = "recent";
+    setUrl(
+      `${FEEDS_BASE_URI}/${initialValues.feeds_type}/${initialValues.attack_type}/recent.json?ioc_type=${initialValues.ioc_type}`,
+    );
+    setTableKey((prev) => prev + 1);
+  }, [setUrl]);
 
   // callbacks
   const onSubmit = React.useCallback(
     (values) => {
       try {
         setUrl(
-          `${FEEDS_BASE_URI}/${values.feeds_type}/${values.attack_type}/${values.prioritize}.json?ioc_type=${values.ioc_type}`
+          `${FEEDS_BASE_URI}/${values.feeds_type}/${values.attack_type}/${values.prioritize}.json?ioc_type=${values.ioc_type}`,
         );
         initialValues.feeds_type = values.feeds_type;
         initialValues.attack_type = values.attack_type;
         initialValues.ioc_type = values.ioc_type;
         initialValues.prioritize = values.prioritize;
 
-        const resetPage = {
-          type: "gotoPage",
-          pageIndex: 0,
-        };
-        tableStateReducer(initialState, resetPage);
+        // Clear any ordering / page query params.
+        navigate({ search: "" }, { replace: true });
+
+        // force remount FeedsTable
+        setTableKey((prev) => prev + 1);
       } catch (e) {
         console.debug(e);
       }
     },
-    [setUrl, tableStateReducer]
+    [setUrl, navigate],
   );
 
   return (
@@ -250,7 +290,17 @@ export default function Feeds() {
           </Col>
         </Row>
         {/*Table*/}
-        {tableNode}
+        <FeedsTable
+          key={tableKey}
+          tableParams={{
+            feed_type: initialValues.feeds_type,
+            attack_type: initialValues.attack_type,
+            ioc_type: initialValues.ioc_type,
+            prioritize: initialValues.prioritize,
+          }}
+          onDataLoad={setFeedsData}
+          onSortChange={handleSortChange}
+        />
       </ContentSection>
     </Container>
   );
