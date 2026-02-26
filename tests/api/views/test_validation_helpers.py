@@ -1,4 +1,4 @@
-from api.views.utils import is_ip_address, is_sha256hash
+from greedybear.utils import is_ip_address, is_sha256hash
 from tests import CustomTestCase
 
 
