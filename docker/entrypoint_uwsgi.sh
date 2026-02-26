@@ -1,5 +1,10 @@
 #!/bin/bash
 
+until cd /opt/deploy/greedybear
+do
+    echo "Waiting for server volume..."
+done
+
 # Apply database migrations
 # Create cache table for Django Q monitoring (idempotent)
 python manage.py createcachetable
