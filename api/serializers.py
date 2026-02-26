@@ -1,3 +1,4 @@
+import ipaddress
 import logging
 import re
 from functools import cache
@@ -5,7 +6,7 @@ from functools import cache
 from django.core.exceptions import FieldDoesNotExist
 from rest_framework import serializers
 
-from greedybear.consts import REGEX_DOMAIN, REGEX_IP
+from greedybear.consts import REGEX_DOMAIN
 from greedybear.models import IOC, GeneralHoneypot
 
 logger = logging.getLogger(__name__)
@@ -36,13 +37,22 @@ class EnrichmentSerializer(serializers.Serializer):
 
     def validate(self, data):
         """
-        Check a given observable against regex expression
+        Validate that the query is a valid IP address (IPv4/IPv6) or domain.
         """
-        observable = data["query"]
-        if re.match(r"^[\d\.]+$", observable) and not re.match(REGEX_IP, observable):
-            raise serializers.ValidationError("Observable is not a valid IP")
-        if not re.match(REGEX_IP, observable) and not re.match(REGEX_DOMAIN, observable):
-            raise serializers.ValidationError("Observable is not a valid IP or domain")
+        observable = data["query"].strip()
+
+        try:
+            ipaddress.ip_address(observable)
+            is_ip = True
+        except ValueError:
+            is_ip = False
+
+        # A valid domain must match the domain regex AND contain at least one
+        is_domain = bool(re.match(REGEX_DOMAIN, observable)) and any(c.isalpha() for c in observable)
+
+        if not is_ip and not is_domain:
+            raise serializers.ValidationError("Observable is not a valid IP address or domain")
+
         try:
             required_object = IOC.objects.get(name=observable)
             data["found"] = True
