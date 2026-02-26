@@ -15,7 +15,7 @@ certego-saas==0.7.11
 slack-sdk==3.40.1
 
 uwsgitop==0.12
-uwsgi==2.0.31
+pyuwsgi==2.0.30
 
 joblib==1.5.3
 pandas==3.0.1
