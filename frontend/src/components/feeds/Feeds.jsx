@@ -2,7 +2,7 @@ import React from "react";
 import { Container, Button, Col, Label, FormGroup, Row } from "reactstrap";
 import { VscJson } from "react-icons/vsc";
 import { TbLicense } from "react-icons/tb";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import { FEEDS_BASE_URI, GENERAL_HONEYPOT_URI } from "../../constants/api";
 import {
   ContentSection,
@@ -36,12 +36,12 @@ const prioritizationChoices = [
   { label: "Most expected hits", value: "most_expected_hits" },
 ];
 
-const initialValues = {
+const DEFAULT_VALUES = Object.freeze({
   feeds_type: "all",
   attack_type: "all",
   ioc_type: "all",
   prioritize: "recent",
-};
+});
 
 const toPassTableProps = {
   columns: feedsTableColumns,
@@ -100,13 +100,11 @@ function FeedsTable({ tableParams, onDataLoad, onSortChange }) {
 
 export default function Feeds() {
   console.debug("Feeds rendered!");
-
-  console.debug("Feeds-initialValues", initialValues);
-
-  const navigate = useNavigate();
+  const [filters, setFilters] = React.useState(DEFAULT_VALUES);
+  console.debug("Feeds-initialValues", DEFAULT_VALUES);
 
   const [url, setUrl] = React.useState(
-    `${FEEDS_BASE_URI}/${initialValues.feeds_type}/${initialValues.attack_type}/${initialValues.prioritize}.json`,
+    `${FEEDS_BASE_URI}/${DEFAULT_VALUES.feeds_type}/${DEFAULT_VALUES.attack_type}/${DEFAULT_VALUES.prioritize}.json`,
   );
 
   // Counter used to force remount FeedsTable
@@ -134,10 +132,13 @@ export default function Feeds() {
 
   // reset the prioritize dropdown to "recent"
   const handleSortChange = React.useCallback(() => {
-    initialValues.prioritize = "recent";
-    setUrl(
-      `${FEEDS_BASE_URI}/${initialValues.feeds_type}/${initialValues.attack_type}/recent.json?ioc_type=${initialValues.ioc_type}`,
-    );
+    setFilters((prev) => {
+      const updated = { ...prev, prioritize: "recent" };
+      setUrl(
+        `${FEEDS_BASE_URI}/${updated.feeds_type}/${updated.attack_type}/recent.json?ioc_type=${updated.ioc_type}`,
+      );
+      return updated;
+    });
     setTableKey((prev) => prev + 1);
   }, [setUrl]);
 
@@ -145,24 +146,17 @@ export default function Feeds() {
   const onSubmit = React.useCallback(
     (values) => {
       try {
+        setFilters(values);
         setUrl(
           `${FEEDS_BASE_URI}/${values.feeds_type}/${values.attack_type}/${values.prioritize}.json?ioc_type=${values.ioc_type}`,
         );
-        initialValues.feeds_type = values.feeds_type;
-        initialValues.attack_type = values.attack_type;
-        initialValues.ioc_type = values.ioc_type;
-        initialValues.prioritize = values.prioritize;
-
-        // Clear any ordering / page query params.
-        navigate({ search: "" }, { replace: true });
-
         // force remount FeedsTable
         setTableKey((prev) => prev + 1);
       } catch (e) {
         console.debug(e);
       }
     },
-    [setUrl, navigate],
+    [setUrl],
   );
 
   return (
@@ -189,7 +183,11 @@ export default function Feeds() {
             {/* Form */}
             <Loader
               render={() => (
-                <Formik initialValues={initialValues} onSubmit={onSubmit}>
+                <Formik
+                  initialValues={filters}
+                  onSubmit={onSubmit}
+                  enableReinitialize
+                >
                   {(formik) => (
                     <Form>
                       <FormGroup row>
@@ -203,11 +201,14 @@ export default function Feeds() {
                           <Select
                             id="Feeds__feeds_type"
                             name="feeds_type"
-                            value={initialValues.feeds_type}
+                            value={formik.values.feeds_type}
                             choices={feedTypeChoices.concat(honeypotFeedsType)}
                             onChange={(e) => {
-                              formik.handleChange(e);
-                              formik.submitForm();
+                              const newValues = {
+                                ...formik.values,
+                                feeds_type: e.target.value,
+                              };
+                              onSubmit(newValues);
                             }}
                           />
                         </Col>
@@ -221,11 +222,14 @@ export default function Feeds() {
                           <Select
                             id="Feeds__attack_type"
                             name="attack_type"
-                            value={initialValues.attack_type}
+                            value={formik.values.attack_type}
                             choices={attackTypeChoices}
                             onChange={(e) => {
-                              formik.handleChange(e);
-                              formik.submitForm();
+                              const newValues = {
+                                ...formik.values,
+                                attack_type: e.target.value,
+                              };
+                              onSubmit(newValues);
                             }}
                           />
                         </Col>
@@ -239,11 +243,14 @@ export default function Feeds() {
                           <Select
                             id="Feeds__ioc_type"
                             name="ioc_type"
-                            value={initialValues.ioc_type}
+                            value={formik.values.ioc_type}
                             choices={iocTypeChoices}
                             onChange={(e) => {
-                              formik.handleChange(e);
-                              formik.submitForm();
+                              const newValues = {
+                                ...formik.values,
+                                ioc_type: e.target.value,
+                              };
+                              onSubmit(newValues);
                             }}
                           />
                         </Col>
@@ -257,11 +264,14 @@ export default function Feeds() {
                           <Select
                             id="Feeds__prioritize"
                             name="prioritize"
-                            value={initialValues.prioritize}
+                            value={formik.values.prioritize}
                             choices={prioritizationChoices}
                             onChange={(e) => {
-                              formik.handleChange(e);
-                              formik.submitForm();
+                              const newValues = {
+                                ...formik.values,
+                                prioritize: e.target.value,
+                              };
+                              onSubmit(newValues);
                             }}
                           />
                         </Col>
@@ -293,10 +303,10 @@ export default function Feeds() {
         <FeedsTable
           key={tableKey}
           tableParams={{
-            feed_type: initialValues.feeds_type,
-            attack_type: initialValues.attack_type,
-            ioc_type: initialValues.ioc_type,
-            prioritize: initialValues.prioritize,
+            feed_type: filters.feeds_type,
+            attack_type: filters.attack_type,
+            ioc_type: filters.ioc_type,
+            prioritize: filters.prioritize,
           }}
           onDataLoad={setFeedsData}
           onSortChange={handleSortChange}
