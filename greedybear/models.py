@@ -24,7 +24,6 @@ class Sensor(models.Model):
         blank=True,
         default="",
     )
-    
 
     def __str__(self):
         return self.address
