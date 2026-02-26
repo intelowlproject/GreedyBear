@@ -187,7 +187,7 @@ class Tag(models.Model):
 
     class Meta:
         indexes = [
-            models.Index(fields=["ioc", "source"]),
+            models.Index(fields=["source", "ioc"]),
         ]
 
     def __str__(self):

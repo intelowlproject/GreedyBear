@@ -15,7 +15,8 @@ class AbuseIPDBCron(Cronjob):
 
     Downloads the AbuseIPDB blocklist (top 10k malicious IPs), joins them
     directly against the IOC table, and writes Tag entries for any matches.
-    All existing AbuseIPDB tags are replaced on each run to ensure data freshness.
+    Tags are only replaced on successful API responses; on errors, existing
+    tags are preserved to avoid losing enrichment data.
     """
 
     MAX_ENTRIES = 10000  # Hard limit as per free API tier
@@ -38,6 +39,9 @@ class AbuseIPDBCron(Cronjob):
         2. Validate IP addresses
         3. Query our IOC table for matching IPs (WHERE name IN ...)
         4. Replace all AbuseIPDB tags with fresh data
+
+        On API errors, existing tags are intentionally preserved so
+        enrichment data is not lost due to transient failures.
         """
         api_key = settings.ABUSEIPDB_API_KEY
 

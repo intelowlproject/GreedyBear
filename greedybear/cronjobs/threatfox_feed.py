@@ -17,8 +17,9 @@ class ThreatFoxCron(Cronjob):
     Fetch ThreatFox IOC data and directly enrich matching IOCs with tags.
 
     Downloads IP-based IOCs from ThreatFox, joins them directly against
-    the IOC table, and writes Tag entries for any matches. All existing
-    ThreatFox tags are replaced on each run to ensure data freshness.
+    the IOC table, and writes Tag entries for any matches. Tags are only
+    replaced on successful API responses; on errors or non-OK status,
+    existing tags are preserved to avoid losing enrichment data.
     """
 
     def __init__(self, tag_repo=None):
@@ -39,6 +40,9 @@ class ThreatFoxCron(Cronjob):
         2. Extract and validate IP addresses
         3. Query our IOC table for matching IPs (WHERE name IN ...)
         4. Replace all ThreatFox tags with fresh data
+
+        On API errors or non-OK query_status, existing tags are intentionally
+        preserved so enrichment data is not lost due to transient failures.
         """
         api_key = settings.THREATFOX_API_KEY
         if not api_key:
