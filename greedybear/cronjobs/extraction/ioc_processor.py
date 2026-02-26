@@ -68,6 +68,8 @@ class IocProcessor:
         else:  # Update - sensors handled inside _merge_iocs
             self.log.debug(f"{ioc} is already known - updating record")
             ioc_record = self._merge_iocs(ioc_record, ioc)
+            if not ioc_record.attacker_country and ioc.attacker_country:
+                ioc_record.attacker_country = ioc.attacker_country
 
         if general_honeypot_name is not None:
             ioc_record = self.ioc_repo.add_honeypot_to_ioc(general_honeypot_name, ioc_record)

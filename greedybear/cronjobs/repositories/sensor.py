@@ -17,6 +17,7 @@ class SensorRepository:
         """Initialize the repository and populate the cache from the database."""
         self.log = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
         self.cache: dict[str, Sensor] = {}
+        self._country_cache = {}
         self._fill_cache()
 
     def get_or_create_sensor(self, ip: str) -> Sensor | None:
@@ -46,3 +47,26 @@ class SensorRepository:
         """Load sensor objects from the database into the cache."""
         self.log.debug("populating sensor cache")
         self.cache = {s.address: s for s in Sensor.objects.all()}
+
+    def update_country(self, sensor: Sensor, country: str) -> None:
+        """
+        Update the country of a sensor.
+
+        Uses an in-memory cache to prevent redundant database writes.
+        Only updates the database if:
+        - A valid sensor and country are provided
+        - The country differs from both the cached value and the current DB value
+        """
+        if not sensor or not country:
+            return
+
+        cached_country = self._country_cache.get(sensor.id)
+        if cached_country == country:
+            return
+
+        if sensor.country != country:
+            self.log.debug(f"Updating country for sensor {sensor.address} to {country}")
+            sensor.country = country
+            sensor.save(update_fields=["country"])
+
+        self._country_cache[sensor.id] = country
