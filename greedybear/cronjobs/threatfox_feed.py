@@ -82,7 +82,9 @@ class ThreatFoxCron(Cronjob):
 
             # Build tag entries for matching IOCs
             tag_entries = []
+            matched_count = 0
             for ioc_id, ioc_name in matching_iocs:
+                matched_count += 1
                 for enrichment in feed_by_ip[ioc_name]:
                     if enrichment.get("malware_printable"):
                         tag_entries.append(
@@ -111,7 +113,7 @@ class ThreatFoxCron(Cronjob):
 
             # Replace all ThreatFox tags atomically
             created_count = self.tag_repo.replace_tags_for_source(SOURCE_NAME, tag_entries)
-            self.log.info(f"ThreatFox enrichment completed. Matched {matching_iocs.count()} IOCs, created {created_count} tags.")
+            self.log.info(f"ThreatFox enrichment completed. Matched {matched_count} IOCs, created {created_count} tags.")
 
         except requests.RequestException as e:
             self.log.error(f"Failed to fetch ThreatFox feed: {e}")

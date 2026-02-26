@@ -78,7 +78,9 @@ class AbuseIPDBCron(Cronjob):
 
             # Build tag entries for matching IOCs
             tag_entries = []
+            matched_count = 0
             for ioc_id, ioc_name in matching_iocs:
+                matched_count += 1
                 enrichment = feed_by_ip[ioc_name]
 
                 if enrichment.get("abuse_confidence_score") is not None:
@@ -100,7 +102,7 @@ class AbuseIPDBCron(Cronjob):
 
             # Replace all AbuseIPDB tags atomically
             created_count = self.tag_repo.replace_tags_for_source(SOURCE_NAME, tag_entries)
-            self.log.info(f"AbuseIPDB enrichment completed. Matched {matching_iocs.count()} IOCs, created {created_count} tags.")
+            self.log.info(f"AbuseIPDB enrichment completed. Matched {matched_count} IOCs, created {created_count} tags.")
 
         except requests.RequestException as e:
             self.log.error(f"Failed to fetch AbuseIPDB blocklist: {e}")
