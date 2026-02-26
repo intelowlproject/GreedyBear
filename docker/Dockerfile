@@ -4,7 +4,7 @@ FROM node:lts-alpine3.22 AS frontend-build
 WORKDIR /app
 
 # install dependencies first for layer caching
-COPY frontend/package*.json ./
+COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
 
 # copy source code and build
