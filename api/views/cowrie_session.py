@@ -1,6 +1,5 @@
 # This file is a part of GreedyBear https://github.com/honeynet/GreedyBear
 # See the file 'LICENSE' for copying permission.
-import itertools
 import logging
 import socket
 
@@ -109,7 +108,7 @@ def cowrie_session_view(request):
     response_data["commands"] = sorted("\n".join(cmd.commands) for cmd in unique_commands)
     response_data["sources"] = sorted({s.source.name for s in sessions}, key=socket.inet_aton)
     if include_credentials:
-        response_data["credentials"] = sorted(set(itertools.chain(*[s.credentials for s in sessions])))
+        response_data["credentials"] = sorted({str(c) for s in sessions for c in s.credentials.all()})
     if include_session_data:
         response_data["sessions"] = [
             {
@@ -117,7 +116,7 @@ def cowrie_session_view(request):
                 "duration": s.duration,
                 "source": s.source.name,
                 "interactions": s.interaction_count,
-                "credentials": s.credentials if s.credentials else [],
+                "credentials": [str(c) for c in s.credentials.all()],
                 "commands": "\n".join(s.commands.commands) if s.commands else "",
             }
             for s in sessions
