@@ -10,6 +10,8 @@ This tests the actual integration path as it runs in production.
 
 from unittest.mock import MagicMock, patch
 
+from greedybear.cronjobs.extraction.ioc_processor import IocProcessor
+from greedybear.models import Sensor
 from tests import E2ETestCase, MockElasticHit
 
 
@@ -428,3 +430,60 @@ class TestIocContentVerification(E2ETestCase):
                         "IOC scanner field should contain 'Heralding'",
                     )
                     break
+
+
+class TestGeoIPEnrichmentE2E(E2ETestCase):
+    """E2E test for sensor GeoIP enrichment."""
+
+    @patch("greedybear.cronjobs.extraction.pipeline.UpdateScores")
+    def test_geoip_enrichment_with_ioc(self, mock_scores):
+        pipeline = self._create_pipeline_with_real_factory()
+
+        # Real sensor
+        real_sensor = Sensor(address="10.10.10.10", country="")
+        pipeline.sensor_repo.get_or_create_sensor.return_value = real_sensor
+
+        # Patch update_country to actually set the country
+        pipeline.sensor_repo.update_country.side_effect = lambda sensor, country: setattr(sensor, "country", country)
+
+        hits = [
+            MockElasticHit(
+                {
+                    "src_ip": "8.8.8.8",
+                    "type": "Heralding",
+                    "dest_port": 22,
+                    "@timestamp": "2025-01-01T10:00:00",
+                    "geoip_ext": {"country_name": "Nepal"},
+                    "t-pot_ip_ext": "10.10.10.10",
+                    "geoip": {"country_name": "Nepal", "asn": 64512},
+                }
+            ),
+        ]
+
+        pipeline.elastic_repo.search.return_value = [hits]
+        pipeline.ioc_repo.is_empty.return_value = False
+        pipeline.ioc_repo.is_ready_for_extraction.return_value = True
+        pipeline.ioc_repo.get_ioc_by_name.return_value = None
+
+        # Patch add_ioc to just return the IOC generated from hits
+        real_iocs = []
+
+        def add_ioc_side_effect(self, ioc, *args, **kwargs):
+            real_iocs.append(ioc)
+            return ioc  # return the real IOC object
+
+        with patch.object(IocProcessor, "add_ioc", new=add_ioc_side_effect):
+            result = pipeline.execute()
+
+        # Verify sensor was enriched
+        self.assertEqual(real_sensor.country, "Nepal")
+
+        # Verify IOC attacker_country is populated
+        self.assertTrue(real_iocs)
+        self.assertEqual(real_iocs[0].attacker_country, "Nepal")
+
+        # Result should reflect IOC count
+        self.assertGreater(result, 0)
+
+        # UpdateScores called with the real IOC
+        mock_scores.return_value.score_only.assert_called_once_with(real_iocs)

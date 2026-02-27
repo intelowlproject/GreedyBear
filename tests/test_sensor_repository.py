@@ -1,3 +1,5 @@
+from unittest.mock import patch
+
 from greedybear.cronjobs.repositories import SensorRepository
 from greedybear.models import Sensor
 
@@ -56,3 +58,37 @@ class TestSensorRepository(CustomTestCase):
             result = self.repo.get_or_create_sensor(ip)
             self.assertIsNotNone(result)
             self.assertIsInstance(result, Sensor)
+
+    def test_update_country_sets_country(self):
+        """update_country sets the Sensor's country if different."""
+        sensor = Sensor.objects.create(address="1.2.3.4", country="")
+
+        self.repo.update_country(sensor, "Nepal")
+
+        sensor.refresh_from_db()
+        self.assertEqual(sensor.country, "Nepal")
+
+    def test_update_country_skips_if_same_value(self):
+        """update_country does not call save if country is unchanged."""
+        sensor = Sensor.objects.create(address="1.2.3.5", country="Nepal")
+
+        with patch.object(Sensor, "save") as mock_save:
+            self.repo.update_country(sensor, "Nepal")
+            mock_save.assert_not_called()
+
+    def test_update_country_updates_if_different(self):
+        """update_country writes to DB if country differs."""
+        sensor = Sensor.objects.create(address="1.2.3.6", country="India")
+
+        with patch.object(Sensor, "save") as mock_save:
+            self.repo.update_country(sensor, "Nepal")
+            mock_save.assert_called_once()
+
+    def test_update_country_skips_if_invalid_input(self):
+        """update_country should not save if sensor is None or country is empty."""
+        sensor = Sensor.objects.create(address="1.2.3.7", country="")
+
+        with patch.object(Sensor, "save") as mock_save:
+            self.repo.update_country(None, "Nepal")
+            self.repo.update_country(sensor, "")
+            mock_save.assert_not_called()

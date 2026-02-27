@@ -19,6 +19,11 @@ class IocType(models.TextChoices):
 
 class Sensor(models.Model):
     address = models.GenericIPAddressField(unique=True)
+    country = models.CharField(
+        max_length=64,
+        blank=True,
+        default="",
+    )
 
     def __str__(self):
         return self.address
@@ -58,6 +63,11 @@ class IOC(models.Model):
     number_of_days_seen = models.IntegerField(default=1)
     attack_count = models.IntegerField(default=1)
     interaction_count = models.IntegerField(default=1)
+    attacker_country = models.CharField(
+        max_length=64,
+        blank=True,
+        default="",
+    )
     # FEEDS - list of honeypots from general list, from which the IOC was detected
     general_honeypot = models.ManyToManyField(GeneralHoneypot, blank=True)
     # SENSORS - list of T-Pot sensors that detected this IOC
@@ -78,6 +88,7 @@ class IOC(models.Model):
     class Meta:
         indexes = [
             models.Index(fields=["name"]),
+            models.Index(fields=["attacker_country"]),
         ]
 
     def __str__(self):

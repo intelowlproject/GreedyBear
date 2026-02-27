@@ -74,9 +74,15 @@ class ExtractionPipeline:
                     continue
                 # extract sensor and include in hit dict
                 hit_dict = hit.to_dict()
+
                 if "t-pot_ip_ext" in hit:
                     sensor = self.sensor_repo.get_or_create_sensor(hit["t-pot_ip_ext"])
-                    hit_dict["_sensor"] = sensor  # Include sensor object for strategies
+                    hit_dict["_sensor"] = sensor  # include sensor for strategies
+
+                    sensor_country = hit_dict.get("geoip_ext", {}).get("country_name")
+                    if sensor_country is not None:
+                        self.sensor_repo.update_country(sensor, sensor_country)
+
                 hits_by_honeypot[hit["type"]].append(hit_dict)
 
             # 3. Extract using strategies
