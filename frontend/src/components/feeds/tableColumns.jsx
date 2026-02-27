@@ -68,6 +68,7 @@ const feedsTableColumns = [
   {
     Header: "Details",
     accessor: "details",
+    disableSortBy: true,
     Cell: ({ row }) => {
       const {
         recurrence_probability,
