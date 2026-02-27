@@ -33,6 +33,7 @@ const feedsTableColumns = [
   {
     Header: "Feed type",
     accessor: "feed_type",
+    disableSortBy: true,
     maxWidth: 60,
     Cell: ({ value }) =>
       Array.isArray(value) ? (
