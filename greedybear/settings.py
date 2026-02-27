@@ -91,7 +91,7 @@ INSTALLED_APPS = [
     "rest_email_auth",
 ]
 
-if DEBUG:
+if os.environ.get("DJANGO_TEST_SERVER", "False") == "True":
     INSTALLED_APPS.append("django_watchfiles")
 
 # required by the certego-saas, but GreedyBear doesn't use the recaptcha, for this reason is filled with a placeholder
