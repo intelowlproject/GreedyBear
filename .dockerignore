@@ -16,3 +16,5 @@ frontend/build
 docker-compose*
 .pre-commit-config.yaml
 .ipython/
+.github/
+tests/

@@ -3,16 +3,14 @@ services:
     build:
       context: ..
       dockerfile: docker/Dockerfile
-      args:
-        WATCHMAN: "true"
-        INSTALL_DEV: "true"
+      target: development
     image: intelowlproject/greedybear:test
     volumes:
       - ../:/opt/deploy/greedybear
+    command: python manage.py runserver 0.0.0.0:8001
     environment:
       - DEBUG=True
       - DJANGO_TEST_SERVER=True
-      - DJANGO_WATCHMAN_TIMEOUT=20
 
   nginx:
     build:

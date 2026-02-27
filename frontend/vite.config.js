@@ -35,6 +35,17 @@ export default defineConfig({
 
     build: {
         outDir: 'build',
-        sourcemap: false
+        sourcemap: false,
+        rollupOptions: {
+            output: {
+                // Split large dependencies into separate chunks for better caching and smaller initial load
+                manualChunks: {
+                    recharts: ['recharts'],
+                    vendor: ['react', 'react-dom', 'react-router-dom'],
+                    certego: ['@certego/certego-ui'],
+                    reactstrap: ['reactstrap'],
+                },
+            },
+        },
     }
 });
