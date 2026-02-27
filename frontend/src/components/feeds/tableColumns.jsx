@@ -140,7 +140,7 @@ const feedsTableColumns = [
                 <img
                   src={`${PUBLIC_URL}/intelowl.png`}
                   alt="IntelOwl"
-                  height="16"
+                  height="30"
                   style={{ opacity: 0.85 }}
                 />
               </a>
