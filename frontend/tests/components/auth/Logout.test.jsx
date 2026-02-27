@@ -49,6 +49,6 @@ describe("Logout component", () => {
       email: "",
     });
     expect(useAuthStore.getState().isSuperuser).toBe(false);
-    expect(useAuthStore.getState().isAuthenticated).toBeFalsy();
+    expect(useAuthStore.getState().isAuthenticated).toBe(AUTHENTICATION_STATUSES.FALSE);
   });
 });
