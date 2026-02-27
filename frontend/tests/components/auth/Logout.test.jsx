@@ -33,22 +33,29 @@ describe("Logout component", () => {
   });
 
   test("User data and isSuperuser are cleared after logout", async () => {
-  // set store with correct user shape matching useAuthStore initial values
-  useAuthStore.setState({
-    isAuthenticated: AUTHENTICATION_STATUSES.TRUE,
-    user: { full_name: "Test User", first_name: "Test", last_name: "User", email: "test@test.com" },
-    isSuperuser: true,
-  });
+    // set store with correct user shape matching useAuthStore initial values
+    useAuthStore.setState({
+      isAuthenticated: AUTHENTICATION_STATUSES.TRUE,
+      user: {
+        full_name: "Test User",
+        first_name: "Test",
+        last_name: "User",
+        email: "test@test.com",
+      },
+      isSuperuser: true,
+    });
 
-  await useAuthStore.getState().service.logoutUser();
+    await useAuthStore.getState().service.logoutUser();
 
-  expect(useAuthStore.getState().user).toEqual({
-    full_name: "",
-    first_name: "",
-    last_name: "",
-    email: "",
+    expect(useAuthStore.getState().user).toEqual({
+      full_name: "",
+      first_name: "",
+      last_name: "",
+      email: "",
+    });
+    expect(useAuthStore.getState().isSuperuser).toBe(false);
+    expect(useAuthStore.getState().isAuthenticated).toBe(
+      AUTHENTICATION_STATUSES.FALSE,
+    );
   });
-  expect(useAuthStore.getState().isSuperuser).toBe(false);
-  expect(useAuthStore.getState().isAuthenticated).toBe(AUTHENTICATION_STATUSES.FALSE);
-});
 });
