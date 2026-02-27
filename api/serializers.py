@@ -220,7 +220,7 @@ class FeedsResponseSerializer(serializers.Serializer):
     recurrence_probability = serializers.FloatField(min_value=0, max_value=1)
     expected_interactions = serializers.FloatField(min_value=0)
     attacker_country = serializers.CharField(allow_null=True, allow_blank=True, max_length=120)
-    tags = serializers.ListField(child=serializers.DictField(), required=False, default=list)
+    tags = TagSerializer(many=True, required=False, default=list)
 
     def validate_feed_type(self, feed_type):
         logger.debug(f"FeedsResponseSerializer - validation feed_type: '{feed_type}'")
