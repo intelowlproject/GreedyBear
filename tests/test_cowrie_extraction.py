@@ -226,7 +226,7 @@ class TestCowrieExtractionStrategy(ExtractionTestCase):
     def test_process_session_hit_login_failed(self):
         """Test processing of login failure event."""
         session_record = Mock()
-        session_record.credentials = []
+        session_record.credentials = Mock()
         session_record.source = Mock(login_attempts=0)
         session_record.interaction_count = 0
 
@@ -241,7 +241,8 @@ class TestCowrieExtractionStrategy(ExtractionTestCase):
         self.strategy._process_session_hit(session_record, hit, ioc)
 
         self.assertTrue(session_record.login_attempt)
-        self.assertIn("root | password123", session_record.credentials)
+        session_record.credentials.add.assert_called_once()
+        self.assertEqual(session_record.source.login_attempts, 1)
 
     def test_process_session_hit_command_input(self):
         """Test processing of command input event."""
