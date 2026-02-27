@@ -299,17 +299,19 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
             # Fetch fields from database (always include honeypots and destination_ports)
             required_fields = base_fields | verbose_only_fields if verbose else base_fields
 
-            # Pre-fetch tags for all IOCs in one query to avoid N+1
-            # First materialize the dictionaries to avoid double-evaluating the complex IOC QuerySet
+            # First collect IOC IDs with minimal memory usage
             if isinstance(iocs, list):
-                iocs_dicts = [ioc_as_dict(ioc, required_fields) for ioc in iocs]
+                ioc_ids = [ioc.id for ioc in iocs if hasattr(ioc, "id")]
             else:
-                iocs_dicts = list(iocs.values(*required_fields))
+                ioc_ids = list(iocs.values_list("pk", flat=True))
 
-            ioc_ids = [ioc["id"] for ioc in iocs_dicts]
             tags_by_ioc = _prefetch_tags(ioc_ids)
 
-            for ioc in iocs_dicts:
+            # Generate dictionaries iterably to avoid holding both dicts and json_list in memory
+            iocs_iter = (
+                (ioc_as_dict(ioc, required_fields) for ioc in iocs) if isinstance(iocs, list) else iocs.values(*required_fields).iterator(chunk_size=2000)
+            )
+            for ioc in iocs_iter:
                 ioc_feed_type = [hp.lower() for hp in ioc.get("honeypots", []) if hp]
 
                 data_ = ioc | {
