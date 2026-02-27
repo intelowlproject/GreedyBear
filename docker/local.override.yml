@@ -8,6 +8,8 @@ services:
     volumes:
       - ../:/opt/deploy/greedybear
     command: python manage.py runserver 0.0.0.0:8001
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8001 || exit 1"]
     environment:
       - DEBUG=True
       - DJANGO_TEST_SERVER=True
