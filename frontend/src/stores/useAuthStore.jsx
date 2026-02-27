@@ -75,7 +75,7 @@ const useAuthStore = create((set, get) => ({
       const onLogoutCb = () => {
         set({
           isAuthenticated: AUTHENTICATION_STATUSES.FALSE,
-          user: { username: "", password: "" },
+          user: { full_name: "", first_name: "", last_name: "", email: "" }, // ✅ matches initial values
           isSuperuser: false,
         });
         addToast("Logged out!", null, "info");
