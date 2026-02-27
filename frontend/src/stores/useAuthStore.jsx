@@ -73,7 +73,11 @@ const useAuthStore = create((set, get) => ({
     logoutUser: async () => {
       set({ isAuthenticated: AUTHENTICATION_STATUSES.PENDING });
       const onLogoutCb = () => {
-        set({ isAuthenticated: AUTHENTICATION_STATUSES.FALSE });
+        set({
+          isAuthenticated: AUTHENTICATION_STATUSES.FALSE,
+          user: { username: "", password: "" },
+          isSuperuser: false,
+        });
         addToast("Logged out!", null, "info");
       };
       return axios
