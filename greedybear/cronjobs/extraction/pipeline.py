@@ -75,7 +75,6 @@ class ExtractionPipeline:
                 # extract sensor and include in hit dict
                 hit_dict = hit.to_dict()
 
-                sensor = None
                 if "t-pot_ip_ext" in hit:
                     sensor = self.sensor_repo.get_or_create_sensor(hit["t-pot_ip_ext"])
                     hit_dict["_sensor"] = sensor  # include sensor for strategies

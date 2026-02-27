@@ -68,8 +68,6 @@ class IocProcessor:
         else:  # Update - sensors handled inside _merge_iocs
             self.log.debug(f"{ioc} is already known - updating record")
             ioc_record = self._merge_iocs(ioc_record, ioc)
-            if not ioc_record.attacker_country and ioc.attacker_country:
-                ioc_record.attacker_country = ioc.attacker_country
 
         if general_honeypot_name is not None:
             ioc_record = self.ioc_repo.add_honeypot_to_ioc(general_honeypot_name, ioc_record)
@@ -101,6 +99,10 @@ class IocProcessor:
         existing.ip_reputation = new.ip_reputation
         existing.asn = new.asn
         existing.login_attempts += new.login_attempts
+
+        # we will always update attacker_country if incoming value exists
+        if new.attacker_country:
+            existing.attacker_country = new.attacker_country
 
         # Add sensors from new IOC (existing is already saved, so ManyToMany works).
         # We retrieve sensors from the temporary attribute of the input IOC object.
