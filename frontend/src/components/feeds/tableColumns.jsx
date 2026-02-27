@@ -1,6 +1,7 @@
 import { UncontrolledPopover, PopoverBody } from "reactstrap";
 import { FiInfo } from "react-icons/fi";
 import { BooleanIcon, IconButton } from "@certego/certego-ui";
+import { INTELOWL_URL, PUBLIC_URL } from "../../constants/environment";
 
 const formatInteger = (value) => {
   if (value === null || value === undefined || Number.isNaN(value)) return "-";
@@ -121,6 +122,33 @@ const feedsTableColumns = [
     },
     maxWidth: 60,
   },
+  ...(INTELOWL_URL
+    ? [
+        {
+          Header: "Analyze",
+          id: "intelowl",
+          disableSortBy: true,
+          maxWidth: 60,
+          Cell: ({ row }) => (
+            <div className="d-flex justify-content-center">
+              <a
+                href={`${INTELOWL_URL}/scan?observable_name=${encodeURIComponent(row.original.value)}`}
+                target="_blank"
+                rel="noreferrer"
+                title={`Analyze ${row.original.value} on IntelOwl`}
+              >
+                <img
+                  src={`${PUBLIC_URL}/intelowl.png`}
+                  alt="IntelOwl"
+                  height="30"
+                  style={{ opacity: 0.85 }}
+                />
+              </a>
+            </div>
+          ),
+        },
+      ]
+    : []),
 ];
 
 export { feedsTableColumns };

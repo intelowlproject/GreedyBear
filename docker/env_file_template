@@ -79,3 +79,8 @@ ABUSEIPDB_API_KEY =
 # If not set, no license information will be included in feeds
 # Example: https://github.com/honeynet/GreedyBear/blob/main/FEEDS_LICENSE.md
 FEEDS_LICENSE=
+
+# Optional IntelOwl base URL. When set, a link to analyze each IOC on IntelOwl
+# will appear in the Feeds table.
+# Example: https://your-intelowl-instance.example.com
+VITE_INTELOWL_URL=
