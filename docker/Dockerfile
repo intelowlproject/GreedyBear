@@ -1,7 +1,8 @@
-# Stage 1: Frontend 
+## ------------------------------- Frontend Build Stage ------------------------------ ## 
 FROM node:lts-alpine3.22 AS frontend-build
 
-WORKDIR /
+WORKDIR /app
+
 # install dependencies first for layer caching
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
@@ -11,56 +12,55 @@ COPY frontend/ .
 COPY docker/.version .env.local
 RUN VITE_BASE_URL=/static/reactapp/ npm run build
 
-# Stage 2: Backend
-FROM python:3.13-slim-trixie
 
+## ------------------------------- Production Stage ------------------------------ ##
+
+FROM python:3.13-slim-trixie AS production
+
+ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONUNBUFFERED=1
 ENV DJANGO_SETTINGS_MODULE=greedybear.settings
 ENV PYTHONPATH=/opt/deploy/greedybear
 ENV LOG_PATH=/var/log/greedybear
 
-ARG WATCHMAN=false
-
-RUN mkdir -p ${LOG_PATH}/django ${LOG_PATH}/uwsgi \
-    && apt-get update \
-    && apt-get install -y --no-install-recommends \
-       # Build dependencies (removed after pip install)
-       gcc python3-dev \
-       # Runtime dependencies:
-       # libexpat1 is required by uWSGI/Python,
-       # libgomp1 is required for model training, netcat-openbsd for healthcheck
-       libexpat1 libgomp1 netcat-openbsd \
-    && pip3 install --no-cache-dir --upgrade pip
-
-COPY requirements/project-requirements.txt $PYTHONPATH/project-requirements.txt
-COPY requirements/dev-requirements.txt $PYTHONPATH/dev-requirements.txt
 WORKDIR $PYTHONPATH
-RUN pip3 install --no-cache-dir -r $PYTHONPATH/project-requirements.txt
 
-# Conditionally install dev requirements (coverage, etc.)
-ARG INSTALL_DEV=false
-RUN if [ "$INSTALL_DEV" = "true" ]; then \
-      pip3 install --no-cache-dir -r $PYTHONPATH/dev-requirements.txt; \
-    fi
+# Install runtime dependencies
+#  - libgomp1 is required for model training
+#  - libexpat1 is required by uWSGI
+#  - curl for healthcheck
+RUN apt-get update && apt-get install -y --no-install-recommends \
+       libgomp1 libexpat1 curl \
+    && rm -rf /var/lib/apt/lists/*
 
+# Install python packages
+COPY requirements/project-requirements.txt requirements/project-requirements.txt
+RUN pip install --no-cache-dir --root-user-action=ignore --disable-pip-version-check -q -r requirements/project-requirements.txt
+
+# Copy files
 COPY . $PYTHONPATH
-COPY --from=frontend-build /build /var/www/reactapp
+COPY --from=frontend-build /app/build /var/www/reactapp
 
 # separation is required to avoid to re-execute os installation in case of change of python requirements
-RUN touch ${LOG_PATH}/django/api.log ${LOG_PATH}/django/api_errors.log \
+RUN mkdir -p ${LOG_PATH}/django ${LOG_PATH}/uwsgi \
+    && touch ${LOG_PATH}/django/api.log ${LOG_PATH}/django/api_errors.log \
     && touch ${LOG_PATH}/django/greedybear.log ${LOG_PATH}/django/greedybear_errors.log \
     && touch ${LOG_PATH}/django/django_q.log ${LOG_PATH}/django/django_q_errors.log \
-    && touch ${LOG_PATH}/django/django_errors.log ${LOG_PATH}/django/elasticsearch.log\
+    && touch ${LOG_PATH}/django/django_errors.log ${LOG_PATH}/django/elasticsearch.log \
     && touch ${LOG_PATH}/django/authentication.log ${LOG_PATH}/django/authentication_errors.log \
     && mkdir -p ${PYTHONPATH}/mlmodels \
     && usermod -u 2000 www-data \
     && chown -R www-data:www-data ${LOG_PATH} /opt/deploy/ ${PYTHONPATH}/mlmodels/ \
-    && rm -rf docs/ frontend/ tests/ .github/ docker/hooks/ \
-    && /bin/bash ./docker/watchman_install.sh \
-    && apt-get purge -y gcc python3-dev \
-    && apt-get autoremove -y \
-    && rm -rf /var/lib/apt/lists/* # remove the apt package index cache
+    && rm -rf frontend/
 
-# start period is high to allow data migration for 1.4.0
-HEALTHCHECK --interval=10s --timeout=2s --start-period=500s --retries=3 CMD nc -z localhost 8001 || exit 1
+## ------------------------------- Development Stage ------------------------------ ##
 
+FROM production AS development
+
+# Install dev requirements
+RUN pip install --no-cache-dir --root-user-action=ignore --disable-pip-version-check -q -r requirements/dev-requirements.txt
+
+## ------------------------------- Default Stage ------------------------------ ##
+
+# Ensure the default build target is production
+FROM production

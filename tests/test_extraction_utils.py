@@ -597,6 +597,31 @@ class IocsFromHitsTestCase(CustomTestCase):
         sensor = getattr(ioc, "_sensors_to_add", [])
         self.assertEqual(sensor, [])
 
+    def test_ioc_attacker_country_set_correctly(self):
+        """Verify that iocs_from_hits sets src_ip and attacker_country correctly."""
+        hits = [
+            self._create_hit(
+                src_ip="8.8.8.8",
+                dest_port=22,
+                hit_type="Cowrie",
+                asn=12345,
+            )
+        ]
+
+        # manually injecting the geo
+        hits[0]["geoip"] = {"country_name": "Nepal"}
+
+        iocs = iocs_from_hits(hits)
+        self.assertEqual(len(iocs), 1)
+
+        ioc = iocs[0]
+
+        # verifying the ip and country
+        self.assertEqual(ioc.name, "8.8.8.8")
+        self.assertEqual(ioc.attacker_country, "Nepal")
+
+        self.assertEqual(ioc.interaction_count, 1)
+
 
 class ThreatfoxSubmissionTestCase(ExtractionTestCase):
     def setUp(self):
