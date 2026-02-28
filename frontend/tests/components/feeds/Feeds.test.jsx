@@ -49,9 +49,31 @@ vi.mock("@certego/certego-ui", async (importOriginal) => {
     </select>
   );
 
+  // mock MultiSelectDropdownInput as a native multi-select for testing
+  const MultiSelectDropdownInput = ({ inputId, options, value, onChange }) => (
+    <select
+      id={inputId}
+      multiple
+      value={value ? value.map((o) => o.value) : []}
+      onChange={(e) => {
+        const selected = Array.from(e.target.selectedOptions).map((opt) =>
+          options.find((o) => o.value === opt.value),
+        );
+        onChange(selected);
+      }}
+    >
+      {options.map((o) => (
+        <option key={o.value} value={o.value}>
+          {o.label}
+        </option>
+      ))}
+    </select>
+  );
+
   return {
     ...originalModule,
     Select,
+    MultiSelectDropdownInput,
     useAxiosComponentLoader: vi.fn(() => [
       ["Honeytrap", "Glutton", "CitrixHoneypot", "Cowrie"],
       loader,
