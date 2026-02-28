@@ -15,27 +15,25 @@ services:
       start_period: 10s
       start_interval: 1s
 
-  uwsgi:
+  gunicorn:
     image: intelowlproject/greedybear:prod
-    container_name: greedybear_uwsgi
+    container_name: greedybear_gunicorn
     restart: unless-stopped
     volumes:
-      - ../configuration/uwsgi/greedybear.ini:/etc/uwsgi/sites/greedybear.ini
       - generic_logs:/var/log/greedybear
       - static_content:/opt/deploy/greedybear/static
     entrypoint:
-      - ./docker/entrypoint_uwsgi.sh
-    command: ["uwsgi", "--ini", "/etc/uwsgi/sites/greedybear.ini", "--stats", "127.0.0.1:1717", "--stats-http"]
+      - ./docker/entrypoint_gunicorn.sh
+    command: ["gunicorn", "greedybear.wsgi:application", "--bind", "0.0.0.0:8001", "--workers", "16"]
     expose:
       - "8001"
-      - "1717"
     env_file:
       - env_file
     depends_on:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:1717 || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:8001 || exit 1"]
       interval: 10s
       timeout: 2s
       retries: 30
@@ -54,16 +52,10 @@ services:
       - static_content:/var/www/static
     ports:
       - "80:80"
-    depends_on:                                                                                                                                                                             
-      uwsgi:                  
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost/hc || exit 1"]
-      interval: 10s
-      timeout: 2s
-      retries: 3
-      start_period: 10s
-      start_interval: 1s
+    depends_on:
+      - gunicorn
+
+
 
   qcluster:
     image: intelowlproject/greedybear:prod
@@ -79,7 +71,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      uwsgi:
+      gunicorn:
         condition: service_healthy
     user: "2000:82"
     healthcheck:

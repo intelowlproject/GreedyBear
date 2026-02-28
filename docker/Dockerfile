@@ -27,10 +27,9 @@ WORKDIR $PYTHONPATH
 
 # Install runtime dependencies
 #  - libgomp1 is required for model training
-#  - libexpat1 is required by uWSGI
 #  - curl for healthcheck
 RUN apt-get update && apt-get install -y --no-install-recommends \
-       libgomp1 libexpat1 curl \
+    libgomp1 curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Install python packages
@@ -42,7 +41,7 @@ COPY . $PYTHONPATH
 COPY --from=frontend-build /app/build /var/www/reactapp
 
 # separation is required to avoid to re-execute os installation in case of change of python requirements
-RUN mkdir -p ${LOG_PATH}/django ${LOG_PATH}/uwsgi \
+RUN mkdir -p ${LOG_PATH}/django \
     && touch ${LOG_PATH}/django/api.log ${LOG_PATH}/django/api_errors.log \
     && touch ${LOG_PATH}/django/greedybear.log ${LOG_PATH}/django/greedybear_errors.log \
     && touch ${LOG_PATH}/django/django_q.log ${LOG_PATH}/django/django_q_errors.log \
