@@ -65,7 +65,9 @@ class FeedRequestParams:
         Parameters:
             query_params (dict): Dictionary containing query parameters for feed configuration.
         """
-        self.feed_type = query_params.get("feed_type", "all").lower()
+        feed_type_str = query_params.get("feed_type", "all").lower()
+        self.feed_type = feed_type_str
+        self.feed_types = [ft.strip() for ft in feed_type_str.split(",") if ft.strip()]
         self.attack_type = query_params.get("attack_type", "all").lower()
         self.ioc_type = query_params.get("ioc_type", "all").lower()
         self.max_age = query_params.get("max_age", "3")
@@ -157,8 +159,6 @@ def get_queryset(request, feed_params, valid_feed_types, is_aggregated=False, se
     serializer.is_valid(raise_exception=True)
 
     query_dict = {}
-    if feed_params.feed_type != "all":
-        query_dict["general_honeypot__name__iexact"] = feed_params.feed_type
 
     if feed_params.attack_type != "all":
         query_dict[feed_params.attack_type] = True
@@ -173,6 +173,11 @@ def get_queryset(request, feed_params, valid_feed_types, is_aggregated=False, se
         query_dict["ip_reputation__in"] = feed_params.include_reputation
 
     iocs = IOC.objects.filter(**query_dict).exclude(ip_reputation__in=feed_params.exclude_reputation).annotate(value=F("name")).distinct()
+
+    # apply feed type filter as intersection; chain a filter per selected type.
+    if "all" not in feed_params.feed_types:
+        for ft in feed_params.feed_types:
+            iocs = iocs.filter(general_honeypot__name__iexact=ft)
 
     # aggregated feeds calculate metrics differently and need all rows to be accurate.
     if not is_aggregated:

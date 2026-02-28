@@ -116,7 +116,9 @@ class FeedsRequestSerializer(serializers.Serializer):
 
     def validate_feed_type(self, feed_type):
         logger.debug(f"FeedsRequestSerializer - validation feed_type: '{feed_type}'")
-        return feed_type_validation(feed_type, self.context["valid_feed_types"])
+        for ft in [ft.strip() for ft in feed_type.split(",") if ft.strip()]:
+            feed_type_validation(ft, self.context["valid_feed_types"])
+        return feed_type
 
     def validate_ordering(self, ordering):
         logger.debug(f"FeedsRequestSerializer - validation ordering: '{ordering}'")
