@@ -43,7 +43,7 @@ class ModelsTestCase(CustomTestCase):
         self.assertEqual(self.cowrie_session.start_time, self.current_time)
         self.assertEqual(self.cowrie_session.duration, 1.234)
         self.assertEqual(self.cowrie_session.login_attempt, True)
-        self.assertEqual(self.cowrie_session.credentials, ["root | root"])
+        self.assertEqual(str(self.cowrie_session.credentials.first()), "root | root")
         self.assertEqual(self.cowrie_session.command_execution, True)
         self.assertEqual(self.cowrie_session.interaction_count, 5)
         self.assertEqual(self.cowrie_session.source.name, "140.246.171.141")

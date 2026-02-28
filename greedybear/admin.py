@@ -10,6 +10,7 @@ from greedybear.models import (
     IOC,
     CommandSequence,
     CowrieSession,
+    Credential,
     FireHolList,
     GeneralHoneypot,
     MassScanner,
@@ -73,7 +74,7 @@ class SessionInline(admin.TabularInline):
         "source",
         "start_time",
         "duration",
-        "credentials",
+        "credential_list",
         "interaction_count",
         "commands",
     ]
@@ -81,6 +82,9 @@ class SessionInline(admin.TabularInline):
     show_change_link = True
     extra = 0
     ordering = ["-start_time"]
+
+    def credential_list(self, session):
+        return ", ".join([str(c) for c in session.credentials.all()])
 
 
 @admin.register(CowrieSession)
@@ -90,7 +94,7 @@ class CowrieSessionModelAdmin(admin.ModelAdmin):
         "start_time",
         "duration",
         "login_attempt",
-        "credentials",
+        "credential_list",
         "command_execution",
         "interaction_count",
         "source",
@@ -99,6 +103,16 @@ class CowrieSessionModelAdmin(admin.ModelAdmin):
     search_help_text = ["search for the IP address source"]
     raw_id_fields = ["source", "commands"]
     list_filter = ["login_attempt", "command_execution"]
+
+    def credential_list(self, session):
+        return ", ".join([str(c) for c in session.credentials.all()])
+
+
+@admin.register(Credential)
+class CredentialModelAdmin(admin.ModelAdmin):
+    list_display = ["username", "password"]
+    search_fields = ["username", "password"]
+    search_help_text = ["search for username or password"]
 
 
 @admin.register(CommandSequence)
