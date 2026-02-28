@@ -10,7 +10,7 @@ from greedybear.cronjobs.extraction.strategies.cowrie import (
     normalize_credential_field,
     parse_url_hostname,
 )
-from greedybear.models import CommandSequence
+from greedybear.models import CommandSequence, CowrieFileTransfer, CowrieSession
 from tests import ExtractionTestCase
 
 
@@ -328,6 +328,92 @@ class TestCowrieExtractionStrategy(ExtractionTestCase):
         self.assertTrue(result)
         self.assertEqual(session.commands, existing_cmd_seq)
         self.assertEqual(session.commands.last_seen, "2023-01-01T10:00:10")
+
+    def test_process_session_hit_file_download_with_shasum(self):
+        """Test that file_download events with shasum create a file transfer record."""
+        session_record = CowrieSession(session_id=0x123456, source=self.ioc)
+        hit = {
+            "eventid": "cowrie.session.file_download",
+            "timestamp": "2023-01-01T10:00:05",
+            "url": "http://malware.com/bad.exe",
+            "shasum": "a" * 64,
+            "destfile": "/tmp/bad.exe",
+        }
+        ioc = Mock(name="1.2.3.4")
+
+        self.strategy._process_session_hit(session_record, hit, ioc)
+
+        self.assertIsNotNone(session_record.file_transfers)
+        self.assertIsInstance(session_record.file_transfers, CowrieFileTransfer)
+        self.assertEqual(len(session_record.file_transfers.transfers), 1)
+        transfer = session_record.file_transfers.transfers[0]
+        self.assertEqual(transfer["shasum"], "a" * 64)
+        self.assertEqual(transfer["url"], "http://malware.com/bad.exe")
+        self.assertEqual(transfer["dst_filename"], "/tmp/bad.exe")
+        self.assertEqual(session_record.interaction_count, 1)
+
+    def test_process_session_hit_file_download_without_shasum(self):
+        """Test that file_download events without shasum are skipped gracefully."""
+        session_record = CowrieSession(session_id=0x789012, source=self.ioc)
+        hit = {
+            "eventid": "cowrie.session.file_download",
+            "timestamp": "2023-01-01T10:00:05",
+            "url": "http://malware.com/bad.exe",
+        }
+        ioc = Mock(name="1.2.3.4")
+
+        self.strategy._process_session_hit(session_record, hit, ioc)
+
+        self.assertIsNone(session_record.file_transfers)
+        self.assertEqual(session_record.interaction_count, 1)
+
+    def test_process_session_hit_file_upload_with_shasum(self):
+        """Test that file_upload events with shasum create a file transfer record."""
+        session_record = CowrieSession(session_id=0x345678, source=self.ioc)
+        hit = {
+            "eventid": "cowrie.session.file_upload",
+            "timestamp": "2023-01-01T10:00:07",
+            "shasum": "c" * 64,
+            "destfile": "/tmp/upload.sh",
+        }
+        ioc = Mock(name="1.2.3.4")
+
+        self.strategy._process_session_hit(session_record, hit, ioc)
+
+        self.assertIsNotNone(session_record.file_transfers)
+        self.assertEqual(len(session_record.file_transfers.transfers), 1)
+        transfer = session_record.file_transfers.transfers[0]
+        self.assertEqual(transfer["shasum"], "c" * 64)
+        self.assertEqual(transfer["dst_filename"], "/tmp/upload.sh")
+        self.assertEqual(session_record.interaction_count, 1)
+
+    def test_get_sessions_saves_file_transfers(self):
+        """Test that _get_sessions saves file_transfers like command sequences."""
+        ioc = Mock()
+        ioc.name = "1.2.3.4"
+
+        mock_file_transfer = Mock(spec=CowrieFileTransfer)
+        mock_file_transfer.transfers = [{"shasum": "a" * 64}]
+        mock_session = Mock()
+        mock_session.commands = None
+        mock_session.file_transfers = mock_file_transfer
+
+        self.mock_session_repo.get_or_create_session.return_value = mock_session
+
+        hits = [
+            {
+                "src_ip": "1.2.3.4",
+                "session": "abc123",
+                "eventid": "cowrie.session.connect",
+                "timestamp": "2023-01-01T10:00:00",
+            }
+        ]
+
+        with patch.object(self.strategy, "_process_session_hit"):
+            self.strategy._get_sessions(ioc, hits)
+
+        self.mock_session_repo.save_file_transfer.assert_called_once_with(mock_file_transfer)
+        self.mock_session_repo.save_session.assert_called_once_with(mock_session)
 
     @patch("greedybear.cronjobs.extraction.strategies.cowrie.iocs_from_hits")
     def test_extract_from_hits_integration(self, mock_iocs_from_hits):

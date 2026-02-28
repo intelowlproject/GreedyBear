@@ -1,6 +1,6 @@
 import logging
 
-from greedybear.models import IOC, CommandSequence, CowrieSession
+from greedybear.models import IOC, CommandSequence, CowrieFileTransfer, CowrieSession
 
 
 class CowrieSessionRepository:
@@ -73,6 +73,19 @@ class CowrieSessionRepository:
         """
         cmd.save()
         return cmd
+
+    def save_file_transfer(self, ft: CowrieFileTransfer) -> CowrieFileTransfer:
+        """
+        Persist a CowrieFileTransfer to the database.
+
+        Args:
+            ft: The CowrieFileTransfer instance to save.
+
+        Returns:
+            The saved CowrieFileTransfer instance.
+        """
+        ft.save()
+        return ft
 
     def delete_old_command_sequences(self, cutoff_date) -> int:
         """
