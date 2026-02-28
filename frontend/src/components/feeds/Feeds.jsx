@@ -103,11 +103,6 @@ export default function Feeds() {
   console.debug("Feeds-DEFAULT_VALUES", DEFAULT_VALUES);
   const formikRef = React.useRef(null);
 
-  // I batched url, tableParams, and tableKey into a single state object so that
-  // all three update atomically in one render cycle. Previously, having
-  // them as separate state variables caused multiple redundent api request before
-  // the state fully settled
-
   const [feedsState, setFeedsState] = React.useState({
     url: `${FEEDS_BASE_URI}/${DEFAULT_VALUES.feeds_type}/${DEFAULT_VALUES.attack_type}/${DEFAULT_VALUES.prioritize}.json`,
     tableParams: {
