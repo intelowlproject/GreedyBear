@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('greedybear', '0038_add_tag_model'),
+        ('greedybear', '0038_tag'),
     ]
 
     operations = [

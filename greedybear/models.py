@@ -191,7 +191,7 @@ class Tag(models.Model):
     """Tags for IOCs from enrichment sources like ThreatFox and AbuseIPDB."""
 
     ioc = models.ForeignKey(IOC, on_delete=models.CASCADE, related_name="tags")
-    key = models.CharField(max_length=128)
+    key = models.CharField(max_length=128, db_index=True)
     value = models.CharField(max_length=256)
     source = models.CharField(max_length=64)  # e.g., "threatfox", "abuseipdb"
     added = models.DateTimeField(db_default=Now())

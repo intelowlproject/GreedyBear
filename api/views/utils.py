@@ -16,7 +16,7 @@ from rest_framework.response import Response
 
 from api.serializers import FeedsRequestSerializer
 from greedybear.consts import CACHE_KEY_GREEDYBEAR_NEWS, CACHE_TIMEOUT_SECONDS, RSS_FEED_URL
-from greedybear.models import IOC, GeneralHoneypot, Statistics
+from greedybear.models import IOC, GeneralHoneypot, Statistics, Tag
 
 logger = logging.getLogger(__name__)
 
@@ -77,6 +77,8 @@ class FeedRequestParams:
         self.verbose = query_params.get("verbose", "false").lower()
         self.paginate = query_params.get("paginate", "false").lower()
         self.format = query_params.get("format_", "json").lower()
+        self.tag_key = query_params.get("tag_key", "").strip()
+        self.tag_value = query_params.get("tag_value", "").strip()
         self.feed_type_sorting = None
 
     def apply_default_filters(self, query_params):
@@ -123,7 +125,7 @@ def get_valid_feed_types() -> frozenset[str]:
     return frozenset(feed_types)
 
 
-def get_queryset(request, feed_params, valid_feed_types, is_aggregated=False, serializer_class=FeedsRequestSerializer):
+def get_queryset(request, feed_params, valid_feed_types, is_aggregated=False, serializer_class=FeedsRequestSerializer, enable_tag_filtering=False):
     """
     Build a queryset to filter IOC data based on the request parameters.
 
@@ -140,6 +142,10 @@ def get_queryset(request, feed_params, valid_feed_types, is_aggregated=False, se
             - Allows injecting a custom serializer to enforce rules for specific feed types
               (e.g., to restrict ordering fields or validation for specialized feeds).
             - Default: `FeedsRequestSerializer`.
+        enable_tag_filtering (bool, optional):
+            - If True, applies tag-based filtering (tag_key, tag_value).
+            - Only the advanced feed endpoint should enable this.
+            - Default: False.
 
     Returns:
         QuerySet: The filtered queryset of IOC data.
@@ -172,6 +178,13 @@ def get_queryset(request, feed_params, valid_feed_types, is_aggregated=False, se
     if feed_params.include_reputation:
         query_dict["ip_reputation__in"] = feed_params.include_reputation
 
+    # Tag-based filtering (exclusive to feeds_advanced)
+    if enable_tag_filtering:
+        if feed_params.tag_key:
+            query_dict["tags__key"] = feed_params.tag_key
+        if feed_params.tag_value:
+            query_dict["tags__value__icontains"] = feed_params.tag_value
+
     iocs = IOC.objects.filter(**query_dict).exclude(ip_reputation__in=feed_params.exclude_reputation).annotate(value=F("name")).distinct()
 
     # aggregated feeds calculate metrics differently and need all rows to be accurate.
@@ -200,6 +213,26 @@ def ioc_as_dict(ioc, fields: set) -> dict:
         dict: A dictionary containing all fields from the IOC object where the field name exists in fields
     """
     return {k: v for k, v in ioc.__dict__.items() if k in fields}
+
+
+def _prefetch_tags(ioc_ids: list) -> dict[int, list[dict]]:
+    """
+    Batch-fetch all tags for a list of IOC IDs in a single query.
+
+    Args:
+        ioc_ids: List of IOC primary keys.
+
+    Returns:
+        Dict mapping IOC ID -> list of tag dicts (key, value, source).
+    """
+    tags_by_ioc = {}
+    if not ioc_ids:
+        return tags_by_ioc
+
+    tag_rows = Tag.objects.filter(ioc_id__in=ioc_ids).values_list("ioc_id", "key", "value", "source")
+    for ioc_id, key, value, source in tag_rows:
+        tags_by_ioc.setdefault(ioc_id, []).append({"key": key, "value": value, "source": source})
+    return tags_by_ioc
 
 
 def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose=False):
@@ -236,8 +269,9 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
         case "json":
             json_list = []
 
-            # Base fields always returned
+            # Base fields always returned (id needed for tag lookup)
             base_fields = {
+                "id",
                 "value",
                 "first_seen",
                 "last_seen",
@@ -263,9 +297,19 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
             # Fetch fields from database (always include honeypots and destination_ports)
             required_fields = base_fields | verbose_only_fields if verbose else base_fields
 
-            # Collect values; `honeypots` will contain the list of associated honeypot names
-            iocs = (ioc_as_dict(ioc, required_fields) for ioc in iocs) if isinstance(iocs, list) else iocs.values(*required_fields)
-            for ioc in iocs:
+            # First collect IOC IDs with minimal memory usage
+            if isinstance(iocs, list):
+                ioc_ids = [ioc.id for ioc in iocs if hasattr(ioc, "id")]
+            else:
+                ioc_ids = list(iocs.values_list("pk", flat=True))
+
+            tags_by_ioc = _prefetch_tags(ioc_ids)
+
+            # Generate dictionaries iterably to avoid holding both dicts and json_list in memory
+            iocs_iter = (
+                (ioc_as_dict(ioc, required_fields) for ioc in iocs) if isinstance(iocs, list) else iocs.values(*required_fields).iterator(chunk_size=2000)
+            )
+            for ioc in iocs_iter:
                 ioc_feed_type = [hp.lower() for hp in ioc.get("honeypots", []) if hp]
 
                 data_ = ioc | {
@@ -273,6 +317,7 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
                     "last_seen": ioc["last_seen"].strftime("%Y-%m-%d"),
                     "feed_type": ioc_feed_type,
                     "destination_port_count": len(ioc.get("destination_ports", [])),
+                    "tags": tags_by_ioc.get(ioc["id"], []),
                 }
 
                 # Remove verbose-only fields from response when not in verbose mode
@@ -280,8 +325,9 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
                     # Remove destination_ports array from response
                     data_.pop("destination_ports", None)
 
-                # Always remove honeypots field as it's redundant with feed_type
+                # Always remove internal fields not part of the API contract
                 data_.pop("honeypots", None)
+                data_.pop("id", None)
 
                 # Skip validation - data_ is constructed internally and matches the API contract
                 json_list.append(data_)

@@ -6,7 +6,7 @@ from django.core.exceptions import FieldDoesNotExist
 from rest_framework import serializers
 
 from greedybear.consts import REGEX_DOMAIN
-from greedybear.models import IOC, GeneralHoneypot
+from greedybear.models import IOC, GeneralHoneypot, Tag
 from greedybear.utils import is_ip_address
 
 logger = logging.getLogger(__name__)
@@ -20,8 +20,15 @@ class GeneralHoneypotSerializer(serializers.ModelSerializer):
         return value.name
 
 
+class TagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tag
+        fields = ["key", "value", "source"]
+
+
 class IOCSerializer(serializers.ModelSerializer):
     general_honeypot = GeneralHoneypotSerializer(many=True, read_only=True)
+    tags = TagSerializer(many=True, read_only=True)
 
     class Meta:
         model = IOC
@@ -49,7 +56,7 @@ class EnrichmentSerializer(serializers.Serializer):
             raise serializers.ValidationError("Observable is not a valid IP address or domain")
 
         try:
-            required_object = IOC.objects.get(name=observable)
+            required_object = IOC.objects.prefetch_related("tags").get(name=observable)
             data["found"] = True
             data["ioc"] = required_object
         except IOC.DoesNotExist:
@@ -113,6 +120,8 @@ class FeedsRequestSerializer(serializers.Serializer):
     verbose = serializers.ChoiceField(choices=["true", "false"])
     paginate = serializers.ChoiceField(choices=["true", "false"])
     format = serializers.ChoiceField(choices=["csv", "json", "txt"])
+    tag_key = serializers.CharField(max_length=128, required=False, allow_blank=True)
+    tag_value = serializers.CharField(max_length=256, required=False, allow_blank=True)
 
     def validate_feed_type(self, feed_type):
         logger.debug(f"FeedsRequestSerializer - validation feed_type: '{feed_type}'")
@@ -188,6 +197,7 @@ class FeedsResponseSerializer(serializers.Serializer):
     login_attempts = serializers.IntegerField(min_value=0)
     recurrence_probability = serializers.FloatField(min_value=0, max_value=1)
     expected_interactions = serializers.FloatField(min_value=0)
+    tags = TagSerializer(many=True, required=False, default=list)
 
     def validate_feed_type(self, feed_type):
         logger.debug(f"FeedsResponseSerializer - validation feed_type: '{feed_type}'")
