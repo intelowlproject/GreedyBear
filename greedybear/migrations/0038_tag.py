@@ -17,7 +17,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('key', models.CharField(db_index=True, max_length=128)),
-                ('value', models.CharField(db_index=True, max_length=256)),
+                ('value', models.CharField(max_length=256)),
                 ('source', models.CharField(max_length=64)),
                 ('added', models.DateTimeField(db_default=django.db.models.functions.datetime.Now())),
                 ('ioc', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='tags', to='greedybear.ioc')),
