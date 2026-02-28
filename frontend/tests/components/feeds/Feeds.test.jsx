@@ -147,4 +147,96 @@ describe("Feeds component", () => {
       );
     });
   });
+
+  describe("Feed type multi-select", () => {
+    // helper to render the Feeds component from a clean
+    // state regardless of anything left from previous test
+    async function renderFeeds() {
+      const user = userEvent.setup();
+      render(
+        <BrowserRouter>
+          <Feeds />
+        </BrowserRouter>,
+      );
+      const feedTypeSelect = screen.getByLabelText("Feed type:");
+      const buttonRawData = screen.getByRole("link", { name: /Raw data/i });
+
+      // Clear any options that were pre-selected due to shared module state
+      const alreadySelected = Array.from(feedTypeSelect.selectedOptions).map(
+        (o) => o.value,
+      );
+      if (alreadySelected.length > 0) {
+        await user.deselectOptions(feedTypeSelect, alreadySelected);
+        await waitFor(() => {
+          expect(buttonRawData.getAttribute("href")).toMatch(
+            /\/api\/feeds\/all\//,
+          );
+        });
+      }
+
+      return { user, feedTypeSelect, buttonRawData };
+    }
+
+    test("selecting a single type sets it in the raw data URL", async () => {
+      const { user, feedTypeSelect, buttonRawData } = await renderFeeds();
+
+      await user.selectOptions(feedTypeSelect, ["honeytrap"]);
+
+      await waitFor(() => {
+        expect(buttonRawData.getAttribute("href")).toMatch(
+          /\/api\/feeds\/honeytrap\//,
+        );
+      });
+    });
+
+    test("selecting multiple types falls back to 'all' in the raw data URL", async () => {
+      const { user, feedTypeSelect, buttonRawData } = await renderFeeds();
+
+      // Path-based endpoint so it falls back to "alll"
+      await user.selectOptions(feedTypeSelect, ["cowrie", "honeytrap"]);
+
+      await waitFor(() => {
+        expect(buttonRawData.getAttribute("href")).toMatch(
+          /\/api\/feeds\/all\//,
+        );
+      });
+    });
+
+    test("selecting multiple types passes comma-separated feed_type to the table", async () => {
+      const { useDataTable } = await import("@certego/certego-ui");
+      const { user, feedTypeSelect } = await renderFeeds();
+
+      await user.selectOptions(feedTypeSelect, ["cowrie", "honeytrap"]);
+
+      await waitFor(() => {
+        const lastCall =
+          useDataTable.mock.calls[useDataTable.mock.calls.length - 1];
+        const feedTypes = lastCall[0].params.feed_type.split(",");
+
+        expect(feedTypes).toContain("cowrie");
+        expect(feedTypes).toContain("honeytrap");
+        expect(feedTypes).toHaveLength(2);
+      });
+    });
+
+    test("deselecting all types resets to 'all'", async () => {
+      const { user, feedTypeSelect, buttonRawData } = await renderFeeds();
+
+      // Select one type first
+      await user.selectOptions(feedTypeSelect, ["cowrie"]);
+      await waitFor(() => {
+        expect(buttonRawData.getAttribute("href")).toMatch(
+          /\/api\/feeds\/cowrie\//,
+        );
+      });
+
+      // empty selection should revert to "all"
+      await user.deselectOptions(feedTypeSelect, ["cowrie"]);
+      await waitFor(() => {
+        expect(buttonRawData.getAttribute("href")).toMatch(
+          /\/api\/feeds\/all\//,
+        );
+      });
+    });
+  });
 });
