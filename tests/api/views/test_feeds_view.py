@@ -128,6 +128,16 @@ class FeedsViewTestCase(CustomTestCase):
         # Should return only domains (1 in test data)
         self.assertEqual(response.json()["count"], 1)
 
+    def test_200_feeds_multi_type_intersection(self):
+        response = self.client.get("/api/feeds/?page_size=10&page=1&feed_type=cowrie,heralding&attack_type=all&age=recent")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["count"], 1)
+        self.assertEqual(response.json()["results"]["iocs"][0]["value"], self.ioc.name)
+
+    def test_400_feeds_multi_type_with_invalid(self):
+        response = self.client.get("/api/feeds/?page_size=10&page=1&feed_type=cowrie,invalid_type&attack_type=all&age=recent")
+        self.assertEqual(response.status_code, 400)
+
     def test_400_feeds_pagination(self):
         response = self.client.get("/api/feeds/?page_size=10&page=1&feed_type=all&attack_type=test&age=recent")
         self.assertEqual(response.status_code, 400)
