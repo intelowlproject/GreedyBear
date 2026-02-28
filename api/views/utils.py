@@ -2,6 +2,7 @@
 # See the file 'LICENSE' for copying permission.
 import csv
 import logging
+from collections import defaultdict
 from datetime import datetime, timedelta
 
 import feedparser
@@ -202,6 +203,33 @@ def ioc_as_dict(ioc, fields: set) -> dict:
     return {k: v for k, v in ioc.__dict__.items() if k in fields}
 
 
+def get_sensor_countries_map(ioc_ids):
+    """
+    Efficiently fetch unique sensor countries for a list of IOC IDs.
+
+    This implementation is fully batch-optimized, avoids N+1 queries.
+
+    Returns the countries in sorted order for deterministic results.
+    """
+    if not ioc_ids:
+        return {}
+
+    # Fetch all sensor-country links for these IOC IDs in ONE query
+    sensor_links = (
+        IOC.sensors.through.objects.filter(ioc_id__in=ioc_ids)
+        .select_related("sensor")
+        .values_list("ioc_id", "sensor__country")
+        .exclude(sensor__country__isnull=True)
+    )
+
+    countries_map = defaultdict(set)
+    for ioc_id, country in sensor_links.iterator(chunk_size=1000):
+        countries_map[ioc_id].add(country)
+
+    # Sort for deterministic order
+    return {ioc_id: sorted(countries) for ioc_id, countries in countries_map.items()}
+
+
 def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose=False):
     """
     Format the IOC data into the requested format (e.g., JSON, CSV, TXT).
@@ -238,6 +266,7 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
 
             # Base fields always returned
             base_fields = {
+                "id",
                 "value",
                 "first_seen",
                 "last_seen",
@@ -252,6 +281,7 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
                 "expected_interactions",
                 "honeypots",  # Always needed to calculate feed_type
                 "destination_ports",  # Always needed to calculate destination_port_count
+                "attacker_country",
             }
 
             # Additional verbose fields
@@ -263,16 +293,23 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
             # Fetch fields from database (always include honeypots and destination_ports)
             required_fields = base_fields | verbose_only_fields if verbose else base_fields
 
-            # Collect values; `honeypots` will contain the list of associated honeypot names
-            iocs = (ioc_as_dict(ioc, required_fields) for ioc in iocs) if isinstance(iocs, list) else iocs.values(*required_fields)
-            for ioc in iocs:
-                ioc_feed_type = [hp.lower() for hp in ioc.get("honeypots", []) if hp]
+            # Convert to list to prevent generator consumption
+            iocs_data = [ioc_as_dict(ioc, required_fields) for ioc in iocs] if isinstance(iocs, list) else list(iocs.values(*required_fields))
+
+            # Batch fetch sensor countries
+            current_ioc_ids = [ioc_dict["id"] for ioc_dict in iocs_data]
+            sensor_countries_map = get_sensor_countries_map(current_ioc_ids)
+
+            # Build final feed data
+            for ioc in iocs_data:
+                feed_type = [hp.lower() for hp in ioc.get("honeypots", []) if hp]
 
                 data_ = ioc | {
                     "first_seen": ioc["first_seen"].strftime("%Y-%m-%d"),
                     "last_seen": ioc["last_seen"].strftime("%Y-%m-%d"),
-                    "feed_type": ioc_feed_type,
+                    "feed_type": feed_type,
                     "destination_port_count": len(ioc.get("destination_ports", [])),
+                    "sensor_countries": sensor_countries_map.get(ioc["id"], []),
                 }
 
                 # Remove verbose-only fields from response when not in verbose mode
