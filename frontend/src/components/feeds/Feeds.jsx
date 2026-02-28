@@ -226,6 +226,7 @@ export default function Feeds() {
                                 selected && selected.length > 0
                                   ? selected.map((o) => o.value).join(",")
                                   : "all";
+                              formik.setFieldValue("feeds_type", newFeedsType);
                               onSubmit({
                                 ...formik.values,
                                 feeds_type: newFeedsType,
