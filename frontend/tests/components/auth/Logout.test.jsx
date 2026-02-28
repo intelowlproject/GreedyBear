@@ -6,6 +6,7 @@ import { BrowserRouter } from "react-router-dom";
 import { LOGOUT_URI } from "../../../src/constants/api";
 import Logout from "../../../src/components/auth/Logout";
 import { useAuthStore } from "../../../src/stores";
+import { AUTHENTICATION_STATUSES } from "../../../src/constants";
 
 vi.mock("axios");
 
@@ -29,5 +30,32 @@ describe("Logout component", () => {
       });
     });
     expect(await screen.findByText("Logging you out...")).toBeInTheDocument();
+  });
+
+  test("User data and isSuperuser are cleared after logout", async () => {
+    // set store with correct user shape matching useAuthStore initial values
+    useAuthStore.setState({
+      isAuthenticated: AUTHENTICATION_STATUSES.TRUE,
+      user: {
+        full_name: "Test User",
+        first_name: "Test",
+        last_name: "User",
+        email: "test@test.com",
+      },
+      isSuperuser: true,
+    });
+
+    await useAuthStore.getState().service.logoutUser();
+
+    expect(useAuthStore.getState().user).toEqual({
+      full_name: "",
+      first_name: "",
+      last_name: "",
+      email: "",
+    });
+    expect(useAuthStore.getState().isSuperuser).toBe(false);
+    expect(useAuthStore.getState().isAuthenticated).toBe(
+      AUTHENTICATION_STATUSES.FALSE,
+    );
   });
 });
