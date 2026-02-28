@@ -112,7 +112,12 @@ class FeedsRequestSerializer(serializers.Serializer):
     ordering = serializers.CharField(max_length=120)
     verbose = serializers.ChoiceField(choices=["true", "false"])
     paginate = serializers.ChoiceField(choices=["true", "false"])
-    format = serializers.ChoiceField(choices=["csv", "json", "txt"])
+    format = serializers.ChoiceField(choices=["csv", "json", "txt", "stix21"])
+    asn = serializers.IntegerField(min_value=1, required=False, allow_null=True)
+    min_score = serializers.FloatField(min_value=0, max_value=1, required=False, allow_null=True)
+    port = serializers.IntegerField(min_value=1, max_value=65535, required=False, allow_null=True)
+    start_date = serializers.DateField(format="%Y-%m-%d", required=False, allow_null=True)
+    end_date = serializers.DateField(format="%Y-%m-%d", required=False, allow_null=True)
 
     def validate_feed_type(self, feed_type):
         logger.debug(f"FeedsRequestSerializer - validation feed_type: '{feed_type}'")
