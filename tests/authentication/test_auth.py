@@ -16,6 +16,7 @@ verify_email_uri = reverse("auth_verify-email")
 resend_verificaton_uri = reverse("auth_resend-verification")
 request_pwd_reset_uri = reverse("auth_request-password-reset")
 reset_pwd_uri = reverse("auth_reset-password")
+change_password_uri = reverse("auth_change-password")
 
 
 @tag("api", "user")
@@ -392,3 +393,68 @@ class CheckConfigurationTestCase(CustomOAuthTestCase):
         ):
             response = self.client.get("/api/auth/configuration?page=register")
             self.assertEqual(response.status_code, 501)
+
+
+@tag("api", "user")
+class ChangePasswordTestCase(CustomOAuthTestCase):
+    def setUp(self):
+        self.client.force_authenticate(user=self.user)
+
+    def tearDown(self):
+        self.client.force_authenticate(user=None)
+
+    def test_change_password_200(self):
+        new_password = "newvalidpassword123"
+        body = {
+            "old_password": self.creds["password"],
+            "new_password": new_password,
+        }
+
+        response = self.client.post(change_password_uri, body)
+        self.assertEqual(response.status_code, 200, msg=response.json())
+
+        # verify the password was actually changed
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password(new_password))
+
+        # restore original password for other tests
+        self.user.set_password(self.creds["password"])
+        self.user.save()
+
+    def test_change_password_wrong_old_password_400(self):
+        body = {
+            "old_password": "wrongoldpassword",
+            "new_password": "newvalidpassword123",
+        }
+
+        response = self.client.post(change_password_uri, body)
+        self.assertEqual(response.status_code, 400, msg=response.json())
+        self.assertIn("old_password", response.json().get("errors", {}))
+
+        # verify password has not changed
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password(self.creds["password"]))
+
+    def test_change_password_invalid_new_password_400(self):
+        body = {
+            "old_password": self.creds["password"],
+            "new_password": "short",  # fails REGEX_PASSWORD (< 12 chars)
+        }
+
+        response = self.client.post(change_password_uri, body)
+        self.assertEqual(response.status_code, 400, msg=response.json())
+        self.assertIn("new_password", response.json().get("errors", {}))
+
+        # verify password has not changed
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password(self.creds["password"]))
+
+    def test_change_password_unauthenticated_401(self):
+        self.client.force_authenticate(user=None)
+        body = {
+            "old_password": self.creds["password"],
+            "new_password": "newvalidpassword123",
+        }
+
+        response = self.client.post(change_password_uri, body)
+        self.assertIn(response.status_code, [401, 403])

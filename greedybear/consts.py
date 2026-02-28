@@ -1,5 +1,7 @@
 # This file is a part of GreedyBear https://github.com/honeynet/GreedyBear
 # See the file 'LICENSE' for copying permission.
+import time
+
 SCANNER = "scanner"
 PAYLOAD_REQUEST = "payload_request"
 
@@ -35,3 +37,7 @@ REQUIRED_FIELDS = [
 RSS_FEED_URL = "https://intelowlproject.github.io/feed.xml"
 CACHE_KEY_GREEDYBEAR_NEWS = "greedybear_news"
 CACHE_TIMEOUT_SECONDS = 60 * 60
+
+
+# tracking application start time
+START_TIME = time.time()

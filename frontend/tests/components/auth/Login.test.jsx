@@ -54,8 +54,10 @@ describe("Login component", () => {
       expect(axios.post).toHaveBeenCalledWith(
         LOGIN_URI,
         { password: "dummyPwd1", username: "test_user" },
-        { headers: { "Content-Type": "application/json" } },
-        { certegoUIenableProgressBar: false },
+        {
+          headers: { "Content-Type": "application/json" },
+          certegoUIenableProgressBar: false,
+        },
       );
     });
   });

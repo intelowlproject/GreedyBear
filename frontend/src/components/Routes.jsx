@@ -13,6 +13,9 @@ const ResetPassword = React.lazy(() => import("./auth/ResetPassword"));
 const Dashboard = React.lazy(() => import("./dashboard/Dashboard"));
 const Sessions = React.lazy(() => import("./me/sessions/Sessions"));
 const Feeds = React.lazy(() => import("./feeds/Feeds"));
+const ChangePassword = React.lazy(
+  () => import("./me/changepassword/ChangePassword"),
+);
 
 // public components
 const publicRoutesLazy = [
@@ -92,6 +95,15 @@ const authRoutesLazy = [
     element: (
       <Suspense fallback={<FallBackLoading />}>
         <Sessions />
+      </Suspense>
+    ),
+  },
+  /* Change Password */
+  {
+    path: "/me/change-password",
+    element: (
+      <Suspense fallback={<FallBackLoading />}>
+        <ChangePassword />
       </Suspense>
     ),
   },
