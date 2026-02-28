@@ -6,6 +6,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { FEEDS_BASE_URI, GENERAL_HONEYPOT_URI } from "../../constants/api";
 import {
   ContentSection,
+  MultiSelectDropdownInput,
   Select,
   useAxiosComponentLoader,
   useDataTable,
@@ -15,8 +16,6 @@ import { feedsTableColumns } from "./tableColumns";
 import { FEEDS_LICENSE } from "../../constants";
 
 // constants
-const feedTypeChoices = [{ label: "All", value: "all" }];
-
 const attackTypeChoices = [
   { label: "All", value: "all" },
   { label: "Scanner", value: "scanner" },
@@ -57,6 +56,11 @@ const toPassTableProps = {
 const OVERRIDING_PRIORITIZATIONS = ["likely_to_recur", "most_expected_hits"];
 
 let honeypotFeedsType = [];
+
+// when multiple feed types are selected, the path-based raw data url
+// can only express a single segment, so fall back to "all".
+const feedTypePath = (feedsType) =>
+  feedsType.includes(",") ? "all" : feedsType;
 
 // extracted child component so useDataTable hooks are owned here.
 // changing the `key` on this component forces a full unmount/remount.
@@ -136,7 +140,7 @@ export default function Feeds() {
   const handleSortChange = React.useCallback(() => {
     initialValues.prioritize = "recent";
     setUrl(
-      `${FEEDS_BASE_URI}/${initialValues.feeds_type}/${initialValues.attack_type}/recent.json?ioc_type=${initialValues.ioc_type}`,
+      `${FEEDS_BASE_URI}/${feedTypePath(initialValues.feeds_type)}/${initialValues.attack_type}/recent.json?ioc_type=${initialValues.ioc_type}`,
     );
     setTableKey((prev) => prev + 1);
   }, [setUrl]);
@@ -146,7 +150,7 @@ export default function Feeds() {
     (values) => {
       try {
         setUrl(
-          `${FEEDS_BASE_URI}/${values.feeds_type}/${values.attack_type}/${values.prioritize}.json?ioc_type=${values.ioc_type}`,
+          `${FEEDS_BASE_URI}/${feedTypePath(values.feeds_type)}/${values.attack_type}/${values.prioritize}.json?ioc_type=${values.ioc_type}`,
         );
         initialValues.feeds_type = values.feeds_type;
         initialValues.attack_type = values.attack_type;
@@ -200,14 +204,33 @@ export default function Feeds() {
                           >
                             Feed type:
                           </Label>
-                          <Select
-                            id="Feeds__feeds_type"
-                            name="feeds_type"
-                            value={initialValues.feeds_type}
-                            choices={feedTypeChoices.concat(honeypotFeedsType)}
-                            onChange={(e) => {
-                              formik.handleChange(e);
-                              formik.submitForm();
+                          <MultiSelectDropdownInput
+                            inputId="Feeds__feeds_type"
+                            options={honeypotFeedsType}
+                            value={
+                              formik.values.feeds_type &&
+                              formik.values.feeds_type !== "all"
+                                ? formik.values.feeds_type
+                                    .split(",")
+                                    .map((v) =>
+                                      honeypotFeedsType.find(
+                                        (o) => o.value === v,
+                                      ),
+                                    )
+                                    .filter(Boolean)
+                                : []
+                            }
+                            placeholder="All"
+                            onChange={(selected) => {
+                              const newFeedsType =
+                                selected && selected.length > 0
+                                  ? selected.map((o) => o.value).join(",")
+                                  : "all";
+                              formik.setFieldValue("feeds_type", newFeedsType);
+                              onSubmit({
+                                ...formik.values,
+                                feeds_type: newFeedsType,
+                              });
                             }}
                           />
                         </Col>
