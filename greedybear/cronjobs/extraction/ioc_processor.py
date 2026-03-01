@@ -1,4 +1,5 @@
 import logging
+from datetime import datetime
 
 from greedybear.consts import PAYLOAD_REQUEST, SCANNER
 from greedybear.cronjobs.extraction.utils import is_whatsmyip_domain
@@ -91,7 +92,8 @@ class IocProcessor:
         Returns:
             The updated existing IOC record.
         """
-        existing.last_seen = new.last_seen
+        if isinstance(new.last_seen, datetime):
+            existing.last_seen = new.last_seen
         existing.attack_count += 1
         existing.interaction_count += new.interaction_count
         existing.related_urls = sorted(set(existing.related_urls + new.related_urls))
@@ -124,6 +126,12 @@ class IocProcessor:
         Returns:
             The updated IOC record.
         """
+        # When IOC.last_seen uses db_default=Now(), unsaved instances hold a
+        # DatabaseDefault sentinel instead of a real datetime.  Fall back to
+        # the current time so .date() never crashes.
+        if not isinstance(ioc.last_seen, datetime):
+            ioc.last_seen = datetime.now()
+
         if len(ioc.days_seen) == 0 or ioc.days_seen[-1] != ioc.last_seen.date():
             ioc.days_seen.append(ioc.last_seen.date())
             ioc.number_of_days_seen = len(ioc.days_seen)
