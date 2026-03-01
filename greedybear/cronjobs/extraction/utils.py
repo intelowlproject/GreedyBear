@@ -106,18 +106,30 @@ def iocs_from_hits(hits: list[dict]) -> list[IOC]:
         hits_by_ip[hit["src_ip"]].append(hit)
     iocs = []
     for ip, hits in hits_by_ip.items():
-        dest_ports = [hit["dest_port"] for hit in hits if "dest_port" in hit]
         extracted_ip = ip_address(ip)
         if extracted_ip.is_loopback or extracted_ip.is_private or extracted_ip.is_multicast or extracted_ip.is_link_local or extracted_ip.is_reserved:
             continue
 
         firehol_categories = get_firehol_categories(ip, extracted_ip)
 
-        # Collect unique sensors from hits, deduplicated by sensor ID
-        sensors_map = {hit["_sensor"].id: hit["_sensor"] for hit in hits if hit.get("_sensor") is not None and getattr(hit["_sensor"], "id", None)}
-        sensors = list(sensors_map.values())
+        # Single pass over hits to accumulate all derived data
+        dest_ports = []
+        sensors_map = {}
+        timestamps = []
+        login_attempts = 0
+        for hit in hits:
+            if "dest_port" in hit:
+                dest_ports.append(hit["dest_port"])
+            sensor = hit.get("_sensor")
+            if sensor is not None and getattr(sensor, "id", None):
+                sensors_map[sensor.id] = sensor
+            if "@timestamp" in hit:
+                timestamps.append(hit["@timestamp"])
+            if hit.get("username") or hit.get("password"):
+                login_attempts += 1
+
         # Sort sensors by ID for consistent processing order
-        sensors.sort(key=lambda s: s.id)
+        sensors = sorted(sensors_map.values(), key=lambda s: s.id)
 
         geoip = hits[0].get("geoip", {}) if hits else {}
         attacker_country = geoip.get("country_name", "")
@@ -129,7 +141,7 @@ def iocs_from_hits(hits: list[dict]) -> list[IOC]:
             ip_reputation=correct_ip_reputation(ip, hits[0].get("ip_rep", "")),
             asn=hits[0].get("geoip", {}).get("asn"),
             destination_ports=sorted(set(dest_ports)),
-            login_attempts=sum(1 for h in hits if h.get("username") or h.get("password")),
+            login_attempts=login_attempts,
             firehol_categories=firehol_categories,
             attacker_country=attacker_country,
         )
@@ -138,7 +150,6 @@ def iocs_from_hits(hits: list[dict]) -> list[IOC]:
         # to the database, and Django requires an ID for M2M relationships.
         ioc._sensors_to_add = sensors
 
-        timestamps = [hit["@timestamp"] for hit in hits if "@timestamp" in hit]
         if timestamps:
             ioc.first_seen = datetime.fromisoformat(min(timestamps))
             ioc.last_seen = datetime.fromisoformat(max(timestamps))
