@@ -129,7 +129,7 @@ def iocs_from_hits(hits: list[dict]) -> list[IOC]:
             ip_reputation=correct_ip_reputation(ip, hits[0].get("ip_rep", "")),
             asn=hits[0].get("geoip", {}).get("asn"),
             destination_ports=sorted(set(dest_ports)),
-            login_attempts=len(hits) if hits[0].get("type", "") == "Heralding" else 0,
+            login_attempts=sum(1 for h in hits if h.get("username") or h.get("password")),
             firehol_categories=firehol_categories,
             attacker_country=attacker_country,
         )
