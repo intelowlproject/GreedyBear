@@ -83,8 +83,6 @@ class FeedRequestParams:
         self.verbose = query_params.get("verbose", "false").lower()
         self.paginate = query_params.get("paginate", "false").lower()
         self.format = query_params.get("format_", "json").lower()
-        self.tag_key = query_params.get("tag_key", "").strip()
-        self.tag_value = query_params.get("tag_value", "").strip()
         self.feed_type_sorting = None
 
     def apply_default_filters(self, query_params):
@@ -131,7 +129,7 @@ def get_valid_feed_types() -> frozenset[str]:
     return frozenset(feed_types)
 
 
-def get_queryset(request, feed_params, valid_feed_types, is_aggregated=False, serializer_class=FeedsRequestSerializer, enable_tag_filtering=False):
+def get_queryset(request, feed_params, valid_feed_types, is_aggregated=False, serializer_class=FeedsRequestSerializer, tag_key="", tag_value=""):
     """
     Build a queryset to filter IOC data based on the request parameters.
 
@@ -148,10 +146,8 @@ def get_queryset(request, feed_params, valid_feed_types, is_aggregated=False, se
             - Allows injecting a custom serializer to enforce rules for specific feed types
               (e.g., to restrict ordering fields or validation for specialized feeds).
             - Default: `FeedsRequestSerializer`.
-        enable_tag_filtering (bool, optional):
-            - If True, applies tag-based filtering (tag_key, tag_value).
-            - Only the advanced feed endpoint should enable this.
-            - Default: False.
+        tag_key (str, optional): Filter IOCs by tag key. Only passed from feeds_advanced.
+        tag_value (str, optional): Filter IOCs by tag value (case-insensitive substring). Only passed from feeds_advanced.
 
     Returns:
         QuerySet: The filtered queryset of IOC data.
@@ -181,14 +177,10 @@ def get_queryset(request, feed_params, valid_feed_types, is_aggregated=False, se
     if feed_params.include_reputation:
         query_dict["ip_reputation__in"] = feed_params.include_reputation
 
-    # tag_key/tag_value are only applied when explicitly opted in (feeds_advanced).
-    # FeedRequestParams always parses them from raw query_params, so we can't rely
-    # on the serializer to gate them — the flag is needed.
-    if enable_tag_filtering:
-        if feed_params.tag_key:
-            query_dict["tags__key"] = feed_params.tag_key
-        if feed_params.tag_value:
-            query_dict["tags__value__icontains"] = feed_params.tag_value
+    if tag_key:
+        query_dict["tags__key"] = tag_key
+    if tag_value:
+        query_dict["tags__value__icontains"] = tag_value
 
     iocs = IOC.objects.filter(**query_dict).exclude(ip_reputation__in=feed_params.exclude_reputation).annotate(value=F("name")).distinct()
 

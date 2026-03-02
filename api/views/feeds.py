@@ -111,7 +111,13 @@ def feeds_advanced(request):
     logger.info(f"request /api/feeds/advanced/ with params: {request.query_params}")
     feed_params = FeedRequestParams(request.query_params)
     valid_feed_types = get_valid_feed_types()
-    iocs_queryset = get_queryset(request, feed_params, valid_feed_types, enable_tag_filtering=True)
+    iocs_queryset = get_queryset(
+        request,
+        feed_params,
+        valid_feed_types,
+        tag_key=request.query_params.get("tag_key", "").strip(),
+        tag_value=request.query_params.get("tag_value", "").strip(),
+    )
     verbose = feed_params.verbose == "true"
     paginate = feed_params.paginate == "true"
     if paginate:
