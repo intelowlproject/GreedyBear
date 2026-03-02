@@ -9,14 +9,15 @@ import requests
 from django.conf import settings
 from django.contrib.postgres.aggregates import ArrayAgg
 from django.core.cache import cache
-from django.db.models import Count, F, Max, Min, Q, Sum
+from django.db.models import Count, F, Max, Min, Q, Sum, Value
+from django.db.models.functions import JSONObject
 from django.http import HttpResponse, HttpResponseBadRequest, StreamingHttpResponse
 from rest_framework import status
 from rest_framework.response import Response
 
 from api.serializers import FeedsRequestSerializer, parse_feed_types
 from greedybear.consts import CACHE_KEY_GREEDYBEAR_NEWS, CACHE_TIMEOUT_SECONDS, RSS_FEED_URL
-from greedybear.models import IOC, GeneralHoneypot, Statistics, Tag
+from greedybear.models import IOC, GeneralHoneypot, Statistics
 
 logger = logging.getLogger(__name__)
 
@@ -180,7 +181,9 @@ def get_queryset(request, feed_params, valid_feed_types, is_aggregated=False, se
     if feed_params.include_reputation:
         query_dict["ip_reputation__in"] = feed_params.include_reputation
 
-    # Tag-based filtering (exclusive to feeds_advanced)
+    # tag_key/tag_value are only applied when explicitly opted in (feeds_advanced).
+    # FeedRequestParams always parses them from raw query_params, so we can't rely
+    # on the serializer to gate them — the flag is needed.
     if enable_tag_filtering:
         if feed_params.tag_key:
             query_dict["tags__key"] = feed_params.tag_key
@@ -224,26 +227,6 @@ def ioc_as_dict(ioc, fields: set) -> dict:
     return {k: v for k, v in ioc.__dict__.items() if k in fields}
 
 
-def _prefetch_tags(ioc_ids: list) -> dict[int, list[dict]]:
-    """
-    Batch-fetch all tags for a list of IOC IDs in a single query.
-
-    Args:
-        ioc_ids: List of IOC primary keys.
-
-    Returns:
-        Dict mapping IOC ID -> list of tag dicts (key, value, source).
-    """
-    tags_by_ioc = {}
-    if not ioc_ids:
-        return tags_by_ioc
-
-    tag_rows = Tag.objects.filter(ioc_id__in=ioc_ids).values_list("ioc_id", "key", "value", "source")
-    for ioc_id, key, value, source in tag_rows:
-        tags_by_ioc.setdefault(ioc_id, []).append({"key": key, "value": value, "source": source})
-    return tags_by_ioc
-
-
 def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose=False):
     """
     Format the IOC data into the requested format (e.g., JSON, CSV, TXT).
@@ -278,9 +261,8 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
         case "json":
             json_list = []
 
-            # Base fields always returned (id needed for tag lookup)
-            base_fields = {
-                "id",
+            # Base fields always returned
+            base_fields = (
                 "value",
                 "first_seen",
                 "last_seen",
@@ -293,32 +275,57 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
                 "login_attempts",
                 "recurrence_probability",
                 "expected_interactions",
-                "honeypots",  # Always needed to calculate feed_type
-                "destination_ports",  # Always needed to calculate destination_port_count
+                "honeypots",  # used to build feed_type; removed from response
+                "destination_ports",  # used to calculate destination_port_count
                 "attacker_country",
-            }
+                "tags",
+            )
 
-            # Additional verbose fields
-            verbose_only_fields = {
+            verbose_only_fields = (
                 "days_seen",
                 "firehol_categories",
-            }
+            )
 
-            # Fetch fields from database (always include honeypots and destination_ports)
-            required_fields = base_fields | verbose_only_fields if verbose else base_fields
+            required_fields = base_fields + verbose_only_fields if verbose else base_fields
 
-            # First collect IOC IDs with minimal memory usage
+            # Annotate tags via a DB JOIN rather than a Python-level join.
+            # `tags_json` avoids conflicting with the `tags` reverse FK on IOC.
+            # For paginated (list) paths the queryset is already evaluated, so we
+            # run a second targeted query on the slice IDs instead.
+            tags_lookup: dict = {}
             if isinstance(iocs, list):
                 ioc_ids = [ioc.id for ioc in iocs if hasattr(ioc, "id")]
+                if ioc_ids:
+                    tag_rows = (
+                        IOC.objects.filter(id__in=ioc_ids)
+                        .annotate(
+                            tags_json=ArrayAgg(
+                                JSONObject(key=F("tags__key"), value=F("tags__value"), source=F("tags__source")),
+                                filter=Q(tags__isnull=False),
+                                default=Value([]),
+                                distinct=True,  # prevent duplication from the honeypot JOIN
+                            )
+                        )
+                        .values("id", "tags_json")
+                    )
+                    tags_lookup = {row["id"]: row["tags_json"] for row in tag_rows}
             else:
-                ioc_ids = list(iocs.values_list("pk", flat=True))
-
-            tags_by_ioc = _prefetch_tags(ioc_ids)
+                iocs = iocs.annotate(
+                    tags_json=ArrayAgg(
+                        JSONObject(key=F("tags__key"), value=F("tags__value"), source=F("tags__source")),
+                        filter=Q(tags__isnull=False),
+                        default=Value([]),
+                        distinct=True,  # prevent duplication from the honeypot JOIN
+                    )
+                )
+                required_fields = tuple(f if f != "tags" else "tags_json" for f in required_fields)
 
             # Generate dictionaries iterably to avoid holding both dicts and json_list in memory
-            iocs_iter = (
-                (ioc_as_dict(ioc, required_fields) for ioc in iocs) if isinstance(iocs, list) else iocs.values(*required_fields).iterator(chunk_size=2000)
-            )
+            iocs_iter: object
+            if isinstance(iocs, list):
+                iocs_iter = (ioc_as_dict(ioc, set(required_fields) | {"id"}) for ioc in iocs)  # id needed for tags_lookup
+            else:
+                iocs_iter = iocs.values(*required_fields).iterator(chunk_size=2000)
             for ioc in iocs_iter:
                 ioc_feed_type = [hp.lower() for hp in ioc.get("honeypots", []) if hp]
 
@@ -327,22 +334,17 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
                     "last_seen": ioc["last_seen"].strftime("%Y-%m-%d"),
                     "feed_type": ioc_feed_type,
                     "destination_port_count": len(ioc.get("destination_ports", [])),
-                    "tags": tags_by_ioc.get(ioc["id"], []),
+                    "tags": tags_lookup.get(ioc.get("id"), ioc.pop("tags_json", [])),
                 }
 
-                # Remove verbose-only fields from response when not in verbose mode
                 if not verbose:
-                    # Remove destination_ports array from response
                     data_.pop("destination_ports", None)
 
-                # Always remove internal fields not part of the API contract
                 data_.pop("honeypots", None)
                 data_.pop("id", None)
 
-                # Skip validation - data_ is constructed internally and matches the API contract
                 json_list.append(data_)
 
-            # check if sorting the results by feed_type
             if feed_params.feed_type_sorting is not None:
                 logger.info("Return feeds sorted by feed_type field")
                 json_list = sorted(
