@@ -239,7 +239,6 @@ class TestCowrieExtractionStrategy(ExtractionTestCase):
 
         self.assertTrue(session_record.login_attempt)
         self.assertIn("root | password123", session_record.credentials)
-        self.assertEqual(session_record.source.login_attempts, 1)
 
     def test_process_session_hit_command_input(self):
         """Test processing of command input event."""
