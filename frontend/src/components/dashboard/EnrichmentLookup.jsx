@@ -25,7 +25,6 @@ const initialValues = {
 
 export default function EnrichmentLookup() {
   const [result, setResult] = React.useState(null);
-  const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState(null);
 
   // auth store
@@ -54,8 +53,6 @@ export default function EnrichmentLookup() {
         return;
       }
 
-      setLoading(true);
-
       try {
         const resp = await axios.get(ENRICHMENT_URI, {
           params: { query: values.query.trim() },
@@ -78,7 +75,6 @@ export default function EnrichmentLookup() {
         setError(errorMsg);
         addToast("Error", errorMsg, "danger");
       } finally {
-        setLoading(false);
         setSubmitting(false);
       }
     },
@@ -121,7 +117,7 @@ export default function EnrichmentLookup() {
                 >
                   <MdSearch />
                   &nbsp;
-                  {loading ? "Searching..." : "Search"}
+                  {formik.isSubmitting ? "Searching..." : "Search"}
                 </Button>
               </Col>
             </FormGroup>
