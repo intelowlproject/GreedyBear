@@ -86,7 +86,7 @@ class FeedsRequestSerializersTestCase(CustomTestCase):
             "include_reputation": [],
             "exclude_reputation": [],
             "feed_size": "1",
-            "ordering": "value",
+            "ordering": "last_seen",
             "verbose": "false",
             "paginate": "false",
             "format": "json",

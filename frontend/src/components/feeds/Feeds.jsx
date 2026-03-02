@@ -55,13 +55,6 @@ const toPassTableProps = {
 // prioritizations where backend overrides "ordering" query param.
 const OVERRIDING_PRIORITIZATIONS = ["likely_to_recur", "most_expected_hits"];
 
-let honeypotFeedsType = [];
-
-// when multiple feed types are selected, the path-based raw data url
-// can only express a single segment, so fall back to "all".
-const feedTypePath = (feedsType) =>
-  feedsType.includes(",") ? "all" : feedsType;
-
 // extracted child component so useDataTable hooks are owned here.
 // changing the `key` on this component forces a full unmount/remount.
 function FeedsTable({ tableParams, onDataLoad, onSortChange }) {
@@ -128,15 +121,14 @@ export default function Feeds() {
   });
   console.debug("Feeds-honeypots:", honeypots);
 
-  honeypots.forEach((honeypot) => {
-    //check if honeypot.label exist in honeypotFeedsType array or not (index === -1)
-    const index = honeypotFeedsType.findIndex((x) => x.label === honeypot);
-    if (index === -1)
-      honeypotFeedsType.push({
+  const honeypotFeedsType = React.useMemo(
+    () =>
+      honeypots.map((honeypot) => ({
         label: honeypot,
         value: honeypot.toLowerCase(),
-      });
-  });
+      })),
+    [honeypots],
+  );
 
   // reset the prioritize dropdown to "recent"
   const handleSortChange = React.useCallback(async () => {
@@ -152,7 +144,7 @@ export default function Feeds() {
   const onSubmit = React.useCallback((values) => {
     try {
       setFeedsState((prev) => ({
-        url: `${FEEDS_BASE_URI}/${feedTypePath(values.feeds_type)}/${values.attack_type}/${values.prioritize}.json?ioc_type=${values.ioc_type}`,
+        url: `${FEEDS_BASE_URI}/${values.feeds_type}/${values.attack_type}/${values.prioritize}.json?ioc_type=${values.ioc_type}`,
         tableParams: {
           feed_type: values.feeds_type,
           attack_type: values.attack_type,

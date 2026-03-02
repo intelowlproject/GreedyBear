@@ -224,15 +224,16 @@ describe("Feeds component", () => {
       });
     });
 
-    test("selecting multiple types falls back to 'all' in the raw data URL", async () => {
+    test("selecting multiple types passes them comma-separated in the raw data URL", async () => {
       const { user, feedTypeSelect, buttonRawData } = await renderFeeds();
 
-      // Path-based endpoint falls back to "alll"
       await user.selectOptions(feedTypeSelect, ["cowrie", "honeytrap"]);
 
       await waitFor(() => {
-        expect(buttonRawData.getAttribute("href")).toMatch(
-          /\/api\/feeds\/all\//,
+        const href = buttonRawData.getAttribute("href");
+        // Both types should appear in the URL path, comma-separated (order follows DOM)
+        expect(href).toMatch(
+          /\/api\/feeds\/(cowrie,honeytrap|honeytrap,cowrie)\//,
         );
       });
     });

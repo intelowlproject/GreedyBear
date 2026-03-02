@@ -48,8 +48,7 @@ class FeedRequestParams:
         feed_type (str): comma-separated feed type string as supplied by the
             caller (default: "all").
         feed_types (list[str]): List of individual feed type values derived from
-            ``feed_type`` by splitting on commas. Contains one entry per type. When ``feed_type`` is "all" or
-            empty this list is empty, which callers interpret as "no type filter".
+            ``feed_type`` by splitting on commas.
         attack_type (str): Type of attack to filter (default: "all")
         ioc_type (str): Type of IOC to filter - 'ip', 'domain', or 'all' (default: "all")
         max_age (str): Maximum number of days since last occurrence (default: "3")
@@ -71,7 +70,10 @@ class FeedRequestParams:
         """
         feed_type_str = query_params.get("feed_type", "all").lower()
         self.feed_type = feed_type_str
-        self.feed_types = [ft.strip() for ft in feed_type_str.split(",") if ft.strip()]
+        feed_types = [ft.strip() for ft in feed_type_str.split(",") if ft.strip()]
+        if "all" in feed_types and len(feed_types) > 1:
+            feed_types = [ft for ft in feed_types if ft != "all"]
+        self.feed_types = feed_types
         self.attack_type = query_params.get("attack_type", "all").lower()
         self.ioc_type = query_params.get("ioc_type", "all").lower()
         self.max_age = query_params.get("max_age", "3")
