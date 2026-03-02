@@ -30,7 +30,7 @@ function UserMenu(props) {
         </DropdownItem>
         <DropdownItem divider />
         {/* Django Admin Interface */}
-        <DropdownNavLink to="/admin/" target="_blank">
+        <DropdownNavLink to="/admin/" target="_blank" rel="noopener noreferrer">
           <IoMdSettings className="me-2" /> Django Admin Interface
         </DropdownNavLink>
         {/* API Access/Sessions */}

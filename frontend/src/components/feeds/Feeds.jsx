@@ -176,6 +176,7 @@ export default function Feeds() {
           outline
           href={FEEDS_LICENSE}
           target="_blank"
+          rel="noopener noreferrer"
         >
           <TbLicense />
           &nbsp;Feeds license
@@ -325,6 +326,7 @@ export default function Feeds() {
               outline
               href={feedsState.url}
               target="_blank"
+              rel="noopener noreferrer"
             >
               <VscJson />
               &nbsp;Raw data

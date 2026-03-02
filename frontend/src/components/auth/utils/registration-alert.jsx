@@ -113,7 +113,11 @@ export function ConfigurationModalAlert(props) {
           <section className="mt-4">
             <p>
               If you are an admin please check the{" "}
-              <a href={GREEDYBEAR_DOCS_URL} target="_blank" rel="noreferrer">
+              <a
+                href={GREEDYBEAR_DOCS_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 documentation
               </a>{" "}
               and correctly configure all the required variables.
