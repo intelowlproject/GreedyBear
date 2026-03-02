@@ -9,7 +9,7 @@ import requests
 from django.conf import settings
 from django.contrib.postgres.aggregates import ArrayAgg
 from django.core.cache import cache
-from django.db.models import Count, F, Max, Min, Sum
+from django.db.models import Count, F, Max, Min, Q, Sum
 from django.http import HttpResponse, HttpResponseBadRequest, StreamingHttpResponse
 from rest_framework import status
 from rest_framework.response import Response
@@ -179,10 +179,12 @@ def get_queryset(request, feed_params, valid_feed_types, is_aggregated=False, se
 
     iocs = IOC.objects.filter(**query_dict).exclude(ip_reputation__in=feed_params.exclude_reputation).annotate(value=F("name")).distinct()
 
-    # apply feed type filter as intersection; chain a filter per selected type.
+    # apply feed type filter as union;
     if "all" not in feed_params.feed_types:
+        type_filter = Q()
         for ft in feed_params.feed_types:
-            iocs = iocs.filter(general_honeypot__name__iexact=ft)
+            type_filter |= Q(general_honeypot__name__iexact=ft)
+        iocs = iocs.filter(type_filter)
 
     # aggregated feeds calculate metrics differently and need all rows to be accurate.
     if not is_aggregated:
