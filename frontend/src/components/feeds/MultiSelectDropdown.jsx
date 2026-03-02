@@ -58,6 +58,7 @@ export function MultiSelectDropdown({
                 checked={isSelected}
                 readOnly
                 className="me-2"
+                aria-label={opt.label}
               />
               {opt.label}
             </DropdownItem>
