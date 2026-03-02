@@ -28,4 +28,43 @@ describe("EmailForm component", () => {
     await user.type(emailInputElement, "test@test.com");
     await user.click(submitButtonElement);
   });
+
+  test("Double-clicking submit while submitting does not trigger duplicate API requests", async () => {
+    const user = userEvent.setup();
+    // a promise to simulate a pending request
+    let resolveApi;
+    const mockApi = vi.fn(
+      () =>
+        new Promise((resolve) => {
+          resolveApi = resolve;
+        }),
+    );
+    const mockOnFormSubmit = vi.fn();
+
+    render(
+      <BrowserRouter>
+        <EmailForm apiCallback={mockApi} onFormSubmit={mockOnFormSubmit} />
+      </BrowserRouter>,
+    );
+
+    const emailInputElement = screen.getByLabelText("Email Address");
+    const submitButtonElement = screen.getByRole("button", { name: /Send/i });
+
+    // Populating the email input and submitting
+    await user.type(emailInputElement, "test@test.com");
+
+    // First submit
+    await user.click(submitButtonElement);
+
+    // Checking the button is disabled while submitting
+    expect(submitButtonElement).toBeDisabled();
+
+    // Second submit
+    await user.click(submitButtonElement);
+
+    // Only one api call was made?
+    expect(mockApi).toHaveBeenCalledTimes(1);
+
+    resolveApi();
+  });
 });
