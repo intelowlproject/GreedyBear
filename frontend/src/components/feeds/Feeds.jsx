@@ -6,11 +6,11 @@ import { useLocation } from "react-router-dom";
 import { FEEDS_BASE_URI, GENERAL_HONEYPOT_URI } from "../../constants/api";
 import {
   ContentSection,
-  MultiSelectDropdownInput,
   Select,
   useAxiosComponentLoader,
   useDataTable,
 } from "@certego/certego-ui";
+import { MultiSelectDropdown } from "./MultiSelectDropdown";
 import { Form, Formik } from "formik";
 import { feedsTableColumns } from "./tableColumns";
 import { FEEDS_LICENSE } from "../../constants";
@@ -198,8 +198,8 @@ export default function Feeds() {
                             >
                               Feed type:
                             </Label>
-                            <MultiSelectDropdownInput
-                              inputId="Feeds__feeds_type"
+                            <MultiSelectDropdown
+                              id="Feeds__feeds_type"
                               options={honeypotFeedsType}
                               value={
                                 formik.values.feeds_type &&
@@ -217,7 +217,7 @@ export default function Feeds() {
                               placeholder="All"
                               onChange={(selected) => {
                                 const newFeedsType =
-                                  selected && selected.length > 0
+                                  selected.length > 0
                                     ? selected.map((o) => o.value).join(",")
                                     : "all";
                                 formik.setFieldValue(
