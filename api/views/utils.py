@@ -252,6 +252,7 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
                 "expected_interactions",
                 "honeypots",  # Always needed to calculate feed_type
                 "destination_ports",  # Always needed to calculate destination_port_count
+                "attacker_country",
             }
 
             # Additional verbose fields

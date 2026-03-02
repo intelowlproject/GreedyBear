@@ -78,3 +78,20 @@ class FeedsAdvancedViewTestCase(CustomTestCase):
     def test_400_feeds_pagination(self):
         response = self.client.get("/api/feeds/advanced/?paginate=true&page_size=10&page=1&attack_type=test")
         self.assertEqual(response.status_code, 400)
+
+    def test_200_feed_contains_attacker_country(self):
+        """
+        Ensures that the response includes the attacker_country field.
+        """
+
+        # Setting attacker country for this IOC
+        self.ioc.attacker_country = "Nepal"
+        self.ioc.save()
+
+        response = self.client.get("/api/feeds/advanced/")
+
+        iocs = response.json()["iocs"]
+        target_ioc = next((i for i in iocs if i["value"] == self.ioc.name), None)
+
+        self.assertIsNotNone(target_ioc)
+        self.assertEqual(target_ioc["attacker_country"], "Nepal")
