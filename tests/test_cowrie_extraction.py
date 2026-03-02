@@ -99,6 +99,7 @@ class TestCowrieExtractionStrategy(ExtractionTestCase):
                 "src_ip": "1.2.3.4",
                 "eventid": "cowrie.login.failed",
                 "message": "Failed login with http://evil.com/malware.exe",
+                "@timestamp": "2025-01-01T00:00:00",
             }
         ]
 
@@ -143,6 +144,7 @@ class TestCowrieExtractionStrategy(ExtractionTestCase):
                 "src_ip": "5.6.7.8",
                 "eventid": "cowrie.login.failed",
                 "message": "http://evil.com/malware",
+                "@timestamp": "2025-01-01T00:00:00",
             }
         ]
 
@@ -171,6 +173,7 @@ class TestCowrieExtractionStrategy(ExtractionTestCase):
                 "src_ip": "1.2.3.4",
                 "eventid": "cowrie.session.file_download",
                 "url": "http://malware.com/bad.exe",
+                "@timestamp": "2025-01-01T00:00:00",
             }
         ]
 
