@@ -97,7 +97,7 @@ describe("Registration component", () => {
   test("Double-clicking Register while submitting does not trigger duplicate requests", async () => {
     const user = userEvent.setup();
 
-    // Clear the storage to prevent state pollution from previoius calls
+    // Clear the storage to prevent state pollution from previous calls
     localStorage.clear();
     vi.resetModules();
 
@@ -159,6 +159,12 @@ describe("Registration component", () => {
 
     // Only one call was made?
     expect(axios.post).toHaveBeenCalledTimes(1);
+
     resolvePost({ data: {} });
+
+    // Waiting for submission to fully settle by checking the button re-enables
+    await waitFor(() => {
+      expect(submitButtonElement).not.toBeDisabled();
+    });
   });
 });

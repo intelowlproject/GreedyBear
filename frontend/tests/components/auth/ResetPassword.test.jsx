@@ -94,7 +94,7 @@ describe("ResetPassword component", () => {
     );
     const submitButtonElement = screen.getByRole("button", { name: /Submit/i });
 
-    // Populating ans submitting
+    // Populating and submitting
     await user.type(passwordInputElement, "NewPassword1234");
     await user.type(confirmPasswordInputElement, "NewPassword1234");
 
@@ -111,5 +111,10 @@ describe("ResetPassword component", () => {
     expect(axios.post).toHaveBeenCalledTimes(1);
 
     resolvePost({ data: {} });
+
+    // Waiting for submission to fully settle by checking the button re-enables
+    await waitFor(() => {
+      expect(submitButtonElement).not.toBeDisabled();
+    });
   });
 });

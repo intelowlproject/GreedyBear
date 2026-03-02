@@ -102,5 +102,10 @@ describe("Login component", () => {
     expect(axios.post).toHaveBeenCalledTimes(1);
 
     resolvePost({ data: { token: "test-token" } });
+
+    // Waiting for submission to fully settle by checking the button re-enables
+    await waitFor(() => {
+      expect(submitButtonElement).not.toBeDisabled();
+    });
   });
 });

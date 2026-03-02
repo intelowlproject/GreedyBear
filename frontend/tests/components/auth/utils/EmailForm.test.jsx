@@ -1,6 +1,6 @@
 import React from "react";
 import "@testing-library/jest-dom";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { BrowserRouter } from "react-router-dom";
 import userEvent from "@testing-library/user-event";
 import EmailForm from "../../../../src/components/auth/utils/EmailForm";
@@ -66,5 +66,10 @@ describe("EmailForm component", () => {
     expect(mockApi).toHaveBeenCalledTimes(1);
 
     resolveApi();
+
+    // Waiting for submission to fully settle by checking the button re-enables
+    await waitFor(() => {
+      expect(submitButtonElement).not.toBeDisabled();
+    });
   });
 });
