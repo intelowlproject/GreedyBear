@@ -120,6 +120,7 @@ class FeedsResponseSerializersTestCase(CustomTestCase):
                 "login_attempts": "0",
                 "recurrence_probability": "0.1",
                 "expected_interactions": "11.1",
+                "attacker_country": "Nepal",
             }
             serializer = FeedsResponseSerializer(
                 data=data_,
