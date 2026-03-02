@@ -134,7 +134,7 @@ describe("Feeds component", () => {
     await user.selectOptions(iocTypeSelectElement, "ip");
     await user.selectOptions(prioritizationSelectElement, "persistent");
 
-    expect(feedTypeSelectElement).toHaveValue("cowrie");
+    expect(feedTypeSelectElement).toHaveValue(["cowrie"]);
     expect(attackTypeSelectElement).toHaveValue("scanner");
     expect(iocTypeSelectElement).toHaveValue("ip");
     expect(prioritizationSelectElement).toHaveValue("persistent");
