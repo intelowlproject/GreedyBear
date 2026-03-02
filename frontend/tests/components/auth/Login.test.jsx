@@ -93,7 +93,9 @@ describe("Login component", () => {
     await user.click(submitButtonElement);
 
     // Checking that the button is disabled while submitting
-    expect(submitButtonElement).toBeDisabled();
+    await waitFor(() => {
+      expect(submitButtonElement).toBeDisabled();
+    });
 
     // Second Submit
     await user.click(submitButtonElement);

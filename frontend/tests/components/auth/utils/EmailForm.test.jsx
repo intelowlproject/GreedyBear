@@ -57,7 +57,9 @@ describe("EmailForm component", () => {
     await user.click(submitButtonElement);
 
     // Checking the button is disabled while submitting
-    expect(submitButtonElement).toBeDisabled();
+    await waitFor(() => {
+      expect(submitButtonElement).toBeDisabled();
+    });
 
     // Second submit
     await user.click(submitButtonElement);

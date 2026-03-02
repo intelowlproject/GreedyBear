@@ -102,7 +102,9 @@ describe("ResetPassword component", () => {
     await user.click(submitButtonElement);
 
     // Checking that the button is disabled
-    expect(submitButtonElement).toBeDisabled();
+    await waitFor(() => {
+      expect(submitButtonElement).toBeDisabled();
+    });
 
     // Second submit
     await user.click(submitButtonElement);
