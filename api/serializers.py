@@ -116,7 +116,10 @@ class FeedsRequestSerializer(serializers.Serializer):
 
     def validate_feed_type(self, feed_type):
         logger.debug(f"FeedsRequestSerializer - validation feed_type: '{feed_type}'")
-        for ft in [ft.strip() for ft in feed_type.split(",") if ft.strip()]:
+        feed_types = [ft.strip() for ft in feed_type.split(",") if ft.strip()]
+        if "all" in feed_types and len(feed_types) > 1:
+            raise serializers.ValidationError("Invalid feed_type: 'all' cannot be combined with other feed types")
+        for ft in feed_types:
             feed_type_validation(ft, self.context["valid_feed_types"])
         return feed_type
 
