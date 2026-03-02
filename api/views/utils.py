@@ -45,7 +45,11 @@ class FeedRequestParams:
     providing default values.
 
     Attributes:
-        feed_type (str): Type of feed to retrieve (default: "all")
+        feed_type (str): comma-separated feed type string as supplied by the
+            caller (default: "all").
+        feed_types (list[str]): List of individual feed type values derived from
+            ``feed_type`` by splitting on commas. Contains one entry per type. When ``feed_type`` is "all" or
+            empty this list is empty, which callers interpret as "no type filter".
         attack_type (str): Type of attack to filter (default: "all")
         ioc_type (str): Type of IOC to filter - 'ip', 'domain', or 'all' (default: "all")
         max_age (str): Maximum number of days since last occurrence (default: "3")
