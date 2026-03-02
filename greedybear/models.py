@@ -109,6 +109,7 @@ class CommandSequence(models.Model):
         cmd_string = "; ".join(self.commands)
         return cmd_string[:29] + "..." if len(cmd_string) > 32 else cmd_string
 
+
 class Credential(models.Model):
     username = models.CharField(max_length=256, blank=False)
     password = models.CharField(max_length=256, blank=False)
