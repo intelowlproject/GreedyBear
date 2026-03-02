@@ -5,6 +5,30 @@ import { BrowserRouter } from "react-router-dom";
 import userEvent from "@testing-library/user-event";
 import Feeds from "../../../src/components/feeds/Feeds";
 
+// mock the multiselectdrop as a native select multiple
+vi.mock("../../../src/components/feeds/MultiSelectDropdown", () => {
+  const MultiSelectDropdown = ({ id, options, value, onChange }) => (
+    <select
+      id={id}
+      multiple
+      value={value ? value.map((o) => o.value) : []}
+      onChange={(e) => {
+        const selected = Array.from(e.target.selectedOptions).map((opt) =>
+          options.find((o) => o.value === opt.value),
+        );
+        onChange(selected);
+      }}
+    >
+      {options.map((o) => (
+        <option key={o.value} value={o.value}>
+          {o.label}
+        </option>
+      ))}
+    </select>
+  );
+  return { MultiSelectDropdown };
+});
+
 vi.mock("@certego/certego-ui", async (importOriginal) => {
   const originalModule = await importOriginal();
 
@@ -49,27 +73,6 @@ vi.mock("@certego/certego-ui", async (importOriginal) => {
     </select>
   );
 
-  // mock MultiSelectDropdownInput as a native <select multiple> for testing
-  const MultiSelectDropdownInput = ({ inputId, options, value, onChange }) => (
-    <select
-      id={inputId}
-      multiple
-      value={value ? value.map((o) => o.value) : []}
-      onChange={(e) => {
-        const selected = Array.from(e.target.selectedOptions).map((opt) =>
-          options.find((o) => o.value === opt.value),
-        );
-        onChange(selected);
-      }}
-    >
-      {options.map((o) => (
-        <option key={o.value} value={o.value}>
-          {o.label}
-        </option>
-      ))}
-    </select>
-  );
-
   return {
     ...originalModule,
     Select,
@@ -84,7 +87,6 @@ vi.mock("@certego/certego-ui", async (importOriginal) => {
       vi.fn(),
       vi.fn(),
     ]),
-    MultiSelectDropdownInput,
   };
 });
 
