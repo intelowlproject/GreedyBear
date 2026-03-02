@@ -67,6 +67,10 @@ vi.mock("@certego/certego-ui", async (importOriginal) => {
 });
 
 describe("Feeds component", () => {
+  beforeEach(() => {
+    window.history.replaceState({}, "", "/");
+  });
+
   afterEach(() => {
     vi.restoreAllMocks();
   });
@@ -108,6 +112,11 @@ describe("Feeds component", () => {
     await user.selectOptions(iocTypeSelectElement, "ip");
     await user.selectOptions(prioritizationSelectElement, "persistent");
 
+    expect(feedTypeSelectElement).toHaveValue("cowrie");
+    expect(attackTypeSelectElement).toHaveValue("scanner");
+    expect(iocTypeSelectElement).toHaveValue("ip");
+    expect(prioritizationSelectElement).toHaveValue("persistent");
+
     await waitFor(() => {
       // check link has been changed including ioc_type parameter
       expect(buttonRawData).toHaveAttribute(
@@ -122,6 +131,32 @@ describe("Feeds component", () => {
       expect(buttonRawData).toHaveAttribute(
         "href",
         "/api/feeds/cowrie/scanner/persistent.json?ioc_type=domain",
+      );
+    });
+
+    expect(iocTypeSelectElement).toHaveValue("domain");
+  });
+
+  test("resets prioritize to recent when ordering is present and prioritize overrides ordering", async () => {
+    window.history.replaceState({}, "", "/?ordering=asc");
+    const user = userEvent.setup();
+
+    render(
+      <BrowserRouter>
+        <Feeds />
+      </BrowserRouter>,
+    );
+
+    const prioritizationSelectElement = screen.getByLabelText("Prioritize:");
+    const buttonRawData = screen.getByRole("link", { name: /Raw data/i });
+
+    await user.selectOptions(prioritizationSelectElement, "likely_to_recur");
+
+    await waitFor(() => {
+      expect(prioritizationSelectElement).toHaveValue("recent");
+      expect(buttonRawData).toHaveAttribute(
+        "href",
+        "/api/feeds/all/all/recent.json?ioc_type=all",
       );
     });
   });
