@@ -93,3 +93,9 @@ def enrich_abuseipdb():
     from greedybear.cronjobs.abuseipdb_feed import AbuseIPDBCron
 
     AbuseIPDBCron().execute()
+
+def save_statistics_task(source_ip, view_type=None):
+    from greedybear.models import Statistics
+
+    request_source = Statistics(source=source_ip, view=view_type)
+    request_source.save()

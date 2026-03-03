@@ -13,10 +13,11 @@ from django.db.models import Count, F, Max, Min, Sum
 from django.http import HttpResponse, HttpResponseBadRequest, StreamingHttpResponse
 from rest_framework import status
 from rest_framework.response import Response
+from django_q.tasks import async_task
 
 from api.serializers import FeedsRequestSerializer
 from greedybear.consts import CACHE_KEY_GREEDYBEAR_NEWS, CACHE_TIMEOUT_SECONDS, RSS_FEED_URL
-from greedybear.models import IOC, GeneralHoneypot, Statistics
+from greedybear.models import IOC, GeneralHoneypot
 
 logger = logging.getLogger(__name__)
 
@@ -183,8 +184,7 @@ def get_queryset(request, feed_params, valid_feed_types, is_aggregated=False, se
 
     # save request source for statistics
     source_ip = str(request.META["REMOTE_ADDR"])
-    request_source = Statistics(source=source_ip)
-    request_source.save()
+    async_task("greedybear.tasks.save_statistics_task", source_ip)
     return iocs
 
 
