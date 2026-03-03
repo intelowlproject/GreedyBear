@@ -3,6 +3,7 @@
 import logging
 
 from certego_saas.apps.auth.backend import CookieTokenAuthentication
+from django_q.tasks import async_task
 from rest_framework import status
 from rest_framework.decorators import (
     api_view,
@@ -14,7 +15,7 @@ from rest_framework.response import Response
 
 from api.serializers import EnrichmentSerializer
 from greedybear.consts import GET
-from greedybear.models import Statistics, ViewType
+from greedybear.models import ViewType
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +40,10 @@ def enrichment_view(request):
     serializer.is_valid(raise_exception=True)
 
     source_ip = str(request.META["REMOTE_ADDR"])
-    request_source = Statistics(source=source_ip, view=ViewType.ENRICHMENT_VIEW.value)
-    request_source.save()
+    async_task(
+        "greedybear.tasks.save_statistics_task",
+        source_ip,
+        view_type=ViewType.ENRICHMENT_VIEW.value,
+    )
 
     return Response(serializer.data, status=status.HTTP_200_OK)

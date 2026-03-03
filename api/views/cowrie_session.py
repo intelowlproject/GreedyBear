@@ -7,6 +7,7 @@ import socket
 from certego_saas.apps.auth.backend import CookieTokenAuthentication
 from django.conf import settings
 from django.http import Http404, HttpResponseBadRequest
+from django_q.tasks import async_task
 from rest_framework import status
 from rest_framework.decorators import (
     api_view,
@@ -17,7 +18,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from greedybear.consts import GET
-from greedybear.models import CommandSequence, CowrieSession, Statistics, ViewType
+from greedybear.models import CommandSequence, CowrieSession, ViewType
 from greedybear.utils import is_ip_address, is_sha256hash
 
 logger = logging.getLogger(__name__)
@@ -73,8 +74,11 @@ def cowrie_session_view(request):
 
     logger.info(f"Cowrie view requested by {request.user} for {observable}")
     source_ip = str(request.META["REMOTE_ADDR"])
-    request_source = Statistics(source=source_ip, view=ViewType.COWRIE_SESSION_VIEW.value)
-    request_source.save()
+    async_task(
+        "greedybear.tasks.save_statistics_task",
+        source_ip,
+        view_type=ViewType.COWRIE_SESSION_VIEW.value,
+    )
 
     if not observable:
         return HttpResponseBadRequest("Missing required 'query' parameter")

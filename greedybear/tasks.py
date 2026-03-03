@@ -94,8 +94,12 @@ def enrich_abuseipdb():
 
     AbuseIPDBCron().execute()
 
+
 def save_statistics_task(source_ip, view_type=None):
     from greedybear.models import Statistics
 
-    request_source = Statistics(source=source_ip, view=view_type)
+    if view_type:
+        request_source = Statistics(source=source_ip, view=view_type)
+    else:
+        request_source = Statistics(source=source_ip)
     request_source.save()
