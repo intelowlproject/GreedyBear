@@ -2,6 +2,7 @@
 # See the file 'LICENSE' for copying permission.
 import re
 from collections import defaultdict
+from datetime import datetime
 from hashlib import sha256
 from urllib.parse import urlparse
 
@@ -142,9 +143,12 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
             self.log.info(f"found hidden URL {payload_url} in payload from attacker {scanner_ip}")
             self.log.info(f"extracted hostname {payload_hostname} from {payload_url}")
 
+            hit_time = datetime.fromisoformat(hit["@timestamp"])
             ioc = IOC(
                 name=payload_hostname,
                 type=get_ioc_type(payload_hostname),
+                first_seen=hit_time,
+                last_seen=hit_time,
                 related_urls=[payload_url],
             )
             sensor = hit.get("_sensor")
@@ -179,9 +183,12 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
                     self.log.warning(f"Failed to parse hostname from download URL: {download_url}")
                     continue
 
+                hit_time = datetime.fromisoformat(hit["@timestamp"])
                 ioc = IOC(
                     name=hostname,
                     type=get_ioc_type(hostname),
+                    first_seen=hit_time,
+                    last_seen=hit_time,
                     related_urls=[download_url],
                 )
                 sensor = hit.get("_sensor")
@@ -245,7 +252,6 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
                 username = normalize_credential_field(hit["username"])
                 password = normalize_credential_field(hit["password"])
                 session_record.credentials.append(f"{username} | {password}")
-                session_record.source.login_attempts += 1
 
             case "cowrie.command.input":
                 self.log.info(f"found a command execution from {ioc.name}")

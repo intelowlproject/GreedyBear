@@ -3,10 +3,10 @@ import axios from "axios";
 import "@testing-library/jest-dom";
 import { render, screen, waitFor } from "@testing-library/react";
 import { BrowserRouter } from "react-router-dom";
-import { renderHook } from "@testing-library/react-hooks";
 import { LOGOUT_URI } from "../../../src/constants/api";
 import Logout from "../../../src/components/auth/Logout";
 import { useAuthStore } from "../../../src/stores";
+import { AUTHENTICATION_STATUSES } from "../../../src/constants";
 
 vi.mock("axios");
 
@@ -15,21 +15,13 @@ describe("Logout component", () => {
   axios.post.mockImplementation(() => Promise.resolve());
 
   test("User logout", async () => {
-    // user logged in before the logout action:
-    // Another option is to mock zustand and useAuthStore, but this solution is easier
-    const { result } = renderHook(() =>
-      useAuthStore((s) => [s.isAuthenticated, s.service.loginUser])
-    );
-    // we need to do this because the class to mock the hook return a tuple
-    const isAuthenticatedPos = 0;
-    const loginUserPos = 1;
-    result.current[loginUserPos]();
-    expect(result.current[isAuthenticatedPos]).toBeTruthy();
+    await useAuthStore.getState().service.loginUser();
+    expect(useAuthStore.getState().isAuthenticated).toBeTruthy();
 
     render(
       <BrowserRouter>
         <Logout />
-      </BrowserRouter>
+      </BrowserRouter>,
     );
 
     await waitFor(() => {
@@ -38,5 +30,32 @@ describe("Logout component", () => {
       });
     });
     expect(await screen.findByText("Logging you out...")).toBeInTheDocument();
+  });
+
+  test("User data and isSuperuser are cleared after logout", async () => {
+    // set store with correct user shape matching useAuthStore initial values
+    useAuthStore.setState({
+      isAuthenticated: AUTHENTICATION_STATUSES.TRUE,
+      user: {
+        full_name: "Test User",
+        first_name: "Test",
+        last_name: "User",
+        email: "test@test.com",
+      },
+      isSuperuser: true,
+    });
+
+    await useAuthStore.getState().service.logoutUser();
+
+    expect(useAuthStore.getState().user).toEqual({
+      full_name: "",
+      first_name: "",
+      last_name: "",
+      email: "",
+    });
+    expect(useAuthStore.getState().isSuperuser).toBe(false);
+    expect(useAuthStore.getState().isAuthenticated).toBe(
+      AUTHENTICATION_STATUSES.FALSE,
+    );
   });
 });

@@ -11,7 +11,7 @@ describe("EmailVerification component", () => {
     render(
       <MemoryRouter initialEntries={["/verify-email?key=testkey"]}>
         <EmailVerification />
-      </MemoryRouter>
+      </MemoryRouter>,
     );
 
     const element = screen.getByText("Verifying...");
@@ -22,7 +22,7 @@ describe("EmailVerification component", () => {
     render(
       <MemoryRouter initialEntries={["/verify-email?key="]}>
         <EmailVerification />
-      </MemoryRouter>
+      </MemoryRouter>,
     );
 
     const element = screen.getByText("Error: Invalid key.");

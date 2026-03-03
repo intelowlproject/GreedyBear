@@ -21,7 +21,13 @@ export default function SessionsList() {
       headers: { "Content-Type": "application/json" },
     },
     (respData) =>
-      respData.sort((a, b) => !a.is_current || a.created - b.created)
+      respData.sort((a, b) => {
+        // Sort current session first
+        if (a.is_current && !b.is_current) return -1;
+        if (!a.is_current && b.is_current) return 1;
+        // otherwise sort by most recent first
+        return b.created - a.created;
+      }),
   );
 
   // callbacks
@@ -35,7 +41,7 @@ export default function SessionsList() {
         // handled inside deleteTokenById
       }
     },
-    [refetch]
+    [refetch],
   );
 
   return (
@@ -101,7 +107,7 @@ export default function SessionsList() {
                   </Col>
                 </Row>
               </li>
-            )
+            ),
           )}
         </ol>
       )}

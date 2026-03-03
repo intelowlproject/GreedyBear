@@ -82,6 +82,21 @@ class FeedsAdvancedViewTestCase(CustomTestCase):
         response = self.client.get("/api/feeds/advanced/?paginate=true&page_size=10&page=1&attack_type=test")
         self.assertEqual(response.status_code, 400)
 
+    def test_200_feed_contains_attacker_country(self):
+        """
+        Ensures that the response includes the attacker_country field.
+        """
+        self.ioc.attacker_country = "Nepal"
+        self.ioc.save()
+
+        response = self.client.get("/api/feeds/advanced/")
+
+        iocs = response.json()["iocs"]
+        target_ioc = next((i for i in iocs if i["value"] == self.ioc.name), None)
+
+        self.assertIsNotNone(target_ioc)
+        self.assertEqual(target_ioc["attacker_country"], "Nepal")
+
 
 class FeedsEnhancementsTestCase(CustomTestCase):
     """Tests for advanced filtering, STIX export, and shareable feeds functionality."""
@@ -227,7 +242,6 @@ class FeedsEnhancementsTestCase(CustomTestCase):
         """Consuming a tampered/expired token returns 400."""
         from django.core import signing
 
-        # Manually create a token with max_age already exceeded
         data = {
             "feed_type": "all",
             "attack_type": "all",
@@ -248,7 +262,6 @@ class FeedsEnhancementsTestCase(CustomTestCase):
             "end_date": None,
         }
         token = signing.dumps(data, salt="greedybear-feeds")
-        # Tamper so max_age check fails
         tampered = token + "TAMPERED"
         self.client.logout()
         response = self.client.get(f"/api/feeds/consume/{tampered}")
@@ -274,7 +287,6 @@ class FeedsEnhancementsTestCase(CustomTestCase):
         def throttle_after_two(throttle_instance, request, view):
             call_count["n"] += 1
             if call_count["n"] > 2:
-                # Simulate throttle state so wait() doesn't AttributeError
                 throttle_instance.history = []
                 throttle_instance.rate = "2/minute"
                 throttle_instance.num_requests = 2

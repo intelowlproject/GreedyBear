@@ -6,6 +6,7 @@ from rest_framework import routers
 
 from .views import (
     APIAccessTokenView,
+    ChangePasswordView,
     EmailVerificationView,
     LoginView,
     PasswordResetRequestView,
@@ -44,6 +45,7 @@ urlpatterns = [
     ),
     path("reset-password", PasswordResetView.as_view(), name="auth_reset-password"),
     path("login", LoginView.as_view(), name="auth_login"),
+    path("change-password", ChangePasswordView.as_view(), name="auth_change-password"),
     path("configuration", check_configuration),
     # auth
     path("", include("certego_saas.apps.auth.urls")),

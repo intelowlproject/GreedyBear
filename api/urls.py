@@ -15,6 +15,7 @@ from api.views import (
     feeds_pagination,
     feeds_share,
     general_honeypot_list,
+    health_view,
     news_view,
 )
 
@@ -35,6 +36,7 @@ urlpatterns = [
     path("command_sequence", command_sequence_view),
     path("general_honeypot", general_honeypot_list),
     path("news/", news_view),
+    path("health/", health_view),
     # router viewsets
     path("", include(router.urls)),
     # certego_saas:

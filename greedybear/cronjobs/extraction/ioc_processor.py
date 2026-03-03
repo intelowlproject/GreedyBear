@@ -100,6 +100,10 @@ class IocProcessor:
         existing.asn = new.asn
         existing.login_attempts += new.login_attempts
 
+        # we will always update attacker_country if incoming value exists
+        if new.attacker_country:
+            existing.attacker_country = new.attacker_country
+
         # Add sensors from new IOC (existing is already saved, so ManyToMany works).
         # We retrieve sensors from the temporary attribute of the input IOC object.
         if hasattr(new, "_sensors_to_add") and new._sensors_to_add:

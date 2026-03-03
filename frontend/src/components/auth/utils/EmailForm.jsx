@@ -33,7 +33,7 @@ export default function EmailForm({ onFormSubmit, apiCallback, ...restProps }) {
         // error will be handled by apiCallback
       }
     },
-    [apiCallback, onFormSubmit]
+    [apiCallback, onFormSubmit],
   );
 
   return (
@@ -67,7 +67,7 @@ export default function EmailForm({ onFormSubmit, apiCallback, ...restProps }) {
           <FormGroup className="">
             <Button
               type="submit"
-              disabled={!(formik.isValid || formik.isSubmitting)}
+              disabled={!formik.isValid || formik.isSubmitting}
               color="darker"
               className="mx-auto"
             >

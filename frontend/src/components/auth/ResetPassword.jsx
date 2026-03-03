@@ -30,7 +30,7 @@ const onValidate = (values) => {
   }
   const comparePasswordErrors = ComparePassword(
     values.password,
-    values.confirmPassword
+    values.confirmPassword,
   );
   if (comparePasswordErrors.password) {
     errors.password = comparePasswordErrors.password;
@@ -77,7 +77,7 @@ export default function ResetPassword() {
         // handled inside resetPassword
       }
     },
-    [key, navigate]
+    [key, navigate],
   );
 
   return (
@@ -164,7 +164,7 @@ export default function ResetPassword() {
                 <FormGroup className="mt-3 d-flex">
                   <Button
                     type="submit"
-                    disabled={!(formik.isValid || formik.isSubmitting)}
+                    disabled={!formik.isValid || formik.isSubmitting}
                     color="primary"
                     outline
                     className="mx-auto"

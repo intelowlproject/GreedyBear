@@ -91,6 +91,9 @@ INSTALLED_APPS = [
     "rest_email_auth",
 ]
 
+if os.environ.get("DJANGO_TEST_SERVER", "False") == "True":
+    INSTALLED_APPS.append("django_watchfiles")
+
 # required by the certego-saas, but GreedyBear doesn't use the recaptcha, for this reason is filled with a placeholder
 DRF_RECAPTCHA_SECRET_KEY = "not-active"
 
@@ -449,6 +452,7 @@ COWRIE_SESSION_RETENTION = int(os.environ.get("COWRIE_SESSION_RETENTION", "365")
 COMMAND_SEQUENCE_RETENTION = int(os.environ.get("COMMAND_SEQUENCE_RETENTION", "365"))
 
 THREATFOX_API_KEY = os.environ.get("THREATFOX_API_KEY", "")
+ABUSEIPDB_API_KEY = os.environ.get("ABUSEIPDB_API_KEY", "")
 
 # Optional feed license URL to include in API responses
 # If not set, no license information will be included in feeds

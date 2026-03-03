@@ -5,6 +5,7 @@ import pandas as pd
 
 from greedybear.cronjobs.scoring.ml_model import Classifier, Regressor
 from greedybear.cronjobs.scoring.random_forest import RFModel
+from greedybear.cronjobs.scoring.scoring_jobs import TrainModels
 
 from . import CustomTestCase
 
@@ -136,3 +137,138 @@ class TestModelUnavailable(CustomTestCase):
         df = classifier.score(SAMPLE_DATA)
         self.assertIn("mock_score", df.columns)
         self.assertTrue((df["mock_score"] == 0).all())
+
+
+class TestRecallAucZeroPositives(CustomTestCase):
+    """Test that recall_auc handles zero positive samples without crashing."""
+
+    class MockRFClassifier(TestClassifier.MockRFModel, Classifier):
+        def __init__(self):
+            super().__init__("Mock RF Classifier", "mock_score")
+
+        @property
+        def untrained_model(self):
+            mock = Mock()
+            mock.feature_names_in_ = FEATURES
+            mock.fit.return_value = mock
+            a = np.zeros((5, 2))
+            a[:, 1] = [0.9, 0.8, 0.3, 0.2, 0.1]
+            mock.predict_proba.return_value = a
+            return mock
+
+    def test_recall_auc_returns_zero_when_no_positives(self):
+        """recall_auc should return 0.0 instead of raising ZeroDivisionError
+        when the test set contains no positive samples."""
+        classifier = self.MockRFClassifier()
+        classifier.model = classifier.untrained_model
+
+        x = SAMPLE_DATA.copy()
+        y_all_negative = pd.Series([False, False, False, False, False])
+
+        result = classifier.recall_auc(x, y_all_negative)
+        self.assertEqual(result, 0.0)
+
+    def test_recall_auc_returns_zero_for_zero_regression_targets(self):
+        """recall_auc should return 0.0 when all regression targets are zero."""
+
+        class MockRFRegressor(TestRegressor.MockRFModel, Regressor):
+            def __init__(self):
+                super().__init__("Mock RF Regressor", "mock_score")
+
+            @property
+            def untrained_model(self):
+                mock = Mock()
+                mock.feature_names_in_ = FEATURES
+                mock.fit.return_value = mock
+                mock.predict.return_value = np.array([0, 3, 1, 4, 2])
+                return mock
+
+        regressor = MockRFRegressor()
+        regressor.model = regressor.untrained_model
+
+        x = SAMPLE_DATA.copy()
+        y_all_zero = pd.Series([0, 0, 0, 0, 0])
+
+        result = regressor.recall_auc(x, y_all_zero)
+        self.assertEqual(result, 0.0)
+
+
+class TestClassifierSingleClassSplit(CustomTestCase):
+    """Test that Classifier.split_train_test handles single-class targets."""
+
+    class MockRFClassifier(TestClassifier.MockRFModel, Classifier):
+        def __init__(self):
+            super().__init__("Mock RF Classifier", "mock_score")
+
+        @property
+        def untrained_model(self):
+            mock = Mock()
+            mock.feature_names_in_ = FEATURES
+            mock.fit.return_value = mock
+            a = np.zeros((5, 2))
+            a[:, 1] = [0.9, 0.8, 0.3, 0.2, 0.1]
+            mock.predict_proba.return_value = a
+            return mock
+
+    def test_split_train_test_single_class_does_not_crash(self):
+        """split_train_test should fall back to non-stratified split
+        instead of raising ValueError when only one class is present."""
+        classifier = self.MockRFClassifier()
+        x = SAMPLE_DATA[FEATURES].copy()
+        y_single_class = pd.Series([False, False, False, False, False])
+
+        x_train, x_test, y_train, y_test = classifier.split_train_test(x, y_single_class)
+        self.assertEqual(len(x_train) + len(x_test), len(x))
+        self.assertEqual(len(y_train) + len(y_test), len(y_single_class))
+
+    def test_split_train_test_all_positive_does_not_crash(self):
+        """split_train_test should handle all-positive targets without crashing."""
+        classifier = self.MockRFClassifier()
+        x = SAMPLE_DATA[FEATURES].copy()
+        y_all_positive = pd.Series([True, True, True, True, True])
+
+        x_train, x_test, y_train, y_test = classifier.split_train_test(x, y_all_positive)
+        self.assertEqual(len(x_train) + len(x_test), len(x))
+        self.assertEqual(len(y_train) + len(y_test), len(y_all_positive))
+
+
+class TestTrainModelsSaveOnFailure(CustomTestCase):
+    """Test that TrainModels.run() always calls save_training_data() even on training failure."""
+
+    @patch("greedybear.cronjobs.scoring.scoring_jobs.SCORERS")
+    @patch("greedybear.cronjobs.scoring.scoring_jobs.get_features")
+    @patch("greedybear.cronjobs.scoring.scoring_jobs.get_current_data")
+    def test_save_training_data_called_on_scorer_failure(self, mock_get_data, mock_get_features, mock_scorers):
+        """save_training_data must be called even when a scorer's train() raises an exception,
+        otherwise the training pipeline enters a permanent failure loop."""
+        mock_get_data.return_value = [
+            {"value": "1.2.3.4", "last_seen": "2024-01-02", "interaction_count": 5},
+        ]
+
+        training_df = pd.DataFrame(
+            {
+                "value": ["1.2.3.4"],
+                "interactions_on_eval_day": [3],
+            }
+        )
+        mock_get_features.return_value = training_df
+
+        failing_scorer = Mock()
+        failing_scorer.trainable = True
+        failing_scorer.name = "Failing Scorer"
+        failing_scorer.train.side_effect = RuntimeError("training crashed")
+        mock_scorers.__iter__ = Mock(return_value=iter([failing_scorer]))
+
+        job = TrainModels()
+        job.save_training_data = Mock()
+        job.load_training_data = Mock(
+            return_value=[
+                {"value": "1.2.3.4", "last_seen": "2024-01-01", "interaction_count": 2, "feed_type": ["scanner"]},
+            ]
+        )
+
+        with self.assertRaises(RuntimeError):
+            job.run()
+
+        # The critical assertion: save_training_data must be called despite the crash
+        job.save_training_data.assert_called_once()

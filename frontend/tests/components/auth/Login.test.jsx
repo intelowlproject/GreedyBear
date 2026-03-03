@@ -33,7 +33,7 @@ describe("Login component", () => {
     render(
       <BrowserRouter>
         <Login />
-      </BrowserRouter>
+      </BrowserRouter>,
     );
 
     // page before login
@@ -54,9 +54,60 @@ describe("Login component", () => {
       expect(axios.post).toHaveBeenCalledWith(
         LOGIN_URI,
         { password: "dummyPwd1", username: "test_user" },
-        { headers: { "Content-Type": "application/json" } },
-        { certegoUIenableProgressBar: false }
+        {
+          headers: { "Content-Type": "application/json" },
+          certegoUIenableProgressBar: false,
+        },
       );
+    });
+  });
+
+  test("Double-clicking Login while submitting does not trigger duplicate requests", async () => {
+    const user = userEvent.setup();
+
+    // Clearing any previous mock calls and creating a promise
+    axios.post.mockClear();
+    let resolvePost;
+    axios.post.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolvePost = resolve;
+        }),
+    );
+
+    render(
+      <BrowserRouter>
+        <Login />
+      </BrowserRouter>,
+    );
+
+    const usernameInputElement = screen.getByLabelText("Username");
+    const passwordInputElement = screen.getByLabelText("Password");
+    const submitButtonElement = screen.getByRole("button", { name: /Login/i });
+
+    // Populating the form
+    await user.type(usernameInputElement, "test_user");
+    await user.type(passwordInputElement, "dummyPwd1");
+
+    // First Submit
+    await user.click(submitButtonElement);
+
+    // Checking that the button is disabled while submitting
+    await waitFor(() => {
+      expect(submitButtonElement).toBeDisabled();
+    });
+
+    // Second Submit
+    await user.click(submitButtonElement);
+
+    // Only one call was made?
+    expect(axios.post).toHaveBeenCalledTimes(1);
+
+    resolvePost({ data: { token: "test-token" } });
+
+    // Waiting for submission to fully settle by checking the button re-enables
+    await waitFor(() => {
+      expect(submitButtonElement).not.toBeDisabled();
     });
   });
 });

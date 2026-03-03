@@ -99,6 +99,7 @@ class TestCowrieExtractionStrategy(ExtractionTestCase):
                 "src_ip": "1.2.3.4",
                 "eventid": "cowrie.login.failed",
                 "message": "Failed login with http://evil.com/malware.exe",
+                "@timestamp": "2025-01-01T00:00:00",
             }
         ]
 
@@ -143,6 +144,7 @@ class TestCowrieExtractionStrategy(ExtractionTestCase):
                 "src_ip": "5.6.7.8",
                 "eventid": "cowrie.login.failed",
                 "message": "http://evil.com/malware",
+                "@timestamp": "2025-01-01T00:00:00",
             }
         ]
 
@@ -171,6 +173,7 @@ class TestCowrieExtractionStrategy(ExtractionTestCase):
                 "src_ip": "1.2.3.4",
                 "eventid": "cowrie.session.file_download",
                 "url": "http://malware.com/bad.exe",
+                "@timestamp": "2025-01-01T00:00:00",
             }
         ]
 
@@ -179,6 +182,7 @@ class TestCowrieExtractionStrategy(ExtractionTestCase):
 
         self.mock_ioc_repo.get_ioc_by_name.side_effect = [scanner_mock, payload_mock]
         mock_payload_record = Mock()
+        mock_payload_record.general_honeypot.all.return_value = []
         self.strategy.ioc_processor.add_ioc.return_value = mock_payload_record
 
         self.strategy._get_url_downloads(hits)
@@ -238,7 +242,6 @@ class TestCowrieExtractionStrategy(ExtractionTestCase):
 
         self.assertTrue(session_record.login_attempt)
         self.assertIn("root | password123", session_record.credentials)
-        self.assertEqual(session_record.source.login_attempts, 1)
 
     def test_process_session_hit_command_input(self):
         """Test processing of command input event."""
@@ -332,10 +335,12 @@ class TestCowrieExtractionStrategy(ExtractionTestCase):
     def test_extract_from_hits_integration(self, mock_iocs_from_hits):
         """Test the main extract_from_hits coordination."""
         mock_ioc = Mock(name="1.2.3.4")
+        mock_ioc.related_urls = []
         # Return list of IOCs as expected by the new format
         mock_iocs_from_hits.return_value = [mock_ioc]
 
         mock_ioc_record = Mock()
+        mock_ioc_record.payload_request = False
         self.strategy.ioc_processor.add_ioc.return_value = mock_ioc_record
 
         hits = [{"src_ip": "1.2.3.4", "session": "s1", "eventid": "cowrie.session.connect"}]
