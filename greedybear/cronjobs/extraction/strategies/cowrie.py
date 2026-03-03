@@ -253,7 +253,7 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
                 password = normalize_credential_field(hit["password"])
                 credential, _ = Credential.objects.get_or_create(username=username, password=password)
                 session_record.credentials.add(credential)
-                session_record.source.login_attempts += 1
+                
 
             case "cowrie.command.input":
                 self.log.info(f"found a command execution from {ioc.name}")

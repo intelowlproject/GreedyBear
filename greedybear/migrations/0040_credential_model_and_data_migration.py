@@ -2,31 +2,37 @@
 Migration to replace the credentials ArrayField on CowrieSession with
 a normalized Credential model using a ManyToMany relationship.
 
-Steps:
-1. Rename old credentials ArrayField to old_credentials (preserve data)
-2. Create new Credential model
-3. Add new credentials ManyToManyField
-4. Migrate data from old_credentials into Credential objects
-5. Remove old_credentials field
+
 """
 from django.db import migrations, models
-
+from django.db.models import Q
+import functools
+import operator
 
 def migrate_credentials(apps, schema_editor):
     CowrieSession = apps.get_model("greedybear", "CowrieSession")
     Credential = apps.get_model("greedybear", "Credential")
 
-    for session in CowrieSession.objects.all():
+    for session in CowrieSession.objects.iterator():
+        pairs = []
         for credential_str in session.old_credentials or []:
             try:
                 username, password = credential_str.split(" | ", 1)
-                credential, _ = Credential.objects.get_or_create(
-                    username=username,
-                    password=password,
-                )
-                session.credentials.add(credential)
+                pairs.append((username, password))
             except ValueError:
                 continue
+
+        if not pairs:
+            continue
+
+        Credential.objects.bulk_create(
+            [Credential(username=u, password=p) for u, p in pairs],
+            ignore_conflicts=True,
+        )
+
+        q = functools.reduce(operator.or_, [Q(username=u, password=p) for u, p in pairs])
+        credentials = Credential.objects.filter(q)
+        session.credentials.add(*credentials)
 
 
 class Migration(migrations.Migration):
@@ -55,7 +61,9 @@ class Migration(migrations.Migration):
                     models.Index(fields=["username"], name="greedybear__usernam_29c9d6_idx"),
                     models.Index(fields=["password"], name="greedybear__passwor_6a8f16_idx"),
                 ],
-                "unique_together": {("username", "password")},
+                "constraints": [
+                    models.UniqueConstraint(fields=["username", "password"], name="unique_credential"),
+                ],
             },
         ),
         # Step 3: Add new ManyToMany credentials field

@@ -115,7 +115,7 @@ class Credential(models.Model):
     password = models.CharField(max_length=256, blank=False)
 
     class Meta:
-        unique_together = [("username", "password")]
+        constraints = [models.UniqueConstraint(fields=["username", "password"], name="unique_credential")]
         indexes = [
             models.Index(fields=["username"]),
             models.Index(fields=["password"]),
