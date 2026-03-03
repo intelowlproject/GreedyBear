@@ -10,13 +10,12 @@ import {
   useAxiosComponentLoader,
   useDataTable,
 } from "@certego/certego-ui";
+import { MultiSelectDropdown } from "./MultiSelectDropdown";
 import { Form, Formik } from "formik";
 import { feedsTableColumns } from "./tableColumns";
 import { FEEDS_LICENSE } from "../../constants";
 
 // constants
-const feedTypeChoices = [{ label: "All", value: "all" }];
-
 const attackTypeChoices = [
   { label: "All", value: "all" },
   { label: "Scanner", value: "scanner" },
@@ -55,8 +54,6 @@ const toPassTableProps = {
 
 // prioritizations where backend overrides "ordering" query param.
 const OVERRIDING_PRIORITIZATIONS = ["likely_to_recur", "most_expected_hits"];
-
-let honeypotFeedsType = [];
 
 // extracted child component so useDataTable hooks are owned here.
 // changing the `key` on this component forces a full unmount/remount.
@@ -124,15 +121,14 @@ export default function Feeds() {
   });
   console.debug("Feeds-honeypots:", honeypots);
 
-  honeypots.forEach((honeypot) => {
-    //check if honeypot.label exist in honeypotFeedsType array or not (index === -1)
-    const index = honeypotFeedsType.findIndex((x) => x.label === honeypot);
-    if (index === -1)
-      honeypotFeedsType.push({
+  const honeypotFeedsType = React.useMemo(
+    () =>
+      honeypots.map((honeypot) => ({
         label: honeypot,
         value: honeypot.toLowerCase(),
-      });
-  });
+      })),
+    [honeypots],
+  );
 
   // reset the prioritize dropdown to "recent"
   const handleSortChange = React.useCallback(async () => {
@@ -155,7 +151,6 @@ export default function Feeds() {
           ioc_type: values.ioc_type,
           prioritize: values.prioritize,
         },
-
         tableKey: prev.tableKey + 1,
       }));
     } catch (e) {
@@ -203,25 +198,36 @@ export default function Feeds() {
                             >
                               Feed type:
                             </Label>
-                            <Select
+                            <MultiSelectDropdown
                               id="Feeds__feeds_type"
-                              name="feeds_type"
-                              value={formik.values.feeds_type}
-                              choices={feedTypeChoices.concat(
-                                honeypotFeedsType,
-                              )}
-                              onChange={async (e) => {
-                                await formik.setFieldValue(
+                              options={honeypotFeedsType}
+                              value={
+                                formik.values.feeds_type &&
+                                formik.values.feeds_type !== "all"
+                                  ? formik.values.feeds_type
+                                      .split(",")
+                                      .map((v) =>
+                                        honeypotFeedsType.find(
+                                          (o) => o.value === v,
+                                        ),
+                                      )
+                                      .filter(Boolean)
+                                  : []
+                              }
+                              placeholder="All"
+                              onChange={(selected) => {
+                                const newFeedsType =
+                                  selected.length > 0
+                                    ? selected.map((o) => o.value).join(",")
+                                    : "all";
+                                formik.setFieldValue(
                                   "feeds_type",
-                                  e.target.value,
-                                  true,
+                                  newFeedsType,
                                 );
-                                await formik.setFieldTouched(
-                                  "feeds_type",
-                                  true,
-                                  false,
-                                );
-                                await formik.submitForm();
+                                onSubmit({
+                                  ...formik.values,
+                                  feeds_type: newFeedsType,
+                                });
                               }}
                             />
                           </Col>

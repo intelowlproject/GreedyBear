@@ -34,6 +34,7 @@ const feedsTableColumns = [
   {
     Header: "Feed type",
     accessor: "feed_type",
+    disableSortBy: true,
     maxWidth: 60,
     Cell: ({ value }) =>
       Array.isArray(value) ? (
@@ -68,6 +69,7 @@ const feedsTableColumns = [
   {
     Header: "Details",
     accessor: "details",
+    disableSortBy: true,
     Cell: ({ row }) => {
       const {
         recurrence_probability,

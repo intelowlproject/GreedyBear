@@ -5,6 +5,30 @@ import { BrowserRouter } from "react-router-dom";
 import userEvent from "@testing-library/user-event";
 import Feeds from "../../../src/components/feeds/Feeds";
 
+// mock the multiselectdrop as a native select multiple
+vi.mock("../../../src/components/feeds/MultiSelectDropdown", () => {
+  const MultiSelectDropdown = ({ id, options, value, onChange }) => (
+    <select
+      id={id}
+      multiple
+      value={value ? value.map((o) => o.value) : []}
+      onChange={(e) => {
+        const selected = Array.from(e.target.selectedOptions).map((opt) =>
+          options.find((o) => o.value === opt.value),
+        );
+        onChange(selected);
+      }}
+    >
+      {options.map((o) => (
+        <option key={o.value} value={o.value}>
+          {o.label}
+        </option>
+      ))}
+    </select>
+  );
+  return { MultiSelectDropdown };
+});
+
 vi.mock("@certego/certego-ui", async (importOriginal) => {
   const originalModule = await importOriginal();
 
@@ -112,7 +136,7 @@ describe("Feeds component", () => {
     await user.selectOptions(iocTypeSelectElement, "ip");
     await user.selectOptions(prioritizationSelectElement, "persistent");
 
-    expect(feedTypeSelectElement).toHaveValue("cowrie");
+    expect(feedTypeSelectElement).toHaveValue(["cowrie"]);
     expect(attackTypeSelectElement).toHaveValue("scanner");
     expect(iocTypeSelectElement).toHaveValue("ip");
     expect(prioritizationSelectElement).toHaveValue("persistent");
@@ -158,6 +182,99 @@ describe("Feeds component", () => {
         "href",
         "/api/feeds/all/all/recent.json?ioc_type=all",
       );
+    });
+  });
+
+  describe("Feed type multi-select", () => {
+    // helper to render the Feeds component from a clean
+    // state regardless of anything left from previous test
+    async function renderFeeds() {
+      const user = userEvent.setup();
+      render(
+        <BrowserRouter>
+          <Feeds />
+        </BrowserRouter>,
+      );
+      const feedTypeSelect = screen.getByLabelText("Feed type:");
+      const buttonRawData = screen.getByRole("link", { name: /Raw data/i });
+
+      // Clear any options that were pre-selected due to shared module state
+      const alreadySelected = Array.from(feedTypeSelect.selectedOptions).map(
+        (o) => o.value,
+      );
+      if (alreadySelected.length > 0) {
+        await user.deselectOptions(feedTypeSelect, alreadySelected);
+        await waitFor(() => {
+          expect(buttonRawData.getAttribute("href")).toMatch(
+            /\/api\/feeds\/all\//,
+          );
+        });
+      }
+
+      return { user, feedTypeSelect, buttonRawData };
+    }
+
+    test("selecting a single type sets it in the raw data URL", async () => {
+      const { user, feedTypeSelect, buttonRawData } = await renderFeeds();
+
+      await user.selectOptions(feedTypeSelect, ["honeytrap"]);
+
+      await waitFor(() => {
+        expect(buttonRawData.getAttribute("href")).toMatch(
+          /\/api\/feeds\/honeytrap\//,
+        );
+      });
+    });
+
+    test("selecting multiple types passes them comma-separated in the raw data URL", async () => {
+      const { user, feedTypeSelect, buttonRawData } = await renderFeeds();
+
+      await user.selectOptions(feedTypeSelect, ["cowrie", "honeytrap"]);
+
+      await waitFor(() => {
+        const href = buttonRawData.getAttribute("href");
+        // Both types should appear in the URL path, comma-separated (order follows DOM)
+        expect(href).toMatch(
+          /\/api\/feeds\/(cowrie,honeytrap|honeytrap,cowrie)\//,
+        );
+      });
+    });
+
+    test("selecting multiple types passes comma-separated feed_type to the table", async () => {
+      const { useDataTable } = await import("@certego/certego-ui");
+      const { user, feedTypeSelect } = await renderFeeds();
+
+      await user.selectOptions(feedTypeSelect, ["cowrie", "honeytrap"]);
+
+      await waitFor(() => {
+        const lastCall =
+          useDataTable.mock.calls[useDataTable.mock.calls.length - 1];
+        const feedTypes = lastCall[0].params.feed_type.split(",");
+
+        expect(feedTypes).toContain("cowrie");
+        expect(feedTypes).toContain("honeytrap");
+        expect(feedTypes).toHaveLength(2);
+      });
+    });
+
+    test("deselecting all types resets to 'all'", async () => {
+      const { user, feedTypeSelect, buttonRawData } = await renderFeeds();
+
+      // Select one type first
+      await user.selectOptions(feedTypeSelect, ["cowrie"]);
+      await waitFor(() => {
+        expect(buttonRawData.getAttribute("href")).toMatch(
+          /\/api\/feeds\/cowrie\//,
+        );
+      });
+
+      // empty selection should revert to "all"
+      await user.deselectOptions(feedTypeSelect, ["cowrie"]);
+      await waitFor(() => {
+        expect(buttonRawData.getAttribute("href")).toMatch(
+          /\/api\/feeds\/all\//,
+        );
+      });
     });
   });
 });

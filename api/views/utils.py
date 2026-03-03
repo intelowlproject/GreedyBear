@@ -9,12 +9,12 @@ import requests
 from django.conf import settings
 from django.contrib.postgres.aggregates import ArrayAgg
 from django.core.cache import cache
-from django.db.models import Count, F, Max, Min, Sum
+from django.db.models import Count, F, Max, Min, Q, Sum
 from django.http import HttpResponse, HttpResponseBadRequest, StreamingHttpResponse
 from rest_framework import status
 from rest_framework.response import Response
 
-from api.serializers import FeedsRequestSerializer
+from api.serializers import FeedsRequestSerializer, parse_feed_types
 from greedybear.consts import CACHE_KEY_GREEDYBEAR_NEWS, CACHE_TIMEOUT_SECONDS, RSS_FEED_URL
 from greedybear.models import IOC, GeneralHoneypot, Statistics
 
@@ -45,7 +45,10 @@ class FeedRequestParams:
     providing default values.
 
     Attributes:
-        feed_type (str): Type of feed to retrieve (default: "all")
+        feed_type (str): comma-separated feed type string as supplied by the
+            caller (default: "all").
+        feed_types (list[str]): List of individual feed type values derived from
+            ``feed_type`` by splitting on commas.
         attack_type (str): Type of attack to filter (default: "all")
         ioc_type (str): Type of IOC to filter - 'ip', 'domain', or 'all' (default: "all")
         max_age (str): Maximum number of days since last occurrence (default: "3")
@@ -65,7 +68,9 @@ class FeedRequestParams:
         Parameters:
             query_params (dict): Dictionary containing query parameters for feed configuration.
         """
-        self.feed_type = query_params.get("feed_type", "all").lower()
+        feed_type_str = query_params.get("feed_type", "all").lower()
+        self.feed_type = feed_type_str
+        self.feed_types = parse_feed_types(feed_type_str)
         self.attack_type = query_params.get("attack_type", "all").lower()
         self.ioc_type = query_params.get("ioc_type", "all").lower()
         self.max_age = query_params.get("max_age", "3")
@@ -157,9 +162,6 @@ def get_queryset(request, feed_params, valid_feed_types, is_aggregated=False, se
     serializer.is_valid(raise_exception=True)
 
     query_dict = {}
-    if feed_params.feed_type != "all":
-        query_dict["general_honeypot__name__iexact"] = feed_params.feed_type
-
     if feed_params.attack_type != "all":
         query_dict[feed_params.attack_type] = True
 
@@ -174,10 +176,17 @@ def get_queryset(request, feed_params, valid_feed_types, is_aggregated=False, se
 
     iocs = IOC.objects.filter(**query_dict).exclude(ip_reputation__in=feed_params.exclude_reputation).annotate(value=F("name")).distinct()
 
+    # apply feed type filter as union;
+    if "all" not in feed_params.feed_types:
+        type_filter = Q()
+        for ft in feed_params.feed_types:
+            type_filter |= Q(general_honeypot__name__iexact=ft)
+        iocs = iocs.filter(type_filter)
+
     # aggregated feeds calculate metrics differently and need all rows to be accurate.
     if not is_aggregated:
         iocs = iocs.filter(general_honeypot__active=True)
-        iocs = iocs.annotate(honeypots=ArrayAgg("general_honeypot__name"))
+        iocs = iocs.annotate(honeypots=ArrayAgg("general_honeypot__name", distinct=True))
         iocs = iocs.order_by(feed_params.ordering)
         iocs = iocs[: int(feed_params.feed_size)]
 
