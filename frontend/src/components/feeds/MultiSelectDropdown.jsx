@@ -8,7 +8,7 @@ import {
 
 export function MultiSelectDropdown({
   options,
-  value,
+  value = [],
   onChange,
   placeholder = "All",
   id,
