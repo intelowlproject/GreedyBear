@@ -3,6 +3,7 @@
 import csv
 import logging
 from datetime import datetime, timedelta
+from ipaddress import ip_address
 
 import feedparser
 import requests
@@ -361,7 +362,9 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
                 # Validate and sanitize value before inserting into STIX pattern
                 # to prevent pattern injection via malicious IOC names.
                 if ioc_type == "ip":
-                    if not is_ip_address(value):
+                    try:
+                        ip_address(value)
+                    except ValueError:
                         logger.warning(f"Skipping IOC with invalid IP value for STIX export: {value!r}")
                         continue
                     stix_type = "ipv6-addr" if ":" in value else "ipv4-addr"
