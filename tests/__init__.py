@@ -3,6 +3,7 @@ from hashlib import sha256
 from unittest.mock import Mock
 
 from certego_saas.apps.user.models import User
+from django.core.cache import cache
 from django.test import TestCase, TransactionTestCase
 from django_test_migrations.migrator import Migrator
 
@@ -16,6 +17,10 @@ from greedybear.models import (
 
 
 class CustomTestCase(TestCase):
+    def setUp(self):
+        super().setUp()
+        cache.clear()
+
     @classmethod
     def setUpTestData(cls):
         super().setUpTestData()

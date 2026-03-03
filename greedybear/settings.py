@@ -106,6 +106,11 @@ REST_FRAMEWORK = {
     # Pagination
     "DEFAULT_PAGINATION_CLASS": "certego_saas.ext.pagination.CustomPageNumberPagination",
     "PAGE_SIZE": 10,
+    # Throttling
+    "DEFAULT_THROTTLE_RATES": {
+        "feeds": "30/minute",
+        "feeds_advanced": "100/minute",
+    },
 }
 
 # Django-Rest-Durin
