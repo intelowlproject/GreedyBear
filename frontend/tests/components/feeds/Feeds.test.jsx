@@ -346,6 +346,7 @@ describe("Feeds component", () => {
         expect(attackTypeSelect).toHaveValue("all");
         expect(iocTypeSelect).toHaveValue("all");
         expect(prioritizationSelect).toHaveValue("recent");
+        expect(feedTypeSelect).toHaveValue([]);
         expect(buttonRawData).toHaveAttribute(
           "href",
           "/api/feeds/all/all/recent.json?ioc_type=all",

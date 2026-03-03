@@ -325,6 +325,7 @@ export default function Feeds() {
                               outline
                               disabled={isDefault}
                               title="Reset filters"
+                              aria-label="Rest filters"
                               onClick={() => {
                                 formikRef.current?.resetForm();
                                 onSubmit(DEFAULT_VALUES);
