@@ -190,7 +190,7 @@ def get_queryset(request, feed_params, valid_feed_types, is_aggregated=False, se
     # Advanced filters
     if feed_params.asn:
         query_dict["asn"] = feed_params.asn
-    if feed_params.min_score:
+    if feed_params.min_score is not None:
         query_dict["recurrence_probability__gte"] = feed_params.min_score
     if feed_params.port:
         query_dict["destination_ports__contains"] = [int(feed_params.port)]
@@ -356,18 +356,24 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
 
             stix_objects = []
             for ioc in iocs:
-                # determine pattern kind
-                pattern = ""
-                if ioc["type"] == "ip":
-                    # simple heuristic for ipv4 vs ipv6
-                    if ":" in ioc["value"]:
-                        pattern = f"[ipv6-addr:value = '{ioc['value']}']"
-                    else:
-                        pattern = f"[ipv4-addr:value = '{ioc['value']}']"
-                elif ioc["type"] == "domain":
-                    pattern = f"[domain-name:value = '{ioc['value']}']"
+                value = ioc["value"]
+                ioc_type = ioc["type"]
+
+                # Validate and sanitize value before inserting into STIX pattern
+                # to prevent pattern injection via malicious IOC names.
+                if ioc_type == "ip":
+                    if not is_ip_address(value):
+                        logger.warning(f"Skipping IOC with invalid IP value for STIX export: {value!r}")
+                        continue
+                    stix_type = "ipv6-addr" if ":" in value else "ipv4-addr"
+                    pattern = f"[{stix_type}:value = '{value}']"
+                elif ioc_type == "domain":
+                    # Allow only printable ASCII without quotes/backslashes to prevent injection
+                    if not value or any(c in value for c in ("'", '"', "\\", "\n", "\r")):
+                        logger.warning(f"Skipping IOC with unsafe domain value for STIX export: {value!r}")
+                        continue
+                    pattern = f"[domain-name:value = '{value}']"
                 else:
-                    # fallback or skip
                     continue
 
                 # Confidence 0-100
@@ -378,11 +384,8 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
                 if ioc.get("ip_reputation"):
                     labels.append(ioc["ip_reputation"])
 
-                # Create Indicator
-                # Note: GreedyBear uses naive datetimes in some places, ensuring UTC or awareness is good practice,
-                # but stix2 handles datetime objects.
                 indicator = Indicator(
-                    name=ioc["value"],
+                    name=value,
                     pattern=pattern,
                     pattern_type="stix",
                     valid_from=ioc["first_seen"],
@@ -390,7 +393,7 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
                     labels=labels,
                     confidence=confidence,
                     description=f"Detected by GreedyBear honeypots: {', '.join(labels)}",
-                    external_references=[ExternalReference(source_name="GreedyBear", url=f"https://greedybear.honeynet.org/?query={ioc['value']}")],
+                    external_references=[ExternalReference(source_name="GreedyBear", url=f"https://greedybear.honeynet.org/?query={value}")],
                 )
                 stix_objects.append(indicator)
 

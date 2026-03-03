@@ -1,6 +1,9 @@
+from datetime import datetime, timedelta
+
 from django.conf import settings
 from rest_framework.test import APIClient
 
+from greedybear.models import IOC, IocType
 from tests import CustomTestCase
 
 
@@ -78,3 +81,210 @@ class FeedsAdvancedViewTestCase(CustomTestCase):
     def test_400_feeds_pagination(self):
         response = self.client.get("/api/feeds/advanced/?paginate=true&page_size=10&page=1&attack_type=test")
         self.assertEqual(response.status_code, 400)
+
+
+class FeedsEnhancementsTestCase(CustomTestCase):
+    """Tests for advanced filtering, STIX export, and shareable feeds functionality."""
+
+    def setUp(self):
+        super().setUp()
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.superuser)
+
+        # Give the base IOC unique values to isolate filter tests
+        self.ioc.asn = 11111
+        self.ioc.destination_ports = [9001, 9002]
+        self.ioc.recurrence_probability = 0.8
+        self.ioc.save()
+
+        # Second IOC for contrast
+        self.ioc2 = IOC.objects.create(
+            name="10.0.0.50",
+            type=IocType.IP.value,
+            days_seen=[datetime.now()],
+            number_of_days_seen=1,
+            scanner=True,
+            payload_request=True,
+            related_urls=[],
+            first_seen=datetime.now() - timedelta(days=1),
+            last_seen=datetime.now(),
+            recurrence_probability=0.2,
+            asn=22222,
+            destination_ports=[9003],
+            attack_count=1,
+            interaction_count=1,
+            login_attempts=0,
+        )
+        self.ioc2.general_honeypot.add(self.cowrie_hp)
+        self.ioc2.save()
+
+    # ── Advanced filtering ────────────────────────────────────────────────────
+
+    def test_filter_by_asn(self):
+        """Filter by ASN returns only matching IOC."""
+        response = self.client.get("/api/feeds/advanced/?asn=11111")
+        self.assertEqual(response.status_code, 200)
+        iocs = response.json()["iocs"]
+        self.assertEqual(len(iocs), 1)
+        self.assertEqual(iocs[0]["value"], self.ioc.name)
+        self.assertEqual(iocs[0]["asn"], 11111)
+
+    def test_filter_by_min_score(self):
+        """Filter by min_score=0.5 excludes low-score IOC."""
+        response = self.client.get("/api/feeds/advanced/?min_score=0.5")
+        self.assertEqual(response.status_code, 200)
+        values = [i["value"] for i in response.json()["iocs"]]
+        self.assertIn(self.ioc.name, values)
+        self.assertNotIn(self.ioc2.name, values)
+
+    def test_filter_by_min_score_zero(self):
+        """Edge case: min_score=0 must NOT be ignored (previously a bug)."""
+        response = self.client.get("/api/feeds/advanced/?asn=11111&min_score=0")
+        self.assertEqual(response.status_code, 200)
+        # ioc has recurrence_probability=0.8 >= 0, so it should be returned
+        values = [i["value"] for i in response.json()["iocs"]]
+        self.assertIn(self.ioc.name, values)
+
+    def test_filter_by_port(self):
+        """Filter by destination port returns only matching IOC."""
+        response = self.client.get("/api/feeds/advanced/?port=9001")
+        self.assertEqual(response.status_code, 200)
+        iocs = response.json()["iocs"]
+        self.assertEqual(len(iocs), 1)
+        self.assertEqual(iocs[0]["value"], self.ioc.name)
+
+        response = self.client.get("/api/feeds/advanced/?port=9003")
+        self.assertEqual(len(response.json()["iocs"]), 1)
+        self.assertEqual(response.json()["iocs"][0]["value"], self.ioc2.name)
+
+    def test_filter_combined(self):
+        """Combined filter (asn + min_score + port) narrows results correctly."""
+        response = self.client.get("/api/feeds/advanced/?asn=11111&min_score=0.5&port=9001")
+        self.assertEqual(response.status_code, 200)
+        iocs = response.json()["iocs"]
+        self.assertEqual(len(iocs), 1)
+        self.assertEqual(iocs[0]["value"], self.ioc.name)
+
+    def test_filter_by_date_range(self):
+        """Date range filter: today range returns IOCs, future range returns none."""
+        today = datetime.now().strftime("%Y-%m-%d")
+        tomorrow = (datetime.now() + timedelta(days=1)).strftime("%Y-%m-%d")
+
+        response = self.client.get(f"/api/feeds/advanced/?start_date={today}&end_date={tomorrow}")
+        self.assertEqual(response.status_code, 200)
+        self.assertGreaterEqual(len(response.json()["iocs"]), 1)
+
+        future_start = (datetime.now() + timedelta(days=2)).strftime("%Y-%m-%d")
+        response = self.client.get(f"/api/feeds/advanced/?start_date={future_start}")
+        self.assertEqual(response.json()["iocs"], [])
+
+    # ── STIX 2.1 export ──────────────────────────────────────────────────────
+
+    def test_stix_21_export_ip(self):
+        """STIX export for IP-type IOC produces a valid bundle with ipv4-addr indicator."""
+        response = self.client.get("/api/feeds/advanced/?format_=stix21")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data["type"], "bundle")
+        patterns = [obj["pattern"] for obj in data["objects"]]
+        self.assertIn(f"[ipv4-addr:value = '{self.ioc.name}']", patterns)
+
+    def test_stix_21_export_domain(self):
+        """STIX export for domain-type IOC produces a domain-name indicator."""
+        # ioc_domain is built by CustomTestCase.setUpTestData
+        response = self.client.get("/api/feeds/advanced/?format_=stix21")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        patterns = [obj["pattern"] for obj in data["objects"]]
+        self.assertIn(f"[domain-name:value = '{self.ioc_domain.name}']", patterns)
+
+    # ── Shareable feeds ───────────────────────────────────────────────────────
+
+    def test_shareable_feeds_flow(self):
+        """Full flow: share → consume unauthenticated returns correct IOCs."""
+        share_response = self.client.get("/api/feeds/share?asn=11111&port=9001")
+        self.assertEqual(share_response.status_code, 200)
+        share_url = share_response.json()["url"]
+        self.assertIn("/api/feeds/consume/", share_url)
+
+        token = share_url.split("/")[-1]
+
+        self.client.logout()
+        consume_response = self.client.get(f"/api/feeds/consume/{token}")
+        self.assertEqual(consume_response.status_code, 200)
+        iocs = consume_response.json()["iocs"]
+        self.assertEqual(len(iocs), 1)
+        self.assertEqual(iocs[0]["value"], self.ioc.name)
+
+    def test_shareable_feed_invalid_token(self):
+        """Consuming a malformed token returns 400."""
+        self.client.logout()
+        response = self.client.get("/api/feeds/consume/invalid-token-123")
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()["error"], "Invalid or expired token")
+
+    def test_shareable_feed_expired_token(self):
+        """Consuming a tampered/expired token returns 400."""
+        from django.core import signing
+
+        # Manually create a token with max_age already exceeded
+        data = {
+            "feed_type": "all",
+            "attack_type": "all",
+            "ioc_type": "all",
+            "max_age": "3",
+            "min_days_seen": "1",
+            "include_reputation": [],
+            "exclude_reputation": [],
+            "feed_size": "5000",
+            "ordering": "-last_seen",
+            "verbose": "false",
+            "paginate": "false",
+            "format": "json",
+            "asn": None,
+            "min_score": None,
+            "port": None,
+            "start_date": None,
+            "end_date": None,
+        }
+        token = signing.dumps(data, salt="greedybear-feeds")
+        # Tamper so max_age check fails
+        tampered = token + "TAMPERED"
+        self.client.logout()
+        response = self.client.get(f"/api/feeds/consume/{tampered}")
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("error", response.json())
+
+    def test_rate_limiting_consume(self):
+        """
+        Shared feed endpoint enforces rate limiting on the /feeds/consume/ endpoint.
+
+        We use unittest.mock to simulate a throttled response after the 2nd call,
+        because the Django test runner's in-memory cache doesn't isolate throttle
+        state between requests the way a real cache would.
+        """
+        from unittest.mock import patch
+
+        share_response = self.client.get("/api/feeds/share")
+        token = share_response.json()["url"].split("/")[-1]
+        anon = APIClient()
+
+        call_count = {"n": 0}
+
+        def throttle_after_two(throttle_instance, request, view):
+            call_count["n"] += 1
+            if call_count["n"] > 2:
+                # Simulate throttle state so wait() doesn't AttributeError
+                throttle_instance.history = []
+                throttle_instance.rate = "2/minute"
+                throttle_instance.num_requests = 2
+                throttle_instance.duration = 60
+                throttle_instance.now = 0
+                return False
+            return True
+
+        with patch("rest_framework.throttling.ScopedRateThrottle.allow_request", throttle_after_two):
+            responses = [anon.get(f"/api/feeds/consume/{token}") for _ in range(3)]
+
+        status_codes = [r.status_code for r in responses]
+        self.assertIn(429, status_codes, f"Expected 429 after rate limit exceeded, got: {status_codes}")
