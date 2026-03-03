@@ -113,7 +113,7 @@ def ordering_validation(ordering: str) -> str:
 
 
 class FeedsRequestSerializer(serializers.Serializer):
-    feed_type = serializers.CharField(max_length=120)
+    feed_type = serializers.CharField()
     attack_type = serializers.ChoiceField(choices=["scanner", "payload_request", "all"])
     ioc_type = serializers.ChoiceField(choices=["ip", "domain", "all"])
     max_age = serializers.IntegerField(min_value=1)
@@ -131,10 +131,13 @@ class FeedsRequestSerializer(serializers.Serializer):
         feed_types = parse_feed_types(feed_type)
         if not feed_types:
             raise serializers.ValidationError("Invalid feed_type: must not be empty")
+        valid_feed_types = self.context["valid_feed_types"]
+        if len(feed_types) > len(valid_feed_types):
+            raise serializers.ValidationError(f"Invalid feed_type: too many types specified (max {len(valid_feed_types)})")
         if "all" in feed_types and len(feed_types) > 1:
             raise serializers.ValidationError("Invalid feed_type: 'all' cannot be combined with other feed types")
         for ft in feed_types:
-            feed_type_validation(ft, self.context["valid_feed_types"])
+            feed_type_validation(ft, valid_feed_types)
         return feed_type
 
     def validate_ordering(self, ordering):
