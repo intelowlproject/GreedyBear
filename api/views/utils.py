@@ -14,7 +14,7 @@ from django.http import HttpResponse, HttpResponseBadRequest, StreamingHttpRespo
 from rest_framework import status
 from rest_framework.response import Response
 
-from api.serializers import FeedsRequestSerializer
+from api.serializers import FeedsRequestSerializer, parse_feed_types
 from greedybear.consts import CACHE_KEY_GREEDYBEAR_NEWS, CACHE_TIMEOUT_SECONDS, RSS_FEED_URL
 from greedybear.models import IOC, GeneralHoneypot, Statistics
 
@@ -70,10 +70,7 @@ class FeedRequestParams:
         """
         feed_type_str = query_params.get("feed_type", "all").lower()
         self.feed_type = feed_type_str
-        feed_types = [ft.strip() for ft in feed_type_str.split(",") if ft.strip()]
-        if "all" in feed_types and len(feed_types) > 1:
-            feed_types = [ft for ft in feed_types if ft != "all"]
-        self.feed_types = feed_types
+        self.feed_types = parse_feed_types(feed_type_str)
         self.attack_type = query_params.get("attack_type", "all").lower()
         self.ioc_type = query_params.get("ioc_type", "all").lower()
         self.max_age = query_params.get("max_age", "3")

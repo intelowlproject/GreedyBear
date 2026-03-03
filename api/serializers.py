@@ -57,6 +57,18 @@ class EnrichmentSerializer(serializers.Serializer):
         return data
 
 
+def parse_feed_types(feed_type_str: str) -> list:
+    """Split a comma-separated feed type string into a stripped list of individual feed types.
+
+    Args:
+        feed_type_str (str): Comma-separated feed type string (e.g. "cowrie,adbhoney").
+
+    Returns:
+        list[str]: List of non-empty, stripped feed type tokens.
+    """
+    return [ft.strip() for ft in feed_type_str.split(",") if ft.strip()]
+
+
 def feed_type_validation(feed_type: str, valid_feed_types: frozenset) -> str:
     """Validates that a given feed type exists in the set of valid feed types.
 
@@ -116,7 +128,9 @@ class FeedsRequestSerializer(serializers.Serializer):
 
     def validate_feed_type(self, feed_type):
         logger.debug(f"FeedsRequestSerializer - validation feed_type: '{feed_type}'")
-        feed_types = [ft.strip() for ft in feed_type.split(",") if ft.strip()]
+        feed_types = parse_feed_types(feed_type)
+        if not feed_types:
+            raise serializers.ValidationError("Invalid feed_type: must not be empty")
         if "all" in feed_types and len(feed_types) > 1:
             raise serializers.ValidationError("Invalid feed_type: 'all' cannot be combined with other feed types")
         for ft in feed_types:
