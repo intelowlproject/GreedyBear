@@ -46,3 +46,28 @@ class BaseExtractionStrategy(metaclass=ABCMeta):
             hits: List of Elasticsearch hit dictionaries to process.
         """
         pass
+
+    def _add_fks(self, scanner_ip: str, hostname: str) -> None:
+        """
+        Link related IOCs bidirectionally (scanner IP <-> hostname).
+
+        Args:
+            scanner_ip: Scanner IP address.
+            hostname: Hostname to link with scanner.
+        """
+        scanner_ip_instance = self.ioc_repo.get_ioc_by_name(scanner_ip)
+        hostname_instance = self.ioc_repo.get_ioc_by_name(hostname)
+
+        if not scanner_ip_instance or not hostname_instance:
+            self.log.warning(
+                f"Cannot link IOCs - missing from database: "
+                f"scanner_ip={scanner_ip_instance is not None}, "
+                f"hostname={hostname_instance is not None}"
+            )
+            return
+
+        scanner_ip_instance.related_ioc.add(hostname_instance)
+        self.ioc_repo.save(scanner_ip_instance)
+
+        hostname_instance.related_ioc.add(scanner_ip_instance)
+        self.ioc_repo.save(hostname_instance)
