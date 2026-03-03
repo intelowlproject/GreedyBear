@@ -189,7 +189,7 @@ def get_queryset(request, feed_params, valid_feed_types, is_aggregated=False, se
     # aggregated feeds calculate metrics differently and need all rows to be accurate.
     if not is_aggregated:
         iocs = iocs.filter(general_honeypot__active=True)
-        iocs = iocs.annotate(honeypots=ArrayAgg("general_honeypot__name"))
+        iocs = iocs.annotate(honeypots=ArrayAgg("general_honeypot__name", distinct=True))
         iocs = iocs.order_by(feed_params.ordering)
         iocs = iocs[: int(feed_params.feed_size)]
 
