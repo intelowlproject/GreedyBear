@@ -1,6 +1,7 @@
 # This file is a part of GreedyBear https://github.com/honeynet/GreedyBear
 # See the file 'LICENSE' for copying permission.
 import re
+from datetime import datetime
 from urllib.parse import unquote, urlparse
 
 from greedybear.consts import PAYLOAD_REQUEST, SCANNER
@@ -219,7 +220,17 @@ class TannerExtractionStrategy(BaseExtractionStrategy):
         urls = re.findall(r"(?:https?|ftp)://[^\s'\"<>]+", request_text, re.IGNORECASE)
         seen_hostnames = set()
 
+        timestamp_str = hit.get("@timestamp")
+        hit_time = datetime.fromisoformat(timestamp_str) if timestamp_str else None
+
         for url in urls:
+            # Strip trailing characters that are almost never unencoded at the end of a URL
+            url = url.rstrip("),;")
+            # If there is no query string, any '&' must be an outer request parameter
+            # separator (not part of the embedded URL's own query string) — strip it.
+            if "?" not in url:
+                url = url.split("&")[0]
+
             try:
                 hostname = urlparse(url).hostname
             except (ValueError, AttributeError):
@@ -231,11 +242,15 @@ class TannerExtractionStrategy(BaseExtractionStrategy):
 
             self.log.info(f"found RFI hostname {hostname} from {url} in request from {scanner_ip}")
 
-            ioc = IOC(
-                name=hostname,
-                type=get_ioc_type(hostname),
-                related_urls=[url],
-            )
+            ioc_kwargs: dict = {
+                "name": hostname,
+                "type": get_ioc_type(hostname),
+                "related_urls": [url],
+            }
+            if hit_time is not None:
+                ioc_kwargs["first_seen"] = hit_time
+                ioc_kwargs["last_seen"] = hit_time
+            ioc = IOC(**ioc_kwargs)
             sensor = hit.get("_sensor")
             if sensor:
                 ioc._sensors_to_add = [sensor]
