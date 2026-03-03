@@ -60,9 +60,7 @@ class BaseExtractionStrategy(metaclass=ABCMeta):
 
         if not scanner_ip_instance or not hostname_instance:
             self.log.warning(
-                f"Cannot link IOCs - missing from database: "
-                f"scanner_ip={scanner_ip_instance is not None}, "
-                f"hostname={hostname_instance is not None}"
+                f"Cannot link IOCs - missing from database: scanner_ip={scanner_ip_instance is not None}, hostname={hostname_instance is not None}"
             )
             return
 

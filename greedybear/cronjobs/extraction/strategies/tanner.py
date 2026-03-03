@@ -99,19 +99,14 @@ class TannerExtractionStrategy(BaseExtractionStrategy):
         self._get_scanners(hits)
         self._classify_attacks(hits)
         self.log.info(
-            f"added {len(self.ioc_records)} scanners, "
-            f"{self.attack_tags_added} attack tags, "
-            f"{self.rfi_hostnames_added} RFI hostnames "
-            f"from {self.honeypot}"
+            f"added {len(self.ioc_records)} scanners, {self.attack_tags_added} attack tags, {self.rfi_hostnames_added} RFI hostnames from {self.honeypot}"
         )
 
     def _get_scanners(self, hits: list[dict]) -> None:
         """Extract scanner IPs from hits."""
         for ioc in iocs_from_hits(hits):
             self.log.info(f"found IP {ioc.name} by honeypot {self.honeypot}")
-            ioc_record = self.ioc_processor.add_ioc(
-                ioc, attack_type=SCANNER, general_honeypot_name=TANNER_HONEYPOT
-            )
+            ioc_record = self.ioc_processor.add_ioc(ioc, attack_type=SCANNER, general_honeypot_name=TANNER_HONEYPOT)
             if ioc_record:
                 self.ioc_records.append(ioc_record)
                 threatfox_submission(ioc_record, ioc.related_urls, self.log)
@@ -185,11 +180,7 @@ class TannerExtractionStrategy(BaseExtractionStrategy):
         Returns:
             List of matched attack type keys (e.g., ["sqli", "xss"]).
         """
-        return [
-            attack_type
-            for attack_type, pattern in TANNER_ATTACK_PATTERNS.items()
-            if pattern.search(text)
-        ]
+        return [attack_type for attack_type, pattern in TANNER_ATTACK_PATTERNS.items() if pattern.search(text)]
 
     def _add_attack_tags(self, ioc_record: IOC, attack_types: list[str]) -> None:
         """
@@ -211,9 +202,7 @@ class TannerExtractionStrategy(BaseExtractionStrategy):
             )
             if created:
                 self.attack_tags_added += 1
-                self.log.info(
-                    f"tagged {ioc_record.name} with attack_type={attack_type}"
-                )
+                self.log.info(f"tagged {ioc_record.name} with attack_type={attack_type}")
 
     def _extract_rfi_hostnames(self, hit: dict, scanner_ip: str, request_text: str) -> None:
         """
@@ -240,9 +229,7 @@ class TannerExtractionStrategy(BaseExtractionStrategy):
                 continue
             seen_hostnames.add(hostname)
 
-            self.log.info(
-                f"found RFI hostname {hostname} from {url} in request from {scanner_ip}"
-            )
+            self.log.info(f"found RFI hostname {hostname} from {url} in request from {scanner_ip}")
 
             ioc = IOC(
                 name=hostname,
@@ -253,9 +240,7 @@ class TannerExtractionStrategy(BaseExtractionStrategy):
             if sensor:
                 ioc._sensors_to_add = [sensor]
 
-            ioc_record = self.ioc_processor.add_ioc(
-                ioc, attack_type=PAYLOAD_REQUEST, general_honeypot_name=TANNER_HONEYPOT
-            )
+            ioc_record = self.ioc_processor.add_ioc(ioc, attack_type=PAYLOAD_REQUEST, general_honeypot_name=TANNER_HONEYPOT)
             if ioc_record:
                 self.rfi_hostnames_added += 1
                 threatfox_submission(ioc_record, ioc.related_urls, self.log)
