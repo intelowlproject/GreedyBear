@@ -2,7 +2,7 @@
 # See the file 'LICENSE' for copying permission.
 import re
 from datetime import datetime
-from urllib.parse import unquote, urlparse
+from urllib.parse import unquote, unquote_plus, urlparse
 
 from greedybear.consts import PAYLOAD_REQUEST, SCANNER
 from greedybear.cronjobs.extraction.strategies import BaseExtractionStrategy
@@ -122,6 +122,10 @@ class TannerExtractionStrategy(BaseExtractionStrategy):
         Args:
             hits: List of Elasticsearch hit documents.
         """
+        # Seed cache from IOC records already loaded by _get_scanners to avoid
+        # repeated DB lookups for the same scanner IP across many hits.
+        ioc_cache: dict[str, object] = {ioc.name: ioc for ioc in self.ioc_records}
+
         for hit in hits:
             scanner_ip = hit.get("src_ip")
             if not scanner_ip:
@@ -136,8 +140,12 @@ class TannerExtractionStrategy(BaseExtractionStrategy):
             if not attack_types:
                 continue
 
-            # Find the IOC record for this scanner to attach tags
-            ioc_record = self.ioc_repo.get_ioc_by_name(scanner_ip)
+            # Find the IOC record for this scanner to attach tags.
+            # Use cache to avoid one DB query per hit; fall back to the repo
+            # for IPs not already loaded by _get_scanners.
+            if scanner_ip not in ioc_cache:
+                ioc_cache[scanner_ip] = self.ioc_repo.get_ioc_by_name(scanner_ip)
+            ioc_record = ioc_cache[scanner_ip]
             if not ioc_record:
                 continue
 
@@ -161,11 +169,19 @@ class TannerExtractionStrategy(BaseExtractionStrategy):
 
         url = hit.get("url", "") or hit.get("path", "")
         if url:
-            parts.append(unquote(url))
+            # Decode %xx sequences in the path and also decode + as space in the
+            # query string (application/x-www-form-urlencoded convention), so
+            # payloads like UNION+SELECT are normalised before regex matching.
+            parsed = urlparse(url)
+            decoded = unquote(parsed.path)
+            if parsed.query:
+                decoded += "?" + unquote_plus(parsed.query)
+            parts.append(decoded)
 
         body = hit.get("post_data", "") or hit.get("body", "")
         if body:
-            parts.append(unquote(str(body)))
+            # POST form bodies use + as space; unquote_plus handles both.
+            parts.append(unquote_plus(str(body)))
 
         return "\n".join(parts)
 

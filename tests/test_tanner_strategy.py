@@ -202,6 +202,20 @@ class TestTannerRequestTextExtraction(ExtractionTestCase):
         text = self.strategy._extract_request_text(hit)
         self.assertIn("<script>alert(1)</script>", text)
 
+    def test_plus_in_query_decoded_as_space(self):
+        # + in a URL query string encodes a space; must be normalised so
+        # regex patterns using \s+ match (e.g. UNION+SELECT → UNION SELECT).
+        hit = {"url": "/page?id=UNION+SELECT+1", "src_ip": "1.2.3.4"}
+        text = self.strategy._extract_request_text(hit)
+        self.assertIn("UNION SELECT 1", text)
+
+    def test_plus_in_body_decoded_as_space(self):
+        # form-encoded POST bodies also use + as a space separator.
+        hit = {"url": "/login", "post_data": "user=admin+evil&cmd=id%3Bwhoami", "src_ip": "1.2.3.4"}
+        text = self.strategy._extract_request_text(hit)
+        self.assertIn("user=admin evil", text)
+        self.assertIn("cmd=id;whoami", text)
+
     def test_empty_hit_returns_empty(self):
         hit = {"src_ip": "1.2.3.4"}
         text = self.strategy._extract_request_text(hit)
@@ -231,6 +245,25 @@ class TestTannerAttackClassification(ExtractionTestCase):
         mock_tag_objects.get_or_create.return_value = (Mock(), True)
 
         hits = [{"src_ip": "1.2.3.4", "url": "/page?id=1 UNION SELECT * FROM users"}]
+        self.strategy.extract_from_hits(hits)
+
+        mock_tag_objects.get_or_create.assert_any_call(
+            ioc=mock_ioc_record,
+            key="attack_type",
+            value="sqli",
+            source=TANNER_SOURCE,
+        )
+
+    @patch("greedybear.cronjobs.extraction.strategies.tanner.iocs_from_hits")
+    @patch("greedybear.cronjobs.extraction.strategies.tanner.Tag.objects")
+    def test_sqli_plus_encoded_detected(self, mock_tag_objects, mock_iocs_from_hits):
+        """UNION+SELECT (+ as space in query string) must be detected as SQLi."""
+        mock_iocs_from_hits.return_value = []
+        mock_ioc_record = self._create_mock_ioc("1.2.3.4")
+        self.mock_ioc_repo.get_ioc_by_name.return_value = mock_ioc_record
+        mock_tag_objects.get_or_create.return_value = (Mock(), True)
+
+        hits = [{"src_ip": "1.2.3.4", "url": "/page?id=1+UNION+SELECT+*+FROM+users"}]
         self.strategy.extract_from_hits(hits)
 
         mock_tag_objects.get_or_create.assert_any_call(
@@ -560,7 +593,7 @@ class TestTannerAddFks(ExtractionTestCase):
 
         scanner.related_ioc.add.assert_called_once_with(hostname)
         hostname.related_ioc.add.assert_called_once_with(scanner)
-        self.assertEqual(self.mock_ioc_repo.save.call_count, 2)
+        self.assertEqual(self.mock_ioc_repo.save.call_count, 0)
 
     def test_add_fks_scanner_none(self):
         hostname = self._create_mock_ioc("evil.com", ioc_type="domain")

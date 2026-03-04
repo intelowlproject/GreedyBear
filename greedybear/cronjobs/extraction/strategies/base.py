@@ -65,7 +65,4 @@ class BaseExtractionStrategy(metaclass=ABCMeta):
             return
 
         scanner_ip_instance.related_ioc.add(hostname_instance)
-        self.ioc_repo.save(scanner_ip_instance)
-
         hostname_instance.related_ioc.add(scanner_ip_instance)
-        self.ioc_repo.save(hostname_instance)
