@@ -95,4 +95,64 @@ describe("Feeds table details popover", () => {
       await screen.findByText(/Expected Interactions:\s*13/i),
     ).toBeInTheDocument();
   });
+
+  test("shows country in popover details when country is provided", async () => {
+    const user = userEvent.setup();
+    const detailsColumn = feedsTableColumns.find(
+      (column) => column.accessor === "details",
+    );
+
+    const row = {
+      id: "1",
+      original: {
+        recurrence_probability: 0.5,
+        expected_interactions: 5,
+        interaction_count: 4,
+        destination_port_count: 1,
+        login_attempts: 0,
+        asn: "AS456",
+        ip_reputation: "malicious",
+        country: "United States",
+      },
+    };
+
+    const DetailsCell = detailsColumn.Cell;
+    render(<DetailsCell row={row} />);
+
+    const detailsButton = screen.getByLabelText(/view details/i);
+    await user.click(detailsButton);
+
+    expect(
+      await screen.findByText(/Country:\s*United States/i),
+    ).toBeInTheDocument();
+  });
+
+  test("shows dash for country in popover when country is not provided", async () => {
+    const user = userEvent.setup();
+    const detailsColumn = feedsTableColumns.find(
+      (column) => column.accessor === "details",
+    );
+
+    const row = {
+      id: "2",
+      original: {
+        recurrence_probability: null,
+        expected_interactions: null,
+        interaction_count: null,
+        destination_port_count: null,
+        login_attempts: null,
+        asn: null,
+        ip_reputation: null,
+        country: null,
+      },
+    };
+
+    const DetailsCell = detailsColumn.Cell;
+    render(<DetailsCell row={row} />);
+
+    const detailsButton = screen.getByLabelText(/view details/i);
+    await user.click(detailsButton);
+
+    expect(await screen.findByText(/Country:\s*-/i)).toBeInTheDocument();
+  });
 });
