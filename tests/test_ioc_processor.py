@@ -242,7 +242,7 @@ class TestMergeIocs(ExtractionTestCase):
 
         self.assertEqual(result.last_seen, new_time)
         self.assertEqual(result.ip_reputation, "new")
-        self.assertEqual(result.asn, 23)
+        self.assertEqual(result.autonomous_system.asn, 23)
 
     def test_handles_empty_urls_and_ports(self):
         existing = self._create_mock_ioc(related_urls=[], destination_ports=[])

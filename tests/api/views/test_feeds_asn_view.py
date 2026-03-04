@@ -1,7 +1,7 @@
 from django.utils import timezone
 from rest_framework.test import APIClient
 
-from greedybear.models import IOC, GeneralHoneypot
+from greedybear.models import IOC, AutonomousSystem, GeneralHoneypot
 from tests import CustomTestCase
 
 
@@ -18,10 +18,14 @@ class FeedsASNViewTestCase(CustomTestCase):
         cls.high_asn = "13335"
         cls.low_asn = "16276"
 
+        cls.as_high = AutonomousSystem.objects.create(asn=int(cls.high_asn), name="CLOUDFLARE")
+
+        cls.as_low = AutonomousSystem.objects.create(asn=int(cls.low_asn), name="OVH")
+
         cls.ioc_high1 = IOC.objects.create(
             name="high1.example.com",
             type="ip",
-            asn=cls.high_asn,
+            autonomous_system=cls.as_high,
             attack_count=15,
             interaction_count=30,
             login_attempts=5,
@@ -30,12 +34,11 @@ class FeedsASNViewTestCase(CustomTestCase):
             expected_interactions=20.0,
         )
         cls.ioc_high1.general_honeypot.add(cls.testpot1, cls.testpot2)
-        cls.ioc_high1.save()
 
         cls.ioc_high2 = IOC.objects.create(
             name="high2.example.com",
             type="ip",
-            asn=cls.high_asn,
+            autonomous_system=cls.as_high,
             attack_count=5,
             interaction_count=10,
             login_attempts=2,
@@ -44,12 +47,11 @@ class FeedsASNViewTestCase(CustomTestCase):
             expected_interactions=8.0,
         )
         cls.ioc_high2.general_honeypot.add(cls.testpot1, cls.testpot2)
-        cls.ioc_high2.save()
 
         cls.ioc_low = IOC.objects.create(
             name="low.example.com",
             type="ip",
-            asn=cls.low_asn,
+            autonomous_system=cls.as_low,
             attack_count=2,
             interaction_count=5,
             login_attempts=1,
@@ -58,7 +60,6 @@ class FeedsASNViewTestCase(CustomTestCase):
             expected_interactions=3.0,
         )
         cls.ioc_low.general_honeypot.add(cls.testpot1, cls.testpot2)
-        cls.ioc_low.save()
 
     def setUp(self):
         self.client = APIClient()
@@ -81,7 +82,7 @@ class FeedsASNViewTestCase(CustomTestCase):
         self.assertIsNotNone(high_item)
 
         # getting all IOCs for high ASN from the DB
-        high_iocs = IOC.objects.filter(asn=self.high_asn)
+        high_iocs = IOC.objects.filter(autonomous_system__asn=self.high_asn)
 
         self.assertEqual(high_item["ioc_count"], high_iocs.count())
         self.assertEqual(high_item["total_attack_count"], sum(i.attack_count for i in high_iocs))
@@ -182,3 +183,40 @@ class FeedsASNViewTestCase(CustomTestCase):
         results = response.json()
         # aggregation should return all ASNs regardless of feed_size
         self.assertEqual(len(results), 2)
+
+    def test_asn_feed_includes_as_name(self):
+        response = self.client.get(self.url)
+        self.assertEqual(response.status_code, 200)
+        results = self._get_results(response)
+
+        high_item = next((item for item in results if str(item["asn"]) == self.high_asn), None)
+
+        self.assertIsNotNone(high_item)
+        self.assertIn("as_name", high_item)
+        self.assertEqual(high_item["as_name"], "CLOUDFLARE")
+
+    def test_asn_feed_with_empty_as_name(self):
+        """
+        Ensure ASN feed works even if the AS name is empty,
+        """
+        # Temporarily blank the name of the low AS
+        original_name = self.as_low.name
+        self.as_low.name = ""
+        self.as_low.save(update_fields=["name"])
+
+        try:
+            response = self.client.get(self.url)
+            self.assertEqual(response.status_code, 200)
+            results = self._get_results(response)
+
+            # Find the low ASN in results
+            item = next((r for r in results if str(r["asn"]) == self.low_asn), None)
+            self.assertIsNotNone(item)
+
+            # as_name should exist and be blank
+            self.assertIn("as_name", item)
+            self.assertEqual(item["as_name"], "")
+        finally:
+            # Restore original name
+            self.as_low.name = original_name
+            self.as_low.save(update_fields=["name"])

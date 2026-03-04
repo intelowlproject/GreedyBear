@@ -255,13 +255,13 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
                 "scanner",
                 "payload_request",
                 "ip_reputation",
-                "asn",
                 "login_attempts",
                 "recurrence_probability",
                 "expected_interactions",
                 "honeypots",  # Always needed to calculate feed_type
                 "destination_ports",  # Always needed to calculate destination_port_count
                 "attacker_country",
+                "autonomous_system",
             }
 
             # Additional verbose fields
@@ -283,6 +283,7 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
                     "last_seen": ioc["last_seen"].strftime("%Y-%m-%d"),
                     "feed_type": ioc_feed_type,
                     "destination_port_count": len(ioc.get("destination_ports", [])),
+                    "asn": ioc.get("autonomous_system", ""),
                 }
 
                 # Remove verbose-only fields from response when not in verbose mode
@@ -330,7 +331,7 @@ def asn_aggregated_queryset(iocs_qs, request, feed_params):
     """
     asn_filter = request.query_params.get("asn")
     if asn_filter:
-        iocs_qs = iocs_qs.filter(asn=asn_filter)
+        iocs_qs = iocs_qs.filter(autonomous_system__asn=asn_filter)
 
     # default ordering is overridden here because of serializer default(-last-seen) behaviour
     ordering = feed_params.ordering
@@ -338,8 +339,11 @@ def asn_aggregated_queryset(iocs_qs, request, feed_params):
         ordering = "-ioc_count"
 
     numeric_agg = (
-        iocs_qs.exclude(asn__isnull=True)
-        .values("asn")
+        iocs_qs.exclude(autonomous_system__isnull=True)
+        .values(
+            asn=F("autonomous_system__asn"),
+            as_name=F("autonomous_system__name"),
+        )
         .annotate(
             ioc_count=Count("id"),
             total_attack_count=Sum("attack_count"),
@@ -354,9 +358,9 @@ def asn_aggregated_queryset(iocs_qs, request, feed_params):
     )
 
     honeypot_agg = (
-        iocs_qs.exclude(asn__isnull=True)
+        iocs_qs.exclude(autonomous_system__isnull=True)
         .filter(general_honeypot__active=True)
-        .values("asn")
+        .values(asn=F("autonomous_system__asn"))
         .annotate(
             honeypots=ArrayAgg(
                 "general_honeypot__name",

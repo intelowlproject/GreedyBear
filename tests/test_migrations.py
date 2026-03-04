@@ -119,3 +119,52 @@ class TestRemoveUnusedLog4pot(MigrationTestCase):
             hp_new.objects.filter(name="Log4pot").exists(),
             "Log4pot with IOCs should NOT be deleted",
         )
+
+    @tag("migration")
+    class TestIocAsnToAutonomousSystem(MigrationTestCase):
+        """Tests migration from IOC.asn -> IOC.autonomous_system."""
+
+        migrate_from = "0039_ioc_attacker_country_sensor_country_and_more"
+        migrate_to = "0040_autonomoussystem_remove_ioc_asn_and_more"
+
+        def test_asn_migrated_to_autonomous_system(self):
+            ioc_old = self.old_state.apps.get_model(self.app_name, "IOC")
+            self.old_state.apps.get_model(self.app_name, "AutonomousSystem")
+
+            # Create IOCs with ASN
+            ioc1 = ioc_old.objects.create(asn=12345)
+            ioc2 = ioc_old.objects.create(asn=67890)
+            ioc3 = ioc_old.objects.create(asn=None)  # Should stay null
+
+            # Apply migration
+            new_state = self.apply_tested_migration()
+            ioc_new = new_state.apps.get_model(self.app_name, "IOC")
+            as_new = new_state.apps.get_model(self.app_name, "AutonomousSystem")
+
+            # Check autonomous_system FK exists and points correctly
+            ioc1_new = ioc_new.objects.get(pk=ioc1.pk)
+            ioc2_new = ioc_new.objects.get(pk=ioc2.pk)
+            ioc3_new = ioc_new.objects.get(pk=ioc3.pk)
+
+            self.assertIsNotNone(ioc1_new.autonomous_system)
+            self.assertEqual(ioc1_new.autonomous_system.asn, 12345)
+
+            self.assertIsNotNone(ioc2_new.autonomous_system)
+            self.assertEqual(ioc2_new.autonomous_system.asn, 67890)
+
+            # ioc3 had no ASN, so FK should be null
+            self.assertIsNone(ioc3_new.autonomous_system)
+
+            # Ensure AutonomousSystem table has correct records
+            self.assertEqual(as_new.objects.count(), 2)
+            asns = set(as_new.objects.values_list("asn", flat=True))
+            self.assertSetEqual(asns, {12345, 67890})
+
+        def test_duplicate_asns_with_different_names(self):
+            """Ensure migration does not duplicate ASNs even if names differ."""
+            ioc_old = self.old_state.apps.get_model(self.app_name, "IOC")
+            ioc_old.objects.create(asn=12345)
+            ioc_old.objects.create(asn=12345)  # same ASN, maybe had a different name
+            new_state = self.apply_tested_migration()
+            as_new = new_state.apps.get_model(self.app_name, "AutonomousSystem")
+            self.assertEqual(as_new.objects.count(), 1)  # only one record created
