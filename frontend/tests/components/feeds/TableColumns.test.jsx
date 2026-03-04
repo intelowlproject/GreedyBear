@@ -112,7 +112,7 @@ describe("Feeds table details popover", () => {
         login_attempts: 0,
         asn: "AS456",
         ip_reputation: "malicious",
-        country: "United States",
+        attacker_country: "United States",
       },
     };
 
@@ -143,7 +143,7 @@ describe("Feeds table details popover", () => {
         login_attempts: null,
         asn: null,
         ip_reputation: null,
-        country: null,
+        attacker_country: null,
       },
     };
 
