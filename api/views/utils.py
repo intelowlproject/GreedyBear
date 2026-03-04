@@ -195,6 +195,14 @@ def get_queryset(request, feed_params, valid_feed_types, is_aggregated=False, se
     if not is_aggregated:
         iocs = iocs.filter(general_honeypot__active=True)
         iocs = iocs.annotate(honeypots=ArrayAgg("general_honeypot__name", distinct=True))
+        iocs = iocs.annotate(
+            tags_json=ArrayAgg(
+                JSONObject(key=F("tags__key"), value=F("tags__value"), source=F("tags__source")),
+                filter=Q(tags__isnull=False),
+                default=Value([]),
+                distinct=True,
+            )
+        )
         iocs = iocs.order_by(feed_params.ordering)
         iocs = iocs[: int(feed_params.feed_size)]
 
@@ -280,42 +288,12 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
 
             required_fields = base_fields + verbose_only_fields if verbose else base_fields
 
-            # Annotate tags via a DB JOIN rather than a Python-level join.
-            # `tags_json` avoids conflicting with the `tags` reverse FK on IOC.
-            # For paginated (list) paths the queryset is already evaluated, so we
-            # run a second targeted query on the slice IDs instead.
-            tags_lookup: dict = {}
-            if isinstance(iocs, list):
-                ioc_ids = [ioc.id for ioc in iocs if hasattr(ioc, "id")]
-                if ioc_ids:
-                    tag_rows = (
-                        IOC.objects.filter(id__in=ioc_ids)
-                        .annotate(
-                            tags_json=ArrayAgg(
-                                JSONObject(key=F("tags__key"), value=F("tags__value"), source=F("tags__source")),
-                                filter=Q(tags__isnull=False),
-                                default=Value([]),
-                                distinct=True,  # prevent duplication from the honeypot JOIN
-                            )
-                        )
-                        .values("id", "tags_json")
-                    )
-                    tags_lookup = {row["id"]: row["tags_json"] for row in tag_rows}
-            else:
-                iocs = iocs.annotate(
-                    tags_json=ArrayAgg(
-                        JSONObject(key=F("tags__key"), value=F("tags__value"), source=F("tags__source")),
-                        filter=Q(tags__isnull=False),
-                        default=Value([]),
-                        distinct=True,  # prevent duplication from the honeypot JOIN
-                    )
-                )
-                required_fields = tuple(f if f != "tags" else "tags_json" for f in required_fields)
+            # `tags_json` is annotated in get_queryset to avoid conflicting with the `tags` reverse FK on IOC.
+            required_fields = tuple(f if f != "tags" else "tags_json" for f in required_fields)
 
-            # Generate dictionaries iterably to avoid holding both dicts and json_list in memory
             iocs_iter: object
             if isinstance(iocs, list):
-                iocs_iter = (ioc_as_dict(ioc, set(required_fields) | {"id"}) for ioc in iocs)  # id needed for tags_lookup
+                iocs_iter = (ioc_as_dict(ioc, set(required_fields)) for ioc in iocs)
             else:
                 iocs_iter = iocs.values(*required_fields).iterator(chunk_size=2000)
             for ioc in iocs_iter:
@@ -326,7 +304,7 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
                     "last_seen": ioc["last_seen"].strftime("%Y-%m-%d"),
                     "feed_type": ioc_feed_type,
                     "destination_port_count": len(ioc.get("destination_ports", [])),
-                    "tags": tags_lookup.get(ioc.get("id"), ioc.pop("tags_json", [])),
+                    "tags": ioc.pop("tags_json", []),
                 }
 
                 if not verbose:
