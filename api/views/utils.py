@@ -9,7 +9,8 @@ import requests
 from django.conf import settings
 from django.contrib.postgres.aggregates import ArrayAgg
 from django.core.cache import cache
-from django.db.models import Count, F, Max, Min, Q, Sum
+from django.db.models import Count, F, Max, Min, Q, Sum, Value
+from django.db.models.functions import JSONObject
 from django.http import HttpResponse, HttpResponseBadRequest, StreamingHttpResponse
 from rest_framework import status
 from rest_framework.response import Response
@@ -128,7 +129,7 @@ def get_valid_feed_types() -> frozenset[str]:
     return frozenset(feed_types)
 
 
-def get_queryset(request, feed_params, valid_feed_types, is_aggregated=False, serializer_class=FeedsRequestSerializer):
+def get_queryset(request, feed_params, valid_feed_types, is_aggregated=False, serializer_class=FeedsRequestSerializer, tag_key="", tag_value=""):
     """
     Build a queryset to filter IOC data based on the request parameters.
 
@@ -145,6 +146,8 @@ def get_queryset(request, feed_params, valid_feed_types, is_aggregated=False, se
             - Allows injecting a custom serializer to enforce rules for specific feed types
               (e.g., to restrict ordering fields or validation for specialized feeds).
             - Default: `FeedsRequestSerializer`.
+        tag_key (str, optional): Filter IOCs by tag key. Only passed from feeds_advanced.
+        tag_value (str, optional): Filter IOCs by tag value (case-insensitive substring). Only passed from feeds_advanced.
 
     Returns:
         QuerySet: The filtered queryset of IOC data.
@@ -174,6 +177,11 @@ def get_queryset(request, feed_params, valid_feed_types, is_aggregated=False, se
     if feed_params.include_reputation:
         query_dict["ip_reputation__in"] = feed_params.include_reputation
 
+    if tag_key:
+        query_dict["tags__key"] = tag_key[:128]  # Truncate to Tag.key max_length
+    if tag_value:
+        query_dict["tags__value__icontains"] = tag_value[:256]  # Truncate to Tag.value max_length
+
     iocs = IOC.objects.filter(**query_dict).exclude(ip_reputation__in=feed_params.exclude_reputation).annotate(value=F("name")).distinct()
 
     # apply feed type filter as union;
@@ -187,6 +195,17 @@ def get_queryset(request, feed_params, valid_feed_types, is_aggregated=False, se
     if not is_aggregated:
         iocs = iocs.filter(general_honeypot__active=True)
         iocs = iocs.annotate(honeypots=ArrayAgg("general_honeypot__name", distinct=True))
+        # Only annotate tags metadata when the response format needs it (e.g. JSON),
+        # to avoid unnecessary joins and aggregation work for txt/csv feeds.
+        if getattr(feed_params, "format", "").lower() == "json":
+            iocs = iocs.annotate(
+                tags_json=ArrayAgg(
+                    JSONObject(key=F("tags__key"), value=F("tags__value"), source=F("tags__source")),
+                    filter=Q(tags__isnull=False),
+                    default=Value([]),
+                    distinct=True,
+                )
+            )
         iocs = iocs.order_by(feed_params.ordering)
         iocs = iocs[: int(feed_params.feed_size)]
 
@@ -246,7 +265,7 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
             json_list = []
 
             # Base fields always returned
-            base_fields = {
+            base_fields = (
                 "value",
                 "first_seen",
                 "last_seen",
@@ -259,23 +278,34 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
                 "login_attempts",
                 "recurrence_probability",
                 "expected_interactions",
-                "honeypots",  # Always needed to calculate feed_type
-                "destination_ports",  # Always needed to calculate destination_port_count
+                "honeypots",  # used to build feed_type; removed from response
+                "destination_ports",  # used to calculate destination_port_count
                 "attacker_country",
-            }
+                "tags",
+            )
 
-            # Additional verbose fields
-            verbose_only_fields = {
+            verbose_only_fields = (
                 "days_seen",
                 "firehol_categories",
-            }
+            )
 
-            # Fetch fields from database (always include honeypots and destination_ports)
-            required_fields = base_fields | verbose_only_fields if verbose else base_fields
+            required_fields = base_fields + verbose_only_fields if verbose else base_fields
 
-            # Collect values; `honeypots` will contain the list of associated honeypot names
-            iocs = (ioc_as_dict(ioc, required_fields) for ioc in iocs) if isinstance(iocs, list) else iocs.values(*required_fields)
-            for ioc in iocs:
+            # `tags_json` is annotated in get_queryset (only for JSON format) to avoid conflicting
+            # with the `tags` reverse FK on IOC.  When the queryset comes from a repository method
+            # that does not annotate `tags_json` (e.g. the ML scoring path), exclude the field.
+            if isinstance(iocs, list):
+                has_tags_annotation = bool(iocs) and hasattr(iocs[0], "tags_json")
+            else:
+                has_tags_annotation = "tags_json" in getattr(iocs, "query", type("", (), {"annotations": {}})()).annotations
+            required_fields = tuple(("tags_json" if f == "tags" else f) for f in required_fields if f != "tags" or has_tags_annotation)
+
+            iocs_iter: object
+            if isinstance(iocs, list):
+                iocs_iter = (ioc_as_dict(ioc, set(required_fields)) for ioc in iocs)
+            else:
+                iocs_iter = iocs.values(*required_fields).iterator(chunk_size=2000)
+            for ioc in iocs_iter:
                 ioc_feed_type = [hp.lower() for hp in ioc.get("honeypots", []) if hp]
 
                 data_ = ioc | {
@@ -283,20 +313,17 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
                     "last_seen": ioc["last_seen"].strftime("%Y-%m-%d"),
                     "feed_type": ioc_feed_type,
                     "destination_port_count": len(ioc.get("destination_ports", [])),
+                    "tags": ioc.pop("tags_json", []),
                 }
 
-                # Remove verbose-only fields from response when not in verbose mode
                 if not verbose:
-                    # Remove destination_ports array from response
                     data_.pop("destination_ports", None)
 
-                # Always remove honeypots field as it's redundant with feed_type
                 data_.pop("honeypots", None)
+                data_.pop("id", None)
 
-                # Skip validation - data_ is constructed internally and matches the API contract
                 json_list.append(data_)
 
-            # check if sorting the results by feed_type
             if feed_params.feed_type_sorting is not None:
                 logger.info("Return feeds sorted by feed_type field")
                 json_list = sorted(
