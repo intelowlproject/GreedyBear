@@ -2,6 +2,7 @@ import React from "react";
 import { Container, Button, Col, Label, FormGroup, Row } from "reactstrap";
 import { VscJson } from "react-icons/vsc";
 import { TbLicense } from "react-icons/tb";
+import { MdFilterAltOff } from "react-icons/md";
 import { useLocation } from "react-router-dom";
 import { FEEDS_BASE_URI, GENERAL_HONEYPOT_URI } from "../../constants/api";
 import {
@@ -114,6 +115,12 @@ export default function Feeds() {
   // feedsData is lifted from FeedsTable so we can show the count in the header
   const [feedsData, setFeedsData] = React.useState(null);
 
+  const isDefault =
+    feedsState.tableParams.feed_type === DEFAULT_VALUES.feeds_type &&
+    feedsState.tableParams.attack_type === DEFAULT_VALUES.attack_type &&
+    feedsState.tableParams.ioc_type === DEFAULT_VALUES.ioc_type &&
+    feedsState.tableParams.prioritize === DEFAULT_VALUES.prioritize;
+
   // API to extract general honeypot
   const [honeypots, Loader] = useAxiosComponentLoader({
     url: `${GENERAL_HONEYPOT_URI}?onlyActive=true`,
@@ -191,8 +198,8 @@ export default function Feeds() {
                   {(formik) => {
                     return (
                       <Form>
-                        <FormGroup row>
-                          <Col sm={12} md={3}>
+                        <FormGroup row className="align-items-end">
+                          <Col sm={12} md>
                             <Label
                               className="form-control-label"
                               htmlFor="Feeds__feeds_type"
@@ -232,7 +239,7 @@ export default function Feeds() {
                               }}
                             />
                           </Col>
-                          <Col sm={12} md={3}>
+                          <Col sm={12} md>
                             <Label
                               className="form-control-label"
                               htmlFor="Feeds__attack_type"
@@ -259,7 +266,7 @@ export default function Feeds() {
                               }}
                             />
                           </Col>
-                          <Col sm={12} md={3}>
+                          <Col sm={12} md>
                             <Label
                               className="form-control-label"
                               htmlFor="Feeds__ioc_type"
@@ -286,7 +293,7 @@ export default function Feeds() {
                               }}
                             />
                           </Col>
-                          <Col sm={12} md={3}>
+                          <Col sm={12} md>
                             <Label
                               className="form-control-label"
                               htmlFor="Feeds__prioritize"
@@ -313,6 +320,21 @@ export default function Feeds() {
                               }}
                             />
                           </Col>
+                          <Col sm={12} md="auto">
+                            <Button
+                              color="primary"
+                              outline
+                              disabled={isDefault}
+                              title="Reset filters"
+                              aria-label="Reset filters"
+                              onClick={() => {
+                                formikRef.current?.resetForm();
+                                onSubmit(DEFAULT_VALUES);
+                              }}
+                            >
+                              <MdFilterAltOff />
+                            </Button>
+                          </Col>
                         </FormGroup>
                       </Form>
                     );
@@ -321,13 +343,8 @@ export default function Feeds() {
               )}
             />
           </Col>
-          <Col
-            sm={12}
-            md={2}
-            className="d-flex justify-content-end align-items-end"
-          >
+          <Col sm={12} md="auto" className="d-flex align-items-end pb-3">
             <Button
-              className="mb-3"
               color="primary"
               outline
               href={feedsState.url}
