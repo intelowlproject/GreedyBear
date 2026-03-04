@@ -1,6 +1,12 @@
 # Required Secrets
 ENVIRONMENT=production
 DJANGO_SECRET=
+
+# Comma-separated list of allowed hostnames for Django's ALLOWED_HOSTS setting.
+# If not set, defaults to ["*"] (allows all hosts) with a security warning.
+# Example: DJANGO_ALLOWED_HOSTS=greedybear.example.com,api.example.com
+# DJANGO_ALLOWED_HOSTS=
+
 DB_HOST=postgres
 DB_PORT=5432
 DB_USER=user

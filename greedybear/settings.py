@@ -58,7 +58,19 @@ VERSION = os.environ.get("VITE_GREEDYBEAR_VERSION", "")
 CSRF_COOKIE_SAMESITE = "Strict"
 CSRF_COOKIE_HTTPONLY = True
 
-ALLOWED_HOSTS = ["*"]
+# Read DJANGO_ALLOWED_HOSTS from env (comma-separated).
+# Falls back to ["*"] for backward compatibility, but logs a warning in production.
+_allowed_hosts_env = os.environ.get("DJANGO_ALLOWED_HOSTS", "")
+if _allowed_hosts_env:
+    ALLOWED_HOSTS = [h.strip() for h in _allowed_hosts_env.split(",") if h.strip()]
+else:
+    ALLOWED_HOSTS = ["*"]
+    if not DEBUG:
+        logging.getLogger("greedybear").warning(
+            "DJANGO_ALLOWED_HOSTS is not set — defaulting to ['*']. "
+            "This is insecure for production. Set DJANGO_ALLOWED_HOSTS to a "
+            "comma-separated list of valid hostnames."
+        )
 
 # certego_saas
 HOST_URI = "http://localhost"
