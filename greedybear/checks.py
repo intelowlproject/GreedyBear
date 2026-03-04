@@ -12,10 +12,7 @@ def check_allowed_hosts_wildcard(app_configs, **kwargs):
         errors.append(
             Warning(
                 "ALLOWED_HOSTS contains a wildcard ('*').",
-                hint=(
-                    "Set the DJANGO_ALLOWED_HOSTS environment variable to a "
-                    "comma-separated list of valid hostnames for production."
-                ),
+                hint="Set the DJANGO_ALLOWED_HOSTS environment variable to a comma-separated list of valid hostnames for production.",
                 id="greedybear.W001",
             )
         )
