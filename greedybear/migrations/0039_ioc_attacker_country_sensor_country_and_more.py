@@ -4,23 +4,24 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
+
     dependencies = [
-        ("greedybear", "0038_add_tag_model"),
+        ('greedybear', '0038_add_tag_model'),
     ]
 
     operations = [
         migrations.AddField(
-            model_name="ioc",
-            name="attacker_country",
-            field=models.CharField(blank=True, default="", max_length=64),
+            model_name='ioc',
+            name='attacker_country',
+            field=models.CharField(blank=True, default='', max_length=64),
         ),
         migrations.AddField(
-            model_name="sensor",
-            name="country",
-            field=models.CharField(blank=True, default="", max_length=64),
+            model_name='sensor',
+            name='country',
+            field=models.CharField(blank=True, default='', max_length=64),
         ),
         migrations.AddIndex(
-            model_name="ioc",
-            index=models.Index(fields=["attacker_country"], name="greedybear__attacke_2b9c7d_idx"),
+            model_name='ioc',
+            index=models.Index(fields=['attacker_country'], name='greedybear__attacke_2b9c7d_idx'),
         ),
     ]
