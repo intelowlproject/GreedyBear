@@ -205,6 +205,7 @@ class ExtractionTestCase(CustomTestCase):
         last_seen=None,
         ip_reputation="",
         asn=1234,
+        firehol_categories=None,
     ):
         mock = Mock(spec=IOC)
         mock.name = name
@@ -219,6 +220,7 @@ class ExtractionTestCase(CustomTestCase):
         mock.login_attempts = login_attempts
         mock.last_seen = last_seen if last_seen is not None else datetime.now()
         mock.ip_reputation = ip_reputation
+        mock.firehol_categories = firehol_categories if firehol_categories is not None else []
         mock.number_of_days_seen = len(mock.days_seen)
 
         if asn is not None:
