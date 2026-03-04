@@ -62,6 +62,7 @@ class FeedsASNViewTestCase(CustomTestCase):
         cls.ioc_low.general_honeypot.add(cls.testpot1, cls.testpot2)
 
     def setUp(self):
+        super().setUp()
         self.client = APIClient()
         self.client.force_authenticate(user=self.superuser)
         self.url = "/api/feeds/asn/"

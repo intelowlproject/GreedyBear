@@ -136,7 +136,7 @@ const feedsTableColumns = [
               <a
                 href={`${INTELOWL_URL}/scan?observable_name=${encodeURIComponent(row.original.value)}`}
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 title={`Analyze ${row.original.value} on IntelOwl`}
               >
                 <img

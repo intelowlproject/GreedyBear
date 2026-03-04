@@ -6,6 +6,7 @@ from tests import CustomTestCase
 
 class FeedsAdvancedViewTestCase(CustomTestCase):
     def setUp(self):
+        super().setUp()
         self.client = APIClient()
         self.client.force_authenticate(user=self.superuser)
 
