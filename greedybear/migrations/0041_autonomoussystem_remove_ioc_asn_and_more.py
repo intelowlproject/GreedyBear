@@ -21,7 +21,7 @@ def migrate_asn_to_autonomous_system(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('greedybear', '0039_ioc_attacker_country_sensor_country_and_more'),
+        ('greedybear', '0040_alter_tag_key'),
     ]
 
     operations = [
