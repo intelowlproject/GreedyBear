@@ -178,9 +178,9 @@ def get_queryset(request, feed_params, valid_feed_types, is_aggregated=False, se
         query_dict["ip_reputation__in"] = feed_params.include_reputation
 
     if tag_key:
-        query_dict["tags__key"] = tag_key
+        query_dict["tags__key"] = tag_key[:128]  # Truncate to Tag.key max_length
     if tag_value:
-        query_dict["tags__value__icontains"] = tag_value
+        query_dict["tags__value__icontains"] = tag_value[:256]  # Truncate to Tag.value max_length
 
     iocs = IOC.objects.filter(**query_dict).exclude(ip_reputation__in=feed_params.exclude_reputation).annotate(value=F("name")).distinct()
 
@@ -292,8 +292,13 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
             required_fields = base_fields + verbose_only_fields if verbose else base_fields
 
             # `tags_json` is annotated in get_queryset (only for JSON format) to avoid conflicting
-            # with the `tags` reverse FK on IOC.
-            required_fields = tuple(f if f != "tags" else "tags_json" for f in required_fields)
+            # with the `tags` reverse FK on IOC.  When the queryset comes from a repository method
+            # that does not annotate `tags_json` (e.g. the ML scoring path), exclude the field.
+            if isinstance(iocs, list):
+                has_tags_annotation = bool(iocs) and hasattr(iocs[0], "tags_json")
+            else:
+                has_tags_annotation = "tags_json" in getattr(iocs, "query", type("", (), {"annotations": {}})()).annotations
+            required_fields = tuple(("tags_json" if f == "tags" else f) for f in required_fields if f != "tags" or has_tags_annotation)
 
             iocs_iter: object
             if isinstance(iocs, list):

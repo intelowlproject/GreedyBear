@@ -2,8 +2,7 @@ import logging
 
 from django.contrib.postgres.aggregates import ArrayAgg
 from django.db import IntegrityError
-from django.db.models import F, Q, Value
-from django.db.models.functions import JSONObject
+from django.db.models import F
 
 from greedybear.models import IOC, GeneralHoneypot
 
@@ -192,14 +191,6 @@ class IocRepository:
             .prefetch_related("general_honeypot")
             .annotate(value=F("name"))
             .annotate(honeypots=ArrayAgg("general_honeypot__name", distinct=True))
-            .annotate(
-                tags_json=ArrayAgg(
-                    JSONObject(key=F("tags__key"), value=F("tags__value"), source=F("tags__source")),
-                    filter=Q(tags__isnull=False),
-                    default=Value([]),
-                    distinct=True,
-                )
-            )
             .values()
         )
 
@@ -223,14 +214,6 @@ class IocRepository:
             .prefetch_related("general_honeypot")
             .annotate(value=F("name"))
             .annotate(honeypots=ArrayAgg("general_honeypot__name", distinct=True))
-            .annotate(
-                tags_json=ArrayAgg(
-                    JSONObject(key=F("tags__key"), value=F("tags__value"), source=F("tags__source")),
-                    filter=Q(tags__isnull=False),
-                    default=Value([]),
-                    distinct=True,
-                )
-            )
             .values()
         )
 
