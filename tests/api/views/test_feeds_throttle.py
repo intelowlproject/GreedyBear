@@ -1,5 +1,6 @@
 from unittest.mock import patch
 
+from django.core.cache import cache
 from rest_framework import status
 from rest_framework.test import APIClient
 
@@ -11,6 +12,7 @@ class FeedsThrottleTestCase(CustomTestCase):
 
     def setUp(self):
         super().setUp()
+        cache.clear()
         self.client = APIClient()
         self.client.force_authenticate(user=self.superuser)
 
@@ -60,3 +62,27 @@ class FeedsThrottleTestCase(CustomTestCase):
         """Verify feeds_asn succeeds when within the rate limit."""
         response = self.client.get("/api/feeds/asn/")
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_feeds_unauthenticated_access(self):
+        """Verify public feeds endpoints are accessible without authentication."""
+        client = APIClient()
+        response = client.get("/api/feeds/all/all/recent.json")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_feeds_pagination_unauthenticated_access(self):
+        """Verify public feeds pagination endpoint is accessible without authentication."""
+        client = APIClient()
+        response = client.get("/api/feeds/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+    def test_feeds_advanced_unauthenticated_rejected(self):
+        """Verify authenticated feeds_advanced endpoint rejects unauthenticated requests."""
+        client = APIClient()
+        response = client.get("/api/feeds/advanced/")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_feeds_asn_unauthenticated_rejected(self):
+        """Verify authenticated feeds_asn endpoint rejects unauthenticated requests."""
+        client = APIClient()
+        response = client.get("/api/feeds/asn/")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
