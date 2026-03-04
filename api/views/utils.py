@@ -195,14 +195,17 @@ def get_queryset(request, feed_params, valid_feed_types, is_aggregated=False, se
     if not is_aggregated:
         iocs = iocs.filter(general_honeypot__active=True)
         iocs = iocs.annotate(honeypots=ArrayAgg("general_honeypot__name", distinct=True))
-        iocs = iocs.annotate(
-            tags_json=ArrayAgg(
-                JSONObject(key=F("tags__key"), value=F("tags__value"), source=F("tags__source")),
-                filter=Q(tags__isnull=False),
-                default=Value([]),
-                distinct=True,
+        # Only annotate tags metadata when the response format needs it (e.g. JSON),
+        # to avoid unnecessary joins and aggregation work for txt/csv feeds.
+        if getattr(feed_params, "format", "").lower() == "json":
+            iocs = iocs.annotate(
+                tags_json=ArrayAgg(
+                    JSONObject(key=F("tags__key"), value=F("tags__value"), source=F("tags__source")),
+                    filter=Q(tags__isnull=False),
+                    default=Value([]),
+                    distinct=True,
+                )
             )
-        )
         iocs = iocs.order_by(feed_params.ordering)
         iocs = iocs[: int(feed_params.feed_size)]
 
@@ -288,7 +291,8 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
 
             required_fields = base_fields + verbose_only_fields if verbose else base_fields
 
-            # `tags_json` is annotated in get_queryset to avoid conflicting with the `tags` reverse FK on IOC.
+            # `tags_json` is annotated in get_queryset (only for JSON format) to avoid conflicting
+            # with the `tags` reverse FK on IOC.
             required_fields = tuple(f if f != "tags" else "tags_json" for f in required_fields)
 
             iocs_iter: object
