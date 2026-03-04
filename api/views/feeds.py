@@ -8,11 +8,13 @@ from rest_framework.decorators import (
     api_view,
     authentication_classes,
     permission_classes,
+    throttle_classes,
 )
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from api.serializers import ASNFeedsOrderingSerializer
+from api.throttles import FeedsAdvancedThrottle, FeedsThrottle
 from api.views.utils import (
     FeedRequestParams,
     asn_aggregated_queryset,
@@ -26,6 +28,7 @@ logger = logging.getLogger(__name__)
 
 
 @api_view([GET])
+@throttle_classes([FeedsThrottle])
 def feeds(request, feed_type, attack_type, prioritize, format_):
     """
     Handle requests for IOC feeds with specific parameters and format the response accordingly.
@@ -56,6 +59,7 @@ def feeds(request, feed_type, attack_type, prioritize, format_):
 
 
 @api_view([GET])
+@throttle_classes([FeedsThrottle])
 def feeds_pagination(request):
     """
     Handle requests for paginated IOC feeds based on query parameters.
@@ -85,6 +89,7 @@ def feeds_pagination(request):
 @api_view([GET])
 @authentication_classes([CookieTokenAuthentication])
 @permission_classes([IsAuthenticated])
+@throttle_classes([FeedsAdvancedThrottle])
 def feeds_advanced(request):
     """
     Handle requests for IOC feeds based on query parameters and format the response accordingly.
@@ -133,6 +138,7 @@ def feeds_advanced(request):
 @api_view(["GET"])
 @authentication_classes([CookieTokenAuthentication])
 @permission_classes([IsAuthenticated])
+@throttle_classes([FeedsAdvancedThrottle])
 def feeds_asn(request):
     """
     Retrieve aggregated IOC feed data grouped by ASN (Autonomous System Number).
