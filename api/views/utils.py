@@ -112,6 +112,7 @@ class FeedRequestParams:
                 self.min_days_seen = "1"
                 self.ordering = "-expected_interactions"
 
+CACHE_KEY = "valid_feed_types"
 
 def get_valid_feed_types() -> frozenset[str]:
     """
@@ -120,9 +121,15 @@ def get_valid_feed_types() -> frozenset[str]:
     Returns:
         frozenset[str]: An immutable set of valid feed type strings
     """
-    general_honeypots = GeneralHoneypot.objects.filter(active=True)
-    feed_types = ["all"] + [hp.name.lower() for hp in general_honeypots]
-    return frozenset(feed_types)
+    valid_types = cache.get(CACHE_KEY)
+
+    if valid_types is None:
+        general_honeypots = GeneralHoneypot.objects.filter(active=True)
+        feed_types = ["all"] + [hp.name.lower() for hp in general_honeypots]
+        valid_types = frozenset(feed_types)
+        cache.set(CACHE_KEY, valid_types, 900)
+
+    return valid_types
 
 
 def get_queryset(request, feed_params, valid_feed_types, is_aggregated=False, serializer_class=FeedsRequestSerializer):
