@@ -65,7 +65,7 @@ class TrainModels(Cronjob):
         Load previously saved IoC data from storage.
 
         Returns:
-            list: Previously stored IoC data, or empty dict if loading fails.
+            list: Previously stored IoC data, or empty list if loading fails.
         """
         self.log.info("loading training data from file system")
         try:
@@ -73,7 +73,7 @@ class TrainModels(Cronjob):
                 return json.load(file)
         except Exception as exc:
             self.log.error(f"error loading training data: {exc}")
-            return {}
+            return []
 
     def run(self):
         """
