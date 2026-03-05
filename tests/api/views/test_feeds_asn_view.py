@@ -61,6 +61,7 @@ class FeedsASNViewTestCase(CustomTestCase):
         cls.ioc_low.save()
 
     def setUp(self):
+        super().setUp()
         self.client = APIClient()
         self.client.force_authenticate(user=self.superuser)
         self.url = "/api/feeds/asn/"

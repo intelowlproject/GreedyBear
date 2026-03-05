@@ -34,6 +34,7 @@ const feedsTableColumns = [
   {
     Header: "Feed type",
     accessor: "feed_type",
+    disableSortBy: true,
     maxWidth: 60,
     Cell: ({ value }) =>
       Array.isArray(value) ? (
@@ -68,6 +69,7 @@ const feedsTableColumns = [
   {
     Header: "Details",
     accessor: "details",
+    disableSortBy: true,
     Cell: ({ row }) => {
       const {
         recurrence_probability,
@@ -134,7 +136,7 @@ const feedsTableColumns = [
               <a
                 href={`${INTELOWL_URL}/scan?observable_name=${encodeURIComponent(row.original.value)}`}
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 title={`Analyze ${row.original.value} on IntelOwl`}
               >
                 <img

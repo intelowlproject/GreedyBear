@@ -106,7 +106,10 @@ REST_FRAMEWORK = {
     # Pagination
     "DEFAULT_PAGINATION_CLASS": "certego_saas.ext.pagination.CustomPageNumberPagination",
     "PAGE_SIZE": 10,
+    # Throttling
     "DEFAULT_THROTTLE_RATES": {
+        "feeds": os.environ.get("FEEDS_THROTTLE_RATE", "30/minute"),
+        "feeds_advanced": os.environ.get("FEEDS_ADVANCED_THROTTLE_RATE", "100/minute"),
         "feeds_shared": "10/minute",
     },
 }

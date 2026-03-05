@@ -2,6 +2,7 @@ import React from "react";
 import { Container, Button, Col, Label, FormGroup, Row } from "reactstrap";
 import { VscJson } from "react-icons/vsc";
 import { TbLicense } from "react-icons/tb";
+import { MdFilterAltOff } from "react-icons/md";
 import { useLocation } from "react-router-dom";
 import { FEEDS_BASE_URI, GENERAL_HONEYPOT_URI } from "../../constants/api";
 import {
@@ -10,13 +11,12 @@ import {
   useAxiosComponentLoader,
   useDataTable,
 } from "@certego/certego-ui";
+import { MultiSelectDropdown } from "./MultiSelectDropdown";
 import { Form, Formik } from "formik";
 import { feedsTableColumns } from "./tableColumns";
 import { FEEDS_LICENSE } from "../../constants";
 
 // constants
-const feedTypeChoices = [{ label: "All", value: "all" }];
-
 const attackTypeChoices = [
   { label: "All", value: "all" },
   { label: "Scanner", value: "scanner" },
@@ -55,8 +55,6 @@ const toPassTableProps = {
 
 // prioritizations where backend overrides "ordering" query param.
 const OVERRIDING_PRIORITIZATIONS = ["likely_to_recur", "most_expected_hits"];
-
-let honeypotFeedsType = [];
 
 // extracted child component so useDataTable hooks are owned here.
 // changing the `key` on this component forces a full unmount/remount.
@@ -117,6 +115,12 @@ export default function Feeds() {
   // feedsData is lifted from FeedsTable so we can show the count in the header
   const [feedsData, setFeedsData] = React.useState(null);
 
+  const isDefault =
+    feedsState.tableParams.feed_type === DEFAULT_VALUES.feeds_type &&
+    feedsState.tableParams.attack_type === DEFAULT_VALUES.attack_type &&
+    feedsState.tableParams.ioc_type === DEFAULT_VALUES.ioc_type &&
+    feedsState.tableParams.prioritize === DEFAULT_VALUES.prioritize;
+
   // API to extract general honeypot
   const [honeypots, Loader] = useAxiosComponentLoader({
     url: `${GENERAL_HONEYPOT_URI}?onlyActive=true`,
@@ -124,15 +128,14 @@ export default function Feeds() {
   });
   console.debug("Feeds-honeypots:", honeypots);
 
-  honeypots.forEach((honeypot) => {
-    //check if honeypot.label exist in honeypotFeedsType array or not (index === -1)
-    const index = honeypotFeedsType.findIndex((x) => x.label === honeypot);
-    if (index === -1)
-      honeypotFeedsType.push({
+  const honeypotFeedsType = React.useMemo(
+    () =>
+      honeypots.map((honeypot) => ({
         label: honeypot,
         value: honeypot.toLowerCase(),
-      });
-  });
+      })),
+    [honeypots],
+  );
 
   // reset the prioritize dropdown to "recent"
   const handleSortChange = React.useCallback(async () => {
@@ -155,7 +158,6 @@ export default function Feeds() {
           ioc_type: values.ioc_type,
           prioritize: values.prioritize,
         },
-
         tableKey: prev.tableKey + 1,
       }));
     } catch (e) {
@@ -176,6 +178,7 @@ export default function Feeds() {
           outline
           href={FEEDS_LICENSE}
           target="_blank"
+          rel="noopener noreferrer"
         >
           <TbLicense />
           &nbsp;Feeds license
@@ -195,37 +198,48 @@ export default function Feeds() {
                   {(formik) => {
                     return (
                       <Form>
-                        <FormGroup row>
-                          <Col sm={12} md={3}>
+                        <FormGroup row className="align-items-end">
+                          <Col sm={12} md>
                             <Label
                               className="form-control-label"
                               htmlFor="Feeds__feeds_type"
                             >
                               Feed type:
                             </Label>
-                            <Select
+                            <MultiSelectDropdown
                               id="Feeds__feeds_type"
-                              name="feeds_type"
-                              value={formik.values.feeds_type}
-                              choices={feedTypeChoices.concat(
-                                honeypotFeedsType,
-                              )}
-                              onChange={async (e) => {
-                                await formik.setFieldValue(
+                              options={honeypotFeedsType}
+                              value={
+                                formik.values.feeds_type &&
+                                formik.values.feeds_type !== "all"
+                                  ? formik.values.feeds_type
+                                      .split(",")
+                                      .map((v) =>
+                                        honeypotFeedsType.find(
+                                          (o) => o.value === v,
+                                        ),
+                                      )
+                                      .filter(Boolean)
+                                  : []
+                              }
+                              placeholder="All"
+                              onChange={(selected) => {
+                                const newFeedsType =
+                                  selected.length > 0
+                                    ? selected.map((o) => o.value).join(",")
+                                    : "all";
+                                formik.setFieldValue(
                                   "feeds_type",
-                                  e.target.value,
-                                  true,
+                                  newFeedsType,
                                 );
-                                await formik.setFieldTouched(
-                                  "feeds_type",
-                                  true,
-                                  false,
-                                );
-                                await formik.submitForm();
+                                onSubmit({
+                                  ...formik.values,
+                                  feeds_type: newFeedsType,
+                                });
                               }}
                             />
                           </Col>
-                          <Col sm={12} md={3}>
+                          <Col sm={12} md>
                             <Label
                               className="form-control-label"
                               htmlFor="Feeds__attack_type"
@@ -252,7 +266,7 @@ export default function Feeds() {
                               }}
                             />
                           </Col>
-                          <Col sm={12} md={3}>
+                          <Col sm={12} md>
                             <Label
                               className="form-control-label"
                               htmlFor="Feeds__ioc_type"
@@ -279,7 +293,7 @@ export default function Feeds() {
                               }}
                             />
                           </Col>
-                          <Col sm={12} md={3}>
+                          <Col sm={12} md>
                             <Label
                               className="form-control-label"
                               htmlFor="Feeds__prioritize"
@@ -306,6 +320,21 @@ export default function Feeds() {
                               }}
                             />
                           </Col>
+                          <Col sm={12} md="auto">
+                            <Button
+                              color="primary"
+                              outline
+                              disabled={isDefault}
+                              title="Reset filters"
+                              aria-label="Reset filters"
+                              onClick={() => {
+                                formikRef.current?.resetForm();
+                                onSubmit(DEFAULT_VALUES);
+                              }}
+                            >
+                              <MdFilterAltOff />
+                            </Button>
+                          </Col>
                         </FormGroup>
                       </Form>
                     );
@@ -314,17 +343,13 @@ export default function Feeds() {
               )}
             />
           </Col>
-          <Col
-            sm={12}
-            md={2}
-            className="d-flex justify-content-end align-items-end"
-          >
+          <Col sm={12} md="auto" className="d-flex align-items-end pb-3">
             <Button
-              className="mb-3"
               color="primary"
               outline
               href={feedsState.url}
               target="_blank"
+              rel="noopener noreferrer"
             >
               <VscJson />
               &nbsp;Raw data

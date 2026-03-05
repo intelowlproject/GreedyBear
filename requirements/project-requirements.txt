@@ -4,7 +4,7 @@ croniter==6.0.0
 # if you change this, update the documentation
 elasticsearch==9.3.0
 
-Django==5.2.11
+Django==5.2.12
 djangorestframework==3.16.1
 django-rest-email-auth==5.0.0
 django-ses==4.7.2
