@@ -24,7 +24,7 @@ describe("ChangePassword component", () => {
     });
   });
 
-  test("renders change password form fields", () => {
+  test("renders change password form fields and show-password toggle", () => {
     render(
       <BrowserRouter>
         <ChangePassword />
@@ -34,9 +34,36 @@ describe("ChangePassword component", () => {
     expect(screen.getByLabelText("Old Password")).toBeInTheDocument();
     expect(screen.getByLabelText("New Password")).toBeInTheDocument();
     expect(screen.getByLabelText("Confirm New Password")).toBeInTheDocument();
+    expect(screen.getByLabelText("Show password")).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: /Change Password/i }),
     ).toBeInTheDocument();
+  });
+
+  test("show-password toggle switches input types", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <BrowserRouter>
+        <ChangePassword />
+      </BrowserRouter>,
+    );
+
+    const oldPwInput = screen.getByLabelText("Old Password");
+    const newPwInput = screen.getByLabelText("New Password");
+    const confirmPwInput = screen.getByLabelText("Confirm New Password");
+    const toggle = screen.getByLabelText("Show password");
+
+    // initially password type
+    expect(oldPwInput).toHaveAttribute("type", "password");
+    expect(newPwInput).toHaveAttribute("type", "password");
+    expect(confirmPwInput).toHaveAttribute("type", "password");
+
+    await user.click(toggle);
+
+    expect(oldPwInput).toHaveAttribute("type", "text");
+    expect(newPwInput).toHaveAttribute("type", "text");
+    expect(confirmPwInput).toHaveAttribute("type", "text");
   });
 
   test("successful password change calls API", async () => {
@@ -74,7 +101,7 @@ describe("ChangePassword component", () => {
     });
   });
 
-  test("does not call API when new password matches old password", async () => {
+  test("shows inline error when new password matches old password", async () => {
     const user = userEvent.setup();
 
     render(
@@ -86,19 +113,19 @@ describe("ChangePassword component", () => {
     const samePassword = "samePassword123!";
     await user.type(screen.getByLabelText("Old Password"), samePassword);
     await user.type(screen.getByLabelText("New Password"), samePassword);
-    await user.type(
-      screen.getByLabelText("Confirm New Password"),
-      samePassword,
-    );
-    await user.click(screen.getByRole("button", { name: /Change Password/i }));
+    // tab out to trigger onBlur / touched
+    await user.tab();
 
-    // The component shows a toast and returns early without calling the API
     await waitFor(() => {
-      expect(axios.post).not.toHaveBeenCalled();
+      expect(
+        screen.getByText("New password must be different from old password"),
+      ).toBeInTheDocument();
     });
+
+    expect(axios.post).not.toHaveBeenCalled();
   });
 
-  test("does not call API when new password fails regex policy", async () => {
+  test("shows inline error when new password fails policy", async () => {
     const user = userEvent.setup();
 
     render(
@@ -108,13 +135,45 @@ describe("ChangePassword component", () => {
     );
 
     await user.type(screen.getByLabelText("Old Password"), "oldPassword123!");
-    await user.type(screen.getByLabelText("New Password"), "short"); // < 12 chars
-    await user.type(screen.getByLabelText("Confirm New Password"), "short");
-    await user.click(screen.getByRole("button", { name: /Change Password/i }));
+    await user.type(screen.getByLabelText("New Password"), "short");
+    // tab out to trigger onBlur / touched
+    await user.tab();
 
-    // The component shows a toast and returns early without calling the API
     await waitFor(() => {
-      expect(axios.post).not.toHaveBeenCalled();
+      expect(
+        screen.getByText("Must be 12 characters or more"),
+      ).toBeInTheDocument();
     });
+
+    expect(axios.post).not.toHaveBeenCalled();
+  });
+
+  test("shows inline error when passwords do not match", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <BrowserRouter>
+        <ChangePassword />
+      </BrowserRouter>,
+    );
+
+    await user.type(
+      screen.getByLabelText("New Password"),
+      "newValidPassword123!",
+    );
+    await user.type(
+      screen.getByLabelText("Confirm New Password"),
+      "differentPassword123!",
+    );
+    await user.tab();
+
+    await waitFor(() => {
+      // ComparePassword sets the error on both fields,
+      // so we expect two matching elements
+      const matches = screen.getAllByText("Passwords do not match.");
+      expect(matches).toHaveLength(2);
+    });
+
+    expect(axios.post).not.toHaveBeenCalled();
   });
 });
