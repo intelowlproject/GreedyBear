@@ -122,6 +122,8 @@ describe("ChangePassword component", () => {
       ).toBeInTheDocument();
     });
 
+    // Submit the form first before asserting axio.post was not called
+    await user.click(screen.getByRole("button", { name: /Change Password/i }));
     expect(axios.post).not.toHaveBeenCalled();
   });
 
@@ -145,6 +147,8 @@ describe("ChangePassword component", () => {
       ).toBeInTheDocument();
     });
 
+    // Submit the form first before asserting axio.post was not called
+    await user.click(screen.getByRole("button", { name: /Change Password/i }));
     expect(axios.post).not.toHaveBeenCalled();
   });
 
@@ -174,6 +178,8 @@ describe("ChangePassword component", () => {
       expect(matches).toHaveLength(2);
     });
 
+    // Submit the form first before asserting axio.post was not called
+    await user.click(screen.getByRole("button", { name: /Change Password/i }));
     expect(axios.post).not.toHaveBeenCalled();
   });
 });

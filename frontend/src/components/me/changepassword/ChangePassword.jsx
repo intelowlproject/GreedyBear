@@ -80,8 +80,8 @@ export default function ChangePassword() {
   const { passwordShown, toggleVisibility, inputType } =
     usePasswordVisibility();
 
-  const [isAuthenticated, changePassword] = useAuthStore(
-    React.useCallback((s) => [s.isAuthenticated, s.service.changePassword], []),
+  const changePassword = useAuthStore(
+    React.useCallback((s) => s.service.changePassword, []),
   );
 
   // callback
