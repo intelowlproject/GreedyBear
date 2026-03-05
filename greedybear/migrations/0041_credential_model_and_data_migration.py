@@ -4,10 +4,11 @@ a normalized Credential model using a ManyToMany relationship.
 
 
 """
-from django.db import migrations, models
-from django.db.models import Q
 import functools
 import operator
+
+from django.db import migrations, models
+from django.db.models import Q
 
 def migrate_credentials(apps, schema_editor):
     CowrieSession = apps.get_model("greedybear", "CowrieSession")
@@ -38,7 +39,7 @@ def migrate_credentials(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("greedybear", "0039_ioc_attacker_country_sensor_country_and_more"),
+        ("greedybear", "0040_alter_tag_key"),
     ]
 
     operations = [
