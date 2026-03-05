@@ -82,7 +82,7 @@ class FeedRequestParams:
         self.ordering = query_params.get("ordering", "-last_seen").lower().replace("value", "name")
         self.verbose = query_params.get("verbose", "false").lower()
         self.paginate = query_params.get("paginate", "false").lower()
-        self.format = query_params.get("format_", "json").lower()
+        self.format = query_params.get("format", "json").lower()
         self.feed_type_sorting = None
 
     def apply_default_filters(self, query_params):

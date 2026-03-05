@@ -96,3 +96,15 @@ class FeedsAdvancedViewTestCase(CustomTestCase):
 
         self.assertIsNotNone(target_ioc)
         self.assertEqual(target_ioc["attacker_country"], "Nepal")
+
+    def test_200_format_txt(self):
+        """Ensures ?format=txt returns plain text, not JSON."""
+        response = self.client.get("/api/feeds/advanced/?format=txt")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "text/plain")
+
+    def test_200_format_csv(self):
+        """Ensures ?format=csv returns CSV, not JSON."""
+        response = self.client.get("/api/feeds/advanced/?format=csv")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "text/csv")
