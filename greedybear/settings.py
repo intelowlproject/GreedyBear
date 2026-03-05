@@ -58,7 +58,14 @@ VERSION = os.environ.get("VITE_GREEDYBEAR_VERSION", "")
 CSRF_COOKIE_SAMESITE = "Strict"
 CSRF_COOKIE_HTTPONLY = True
 
-ALLOWED_HOSTS = ["*"]
+# Read DJANGO_ALLOWED_HOSTS from env (comma-separated).
+# Falls back to ["*"] for backward compatibility.
+# For security checks, see greedybear/checks.py.
+_allowed_hosts_env = os.environ.get("DJANGO_ALLOWED_HOSTS", "")
+if _allowed_hosts_env:
+    ALLOWED_HOSTS = [h.strip() for h in _allowed_hosts_env.split(",") if h.strip()]
+else:
+    ALLOWED_HOSTS = ["*"]
 
 # certego_saas
 HOST_URI = "http://localhost"
