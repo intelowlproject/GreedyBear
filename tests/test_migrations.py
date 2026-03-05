@@ -168,3 +168,28 @@ class TestRemoveUnusedLog4pot(MigrationTestCase):
             new_state = self.apply_tested_migration()
             as_new = new_state.apps.get_model(self.app_name, "AutonomousSystem")
             self.assertEqual(as_new.objects.count(), 1)  # only one record created
+
+        def test_batch_update_large_number_of_iocs(self):
+            """Ensure migration correctly updates large number of IOCs in batches."""
+            ioc_old = self.old_state.apps.get_model(self.app_name, "IOC")
+            new_state = self.apply_tested_migration
+            self.old_state.apps.get_model(self.app_name, "AutonomousSystem")
+
+            # creating 3500 IOCs with ASNs batch_size in migration(0041_autonomoussystem_remove_ioc_asn_and_more) is 1000.
+            num_iocs = 3500
+            asns = [10000 + i % 10 for i in range(num_iocs)]  # 10 unique ASNs
+            for asn in asns:
+                ioc_old.objects.create(asn=asn)
+
+            # applying migration
+            new_state = self.apply_tested_migration()
+            ioc_new = new_state.apps.get_model(self.app_name, "IOC")
+            as_new = new_state.apps.get_model(self.app_name, "AutonomousSystem")
+
+            # checking that all IOCs have correct AutonomousSystem
+            for ioc in ioc_new.objects.all():
+                self.assertIsNotNone(ioc.autonomous_system)
+                self.assertIn(ioc.autonomous_system.asn, range(10000, 10010))
+
+            # checking that only 10 AutonomousSystem records exist
+            self.assertEqual(as_new.objects.count(), 10)

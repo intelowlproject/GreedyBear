@@ -8,14 +8,35 @@ def migrate_asn_to_autonomous_system(apps, schema_editor):
     IOC = apps.get_model('greedybear', 'IOC')
     AutonomousSystem = apps.get_model('greedybear', 'AutonomousSystem')
 
-    for ioc in IOC.objects.all():
-        if hasattr(ioc, 'asn') and ioc.asn is not None:
-            as_obj, created = AutonomousSystem.objects.get_or_create(
-                asn=ioc.asn,
-                defaults={"name": ""}
-            )
-            ioc.autonomous_system = as_obj
-            ioc.save(update_fields=['autonomous_system'])
+    # gathering all unique ASN values from existing IOCs
+    asns = (
+        IOC.objects.exclude(asn__isnull=True)
+        .values_list('asn', flat=True)
+        .distinct()
+    )
+
+    # creating bulk AutonomousSystem objects for missing ASNs
+    existing_asns = set(AutonomousSystem.objects.filter(asn__in=asns).values_list('asn', flat=True))
+    to_create = [AutonomousSystem(asn=asn, name="") for asn in asns if asn not in existing_asns]
+    if to_create:
+        AutonomousSystem.objects.bulk_create(to_create)
+
+    #  mapping ASN to AutonomousSystem object
+    asn_map = {as_obj.asn: as_obj for as_obj in AutonomousSystem.objects.filter(asn__in=asns)}
+
+    #  batch update IOCs in chunks to avoid massive single queries
+    batch_size = 1000
+    iocs_qs = IOC.objects.exclude(asn__isnull=True).iterator()
+    batch = []
+    for ioc in iocs_qs:
+        ioc.autonomous_system = asn_map[ioc.asn]
+        batch.append(ioc)
+        if len(batch) >= batch_size:
+            IOC.objects.bulk_update(batch, ['autonomous_system'])
+            batch = []
+
+    if batch:
+        IOC.objects.bulk_update(batch, ['autonomous_system'])
 
 
 class Migration(migrations.Migration):
