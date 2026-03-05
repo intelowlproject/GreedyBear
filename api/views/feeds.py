@@ -53,7 +53,7 @@ def feeds(request, feed_type, attack_type, prioritize, format_):
     logger.info(f"request /api/feeds with params: feed type: {feed_type}, attack_type: {attack_type}, prioritization: {prioritize}, format: {format_}")
 
     feed_params_data = request.query_params.dict()
-    feed_params_data.update({"feed_type": feed_type, "attack_type": attack_type, "format_": format_})
+    feed_params_data.update({"feed_type": feed_type, "attack_type": attack_type, "format": format_})
     feed_params = FeedRequestParams(feed_params_data)
     feed_params.apply_default_filters(request.query_params)
     feed_params.set_prioritization(prioritize)
@@ -111,7 +111,7 @@ def feeds_advanced(request):
         ordering (str): Field to order results by, with optional `-` prefix for descending. (default: `-last_seen`)
         verbose (bool): `true` to include IOC properties that contain a lot of data, e.g. the list of days it was seen. (default: `false`)
         paginate (bool): `true` to paginate results. This forces the json format. (default: `false`)
-        format_ (str): Response format type. Besides `json`, `txt` and `csv` are supported but the response will only contain IOC values (e.g. IP addresses) without further information. (default: `json`)
+        format (str): Response format type. Besides `json`, `txt` and `csv` are supported but the response will only contain IOC values (e.g. IP addresses) without further information. (default: `json`)
         tag_key (str, optional): Filter IOCs by tag key, e.g. `malware` or `confidence_of_abuse`. Only IOCs with at least one matching tag are returned.
         tag_value (str, optional): Filter IOCs by tag value (case-insensitive substring match), e.g. `mirai`. Can be used alone or combined with `tag_key`.
 

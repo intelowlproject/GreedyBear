@@ -284,7 +284,7 @@ class FeedsEnhancementsTestCase(CustomTestCase):
 
         from django.core.cache import cache
 
-        from api.views.feeds import SharedFeedRateThrottle
+        from api.throttles import SharedFeedRateThrottle
 
         share_response = self.client.get("/api/feeds/share")
         token = share_response.json()["url"].split("/")[-1]
@@ -328,3 +328,15 @@ class FeedsEnhancementsTestCase(CustomTestCase):
         revoke_response = self.client.delete("/api/feeds/revoke/not-a-valid-token")
         self.assertEqual(revoke_response.status_code, 400)
         self.assertIn("error", revoke_response.json())
+
+    def test_200_format_txt(self):
+        """Ensures ?format=txt returns plain text, not JSON."""
+        response = self.client.get("/api/feeds/advanced/?format=txt")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "text/plain")
+
+    def test_200_format_csv(self):
+        """Ensures ?format=csv returns CSV, not JSON."""
+        response = self.client.get("/api/feeds/advanced/?format=csv")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response["Content-Type"], "text/csv")
