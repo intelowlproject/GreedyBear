@@ -68,13 +68,6 @@ const INITIAL_VALUES = {
   discover_from: "other",
 };
 
-const REGISTRATION_FORM_STORAGE_KEY = "registrationForm";
-const storedString = localStorage.getItem(REGISTRATION_FORM_STORAGE_KEY);
-const savedValues = storedString ? JSON.parse(storedString) : null;
-const initialValues = savedValues || INITIAL_VALUES;
-
-console.debug("initialValues", initialValues);
-
 const onValidate = (values) => {
   const errors = {};
 
@@ -106,19 +99,6 @@ const onValidate = (values) => {
     }
   });
 
-  // store in localStorage so user doesn't have to fill all fields again
-  localStorage.setItem(
-    REGISTRATION_FORM_STORAGE_KEY,
-    JSON.stringify({
-      ...values,
-      password: "",
-      confirmPassword: "",
-    }),
-  );
-  Object.keys(initialValues).forEach((key) => {
-    initialValues[key] = values[key];
-  });
-
   // password fields
   const passwordErrors = PasswordValidator(values.password);
   if (passwordErrors.password) {
@@ -139,7 +119,6 @@ const onValidate = (values) => {
     errors.confirmPassword = comparePasswordErrors.confirmPassword;
   }
 
-  // console.debug("Errors", errors);
   return errors;
 };
 
@@ -158,8 +137,6 @@ export default function Register() {
     React.useState(false);
   const [passwordShown, setPasswordShown] = React.useState(false);
 
-  console.debug("showAfterRegistrationModal:", showAfterRegistrationModal);
-
   React.useEffect(() => {
     checkConfiguration({
       params: {
@@ -170,8 +147,6 @@ export default function Register() {
       setShowConfigurationModal(true);
     });
   }, []);
-
-  console.debug("showConfigurationModal:", showConfigurationModal);
 
   // callbacks
   const onSubmit = React.useCallback(
@@ -191,13 +166,6 @@ export default function Register() {
       };
       try {
         await registerUser(reqBody);
-
-        // deleted user data after successful registration
-        localStorage.removeItem(REGISTRATION_FORM_STORAGE_KEY);
-        Object.keys(INITIAL_VALUES).forEach((key) => {
-          initialValues[key] = INITIAL_VALUES[key];
-        });
-
         setShowAfterRegistrationModal(true);
       } catch (e) {
         // handled inside registerUser
@@ -232,7 +200,7 @@ export default function Register() {
           <hr />
           {/* Form */}
           <Formik
-            initialValues={initialValues}
+            initialValues={INITIAL_VALUES}
             validate={onValidate}
             onSubmit={onSubmit}
             validateOnMount
