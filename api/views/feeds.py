@@ -6,6 +6,7 @@ import logging
 from certego_saas.apps.auth.backend import CookieTokenAuthentication
 from certego_saas.ext.pagination import CustomPageNumberPagination
 from django.core import signing
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import (
     api_view,
@@ -15,10 +16,9 @@ from rest_framework.decorators import (
 )
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.throttling import SimpleRateThrottle
 
 from api.serializers import ASNFeedsOrderingSerializer
-from api.throttles import FeedsAdvancedThrottle, FeedsThrottle
+from api.throttles import FeedsAdvancedThrottle, FeedsThrottle, SharedFeedRateThrottle
 from api.views.utils import (
     FeedRequestParams,
     asn_aggregated_queryset,
@@ -27,23 +27,9 @@ from api.views.utils import (
     get_valid_feed_types,
 )
 from greedybear.consts import GET
-from greedybear.models import RevokedToken
+from greedybear.models import ShareToken
 
 logger = logging.getLogger(__name__)
-
-
-class SharedFeedRateThrottle(SimpleRateThrottle):
-    """
-    Rate throttle for the public shared feed consume endpoint.
-
-    Limits unauthenticated access to prevent abuse.
-    Rate is configurable via the DEFAULT_THROTTLE_RATES setting (key: ``feeds_shared``).
-    """
-
-    scope = "feeds_shared"
-
-    def get_cache_key(self, request, view):
-        return self.cache_format % {"scope": self.scope, "ident": self.get_ident(request)}
 
 
 @api_view([GET])
@@ -229,11 +215,15 @@ def feeds_share(request):
     # Remove internal or non-serializable objects if any
     data.pop("feed_type_sorting", None)
 
-    # Generate signed token
+    # Generate signed token and persist a ShareToken record
     token = signing.dumps(data, salt="greedybear-feeds")
+    token_hash = hashlib.sha256(token.encode()).hexdigest()
+    ShareToken.objects.get_or_create(token_hash=token_hash)
+
     host = request.build_absolute_uri("/")
     share_url = f"{host}api/feeds/consume/{token}"
-    return Response({"url": share_url})
+    revoke_url = f"{host}api/feeds/revoke/{token}"
+    return Response({"url": share_url, "revoke_url": revoke_url})
 
 
 @api_view([GET])
@@ -254,7 +244,7 @@ def feeds_consume(request, token):
     """
     logger.info("request /api/feeds/consume with token")
     token_hash = hashlib.sha256(token.encode()).hexdigest()
-    if RevokedToken.objects.filter(token_hash=token_hash).exists():
+    if ShareToken.objects.filter(token_hash=token_hash, revoked=True).exists():
         return Response({"error": "Token has been revoked"}, status=status.HTTP_400_BAD_REQUEST)
     try:
         data = signing.loads(token, salt="greedybear-feeds", max_age=86400 * 30)  # 30 days validity
@@ -294,7 +284,10 @@ def feeds_revoke(request, token):
         return Response({"error": "Invalid or expired token"}, status=status.HTTP_400_BAD_REQUEST)
 
     token_hash = hashlib.sha256(token.encode()).hexdigest()
-    _, created = RevokedToken.objects.get_or_create(token_hash=token_hash)
-    if created:
-        return Response({"detail": "Token revoked successfully."}, status=status.HTTP_200_OK)
-    return Response({"detail": "Token was already revoked."}, status=status.HTTP_200_OK)
+    share_token, created = ShareToken.objects.get_or_create(token_hash=token_hash)
+    if share_token.revoked:
+        return Response({"detail": "Token was already revoked."}, status=status.HTTP_200_OK)
+    share_token.revoked = True
+    share_token.revoked_at = timezone.now()
+    share_token.save(update_fields=["revoked", "revoked_at"])
+    return Response({"detail": "Token revoked successfully."}, status=status.HTTP_200_OK)

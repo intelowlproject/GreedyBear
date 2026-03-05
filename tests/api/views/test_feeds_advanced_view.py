@@ -220,8 +220,11 @@ class FeedsEnhancementsTestCase(CustomTestCase):
         """Full flow: share → consume unauthenticated returns correct IOCs."""
         share_response = self.client.get("/api/feeds/share?asn=11111&port=9001")
         self.assertEqual(share_response.status_code, 200)
-        share_url = share_response.json()["url"]
+        share_data = share_response.json()
+        share_url = share_data["url"]
         self.assertIn("/api/feeds/consume/", share_url)
+        self.assertIn("revoke_url", share_data)
+        self.assertIn("/api/feeds/revoke/", share_data["revoke_url"])
 
         token = share_url.split("/")[-1]
 
