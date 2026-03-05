@@ -235,14 +235,49 @@ class TestMergeIocs(ExtractionTestCase):
     def test_updating(self):
         old_time = datetime(2025, 1, 1, 12, 0, 0)
         new_time = datetime(2025, 1, 2, 12, 0, 0)
-        existing = self._create_mock_ioc(last_seen=old_time, ip_reputation="old", asn=12)
-        new = self._create_mock_ioc(last_seen=new_time, ip_reputation="new", asn=23)
+        existing = self._create_mock_ioc(
+            first_seen=old_time, last_seen=old_time, ip_reputation="old", asn=12
+        )
+        new = self._create_mock_ioc(
+            first_seen=new_time, last_seen=new_time, ip_reputation="new", asn=23
+        )
 
         result = self.processor._merge_iocs(existing, new)
 
         self.assertEqual(result.last_seen, new_time)
+        self.assertEqual(result.first_seen, old_time)
         self.assertEqual(result.ip_reputation, "new")
         self.assertEqual(result.asn, 23)
+
+    def test_last_seen_not_regressed(self):
+        later = datetime(2025, 1, 2, 12, 0, 0)
+        earlier = datetime(2025, 1, 1, 12, 0, 0)
+        existing = self._create_mock_ioc(first_seen=earlier, last_seen=later)
+        new = self._create_mock_ioc(first_seen=earlier, last_seen=earlier)
+
+        result = self.processor._merge_iocs(existing, new)
+
+        self.assertEqual(result.last_seen, later)
+
+    def test_first_seen_updated_to_earlier(self):
+        later = datetime(2025, 1, 2, 12, 0, 0)
+        earlier = datetime(2025, 1, 1, 12, 0, 0)
+        existing = self._create_mock_ioc(first_seen=later, last_seen=later)
+        new = self._create_mock_ioc(first_seen=earlier, last_seen=later)
+
+        result = self.processor._merge_iocs(existing, new)
+
+        self.assertEqual(result.first_seen, earlier)
+
+    def test_first_seen_not_advanced(self):
+        later = datetime(2025, 1, 2, 12, 0, 0)
+        earlier = datetime(2025, 1, 1, 12, 0, 0)
+        existing = self._create_mock_ioc(first_seen=earlier, last_seen=later)
+        new = self._create_mock_ioc(first_seen=later, last_seen=later)
+
+        result = self.processor._merge_iocs(existing, new)
+
+        self.assertEqual(result.first_seen, earlier)
 
     def test_handles_empty_urls_and_ports(self):
         existing = self._create_mock_ioc(related_urls=[], destination_ports=[])

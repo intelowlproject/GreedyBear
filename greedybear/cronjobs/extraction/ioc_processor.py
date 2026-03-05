@@ -91,7 +91,10 @@ class IocProcessor:
         Returns:
             The updated existing IOC record.
         """
-        existing.last_seen = new.last_seen
+        if new.first_seen < existing.first_seen:
+            existing.first_seen = new.first_seen
+        if new.last_seen > existing.last_seen:
+            existing.last_seen = new.last_seen
         existing.attack_count += 1
         existing.interaction_count += new.interaction_count
         existing.related_urls = sorted(set(existing.related_urls + new.related_urls))
