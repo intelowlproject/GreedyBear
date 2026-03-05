@@ -1,5 +1,6 @@
 # This file is a part of GreedyBear https://github.com/honeynet/GreedyBear
 # See the file 'LICENSE' for copying permission.
+import hashlib
 import logging
 
 from certego_saas.apps.auth.backend import CookieTokenAuthentication
@@ -14,7 +15,7 @@ from rest_framework.decorators import (
 )
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from rest_framework.throttling import ScopedRateThrottle
+from rest_framework.throttling import SimpleRateThrottle
 
 from api.serializers import ASNFeedsOrderingSerializer
 from api.views.utils import (
@@ -25,8 +26,23 @@ from api.views.utils import (
     get_valid_feed_types,
 )
 from greedybear.consts import GET
+from greedybear.models import RevokedToken
 
 logger = logging.getLogger(__name__)
+
+
+class SharedFeedRateThrottle(SimpleRateThrottle):
+    """
+    Rate throttle for the public shared feed consume endpoint.
+
+    Limits unauthenticated access to prevent abuse.
+    Rate is configurable via the DEFAULT_THROTTLE_RATES setting (key: ``feeds_shared``).
+    """
+
+    scope = "feeds_shared"
+
+    def get_cache_key(self, request, view):
+        return self.cache_format % {"scope": self.scope, "ident": self.get_ident(request)}
 
 
 @api_view([GET])
@@ -209,7 +225,7 @@ def feeds_share(request):
 @api_view([GET])
 @authentication_classes([])
 @permission_classes([])
-@throttle_classes([ScopedRateThrottle])
+@throttle_classes([SharedFeedRateThrottle])
 def feeds_consume(request, token):
     """
     Consume a shared feed using a signed token.
@@ -223,6 +239,9 @@ def feeds_consume(request, token):
         Response: The HTTP response with formatted IOC data in JSON/CSV/TXT/STIX2.1.
     """
     logger.info("request /api/feeds/consume with token")
+    token_hash = hashlib.sha256(token.encode()).hexdigest()
+    if RevokedToken.objects.filter(token_hash=token_hash).exists():
+        return Response({"error": "Token has been revoked"}, status=status.HTTP_400_BAD_REQUEST)
     try:
         data = signing.loads(token, salt="greedybear-feeds", max_age=86400 * 30)  # 30 days validity
     except signing.BadSignature:
@@ -236,4 +255,32 @@ def feeds_consume(request, token):
     return feeds_response(iocs_queryset, feed_params, valid_feed_types)
 
 
-feeds_consume.throttle_scope = "feeds_shared"
+@api_view(["DELETE"])
+@authentication_classes([CookieTokenAuthentication])
+@permission_classes([IsAuthenticated])
+def feeds_revoke(request, token):
+    """
+    Revoke a previously generated shareable feed token.
+
+    Once revoked, any attempt to consume the feed via that token will return a 400 error.
+    Only authenticated users can revoke tokens. The raw token is never stored;
+    its SHA-256 hash is saved to mitigate risk from a database breach.
+
+    Args:
+        request: The incoming request object.
+        token (str): The raw signed token to revoke.
+
+    Returns:
+        Response: 200 on successful revocation, 400 if the token is invalid or already expired.
+    """
+    logger.info("request /api/feeds/revoke")
+    try:
+        signing.loads(token, salt="greedybear-feeds", max_age=86400 * 30)
+    except signing.BadSignature:
+        return Response({"error": "Invalid or expired token"}, status=status.HTTP_400_BAD_REQUEST)
+
+    token_hash = hashlib.sha256(token.encode()).hexdigest()
+    _, created = RevokedToken.objects.get_or_create(token_hash=token_hash)
+    if created:
+        return Response({"detail": "Token revoked successfully."}, status=status.HTTP_200_OK)
+    return Response({"detail": "Token was already revoked."}, status=status.HTTP_200_OK)

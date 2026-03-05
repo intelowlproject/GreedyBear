@@ -272,31 +272,55 @@ class FeedsEnhancementsTestCase(CustomTestCase):
         """
         Shared feed endpoint enforces rate limiting on the /feeds/consume/ endpoint.
 
-        We use unittest.mock to simulate a throttled response after the 2nd call,
-        because the Django test runner's in-memory cache doesn't isolate throttle
-        state between requests the way a real cache would.
+        Patches SharedFeedRateThrottle.THROTTLE_RATES to enforce a 1/minute rate,
+        then verifies the second request within the window returns 429.
+        cache.clear() is scoped to this test to avoid leaking throttle state.
         """
         from unittest.mock import patch
+
+        from django.core.cache import cache
+
+        from api.views.feeds import SharedFeedRateThrottle
 
         share_response = self.client.get("/api/feeds/share")
         token = share_response.json()["url"].split("/")[-1]
         anon = APIClient()
 
-        call_count = {"n": 0}
+        cache.clear()
+        with patch.object(SharedFeedRateThrottle, "THROTTLE_RATES", {"feeds_shared": "1/minute"}):
+            r1 = anon.get(f"/api/feeds/consume/{token}")
+            r2 = anon.get(f"/api/feeds/consume/{token}")
+        cache.clear()
 
-        def throttle_after_two(throttle_instance, request, view):
-            call_count["n"] += 1
-            if call_count["n"] > 2:
-                throttle_instance.history = []
-                throttle_instance.rate = "2/minute"
-                throttle_instance.num_requests = 2
-                throttle_instance.duration = 60
-                throttle_instance.now = 0
-                return False
-            return True
+        self.assertEqual(r1.status_code, 200)
+        self.assertEqual(r2.status_code, 429)
 
-        with patch("rest_framework.throttling.ScopedRateThrottle.allow_request", throttle_after_two):
-            responses = [anon.get(f"/api/feeds/consume/{token}") for _ in range(3)]
+    def test_token_revocation(self):
+        """Revoking a token makes subsequent consume calls return 400."""
+        share_response = self.client.get("/api/feeds/share?asn=11111")
+        self.assertEqual(share_response.status_code, 200)
+        token = share_response.json()["url"].split("/")[-1]
 
-        status_codes = [r.status_code for r in responses]
-        self.assertIn(429, status_codes, f"Expected 429 after rate limit exceeded, got: {status_codes}")
+        revoke_response = self.client.delete(f"/api/feeds/revoke/{token}")
+        self.assertEqual(revoke_response.status_code, 200)
+
+        self.client.logout()
+        consume_response = self.client.get(f"/api/feeds/consume/{token}")
+        self.assertEqual(consume_response.status_code, 400)
+        self.assertEqual(consume_response.json()["error"], "Token has been revoked")
+
+    def test_token_revoke_already_revoked(self):
+        """Revoking an already-revoked token returns 200 (idempotent)."""
+        share_response = self.client.get("/api/feeds/share?asn=11111")
+        token = share_response.json()["url"].split("/")[-1]
+
+        self.client.delete(f"/api/feeds/revoke/{token}")
+        second = self.client.delete(f"/api/feeds/revoke/{token}")
+        self.assertEqual(second.status_code, 200)
+        self.assertIn("already revoked", second.json()["detail"])
+
+    def test_token_revoke_invalid_token(self):
+        """Revoking an invalid/expired token returns 400."""
+        revoke_response = self.client.delete("/api/feeds/revoke/not-a-valid-token")
+        self.assertEqual(revoke_response.status_code, 400)
+        self.assertIn("error", revoke_response.json())

@@ -3,7 +3,6 @@
 import csv
 import logging
 from datetime import datetime, timedelta
-from ipaddress import ip_address
 
 import feedparser
 import requests
@@ -19,6 +18,7 @@ from stix2 import Bundle, ExternalReference, Indicator
 from api.serializers import FeedsRequestSerializer
 from greedybear.consts import CACHE_KEY_GREEDYBEAR_NEWS, CACHE_TIMEOUT_SECONDS, RSS_FEED_URL
 from greedybear.models import IOC, GeneralHoneypot, Statistics
+from greedybear.utils import is_ip_address, is_valid_domain
 
 logger = logging.getLogger(__name__)
 
@@ -360,23 +360,18 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
                 ioc_type = ioc["type"]
 
                 # Validate and sanitize value before inserting into STIX pattern
-                # to prevent pattern injection via malicious IOC names.
+                # to prevent pattern injection via malicious IOC values.
                 if ioc_type == "ip":
-                    try:
-                        ip_address(value)
-                    except ValueError:
+                    if not is_ip_address(value):
                         logger.warning(f"Skipping IOC with invalid IP value for STIX export: {value!r}")
                         continue
                     stix_type = "ipv6-addr" if ":" in value else "ipv4-addr"
                     pattern = f"[{stix_type}:value = '{value}']"
-                elif ioc_type == "domain":
-                    # Allow only printable ASCII without quotes/backslashes to prevent injection
-                    if not value or any(c in value for c in ("'", '"', "\\", "\n", "\r")):
+                else:  # domain
+                    if not is_valid_domain(value):
                         logger.warning(f"Skipping IOC with unsafe domain value for STIX export: {value!r}")
                         continue
                     pattern = f"[domain-name:value = '{value}']"
-                else:
-                    continue
 
                 # Confidence 0-100
                 confidence = int((ioc.get("recurrence_probability") or 0) * 100)

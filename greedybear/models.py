@@ -203,3 +203,24 @@ class Tag(models.Model):
 
     def __str__(self):
         return f"{self.ioc.name} - {self.key}: {self.value} ({self.source})"
+
+
+class RevokedToken(models.Model):
+    """
+    Stores revoked shared-feed tokens.
+
+    The raw token is never persisted; only its SHA-256 hash is stored so that
+    a leaked database cannot be used to reconstruct valid tokens.
+    """
+
+    token_hash = models.CharField(
+        max_length=64,
+        unique=True,
+        db_index=True,
+        help_text="SHA-256 hex digest of the raw signed token.",
+    )
+    revoked_at = models.DateTimeField(auto_now_add=True)
+    reason = models.CharField(max_length=256, blank=True, default="")
+
+    def __str__(self):
+        return f"RevokedToken({self.token_hash[:12]}…)"
