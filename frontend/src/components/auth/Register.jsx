@@ -30,6 +30,10 @@ import {
   UsernameValidator,
   ComparePassword,
 } from "./utils/validator";
+import {
+  usePasswordVisibility,
+  ShowPasswordToggle,
+} from "../common/ShowPasswordToggle";
 
 // constants
 const hearAboutUsChoices = [
@@ -156,7 +160,8 @@ export default function Register() {
     React.useState(false);
   const [showConfigurationModal, setShowConfigurationModal] =
     React.useState(false);
-  const [passwordShown, setPasswordShown] = React.useState(false);
+  const { passwordShown, toggleVisibility, inputType } =
+    usePasswordVisibility();
 
   console.debug("showAfterRegistrationModal:", showAfterRegistrationModal);
 
@@ -356,7 +361,7 @@ export default function Register() {
                     <Input
                       id="RegisterForm__password"
                       name="password"
-                      type={passwordShown ? "text" : "password"}
+                      type={inputType}
                       className="form-control"
                       placeholder="Create a strong password..."
                       autoComplete="new-password"
@@ -381,7 +386,7 @@ export default function Register() {
                     <Input
                       id="RegisterForm__confirmPassword"
                       name="confirmPassword"
-                      type={passwordShown ? "text" : "password"}
+                      type={inputType}
                       className="form-control"
                       placeholder="Re-enter password"
                       autoComplete="new-password"
@@ -398,15 +403,11 @@ export default function Register() {
                     )}
                   </Col>
                 </FormGroup>
-                <FormGroup check>
-                  <Input
-                    id="RegisterForm__showPassword"
-                    type="checkbox"
-                    defaultChecked={passwordShown}
-                    onChange={() => setPasswordShown(!passwordShown)}
-                  />
-                  <Label check>Show password</Label>
-                </FormGroup>
+                <ShowPasswordToggle
+                  id="RegisterForm__showPassword"
+                  passwordShown={passwordShown}
+                  onChange={toggleVisibility}
+                />
                 <Col sm={12} md={12} className="text-center standout alert">
                   We ask you to provide the following information to better
                   understand what you intend to use GreedyBear for

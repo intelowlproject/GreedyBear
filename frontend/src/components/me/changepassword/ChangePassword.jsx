@@ -18,6 +18,10 @@ import {
   ComparePassword,
   OldNewPasswordValidator,
 } from "../../auth/utils/validator";
+import {
+  usePasswordVisibility,
+  ShowPasswordToggle,
+} from "../../common/ShowPasswordToggle";
 
 const initialValues = {
   old_password: "",
@@ -73,6 +77,9 @@ export default function ChangePassword() {
   // page title
   useTitle("GreedyBear | Change Password", { restoreOnUnmount: true });
 
+  const { passwordShown, toggleVisibility, inputType } =
+    usePasswordVisibility();
+
   const [isAuthenticated, changePassword] = useAuthStore(
     React.useCallback((s) => [s.isAuthenticated, s.service.changePassword], []),
   );
@@ -104,6 +111,7 @@ export default function ChangePassword() {
                 <Label for="oldPassword">Old Password</Label>
                 <Input
                   id="oldPassword"
+                  type={inputType}
                   name="old_password"
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
@@ -124,6 +132,7 @@ export default function ChangePassword() {
                 <Label for="newPassword">New Password</Label>
                 <Input
                   id="newPassword"
+                  type={inputType}
                   name="new_password"
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
@@ -144,6 +153,7 @@ export default function ChangePassword() {
                 <Label for="confirmNewPassword">Confirm New Password</Label>
                 <Input
                   id="confirmNewPassword"
+                  type={inputType}
                   name="confirmNewPassword"
                   onChange={formik.handleChange}
                   onBlur={formik.handleBlur}
@@ -161,6 +171,11 @@ export default function ChangePassword() {
                   <small>{formik.errors.confirmNewPassword}</small>
                 )}
               </FormGroup>
+              <ShowPasswordToggle
+                id="ChangePassword__showPassword"
+                passwordShown={passwordShown}
+                onChange={toggleVisibility}
+              />
               <FormGroup className="mt-3">
                 <Button
                   type="submit"
