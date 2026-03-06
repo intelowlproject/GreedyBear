@@ -42,6 +42,9 @@
     "formatter": "prettier 'src/**/*.{js,jsx}' 'tests/**/*.{js,jsx}' 'src/styles/*.{css,scss}' --check",
     "formatter-fix": "npm run formatter -- --write"
   },
+  "overrides": {
+    "d3-color": "^3.1.0"
+  },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^12.1.5",
