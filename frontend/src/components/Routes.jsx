@@ -3,6 +3,7 @@ import { FallBackLoading } from "@certego/certego-ui";
 
 import IfAuthRedirectGuard from "../wrappers/ifAuthRedirectGuard";
 import AuthGuard from "../wrappers/AuthGuard";
+import ErrorBoundary from "../wrappers/ErrorBoundary";
 
 const Home = React.lazy(() => import("./home/Home"));
 const Login = React.lazy(() => import("./auth/Login"));
@@ -28,15 +29,24 @@ const publicRoutesLazy = [
   {
     path: "/dashboard",
     element: <Dashboard />,
+    hasErrorBoundary: true,
   },
   /* Feeds */
   {
     path: "/feeds",
     element: <Feeds />,
+    hasErrorBoundary: true,
   },
 ].map((r) => ({
   ...r,
-  element: <Suspense fallback={<FallBackLoading />}>{r.element}</Suspense>,
+  element: (
+    <ConditionalWrapper
+      condition={r.hasErrorBoundary}
+      wrapper={(children) => <ErrorBoundary>{children}</ErrorBoundary>}
+    >
+      <Suspense fallback={<FallBackLoading />}>{r.element}</Suspense>
+    </ConditionalWrapper>
+  ),
 }));
 
 // no auth public components
@@ -77,6 +87,7 @@ const authRoutesLazy = [
   {
     path: "/me/sessions",
     element: <Sessions />,
+    hasErrorBoundary: true,
   },
   /* Change Password */
   {
@@ -87,9 +98,18 @@ const authRoutesLazy = [
   ...r,
   element: (
     <AuthGuard>
-      <Suspense fallback={<FallBackLoading />}>{r.element}</Suspense>
+      <ConditionalWrapper
+        condition={r.hasErrorBoundary}
+        wrapper={(children) => <ErrorBoundary>{children}</ErrorBoundary>}
+      >
+        <Suspense fallback={<FallBackLoading />}>{r.element}</Suspense>
+      </ConditionalWrapper>
     </AuthGuard>
   ),
 }));
+
+function ConditionalWrapper({ condition, wrapper, children }) {
+  return condition ? wrapper(children) : children;
+}
 
 export { publicRoutesLazy, noAuthRoutesLazy, authRoutesLazy };
