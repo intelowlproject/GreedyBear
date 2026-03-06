@@ -78,6 +78,22 @@ class StatisticsViewSet(viewsets.ViewSet):
         return self.__aggregation_response_static_statistics(annotations)
 
     @action(detail=False, methods=["get"])
+    def countries(self, request):
+        """
+        Retrieve the top attacker countries by IOC count for the selected time range.
+
+        Args:
+            request: The incoming request object.
+
+        Returns:
+            Response: A JSON list of {country, count} objects ordered by count descending.
+        """
+        delta, _ = self.__parse_range(self.request)
+        qs = IOC.objects.filter(last_seen__gte=delta).exclude(attacker_country="").values("attacker_country").annotate(count=Count("id")).order_by("-count")
+        data = [{"country": item["attacker_country"], "count": item["count"]} for item in qs]
+        return Response(data)
+
+    @action(detail=False, methods=["get"])
     def feeds_types(self, request):
         """
         Retrieve statistics for different types of feeds using GeneralHoneypot M2M relationship.
