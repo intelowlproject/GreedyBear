@@ -31,8 +31,9 @@ const COUNTRY_BAR_COLOR = "#e05252";
 
 // constants
 const colors = getRandomColorsArray(30, true);
-//
-const createAreaChart = (name, url, colorMap, start, end) => {
+//function to create area charts and to remove the duplication of code for each chart.
+// It takes the name of the chart, the url to fetch data, the color map to use for the chart and the start and end index to slice the color map.
+export const createAreaChart = (name, url, colorMap, start, end) => {
   const Component = React.memo(() => {
     console.debug(`${name} rendered!`);
 
