@@ -212,7 +212,6 @@ export const AttackOriginCountriesChart = React.memo(() => {
     );
   }
 
-  // recharts renders top-to-bottom, so reverse so highest count is at top
   const chartData = data.slice(0, 15);
 
   return (
@@ -249,7 +248,7 @@ export const AttackOriginCountriesChart = React.memo(() => {
             <Cell
               key={`cell-${index}`}
               fill={COUNTRY_BAR_COLOR}
-              fillOpacity={0.55 + 0.45 * (index / (chartData.length - 1 || 1))}
+              fillOpacity={1.0 - 0.45 * (index / (chartData.length - 1 || 1))}
             />
           ))}
         </Bar>
