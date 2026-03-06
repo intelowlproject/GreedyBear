@@ -2,21 +2,20 @@
 # See the file 'LICENSE' for copying permission.
 import csv
 import logging
-import re
 from datetime import datetime, timedelta
-from ipaddress import ip_address
 
 import feedparser
 import requests
 from django.conf import settings
 from django.contrib.postgres.aggregates import ArrayAgg
 from django.core.cache import cache
-from django.db.models import Count, F, Max, Min, Sum
+from django.db.models import Count, F, Max, Min, Q, Sum, Value
+from django.db.models.functions import JSONObject
 from django.http import HttpResponse, HttpResponseBadRequest, StreamingHttpResponse
 from rest_framework import status
 from rest_framework.response import Response
 
-from api.serializers import FeedsRequestSerializer
+from api.serializers import FeedsRequestSerializer, parse_feed_types
 from greedybear.consts import CACHE_KEY_GREEDYBEAR_NEWS, CACHE_TIMEOUT_SECONDS, RSS_FEED_URL
 from greedybear.models import IOC, GeneralHoneypot, Statistics
 
@@ -47,7 +46,10 @@ class FeedRequestParams:
     providing default values.
 
     Attributes:
-        feed_type (str): Type of feed to retrieve (default: "all")
+        feed_type (str): comma-separated feed type string as supplied by the
+            caller (default: "all").
+        feed_types (list[str]): List of individual feed type values derived from
+            ``feed_type`` by splitting on commas.
         attack_type (str): Type of attack to filter (default: "all")
         ioc_type (str): Type of IOC to filter - 'ip', 'domain', or 'all' (default: "all")
         max_age (str): Maximum number of days since last occurrence (default: "3")
@@ -67,7 +69,9 @@ class FeedRequestParams:
         Parameters:
             query_params (dict): Dictionary containing query parameters for feed configuration.
         """
-        self.feed_type = query_params.get("feed_type", "all").lower()
+        feed_type_str = query_params.get("feed_type", "all").lower()
+        self.feed_type = feed_type_str
+        self.feed_types = parse_feed_types(feed_type_str)
         self.attack_type = query_params.get("attack_type", "all").lower()
         self.ioc_type = query_params.get("ioc_type", "all").lower()
         self.max_age = query_params.get("max_age", "3")
@@ -78,7 +82,7 @@ class FeedRequestParams:
         self.ordering = query_params.get("ordering", "-last_seen").lower().replace("value", "name")
         self.verbose = query_params.get("verbose", "false").lower()
         self.paginate = query_params.get("paginate", "false").lower()
-        self.format = query_params.get("format_", "json").lower()
+        self.format = query_params.get("format", "json").lower()
         self.feed_type_sorting = None
 
     def apply_default_filters(self, query_params):
@@ -113,28 +117,20 @@ class FeedRequestParams:
                 self.ordering = "-expected_interactions"
 
 
-CACHE_KEY = "valid_feed_types"
-
-
 def get_valid_feed_types() -> frozenset[str]:
-    """
-    Retrieve all valid feed types, combining predefined types with active general honeypot names.
+    cached_feed_types = cache.get("valid_feed_types")
+    if cached_feed_types is not None:
+        return cached_feed_types
 
-    Returns:
-        frozenset[str]: An immutable set of valid feed type strings
-    """
-    valid_types = cache.get(CACHE_KEY)
+    general_honeypots = GeneralHoneypot.objects.filter(active=True)
+    feed_types = ["all"] + [hp.name.lower() for hp in general_honeypots]
+    valid_feed_types = frozenset(feed_types)
 
-    if valid_types is None:
-        general_honeypots = GeneralHoneypot.objects.filter(active=True)
-        feed_types = ["all"] + [hp.name.lower() for hp in general_honeypots]
-        valid_types = frozenset(feed_types)
-        cache.set(CACHE_KEY, valid_types, 900)
-
-    return valid_types
+    cache.set("valid_feed_types", valid_feed_types, timeout=None)
+    return valid_feed_types
 
 
-def get_queryset(request, feed_params, valid_feed_types, is_aggregated=False, serializer_class=FeedsRequestSerializer):
+def get_queryset(request, feed_params, valid_feed_types, is_aggregated=False, serializer_class=FeedsRequestSerializer, tag_key="", tag_value=""):
     """
     Build a queryset to filter IOC data based on the request parameters.
 
@@ -151,6 +147,8 @@ def get_queryset(request, feed_params, valid_feed_types, is_aggregated=False, se
             - Allows injecting a custom serializer to enforce rules for specific feed types
               (e.g., to restrict ordering fields or validation for specialized feeds).
             - Default: `FeedsRequestSerializer`.
+        tag_key (str, optional): Filter IOCs by tag key. Only passed from feeds_advanced.
+        tag_value (str, optional): Filter IOCs by tag value (case-insensitive substring). Only passed from feeds_advanced.
 
     Returns:
         QuerySet: The filtered queryset of IOC data.
@@ -168,9 +166,6 @@ def get_queryset(request, feed_params, valid_feed_types, is_aggregated=False, se
     serializer.is_valid(raise_exception=True)
 
     query_dict = {}
-    if feed_params.feed_type != "all":
-        query_dict["general_honeypot__name__iexact"] = feed_params.feed_type
-
     if feed_params.attack_type != "all":
         query_dict[feed_params.attack_type] = True
 
@@ -183,12 +178,35 @@ def get_queryset(request, feed_params, valid_feed_types, is_aggregated=False, se
     if feed_params.include_reputation:
         query_dict["ip_reputation__in"] = feed_params.include_reputation
 
+    if tag_key:
+        query_dict["tags__key"] = tag_key[:128]  # Truncate to Tag.key max_length
+    if tag_value:
+        query_dict["tags__value__icontains"] = tag_value[:256]  # Truncate to Tag.value max_length
+
     iocs = IOC.objects.filter(**query_dict).exclude(ip_reputation__in=feed_params.exclude_reputation).annotate(value=F("name")).distinct()
+
+    # apply feed type filter as union;
+    if "all" not in feed_params.feed_types:
+        type_filter = Q()
+        for ft in feed_params.feed_types:
+            type_filter |= Q(general_honeypot__name__iexact=ft)
+        iocs = iocs.filter(type_filter)
 
     # aggregated feeds calculate metrics differently and need all rows to be accurate.
     if not is_aggregated:
         iocs = iocs.filter(general_honeypot__active=True)
-        iocs = iocs.annotate(honeypots=ArrayAgg("general_honeypot__name"))
+        iocs = iocs.annotate(honeypots=ArrayAgg("general_honeypot__name", distinct=True))
+        # Only annotate tags metadata when the response format needs it (e.g. JSON),
+        # to avoid unnecessary joins and aggregation work for txt/csv feeds.
+        if getattr(feed_params, "format", "").lower() == "json":
+            iocs = iocs.annotate(
+                tags_json=ArrayAgg(
+                    JSONObject(key=F("tags__key"), value=F("tags__value"), source=F("tags__source")),
+                    filter=Q(tags__isnull=False),
+                    default=Value([]),
+                    distinct=True,
+                )
+            )
         iocs = iocs.order_by(feed_params.ordering)
         iocs = iocs[: int(feed_params.feed_size)]
 
@@ -248,7 +266,7 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
             json_list = []
 
             # Base fields always returned
-            base_fields = {
+            base_fields = (
                 "value",
                 "first_seen",
                 "last_seen",
@@ -261,22 +279,34 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
                 "login_attempts",
                 "recurrence_probability",
                 "expected_interactions",
-                "honeypots",  # Always needed to calculate feed_type
-                "destination_ports",  # Always needed to calculate destination_port_count
-            }
+                "honeypots",  # used to build feed_type; removed from response
+                "destination_ports",  # used to calculate destination_port_count
+                "attacker_country",
+                "tags",
+            )
 
-            # Additional verbose fields
-            verbose_only_fields = {
+            verbose_only_fields = (
                 "days_seen",
                 "firehol_categories",
-            }
+            )
 
-            # Fetch fields from database (always include honeypots and destination_ports)
-            required_fields = base_fields | verbose_only_fields if verbose else base_fields
+            required_fields = base_fields + verbose_only_fields if verbose else base_fields
 
-            # Collect values; `honeypots` will contain the list of associated honeypot names
-            iocs = (ioc_as_dict(ioc, required_fields) for ioc in iocs) if isinstance(iocs, list) else iocs.values(*required_fields)
-            for ioc in iocs:
+            # `tags_json` is annotated in get_queryset (only for JSON format) to avoid conflicting
+            # with the `tags` reverse FK on IOC.  When the queryset comes from a repository method
+            # that does not annotate `tags_json` (e.g. the ML scoring path), exclude the field.
+            if isinstance(iocs, list):
+                has_tags_annotation = bool(iocs) and hasattr(iocs[0], "tags_json")
+            else:
+                has_tags_annotation = "tags_json" in getattr(iocs, "query", type("", (), {"annotations": {}})()).annotations
+            required_fields = tuple(("tags_json" if f == "tags" else f) for f in required_fields if f != "tags" or has_tags_annotation)
+
+            iocs_iter: object
+            if isinstance(iocs, list):
+                iocs_iter = (ioc_as_dict(ioc, set(required_fields)) for ioc in iocs)
+            else:
+                iocs_iter = iocs.values(*required_fields).iterator(chunk_size=2000)
+            for ioc in iocs_iter:
                 ioc_feed_type = [hp.lower() for hp in ioc.get("honeypots", []) if hp]
 
                 data_ = ioc | {
@@ -284,20 +314,17 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
                     "last_seen": ioc["last_seen"].strftime("%Y-%m-%d"),
                     "feed_type": ioc_feed_type,
                     "destination_port_count": len(ioc.get("destination_ports", [])),
+                    "tags": ioc.pop("tags_json", []),
                 }
 
-                # Remove verbose-only fields from response when not in verbose mode
                 if not verbose:
-                    # Remove destination_ports array from response
                     data_.pop("destination_ports", None)
 
-                # Always remove honeypots field as it's redundant with feed_type
                 data_.pop("honeypots", None)
+                data_.pop("id", None)
 
-                # Skip validation - data_ is constructed internally and matches the API contract
                 json_list.append(data_)
 
-            # check if sorting the results by feed_type
             if feed_params.feed_type_sorting is not None:
                 logger.info("Return feeds sorted by feed_type field")
                 json_list = sorted(
@@ -316,43 +343,6 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
                 return Response(resp_data, status=status.HTTP_200_OK)
         case _:
             return HttpResponseBadRequest()
-
-
-def is_ip_address(string: str) -> bool:
-    """
-    Validate if a string is a valid IP address (IPv4 or IPv6).
-
-    Uses the ipaddress module to perform validation. This function properly
-    handles both IPv4 addresses and IPv6 addresses.
-
-    Args:
-        string: The string to validate as an IP address
-
-    Returns:
-        bool: True if the string is a valid IP address, False otherwise
-    """
-    try:
-        ip_address(string)
-    except ValueError:
-        return False
-    return True
-
-
-def is_sha256hash(string: str) -> bool:
-    """
-    Validate if a string is a valid SHA-256 hash.
-
-    A SHA-256 hash is a string of exactly 64 hexadecimal characters
-    (0-9, a-f, A-F). This function checks if the input string matches
-    this pattern using a regular expression.
-
-    Args:
-        string: The string to validate as a SHA-256 hash
-
-    Returns:
-        bool: True if the string is a valid SHA-256 hash, False otherwise
-    """
-    return bool(re.fullmatch(r"^[A-Fa-f0-9]{64}$", string))
 
 
 def asn_aggregated_queryset(iocs_qs, request, feed_params):
