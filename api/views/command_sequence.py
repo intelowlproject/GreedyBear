@@ -68,7 +68,8 @@ def command_sequence_view(request):
         related_iocs = IOC.objects.filter(cowriesession__commands__in=sequences).distinct().only("name")
         if include_similar:
             related_clusters = {s.cluster for s in sequences if s.cluster is not None}
-            related_iocs = IOC.objects.filter(cowriesession__commands__cluster__in=related_clusters).distinct().only("name")
+            cluster_iocs = IOC.objects.filter(cowriesession__commands__cluster__in=related_clusters).distinct().only("name")
+            related_iocs = related_iocs.union(cluster_iocs)
         if not seqs:
             raise Http404(f"No command sequences found for IP: {observable}")
         data = {
