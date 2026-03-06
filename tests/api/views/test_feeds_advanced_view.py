@@ -305,7 +305,7 @@ class FeedsEnhancementsTestCase(CustomTestCase):
         self.assertEqual(share_response.status_code, 200)
         token = share_response.json()["url"].split("/")[-1]
 
-        revoke_response = self.client.delete(f"/api/feeds/revoke/{token}")
+        revoke_response = self.client.get(f"/api/feeds/revoke/{token}")
         self.assertEqual(revoke_response.status_code, 200)
 
         self.client.logout()
@@ -318,14 +318,14 @@ class FeedsEnhancementsTestCase(CustomTestCase):
         share_response = self.client.get("/api/feeds/share?asn=11111")
         token = share_response.json()["url"].split("/")[-1]
 
-        self.client.delete(f"/api/feeds/revoke/{token}")
-        second = self.client.delete(f"/api/feeds/revoke/{token}")
+        self.client.get(f"/api/feeds/revoke/{token}")
+        second = self.client.get(f"/api/feeds/revoke/{token}")
         self.assertEqual(second.status_code, 200)
         self.assertIn("already revoked", second.json()["detail"])
 
     def test_token_revoke_invalid_token(self):
         """Revoking an invalid/expired token returns 400."""
-        revoke_response = self.client.delete("/api/feeds/revoke/not-a-valid-token")
+        revoke_response = self.client.get("/api/feeds/revoke/not-a-valid-token")
         self.assertEqual(revoke_response.status_code, 400)
         self.assertIn("error", revoke_response.json())
 

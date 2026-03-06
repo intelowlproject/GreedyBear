@@ -259,7 +259,7 @@ def feeds_consume(request, token):
     return feeds_response(iocs_queryset, feed_params, valid_feed_types)
 
 
-@api_view(["DELETE"])
+@api_view([GET])
 @authentication_classes([CookieTokenAuthentication])
 @permission_classes([IsAuthenticated])
 def feeds_revoke(request, token):
@@ -267,15 +267,15 @@ def feeds_revoke(request, token):
     Revoke a previously generated shareable feed token.
 
     Once revoked, any attempt to consume the feed via that token will return a 400 error.
-    Only authenticated users can revoke tokens. The raw token is never stored;
-    its SHA-256 hash is saved to mitigate risk from a database breach.
+    This is intentionally a GET endpoint so the revoke link can be opened directly in a browser.
+    Only the user who created the token (or staff) can revoke it.
 
     Args:
         request: The incoming request object.
         token (str): The raw signed token to revoke.
 
     Returns:
-        Response: 200 on successful revocation, 400 if the token is invalid or already expired.
+        Response: 200 on successful revocation, 400/403 if invalid, expired, or not authorized.
     """
     logger.info("request /api/feeds/revoke")
     try:
