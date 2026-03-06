@@ -36,6 +36,12 @@ class IOCSerializer(serializers.ModelSerializer):
         slug_field="address"
     )
 
+    sensors = serializers.SlugRelatedField(
+        many=True,
+        read_only=True,
+        slug_field="address"
+    )
+
     class Meta:
         model = IOC
         exclude = [
