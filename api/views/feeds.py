@@ -218,7 +218,7 @@ def feeds_share(request):
     # Generate signed token and persist a ShareToken record
     token = signing.dumps(data, salt="greedybear-feeds")
     token_hash = hashlib.sha256(token.encode()).hexdigest()
-    ShareToken.objects.get_or_create(token_hash=token_hash)
+    ShareToken.objects.get_or_create(token_hash=token_hash, defaults={"user": request.user})
 
     host = request.build_absolute_uri("/")
     share_url = f"{host}api/feeds/consume/{token}"
@@ -284,7 +284,14 @@ def feeds_revoke(request, token):
         return Response({"error": "Invalid or expired token"}, status=status.HTTP_400_BAD_REQUEST)
 
     token_hash = hashlib.sha256(token.encode()).hexdigest()
-    share_token, created = ShareToken.objects.get_or_create(token_hash=token_hash)
+    try:
+        share_token = ShareToken.objects.get(token_hash=token_hash)
+    except ShareToken.DoesNotExist:
+        return Response({"error": "Token not found. Only the creator can revoke a token."}, status=status.HTTP_403_FORBIDDEN)
+
+    if share_token.user != request.user and not request.user.is_staff:
+        return Response({"error": "You do not have permission to revoke this token."}, status=status.HTTP_403_FORBIDDEN)
+
     if share_token.revoked:
         return Response({"detail": "Token was already revoked."}, status=status.HTTP_200_OK)
     share_token.revoked = True

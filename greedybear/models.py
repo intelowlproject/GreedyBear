@@ -213,8 +213,14 @@ class ShareToken(models.Model):
     a leaked database cannot be used to reconstruct valid tokens.
     A ``revoked`` flag allows tokens to be invalidated without deleting the record,
     making it easy to build an admin view for token management in the future.
+    Only the user who created the token can revoke it.
     """
 
+    user = models.ForeignKey(
+        "certego_saas_user.User",
+        on_delete=models.CASCADE,
+        related_name="share_tokens",
+    )
     token_hash = models.CharField(
         max_length=64,
         unique=True,
