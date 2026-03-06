@@ -76,7 +76,6 @@ describe("AuthGuard", () => {
       selector({ isAuthenticated: AUTHENTICATION_STATUSES.FALSE }),
     );
 
-   
     let capturedLocation;
     const LocationCapture = () => {
       capturedLocation = window.location.href;

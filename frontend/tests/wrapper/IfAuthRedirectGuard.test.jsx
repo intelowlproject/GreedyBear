@@ -17,8 +17,6 @@ vi.mock("react-use/lib/useSearchParam", () => ({
   default: () => mockUseSearchParam(),
 }));
 
-
-
 describe("IfAuthRedirectGuard", () => {
   beforeEach(() => {
     vi.clearAllMocks();
