@@ -203,3 +203,35 @@ class Tag(models.Model):
 
     def __str__(self):
         return f"{self.ioc.name} - {self.key}: {self.value} ({self.source})"
+
+
+class ShareToken(models.Model):
+    """
+    Tracks shared feed tokens issued via the ``/api/feeds/share`` endpoint.
+
+    The raw token is never persisted; only its SHA-256 hash is stored so that
+    a leaked database cannot be used to reconstruct valid tokens.
+    A ``revoked`` flag allows tokens to be invalidated without deleting the record,
+    making it easy to build an admin view for token management in the future.
+    Only the user who created the token can revoke it.
+    """
+
+    user = models.ForeignKey(
+        "certego_saas_user.User",
+        on_delete=models.CASCADE,
+        related_name="share_tokens",
+    )
+    token_hash = models.CharField(
+        max_length=64,
+        unique=True,
+        db_index=True,
+        help_text="SHA-256 hex digest of the raw signed token.",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    revoked = models.BooleanField(default=False)
+    revoked_at = models.DateTimeField(null=True, blank=True)
+    reason = models.CharField(max_length=256, blank=True, default="")
+
+    def __str__(self):
+        status = "revoked" if self.revoked else "active"
+        return f"ShareToken({self.token_hash[:12]}… [{status}])"

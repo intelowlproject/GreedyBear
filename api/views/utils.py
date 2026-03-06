@@ -14,10 +14,12 @@ from django.db.models.functions import JSONObject
 from django.http import HttpResponse, HttpResponseBadRequest, StreamingHttpResponse
 from rest_framework import status
 from rest_framework.response import Response
+from stix2 import Bundle, ExternalReference, Indicator
 
 from api.serializers import FeedsRequestSerializer, parse_feed_types
 from greedybear.consts import CACHE_KEY_GREEDYBEAR_NEWS, CACHE_TIMEOUT_SECONDS, RSS_FEED_URL
 from greedybear.models import IOC, GeneralHoneypot, Statistics
+from greedybear.utils import is_ip_address, is_valid_domain
 
 logger = logging.getLogger(__name__)
 
@@ -76,14 +78,31 @@ class FeedRequestParams:
         self.ioc_type = query_params.get("ioc_type", "all").lower()
         self.max_age = query_params.get("max_age", "3")
         self.min_days_seen = query_params.get("min_days_seen", "1")
-        self.include_reputation = query_params["include_reputation"].split(";") if "include_reputation" in query_params else []
-        self.exclude_reputation = query_params["exclude_reputation"].split(";") if "exclude_reputation" in query_params else []
+        # Handle reputation lists (could be list from JSON or string from QueryDict)
+        inc_rep = query_params.get("include_reputation", [])
+        if isinstance(inc_rep, list):
+            self.include_reputation = inc_rep
+        else:
+            self.include_reputation = inc_rep.split(";") if inc_rep else []
+
+        exc_rep = query_params.get("exclude_reputation", [])
+        if isinstance(exc_rep, list):
+            self.exclude_reputation = exc_rep
+        else:
+            self.exclude_reputation = exc_rep.split(";") if exc_rep else []
+
         self.feed_size = query_params.get("feed_size", "5000")
         self.ordering = query_params.get("ordering", "-last_seen").lower().replace("value", "name")
         self.verbose = query_params.get("verbose", "false").lower()
         self.paginate = query_params.get("paginate", "false").lower()
-        self.format = query_params.get("format", "json").lower()
+        # Support both format_ and format
+        self.format = query_params.get("format_", query_params.get("format", "json")).lower()
         self.feed_type_sorting = None
+        self.asn = query_params.get("asn")
+        self.min_score = query_params.get("min_score")
+        self.port = query_params.get("port")
+        self.start_date = query_params.get("start_date")
+        self.end_date = query_params.get("end_date")
 
     def apply_default_filters(self, query_params):
         if not query_params:
@@ -158,8 +177,9 @@ def get_queryset(request, feed_params, valid_feed_types, is_aggregated=False, se
         f"Age: {feed_params.max_age}, format: {feed_params.format}"
     )
 
+    feed_params_data = {k: v for k, v in vars(feed_params).items() if v is not None}
     serializer = serializer_class(
-        data=vars(feed_params),
+        data=feed_params_data,
         context={"valid_feed_types": valid_feed_types},
     )
     serializer.is_valid(raise_exception=True)
@@ -171,7 +191,24 @@ def get_queryset(request, feed_params, valid_feed_types, is_aggregated=False, se
     if feed_params.ioc_type != "all":
         query_dict["type"] = feed_params.ioc_type
 
-    query_dict["last_seen__gte"] = datetime.now() - timedelta(days=int(feed_params.max_age))
+    # Advanced filters
+    if feed_params.asn:
+        query_dict["asn"] = feed_params.asn
+    if feed_params.min_score is not None:
+        query_dict["recurrence_probability__gte"] = feed_params.min_score
+    if feed_params.port:
+        query_dict["destination_ports__contains"] = [int(feed_params.port)]
+
+    # Date handling
+    if feed_params.start_date:
+        query_dict["last_seen__gte"] = feed_params.start_date
+    if feed_params.end_date:
+        query_dict["last_seen__lte"] = feed_params.end_date
+
+    # Fallback to max_age ONLY if no date range is specified
+    if not (feed_params.start_date or feed_params.end_date):
+        query_dict["last_seen__gte"] = datetime.now() - timedelta(days=int(feed_params.max_age))
+
     if int(feed_params.min_days_seen) > 1:
         query_dict["number_of_days_seen__gte"] = int(feed_params.min_days_seen)
     if feed_params.include_reputation:
@@ -230,7 +267,7 @@ def ioc_as_dict(ioc, fields: set) -> dict:
     return {k: v for k, v in ioc.__dict__.items() if k in fields}
 
 
-def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose=False):
+def feeds_response(request=None, iocs=None, feed_params=None, valid_feed_types=None, dict_only=False, verbose=False):
     """
     Format the IOC data into the requested format (e.g., JSON, CSV, TXT).
 
@@ -340,6 +377,67 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
                 return resp_data
             else:
                 return Response(resp_data, status=status.HTTP_200_OK)
+        case "stix21":
+            stix_fields = {
+                "value",
+                "type",
+                "first_seen",
+                "last_seen",
+                "recurrence_probability",
+                "honeypots",
+                "ip_reputation",
+            }
+            # Fetch fields from database
+            iocs = (ioc_as_dict(ioc, stix_fields) for ioc in iocs) if isinstance(iocs, list) else iocs.values(*stix_fields)
+
+            stix_objects = []
+            for ioc in iocs:
+                value = ioc["value"]
+                ioc_type = ioc["type"]
+
+                # Validate and sanitize value before inserting into STIX pattern
+                # to prevent pattern injection via malicious IOC values.
+                if ioc_type == "ip":
+                    if not is_ip_address(value):
+                        logger.warning(f"Skipping IOC with invalid IP value for STIX export: {value!r}")
+                        continue
+                    stix_type = "ipv6-addr" if ":" in value else "ipv4-addr"
+                    pattern = f"[{stix_type}:value = '{value}']"
+                else:  # domain
+                    if not is_valid_domain(value):
+                        logger.warning(f"Skipping IOC with unsafe domain value for STIX export: {value!r}")
+                        continue
+                    pattern = f"[domain-name:value = '{value}']"
+
+                # Confidence 0-100.
+                # We use a fixed high confidence (90) for honeypot observations as they are highly reliable.
+                confidence = 90
+
+                # Labels
+                labels = [hp.lower() for hp in ioc.get("honeypots", []) if hp]
+                if ioc.get("ip_reputation"):
+                    labels.append(ioc["ip_reputation"])
+
+                indicator = Indicator(
+                    name=value,
+                    pattern=pattern,
+                    pattern_type="stix",
+                    valid_from=ioc["first_seen"],
+                    valid_until=ioc["last_seen"] + timedelta(days=1),
+                    labels=labels,
+                    confidence=confidence,
+                    description=f"Detected by GreedyBear honeypots: {', '.join(labels)}",
+                    external_references=[
+                        ExternalReference(
+                            source_name="GreedyBear",
+                            url=(request.build_absolute_uri(f"/?query={value}") if request else f"https://greedybear.honeynet.org/?query={value}"),
+                        )
+                    ],
+                )
+                stix_objects.append(indicator)
+
+            bundle = Bundle(objects=stix_objects)
+            return HttpResponse(bundle.serialize(), content_type="application/json")
         case _:
             return HttpResponseBadRequest()
 

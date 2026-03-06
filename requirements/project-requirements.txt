@@ -24,3 +24,4 @@ numpy==2.4.2
 datasketch==1.9.0
 
 feedparser==6.0.12
+stix2==3.0.1
