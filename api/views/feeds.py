@@ -60,7 +60,7 @@ def feeds(request, feed_type, attack_type, prioritize, format_):
 
     valid_feed_types = get_valid_feed_types()
     iocs_queryset = get_queryset(request, feed_params, valid_feed_types)
-    return feeds_response(iocs_queryset, feed_params, valid_feed_types)
+    return feeds_response(request, iocs_queryset, feed_params, valid_feed_types)
 
 
 @api_view([GET])
@@ -87,7 +87,7 @@ def feeds_pagination(request):
     iocs_queryset = get_queryset(request, feed_params, valid_feed_types)
     paginator = CustomPageNumberPagination()
     iocs = paginator.paginate_queryset(iocs_queryset, request)
-    resp_data = feeds_response(iocs, feed_params, valid_feed_types, dict_only=True)
+    resp_data = feeds_response(request, iocs, feed_params, valid_feed_types, dict_only=True)
     return paginator.get_paginated_response(resp_data)
 
 
@@ -135,9 +135,9 @@ def feeds_advanced(request):
     if paginate:
         paginator = CustomPageNumberPagination()
         iocs = paginator.paginate_queryset(iocs_queryset, request)
-        resp_data = feeds_response(iocs, feed_params, valid_feed_types, dict_only=True, verbose=verbose)
+        resp_data = feeds_response(request, iocs, feed_params, valid_feed_types, dict_only=True, verbose=verbose)
         return paginator.get_paginated_response(resp_data)
-    return feeds_response(iocs_queryset, feed_params, valid_feed_types, verbose=verbose)
+    return feeds_response(request, iocs_queryset, feed_params, valid_feed_types, verbose=verbose)
 
 
 @api_view(["GET"])
@@ -256,7 +256,7 @@ def feeds_consume(request, token):
 
     valid_feed_types = get_valid_feed_types()
     iocs_queryset = get_queryset(request, feed_params, valid_feed_types)
-    return feeds_response(iocs_queryset, feed_params, valid_feed_types)
+    return feeds_response(request, iocs_queryset, feed_params, valid_feed_types)
 
 
 @api_view([GET])

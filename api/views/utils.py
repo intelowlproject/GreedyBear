@@ -267,7 +267,7 @@ def ioc_as_dict(ioc, fields: set) -> dict:
     return {k: v for k, v in ioc.__dict__.items() if k in fields}
 
 
-def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose=False):
+def feeds_response(request=None, iocs=None, feed_params=None, valid_feed_types=None, dict_only=False, verbose=False):
     """
     Format the IOC data into the requested format (e.g., JSON, CSV, TXT).
 
@@ -409,8 +409,9 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
                         continue
                     pattern = f"[domain-name:value = '{value}']"
 
-                # Confidence 0-100
-                confidence = int((ioc.get("recurrence_probability") or 0) * 100)
+                # Confidence 0-100.
+                # We use a fixed high confidence (90) for honeypot observations as they are highly reliable.
+                confidence = 90
 
                 # Labels
                 labels = [hp.lower() for hp in ioc.get("honeypots", []) if hp]
@@ -426,7 +427,12 @@ def feeds_response(iocs, feed_params, valid_feed_types, dict_only=False, verbose
                     labels=labels,
                     confidence=confidence,
                     description=f"Detected by GreedyBear honeypots: {', '.join(labels)}",
-                    external_references=[ExternalReference(source_name="GreedyBear", url=f"https://greedybear.honeynet.org/?query={value}")],
+                    external_references=[
+                        ExternalReference(
+                            source_name="GreedyBear",
+                            url=(request.build_absolute_uri(f"/?query={value}") if request else f"https://greedybear.honeynet.org/?query={value}"),
+                        )
+                    ],
                 )
                 stix_objects.append(indicator)
 
