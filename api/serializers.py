@@ -22,6 +22,12 @@ class GeneralHoneypotSerializer(serializers.ModelSerializer):
 class IOCSerializer(serializers.ModelSerializer):
     general_honeypot = GeneralHoneypotSerializer(many=True, read_only=True)
 
+    sensors = serializers.SlugRelatedField(
+        many=True,
+        read_only=True,
+        slug_field="address"
+    )
+
     class Meta:
         model = IOC
         exclude = [
