@@ -6,7 +6,7 @@ from django.core.exceptions import FieldDoesNotExist
 from rest_framework import serializers
 
 from greedybear.consts import REGEX_DOMAIN
-from greedybear.models import IOC, GeneralHoneypot
+from greedybear.models import IOC, GeneralHoneypot, Tag
 from greedybear.utils import is_ip_address
 
 logger = logging.getLogger(__name__)
@@ -20,8 +20,15 @@ class GeneralHoneypotSerializer(serializers.ModelSerializer):
         return value.name
 
 
+class TagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Tag
+        fields = ["key", "value", "source"]
+
+
 class IOCSerializer(serializers.ModelSerializer):
     general_honeypot = GeneralHoneypotSerializer(many=True, read_only=True)
+    tags = TagSerializer(many=True, read_only=True)
 
     class Meta:
         model = IOC
@@ -49,12 +56,24 @@ class EnrichmentSerializer(serializers.Serializer):
             raise serializers.ValidationError("Observable is not a valid IP address or domain")
 
         try:
-            required_object = IOC.objects.get(name=observable)
+            required_object = IOC.objects.prefetch_related("tags").get(name=observable)
             data["found"] = True
             data["ioc"] = required_object
         except IOC.DoesNotExist:
             data["found"] = False
         return data
+
+
+def parse_feed_types(feed_type_str: str) -> list:
+    """Split a comma-separated feed type string into a stripped list of individual feed types.
+
+    Args:
+        feed_type_str (str): Comma-separated feed type string (e.g. "cowrie,adbhoney").
+
+    Returns:
+        list[str]: List of non-empty, stripped feed type tokens.
+    """
+    return [ft.strip() for ft in feed_type_str.split(",") if ft.strip()]
 
 
 def feed_type_validation(feed_type: str, valid_feed_types: frozenset) -> str:
@@ -101,7 +120,7 @@ def ordering_validation(ordering: str) -> str:
 
 
 class FeedsRequestSerializer(serializers.Serializer):
-    feed_type = serializers.CharField(max_length=120)
+    feed_type = serializers.CharField()
     attack_type = serializers.ChoiceField(choices=["scanner", "payload_request", "all"])
     ioc_type = serializers.ChoiceField(choices=["ip", "domain", "all"])
     max_age = serializers.IntegerField(min_value=1)
@@ -112,11 +131,28 @@ class FeedsRequestSerializer(serializers.Serializer):
     ordering = serializers.CharField(max_length=120)
     verbose = serializers.ChoiceField(choices=["true", "false"])
     paginate = serializers.ChoiceField(choices=["true", "false"])
-    format = serializers.ChoiceField(choices=["csv", "json", "txt"])
+    format = serializers.ChoiceField(choices=["csv", "json", "txt", "stix21"])
+    asn = serializers.IntegerField(min_value=1, required=False, allow_null=True)
+    min_score = serializers.FloatField(min_value=0, max_value=1, required=False, allow_null=True)
+    port = serializers.IntegerField(min_value=1, max_value=65535, required=False, allow_null=True)
+    start_date = serializers.DateField(format="%Y-%m-%d", required=False, allow_null=True)
+    end_date = serializers.DateField(format="%Y-%m-%d", required=False, allow_null=True)
+    tag_key = serializers.CharField(max_length=128, required=False, allow_blank=True)
+    tag_value = serializers.CharField(max_length=256, required=False, allow_blank=True)
 
     def validate_feed_type(self, feed_type):
         logger.debug(f"FeedsRequestSerializer - validation feed_type: '{feed_type}'")
-        return feed_type_validation(feed_type, self.context["valid_feed_types"])
+        feed_types = parse_feed_types(feed_type)
+        if not feed_types:
+            raise serializers.ValidationError("Invalid feed_type: must not be empty")
+        valid_feed_types = self.context["valid_feed_types"]
+        if len(feed_types) > len(valid_feed_types):
+            raise serializers.ValidationError(f"Invalid feed_type: too many types specified (max {len(valid_feed_types)})")
+        if "all" in feed_types and len(feed_types) > 1:
+            raise serializers.ValidationError("Invalid feed_type: 'all' cannot be combined with other feed types")
+        for ft in feed_types:
+            feed_type_validation(ft, valid_feed_types)
+        return feed_type
 
     def validate_ordering(self, ordering):
         logger.debug(f"FeedsRequestSerializer - validation ordering: '{ordering}'")
@@ -188,6 +224,8 @@ class FeedsResponseSerializer(serializers.Serializer):
     login_attempts = serializers.IntegerField(min_value=0)
     recurrence_probability = serializers.FloatField(min_value=0, max_value=1)
     expected_interactions = serializers.FloatField(min_value=0)
+    attacker_country = serializers.CharField(allow_null=True, allow_blank=True, max_length=120)
+    tags = TagSerializer(many=True, required=False, default=list)
 
     def validate_feed_type(self, feed_type):
         logger.debug(f"FeedsResponseSerializer - validation feed_type: '{feed_type}'")

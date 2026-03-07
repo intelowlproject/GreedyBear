@@ -34,6 +34,7 @@ const feedsTableColumns = [
   {
     Header: "Feed type",
     accessor: "feed_type",
+    disableSortBy: true,
     maxWidth: 60,
     Cell: ({ value }) =>
       Array.isArray(value) ? (
@@ -68,6 +69,7 @@ const feedsTableColumns = [
   {
     Header: "Details",
     accessor: "details",
+    disableSortBy: true,
     Cell: ({ row }) => {
       const {
         recurrence_probability,
@@ -77,6 +79,7 @@ const feedsTableColumns = [
         login_attempts,
         asn,
         ip_reputation,
+        attacker_country,
       } = row.original;
       const popoverId = `feeds-details-${row.id}`;
       return (
@@ -115,6 +118,7 @@ const feedsTableColumns = [
               <div className="text-muted">Enrichment</div>
               <div>ASN: {asn ?? "-"}</div>
               <div>Reputation: {ip_reputation || "-"}</div>
+              <div>Country: {attacker_country || "-"}</div>
             </PopoverBody>
           </UncontrolledPopover>
         </div>
@@ -134,7 +138,7 @@ const feedsTableColumns = [
               <a
                 href={`${INTELOWL_URL}/scan?observable_name=${encodeURIComponent(row.original.value)}`}
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 title={`Analyze ${row.original.value} on IntelOwl`}
               >
                 <img

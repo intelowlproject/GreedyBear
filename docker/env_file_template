@@ -1,6 +1,12 @@
 # Required Secrets
 ENVIRONMENT=production
 DJANGO_SECRET=
+
+# Comma-separated list of allowed hostnames for Django's ALLOWED_HOSTS setting.
+# If not set, defaults to ["*"] (allows all hosts) with a security warning.
+# Example: DJANGO_ALLOWED_HOSTS=greedybear.example.com,api.example.com
+DJANGO_ALLOWED_HOSTS=
+
 DB_HOST=postgres
 DB_PORT=5432
 DB_USER=user
@@ -74,6 +80,10 @@ THREATFOX_API_KEY =
 # AbuseIPDB API key for downloading the blocklist feed
 # Get your free API key from https://www.abuseipdb.com/
 ABUSEIPDB_API_KEY =
+
+# Rate limiting for feeds endpoints (format: number/period, e.g. 30/minute)
+FEEDS_THROTTLE_RATE=30/minute
+FEEDS_ADVANCED_THROTTLE_RATE=100/minute
 
 # Optional feed license URL to include in API responses
 # If not set, no license information will be included in feeds

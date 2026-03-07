@@ -22,29 +22,17 @@ const publicRoutesLazy = [
   /* Home */
   {
     index: true,
-    element: (
-      <Suspense fallback={<FallBackLoading />}>
-        <Home />
-      </Suspense>
-    ),
+    element: <Home />,
   },
   /* Dashboard */
   {
     path: "/dashboard",
-    element: (
-      <Suspense fallback={<FallBackLoading />}>
-        <Dashboard />
-      </Suspense>
-    ),
+    element: <Dashboard />,
   },
   /* Feeds */
   {
     path: "/feeds",
-    element: (
-      <Suspense fallback={<FallBackLoading />}>
-        <Feeds />
-      </Suspense>
-    ),
+    element: <Feeds />,
   },
 ].map((r) => ({
   ...r,
@@ -83,29 +71,17 @@ const authRoutesLazy = [
   /* auth */
   {
     path: "/logout",
-    element: (
-      <Suspense fallback={<FallBackLoading />}>
-        <Logout />
-      </Suspense>
-    ),
+    element: <Logout />,
   },
   /* API Access/Sessions Management */
   {
     path: "/me/sessions",
-    element: (
-      <Suspense fallback={<FallBackLoading />}>
-        <Sessions />
-      </Suspense>
-    ),
+    element: <Sessions />,
   },
   /* Change Password */
   {
     path: "/me/change-password",
-    element: (
-      <Suspense fallback={<FallBackLoading />}>
-        <ChangePassword />
-      </Suspense>
-    ),
+    element: <ChangePassword />,
   },
 ].map((r) => ({
   ...r,

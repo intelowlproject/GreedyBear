@@ -98,6 +98,7 @@ class IocProcessor:
         existing.destination_ports = sorted(set(existing.destination_ports + new.destination_ports))
         existing.ip_reputation = new.ip_reputation
         existing.asn = new.asn
+        existing.firehol_categories = list(new.firehol_categories)
         existing.login_attempts += new.login_attempts
 
         # we will always update attacker_country if incoming value exists

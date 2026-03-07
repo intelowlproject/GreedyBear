@@ -164,7 +164,7 @@ export default function ResetPassword() {
                 <FormGroup className="mt-3 d-flex">
                   <Button
                     type="submit"
-                    disabled={!(formik.isValid || formik.isSubmitting)}
+                    disabled={!formik.isValid || formik.isSubmitting}
                     color="primary"
                     outline
                     className="mx-auto"
