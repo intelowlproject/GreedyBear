@@ -72,6 +72,13 @@ class FeedsViewTestCase(CustomTestCase):
         # Expecting 3 because setupTestData creates 3 IOCs (ioc, ioc_2, ioc_domain) associated with Heralding
         self.assertEqual(len(response.json()["iocs"]), 3)
 
+    def test_200_feeds_ignores_undocumented_params(self):
+        # Even if unauthenticated users try to inject variables like feed_size
+        # they must be ignored and the feed should return normally with status 200
+        # and the default feed_size (so it won't crash or behave unexpectedly).
+        response = self.client.get("/api/feeds/all/all/recent.json?feed_size=999999")
+        self.assertEqual(response.status_code, 200)
+
     def test_400_feeds(self):
         response = self.client.get("/api/feeds/test/all/recent.json")
         self.assertEqual(response.status_code, 400)
@@ -135,6 +142,13 @@ class FeedsViewTestCase(CustomTestCase):
         returned_values = {ioc["value"] for ioc in response.json()["results"]["iocs"]}
         self.assertIn(self.ioc.name, returned_values)
         self.assertIn(self.ioc_domain.name, returned_values)
+
+    def test_200_feeds_pagination_ignores_undocumented_params(self):
+        # Even if unauthenticated users try to inject variables like feed_size
+        # they must be ignored and the feed should return normally with status 200
+        # and the default feed_size (so it won't crash or behave unexpectedly).
+        response = self.client.get("/api/feeds/?page_size=10&page=1&feed_type=all&attack_type=all&age=recent&feed_size=9999999")
+        self.assertEqual(response.status_code, 200)
 
     def test_400_feeds_multi_type_with_invalid(self):
         response = self.client.get("/api/feeds/?page_size=10&page=1&feed_type=cowrie,invalid_type&attack_type=all&age=recent")
