@@ -19,6 +19,7 @@ from api.serializers import FeedsRequestSerializer, parse_feed_types
 from greedybear.consts import CACHE_KEY_GREEDYBEAR_NEWS, CACHE_TIMEOUT_SECONDS, RSS_FEED_URL
 from greedybear.models import IOC, GeneralHoneypot, Statistics
 
+VALID_FEED_TYPES_CACHE_KEY = "valid_feed_types"
 logger = logging.getLogger(__name__)
 
 
@@ -118,6 +119,12 @@ class FeedRequestParams:
 
 
 def get_valid_feed_types() -> frozenset[str]:
+    """
+    Retrieve all valid feed types, combining predefined types with active      general honeypot names.
+
+    Returns:
+        frozenset[str]: An immutable set of valid feed type strings
+    """
     cached_feed_types = cache.get("valid_feed_types")
     if cached_feed_types is not None:
         return cached_feed_types
