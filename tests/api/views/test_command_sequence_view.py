@@ -36,6 +36,42 @@ class CommandSequenceViewTestCase(CustomTestCase):
         self.assertIn("executed_commands", response.data)
         self.assertIn("executed_by", response.data)
 
+    def test_include_similar_preserves_base_results(self):
+        """Test that include_similar extends executed_by instead of replacing it."""
+        # Get base results without include_similar
+        base_response = self.client.get("/api/command_sequence?query=140.246.171.141")
+        self.assertEqual(base_response.status_code, 200)
+        base_executed_by = set(base_response.data["executed_by"])
+
+        # Get results with include_similar
+        similar_response = self.client.get("/api/command_sequence?query=140.246.171.141&include_similar")
+        self.assertEqual(similar_response.status_code, 200)
+        similar_executed_by = set(similar_response.data["executed_by"])
+
+        # include_similar should be a superset of base results, never lose them
+        self.assertTrue(
+            base_executed_by.issubset(similar_executed_by),
+            f"include_similar lost base results: {base_executed_by - similar_executed_by}",
+        )
+
+    def test_include_similar_with_unclustered_sequences(self):
+        """Test that include_similar still returns results when sequences have no cluster."""
+        # Remove cluster from the command sequence
+        self.command_sequence.cluster = None
+        self.command_sequence.save()
+
+        base_response = self.client.get("/api/command_sequence?query=140.246.171.141")
+        self.assertEqual(base_response.status_code, 200)
+
+        similar_response = self.client.get("/api/command_sequence?query=140.246.171.141&include_similar")
+        self.assertEqual(similar_response.status_code, 200)
+
+        # When no clusters exist, include_similar should still return the base results
+        self.assertEqual(
+            base_response.data["executed_by"],
+            similar_response.data["executed_by"],
+        )
+
     def test_nonexistent_ip_address(self):
         """Test that view returns 404 for IP with no sequences."""
         response = self.client.get("/api/command_sequence?query=10.0.0.1")
