@@ -133,7 +133,7 @@ def get_valid_feed_types() -> frozenset[str]:
     feed_types = ["all"] + [hp.name.lower() for hp in general_honeypots]
     valid_feed_types = frozenset(feed_types)
 
-    cache.set("valid_feed_types", valid_feed_types, timeout=None)
+    cache.set("valid_feed_types", valid_feed_types, timeout=900)
     return valid_feed_types
 
 

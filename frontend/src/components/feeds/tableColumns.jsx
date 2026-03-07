@@ -79,6 +79,7 @@ const feedsTableColumns = [
         login_attempts,
         asn,
         ip_reputation,
+        attacker_country,
       } = row.original;
       const popoverId = `feeds-details-${row.id}`;
       return (
@@ -117,6 +118,7 @@ const feedsTableColumns = [
               <div className="text-muted">Enrichment</div>
               <div>ASN: {asn ?? "-"}</div>
               <div>Reputation: {ip_reputation || "-"}</div>
+              <div>Country: {attacker_country || "-"}</div>
             </PopoverBody>
           </UncontrolledPopover>
         </div>
