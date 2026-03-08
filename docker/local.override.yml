@@ -1,5 +1,5 @@
 services:
-  gunicorn:
+  app:
     build:
       context: ..
       dockerfile: docker/Dockerfile

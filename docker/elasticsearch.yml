@@ -1,5 +1,5 @@
 services:
-  gunicorn:
+  app:
     depends_on:
       - elasticsearch
 

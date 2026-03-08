@@ -1,5 +1,5 @@
 services:
-  gunicorn:
+  app:
     image: intelowlproject/greedybear:stag
 
   nginx:

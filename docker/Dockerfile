@@ -27,7 +27,7 @@ WORKDIR $PYTHONPATH
 
 # Install runtime dependencies
 #  - libgomp1 is required for model training
-#  - curl for healthcheck
+#  - python3 used for healthcheck via TCP socket
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libgomp1 curl \
     && rm -rf /var/lib/apt/lists/*
@@ -41,7 +41,7 @@ COPY . $PYTHONPATH
 COPY --from=frontend-build /app/build /var/www/reactapp
 
 # separation is required to avoid to re-execute os installation in case of change of python requirements
-RUN mkdir -p ${LOG_PATH}/django \
+RUN mkdir -p ${LOG_PATH}/django ${LOG_PATH}/gunicorn \
     && touch ${LOG_PATH}/django/api.log ${LOG_PATH}/django/api_errors.log \
     && touch ${LOG_PATH}/django/greedybear.log ${LOG_PATH}/django/greedybear_errors.log \
     && touch ${LOG_PATH}/django/django_q.log ${LOG_PATH}/django/django_q_errors.log \
@@ -51,6 +51,9 @@ RUN mkdir -p ${LOG_PATH}/django \
     && usermod -u 2000 www-data \
     && chown -R www-data:www-data ${LOG_PATH} /opt/deploy/ ${PYTHONPATH}/mlmodels/ \
     && rm -rf frontend/
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=3 \
+    CMD python3 -c "import socket; socket.create_connection(('localhost', 8001), timeout=2)" || exit 1
 
 ## ------------------------------- Development Stage ------------------------------ ##
 

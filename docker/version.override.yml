@@ -1,6 +1,6 @@
 # you have to populate the ENV variable REACT_APP_INTELOWL_VERSION in the .env file to have this work
 services:
-  gunicorn:
+  app:
     image: intelowlproject/greedybear:${REACT_APP_INTELOWL_VERSION}
 
   nginx:
