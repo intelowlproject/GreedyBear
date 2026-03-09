@@ -200,6 +200,7 @@ class ExtractionTestCase(CustomTestCase):
         destination_ports=None,
         login_attempts=0,
         days_seen=None,
+        first_seen=None,
         last_seen=None,
         ip_reputation="",
         asn=1234,
@@ -216,6 +217,7 @@ class ExtractionTestCase(CustomTestCase):
         mock.destination_ports = destination_ports if destination_ports is not None else []
         mock.days_seen = days_seen if days_seen is not None else []
         mock.login_attempts = login_attempts
+        mock.first_seen = first_seen if first_seen is not None else datetime.now()
         mock.last_seen = last_seen if last_seen is not None else datetime.now()
         mock.ip_reputation = ip_reputation
         mock.asn = asn
