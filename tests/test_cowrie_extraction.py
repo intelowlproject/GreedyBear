@@ -289,7 +289,7 @@ class TestCowrieExtractionStrategy(ExtractionTestCase):
 
         scanner_mock.related_ioc.add.assert_called_once_with(hostname_mock)
         hostname_mock.related_ioc.add.assert_called_once_with(scanner_mock)
-        self.assertEqual(self.mock_ioc_repo.save.call_count, 2)
+        self.assertEqual(self.mock_ioc_repo.save.call_count, 0)
 
     def test_add_fks_scanner_none(self):
         """Test linking when scanner IOC doesn't exist."""

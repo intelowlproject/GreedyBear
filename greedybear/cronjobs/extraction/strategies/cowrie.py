@@ -270,31 +270,6 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
 
         session_record.interaction_count += 1
 
-    def _add_fks(self, scanner_ip: str, hostname: str) -> None:
-        """
-        Link related IOCs bidirectionally (scanner IP <-> hostname).
-
-        Args:
-            scanner_ip: Scanner IP address
-            hostname: Hostname to link with scanner
-        """
-        scanner_ip_instance = self.ioc_repo.get_ioc_by_name(scanner_ip)
-        hostname_instance = self.ioc_repo.get_ioc_by_name(hostname)
-
-        # Log warning if IOCs are missing - shouldn't happen in normal operation
-        if not scanner_ip_instance or not hostname_instance:
-            self.log.warning(
-                f"Cannot link IOCs - missing from database: scanner_ip={scanner_ip_instance is not None}, hostname={hostname_instance is not None}"
-            )
-            return
-
-        # Link bidirectionally - Django's .add() handles deduplication automatically
-        scanner_ip_instance.related_ioc.add(hostname_instance)
-        self.ioc_repo.save(scanner_ip_instance)
-
-        hostname_instance.related_ioc.add(scanner_ip_instance)
-        self.ioc_repo.save(hostname_instance)
-
     def _deduplicate_command_sequence(self, session: CowrieSession) -> bool:
         """
         Deduplicate command sequences by hashing and merging with existing sequences.
