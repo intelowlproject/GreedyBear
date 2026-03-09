@@ -112,7 +112,7 @@ class AbuseIPDBCron(Cronjob):
             blocklist_data: Raw blocklist data from AbuseIPDB API.
 
         Returns:
-            Dict mapping IP address -> enrichment dict.
+            Dict mapping IP address -> abuse confidence score.
         """
         score_by_ip: dict[str, int] = {}
 
