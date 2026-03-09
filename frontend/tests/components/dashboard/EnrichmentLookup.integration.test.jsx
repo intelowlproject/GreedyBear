@@ -256,4 +256,48 @@ describe("Enrichment Lookup Integration Tests", () => {
       expect(screen.getByText(errorMessage)).toBeInTheDocument();
     });
   });
+
+  test("uses only formik isSubmitting for button state, no redundant loading state", async () => {
+    const user = userEvent.setup();
+
+    mockUseAuthStore.mockImplementation((selector) =>
+      selector({ isAuthenticated: AUTHENTICATION_STATUSES.TRUE }),
+    );
+
+    // Mock a delayed API response to catch in-flight state
+    axios.get.mockImplementation(
+      () =>
+        new Promise((resolve) =>
+          setTimeout(
+            () => resolve({ data: { found: false, query: "1.1.1.1" } }),
+            100,
+          ),
+        ),
+    );
+
+    render(
+      <BrowserRouter>
+        <Dashboard />
+      </BrowserRouter>,
+    );
+
+    const inputElement = screen.getByLabelText("IP Address or Domain:");
+    const submitButton = screen.getByRole("button", { name: /Search/i });
+
+    await user.type(inputElement, "1.1.1.1");
+    await user.click(submitButton);
+
+    // While request is in flight, button should say "Searching..."
+    expect(
+      screen.getByRole("button", { name: /Searching/i }),
+    ).toBeInTheDocument();
+    expect(submitButton).toBeDisabled();
+
+    // After request completes, button should say "Search" again
+    await waitFor(() => {
+      expect(
+        screen.getByRole("button", { name: /^Search$/i }),
+      ).toBeInTheDocument();
+    });
+  });
 });

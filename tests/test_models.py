@@ -1,4 +1,4 @@
-from greedybear.models import IocType, Statistics, ViewType
+from greedybear.models import IocType, Statistics, Tag, ViewType
 
 from . import CustomTestCase
 
@@ -62,3 +62,29 @@ class ModelsTestCase(CustomTestCase):
     def test_general_honeypot_model(self):
         self.assertEqual(self.heralding.name, "Heralding")
         self.assertEqual(self.heralding.active, True)
+
+    def test_tag_model(self):
+        tag = Tag.objects.create(
+            ioc=self.ioc,
+            key="malware",
+            value="Mirai",
+            source="threatfox",
+        )
+        self.assertEqual(tag.key, "malware")
+        self.assertEqual(tag.value, "Mirai")
+        self.assertEqual(tag.source, "threatfox")
+        self.assertEqual(tag.ioc, self.ioc)
+        self.assertEqual(str(tag), "140.246.171.141 - malware: Mirai (threatfox)")
+
+    def test_tag_cascade_delete(self):
+        """Tags should be deleted when their IOC is deleted."""
+        from greedybear.models import IOC, IocType
+
+        temp_ioc = IOC.objects.create(name="10.20.30.40", type=IocType.IP.value)
+        Tag.objects.create(ioc=temp_ioc, key="test", value="test_val", source="test_source")
+
+        self.assertEqual(Tag.objects.filter(ioc=temp_ioc).count(), 1)
+
+        temp_ioc.delete()
+
+        self.assertEqual(Tag.objects.filter(ioc_id=temp_ioc.id).count(), 0)
