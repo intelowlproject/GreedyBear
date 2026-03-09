@@ -424,8 +424,8 @@ class IocsFromHitsTestCase(CustomTestCase):
         ]
         iocs = iocs_from_hits(hits)
         ioc = iocs[0]
-        self.assertEqual(ioc.first_seen, datetime.fromisoformat("2025-01-01T10:00:00.000Z"))
-        self.assertEqual(ioc.last_seen, datetime.fromisoformat("2025-01-01T12:00:00.000Z"))
+        self.assertEqual(ioc.first_seen, datetime.fromisoformat("2025-01-01T10:00:00.000"))
+        self.assertEqual(ioc.last_seen, datetime.fromisoformat("2025-01-01T12:00:00.000"))
 
     def test_filters_loopback_addresses(self):
         hits = [
