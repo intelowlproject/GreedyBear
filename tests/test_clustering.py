@@ -91,9 +91,7 @@ class ClusterCommandSequencesTestCase(CustomTestCase):
 
     def _run_job(self, labels):
         """Helper: run ClusterCommandSequences with mocked get_components()."""
-        with patch(
-            "greedybear.cronjobs.commands.cluster.LSHConnectedComponents"
-        ) as mock_lsh_cls:
+        with patch("greedybear.cronjobs.commands.cluster.LSHConnectedComponents") as mock_lsh_cls:
             mock_lsh_cls.return_value.get_components.return_value = labels
             ClusterCommandSequences().run()
 
@@ -143,16 +141,11 @@ class ClusterCommandSequencesTestCase(CustomTestCase):
         """bulk_update is called with field='cluster' and batch_size=1000 (line 59)."""
         seqs = list(CommandSequence.objects.all())
         new_labels = [888] * len(seqs)
-        with patch(
-            "greedybear.cronjobs.commands.cluster.LSHConnectedComponents"
-        ) as mock_lsh_cls:
+        with patch("greedybear.cronjobs.commands.cluster.LSHConnectedComponents") as mock_lsh_cls:
             mock_lsh_cls.return_value.get_components.return_value = new_labels
-            with patch(
-                "greedybear.models.CommandSequence.objects.bulk_update"
-            ) as mock_bulk:
+            with patch("greedybear.models.CommandSequence.objects.bulk_update") as mock_bulk:
                 ClusterCommandSequences().run()
                 mock_bulk.assert_called_once()
                 call_args = mock_bulk.call_args
                 self.assertIn("cluster", call_args[0][1])
                 self.assertEqual(call_args[1].get("batch_size"), 1000)
-
