@@ -31,7 +31,7 @@ def migrate_credentials(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("greedybear", "0040_alter_tag_key"),
+        ("greedybear", "0041_sharetoken"),
     ]
 
     operations = [
