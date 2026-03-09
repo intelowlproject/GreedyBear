@@ -108,7 +108,7 @@ class ClusterCommandSequencesTestCase(CustomTestCase):
         seqs = list(CommandSequence.objects.all())
         current_labels = [s.cluster for s in seqs]
         self._run_job(current_labels)
-        for seq, original_label in zip(seqs, current_labels):
+        for seq, original_label in zip(seqs, current_labels, strict=False):
             seq.refresh_from_db()
             self.assertEqual(seq.cluster, original_label)
 
