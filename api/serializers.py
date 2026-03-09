@@ -29,12 +29,24 @@ class TagSerializer(serializers.ModelSerializer):
 class IOCSerializer(serializers.ModelSerializer):
     general_honeypot = GeneralHoneypotSerializer(many=True, read_only=True)
     tags = TagSerializer(many=True, read_only=True)
+    
+    
+    sensors = serializers.SlugRelatedField(many=True, read_only=True, slug_field="address")
 
     class Meta:
         model = IOC
-        exclude = [
-            "related_urls",
+        
+        fields = [
+            "name",
+            "type",
+            "first_seen",
+            "last_seen",
+            "days_back",
+            "general_honeypot",
+            "tags",
+            "sensors", # Ye add kar dein
         ]
+        
 
 
 class EnrichmentSerializer(serializers.Serializer):
