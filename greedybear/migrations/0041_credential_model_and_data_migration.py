@@ -1,39 +1,31 @@
 """
 Migration to replace the credentials ArrayField on CowrieSession with
 a normalized Credential model using a ManyToMany relationship.
-
-
 """
-import functools
-import operator
-
 from django.db import migrations, models
-from django.db.models import Q
+
 
 def migrate_credentials(apps, schema_editor):
-    CowrieSession = apps.get_model("greedybear", "CowrieSession")
-    Credential = apps.get_model("greedybear", "Credential")
+    schema_editor.execute("""
+        INSERT INTO greedybear_credential (username, password)
+        SELECT DISTINCT
+            split_part(cred, ' | ', 1),
+            split_part(cred, ' | ', 2)
+        FROM greedybear_cowriesession, unnest(old_credentials) AS cred
+        WHERE cred LIKE '%% | %%'
+        ON CONFLICT DO NOTHING;
+    """)
 
-    for session in CowrieSession.objects.iterator():
-        pairs = []
-        for credential_str in session.old_credentials or []:
-            try:
-                username, password = credential_str.split(" | ", 1)
-                pairs.append((username, password))
-            except ValueError:
-                continue
-
-        if not pairs:
-            continue
-
-        Credential.objects.bulk_create(
-            [Credential(username=u, password=p) for u, p in pairs],
-            ignore_conflicts=True,
-        )
-
-        q = functools.reduce(operator.or_, [Q(username=u, password=p) for u, p in pairs])
-        credentials = Credential.objects.filter(q)
-        session.credentials.add(*credentials)
+    schema_editor.execute("""
+        INSERT INTO greedybear_cowriesession_credentials (cowriesession_id, credential_id)
+        SELECT DISTINCT s.session_id, c.id
+        FROM greedybear_cowriesession s, unnest(s.old_credentials) AS cred
+        JOIN greedybear_credential c
+            ON c.username = split_part(cred, ' | ', 1)
+            AND c.password = split_part(cred, ' | ', 2)
+        WHERE cred LIKE '%% | %%'
+        ON CONFLICT DO NOTHING;
+    """)
 
 
 class Migration(migrations.Migration):

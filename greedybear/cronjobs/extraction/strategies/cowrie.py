@@ -18,7 +18,7 @@ from greedybear.cronjobs.repositories import (
     IocRepository,
     SensorRepository,
 )
-from greedybear.models import IOC, CommandSequence, CowrieSession, Credential
+from greedybear.models import IOC, CommandSequence, CowrieSession
 from greedybear.regex import REGEX_URL_PROTOCOL
 
 
@@ -251,8 +251,7 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
                 session_record.login_attempt = True
                 username = normalize_credential_field(hit["username"])
                 password = normalize_credential_field(hit["password"])
-                credential, _ = Credential.objects.get_or_create(username=username, password=password)
-                session_record.credentials.add(credential)
+                self.session_repo.add_credential(session_record, username, password)
 
             case "cowrie.command.input":
                 self.log.info(f"found a command execution from {ioc.name}")
