@@ -1,11 +1,12 @@
 FROM library/nginx:1.29.5-alpine
-RUN mkdir -p /var/cache/nginx /var/cache/nginx/feeds
-RUN apk update && apk upgrade && apk add bash
-ENV NGINX_LOG_DIR=/var/log/nginx
-# this is to avoid having these logs redirected to stdout/stderr
-RUN rm $NGINX_LOG_DIR/access.log $NGINX_LOG_DIR/error.log
-RUN touch $NGINX_LOG_DIR/access.log $NGINX_LOG_DIR/error.log
-RUN chown 33:33 $NGINX_LOG_DIR/access.log $NGINX_LOG_DIR/error.log
-VOLUME $NGINX_LOG_DIR
 
-HEALTHCHECK --interval=3s --start-period=2s --timeout=2s --retries=5 CMD curl --fail http://localhost/hc || exit 1
+ENV NGINX_LOG_DIR=/var/log/nginx
+
+RUN apk add --no-cache bash
+
+# this is to avoid having logs redirected to stdout/stderr
+RUN mkdir -p /var/cache/nginx /var/cache/nginx/feeds \
+	&& rm $NGINX_LOG_DIR/access.log $NGINX_LOG_DIR/error.log \
+	&& touch $NGINX_LOG_DIR/access.log $NGINX_LOG_DIR/error.log
+
+VOLUME $NGINX_LOG_DIR

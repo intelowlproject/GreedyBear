@@ -106,19 +106,6 @@ const onValidate = (values) => {
     }
   });
 
-  // store in localStorage so user doesn't have to fill all fields again
-  localStorage.setItem(
-    REGISTRATION_FORM_STORAGE_KEY,
-    JSON.stringify({
-      ...values,
-      password: "",
-      confirmPassword: "",
-    }),
-  );
-  Object.keys(initialValues).forEach((key) => {
-    initialValues[key] = values[key];
-  });
-
   // password fields
   const passwordErrors = PasswordValidator(values.password);
   if (passwordErrors.password) {
@@ -142,6 +129,23 @@ const onValidate = (values) => {
   // console.debug("Errors", errors);
   return errors;
 };
+
+// Isolated component to handle localStorage persistence as a proper React
+// side effect, completely separated from validation logic.
+function FormPersist({ values, storageKey }) {
+  React.useEffect(() => {
+    localStorage.setItem(
+      storageKey,
+      JSON.stringify({
+        ...values,
+        password: "",
+        confirmPassword: "",
+      }),
+    );
+  }, [values, storageKey]);
+
+  return null;
+}
 
 // Component
 export default function Register() {
@@ -194,9 +198,6 @@ export default function Register() {
 
         // deleted user data after successful registration
         localStorage.removeItem(REGISTRATION_FORM_STORAGE_KEY);
-        Object.keys(INITIAL_VALUES).forEach((key) => {
-          initialValues[key] = INITIAL_VALUES[key];
-        });
 
         setShowAfterRegistrationModal(true);
       } catch (e) {
@@ -239,6 +240,10 @@ export default function Register() {
           >
             {(formik) => (
               <Form>
+                <FormPersist
+                  values={formik.values}
+                  storageKey={REGISTRATION_FORM_STORAGE_KEY}
+                />
                 {/* Name */}
                 <FormGroup row>
                   <Col sm={12} md={6}>
@@ -517,7 +522,7 @@ export default function Register() {
                 <FormGroup className="mt-3 d-flex">
                   <Button
                     type="submit"
-                    disabled={!(formik.isValid || formik.isSubmitting)}
+                    disabled={!formik.isValid || formik.isSubmitting}
                     color="primary"
                     outline
                     className="mx-auto"

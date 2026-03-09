@@ -46,3 +46,21 @@ class SensorRepository:
         """Load sensor objects from the database into the cache."""
         self.log.debug("populating sensor cache")
         self.cache = {s.address: s for s in Sensor.objects.all()}
+
+    def update_country(self, sensor: Sensor, country: str) -> None:
+        """
+        Update the country of a sensor if it has changed.
+
+        Args:
+            sensor: The Sensor instance to update.
+            country: The new country value.
+        """
+        if not sensor or not country:
+            return
+
+        if sensor.country == country:
+            return
+
+        self.log.debug(f"Updating country for sensor {sensor.address} to {country}")
+        sensor.country = country
+        sensor.save(update_fields=["country"])

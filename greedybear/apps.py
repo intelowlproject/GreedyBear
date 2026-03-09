@@ -5,3 +5,6 @@ from django.apps import AppConfig
 
 class GreedyBearConfig(AppConfig):
     name = "greedybear"
+
+    def ready(self):
+        import greedybear.checks  # noqa: F401 — register system checks

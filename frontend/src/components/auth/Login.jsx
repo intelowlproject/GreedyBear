@@ -128,7 +128,7 @@ function Login() {
                 <FormGroup className="d-flex-center">
                   <Button
                     type="submit"
-                    disabled={!(formik.isValid || formik.isSubmitting)}
+                    disabled={!formik.isValid || formik.isSubmitting}
                     color="primary"
                     outline
                   >

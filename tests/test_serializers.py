@@ -3,10 +3,30 @@ from itertools import product
 
 from rest_framework.serializers import ValidationError
 
-from api.serializers import FeedsRequestSerializer, FeedsResponseSerializer
+from api.serializers import FeedsRequestSerializer, FeedsResponseSerializer, parse_feed_types
 from greedybear.consts import PAYLOAD_REQUEST, SCANNER
 from greedybear.models import IOC, GeneralHoneypot
 from tests import CustomTestCase
+
+
+class ParseFeedTypesTestCase(CustomTestCase):
+    def test_single_type(self):
+        self.assertEqual(parse_feed_types("cowrie"), ["cowrie"])
+
+    def test_multiple_types(self):
+        self.assertEqual(parse_feed_types("cowrie,adbhoney"), ["cowrie", "adbhoney"])
+
+    def test_strips_whitespace(self):
+        self.assertEqual(parse_feed_types(" cowrie , adbhoney "), ["cowrie", "adbhoney"])
+
+    def test_empty_string(self):
+        self.assertEqual(parse_feed_types(""), [])
+
+    def test_only_commas(self):
+        self.assertEqual(parse_feed_types(",,,"), [])
+
+    def test_all_type(self):
+        self.assertEqual(parse_feed_types("all"), ["all"])
 
 
 class FeedsRequestSerializersTestCase(CustomTestCase):
@@ -51,6 +71,107 @@ class FeedsRequestSerializersTestCase(CustomTestCase):
             )
             valid = serializer.is_valid(raise_exception=True)
             self.assertEqual(valid, True)
+
+    def test_multi_feed_type_valid(self):
+        valid_feed_types = frozenset(["all", "log4pot", "cowrie", "adbhoney"])
+        data_ = {
+            "feed_type": "cowrie,log4pot",
+            "attack_type": "all",
+            "ioc_type": "all",
+            "max_age": "1",
+            "min_days_seen": "1",
+            "include_reputation": [],
+            "exclude_reputation": [],
+            "feed_size": "1",
+            "ordering": "last_seen",
+            "verbose": "false",
+            "paginate": "false",
+            "format": "json",
+        }
+        serializer = FeedsRequestSerializer(
+            data=data_,
+            context={"valid_feed_types": valid_feed_types},
+        )
+        self.assertTrue(serializer.is_valid(raise_exception=True))
+
+    def test_multi_feed_type_partially_invalid(self):
+        """one invalid type, must fail validation"""
+        valid_feed_types = frozenset(["all", "log4pot", "cowrie", "adbhoney"])
+        data_ = {
+            "feed_type": "cowrie,invalid_type",
+            "attack_type": "all",
+            "ioc_type": "all",
+            "max_age": "1",
+            "min_days_seen": "1",
+            "include_reputation": [],
+            "exclude_reputation": [],
+            "feed_size": "1",
+            "ordering": "last_seen",
+            "verbose": "false",
+            "paginate": "false",
+            "format": "json",
+        }
+        serializer = FeedsRequestSerializer(
+            data=data_,
+            context={"valid_feed_types": valid_feed_types},
+        )
+        try:
+            serializer.is_valid(raise_exception=True)
+            self.fail("ValidationError not raised for partially invalid feed_type")
+        except ValidationError:
+            self.assertIn("feed_type", serializer.errors)
+
+    def test_empty_feed_type_invalid(self):
+        """empty or whitespace-only feed_type must be rejected"""
+        valid_feed_types = frozenset(["all", "log4pot", "cowrie", "adbhoney"])
+        base_data = {
+            "attack_type": "all",
+            "ioc_type": "all",
+            "max_age": "1",
+            "min_days_seen": "1",
+            "include_reputation": [],
+            "exclude_reputation": [],
+            "feed_size": "1",
+            "ordering": "last_seen",
+            "verbose": "false",
+            "paginate": "false",
+            "format": "json",
+        }
+        for feed_type_str in ("", ",", "  ,  "):
+            with self.subTest(feed_type=repr(feed_type_str)):
+                serializer = FeedsRequestSerializer(
+                    data={**base_data, "feed_type": feed_type_str},
+                    context={"valid_feed_types": valid_feed_types},
+                )
+                with self.assertRaises(ValidationError):
+                    serializer.is_valid(raise_exception=True)
+                self.assertIn("feed_type", serializer.errors)
+
+    def test_multi_feed_type_all_combined_invalid(self):
+        """'all' combined with any other type must be rejected"""
+        valid_feed_types = frozenset(["all", "log4pot", "cowrie", "adbhoney"])
+        base_data = {
+            "attack_type": "all",
+            "ioc_type": "all",
+            "max_age": "1",
+            "min_days_seen": "1",
+            "include_reputation": [],
+            "exclude_reputation": [],
+            "feed_size": "1",
+            "ordering": "last_seen",
+            "verbose": "false",
+            "paginate": "false",
+            "format": "json",
+        }
+        for feed_type_str in ("all,cowrie", "cowrie,all", "all,cowrie,adbhoney"):
+            with self.subTest(feed_type=feed_type_str):
+                serializer = FeedsRequestSerializer(
+                    data={**base_data, "feed_type": feed_type_str},
+                    context={"valid_feed_types": valid_feed_types},
+                )
+                with self.assertRaises(ValidationError):
+                    serializer.is_valid(raise_exception=True)
+                self.assertIn("feed_type", serializer.errors)
 
     def test_invalid_fields(self):
         valid_feed_types = frozenset(["all", "log4pot", "cowrie", "adbhoney"])
@@ -120,6 +241,7 @@ class FeedsResponseSerializersTestCase(CustomTestCase):
                 "login_attempts": "0",
                 "recurrence_probability": "0.1",
                 "expected_interactions": "11.1",
+                "attacker_country": "Nepal",
             }
             serializer = FeedsResponseSerializer(
                 data=data_,
