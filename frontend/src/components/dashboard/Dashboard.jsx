@@ -8,36 +8,12 @@ import {
 } from "@certego/certego-ui";
 
 import {
-  FeedsSourcesChart,
-  FeedsDownloadsChart,
-  EnrichmentSourcesChart,
-  EnrichmentRequestsChart,
-  FeedsTypesChart,
-} from "./utils/charts";
-
+  feedsChartList,
+  feedsTypesChartList,
+  enrichmentChartList,
+} from "../../constants/dashboardConfig";
 import EnrichmentLookup from "./EnrichmentLookup";
 
-const feedsChartList = [
-  ["FeedsSourcesChart", "Feeds: Sources", FeedsSourcesChart],
-  ["FeedsDownloadsChart", "Feeds: Downloads", FeedsDownloadsChart],
-];
-
-const feedsTypesChartList = [
-  ["FeedsTypesChart", "Feeds: Types", FeedsTypesChart],
-];
-
-const enrichmentChartList = [
-  [
-    "EnrichmentSourcesChart",
-    "Enrichment Service: Sources",
-    EnrichmentSourcesChart,
-  ],
-  [
-    "EnrichmentRequestsChart",
-    "Enrichment Service: Requests",
-    EnrichmentRequestsChart,
-  ],
-];
 
 function Dashboard() {
   console.debug("Dashboard rendered!");
