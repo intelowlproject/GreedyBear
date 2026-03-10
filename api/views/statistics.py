@@ -89,7 +89,14 @@ class StatisticsViewSet(viewsets.ViewSet):
             Response: A JSON list of {country, count} objects ordered by count descending.
         """
         delta, _ = self.__parse_range(self.request)
-        qs = IOC.objects.filter(last_seen__gte=delta).exclude(attacker_country="").values("attacker_country").annotate(count=Count("id")).order_by("-count")
+        qs = (
+            IOC.objects.filter(last_seen__gte=delta)
+            .exclude(attacker_country="")
+            .exclude(general_honeypot__active=False)
+            .values("attacker_country")
+            .annotate(count=Count("id"))
+            .order_by("-count")
+        )
         data = [{"country": item["attacker_country"], "count": item["count"]} for item in qs]
         return Response(data)
 
