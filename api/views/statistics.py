@@ -94,7 +94,7 @@ class StatisticsViewSet(viewsets.ViewSet):
             .exclude(attacker_country="")
             .exclude(general_honeypot__active=False)
             .values("attacker_country")
-            .annotate(count=Count("id"))
+            .annotate(count=Count("id", distinct=True))
             .order_by("-count")
         )
         data = [{"country": item["attacker_country"], "count": item["count"]} for item in qs]
