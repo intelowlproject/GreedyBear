@@ -8,83 +8,7 @@ import requests
 from django.conf import settings
 
 from greedybear.consts import DOMAIN, IP
-from greedybear.models import IOC, FireHolList, MassScanner, WhatsMyIPDomain
-
-
-def is_whatsmyip_domain(domain: str) -> bool:
-    """
-    Check if a domain is a known "what's my IP" service.
-
-    Args:
-        domain: Domain name to check.
-
-    Returns:
-        True if the domain is in the WhatsMyIP list, False otherwise.
-    """
-    try:
-        WhatsMyIPDomain.objects.get(domain=domain)
-    except WhatsMyIPDomain.DoesNotExist:
-        return False
-    return True
-
-
-def correct_ip_reputation(ip: str, ip_reputation: str) -> str:
-    """
-    Correct IP reputation based on mass scanner database.
-    Overrides reputation to "mass scanner" if the IP is found in the MassScanners table.
-    This is necessary because we have seen "mass scanners" incorrectly flagged.
-
-    Args:
-        ip: IP address to check.
-        ip_reputation: Current reputation string.
-
-    Returns:
-        Corrected reputation string.
-    """
-    if not ip_reputation or ip_reputation == "known attacker":
-        try:
-            MassScanner.objects.get(ip_address=ip)
-        except MassScanner.DoesNotExist:
-            pass
-        else:
-            ip_reputation = "mass scanner"
-    return ip_reputation
-
-
-def get_firehol_categories(ip: str, extracted_ip) -> list[str]:
-    """
-    Get FireHol categories for an IP address.
-    Checks both exact IP matches (for .ipset files) and network range
-    membership (for .netset files with CIDR notation).
-
-    Args:
-        ip: IP address string.
-        extracted_ip: Parsed IP address object from ipaddress library.
-
-    Returns:
-        List of FireHol source categories.
-    """
-    firehol_categories = []
-
-    # First check for exact IP match (for .ipset files)
-    exact_matches = FireHolList.objects.filter(ip_address=ip).values_list("source", flat=True)
-    # Filter out empty strings (from default='')
-    firehol_categories.extend([source for source in exact_matches if source])
-
-    # Then check if IP is within any network ranges (for .netset files)
-    # Only query entries that contain '/' (CIDR notation)
-    network_entries = FireHolList.objects.filter(ip_address__contains="/")
-    for entry in network_entries:
-        try:
-            network_range = ip_network(entry.ip_address, strict=False)
-            # Check entry.source is not empty and not already in list
-            if extracted_ip in network_range and entry.source and entry.source not in firehol_categories:
-                firehol_categories.append(entry.source)
-        except (ValueError, IndexError):
-            # Not a valid network range, skip
-            continue
-
-    return firehol_categories
+from greedybear.models import IOC, FireHolList, MassScanner
 
 
 def iocs_from_hits(hits: list[dict]) -> list[IOC]:
@@ -95,6 +19,9 @@ def iocs_from_hits(hits: list[dict]) -> list[IOC]:
     Enriches IOCs with FireHol categories at creation time to ensure
     only fresh data is used.
 
+    Performs bulk database lookups before the main loop to avoid
+    N+1 query overhead when processing large batches.
+
     Args:
         hits: List of Elasticsearch hit dictionaries.
 
@@ -104,6 +31,33 @@ def iocs_from_hits(hits: list[dict]) -> list[IOC]:
     hits_by_ip = defaultdict(list)
     for hit in hits:
         hits_by_ip[hit["src_ip"]].append(hit)
+
+    all_ips = list(hits_by_ip.keys())
+
+    # --- Bulk prefetch: FireHol exact matches (for .ipset files) ---
+    firehol_exact = defaultdict(list)
+    for entry_ip, source in FireHolList.objects.filter(
+        ip_address__in=all_ips,
+    ).values_list("ip_address", "source"):
+        if source:
+            firehol_exact[entry_ip].append(source)
+
+    # --- Bulk prefetch: FireHol CIDR entries (for .netset files) ---
+    # Fetched once; the same set of network ranges applies to every IP.
+    cidr_entries = []
+    for entry in FireHolList.objects.filter(ip_address__contains="/"):
+        try:
+            cidr_entries.append((ip_network(entry.ip_address, strict=False), entry.source))
+        except (ValueError, IndexError):
+            continue
+
+    # --- Bulk prefetch: MassScanner IPs ---
+    mass_scanner_ips = set(
+        MassScanner.objects.filter(
+            ip_address__in=all_ips,
+        ).values_list("ip_address", flat=True)
+    )
+
     iocs = []
     for ip, hits in hits_by_ip.items():
         dest_ports = [hit["dest_port"] for hit in hits if "dest_port" in hit]
@@ -111,7 +65,11 @@ def iocs_from_hits(hits: list[dict]) -> list[IOC]:
         if extracted_ip.is_loopback or extracted_ip.is_private or extracted_ip.is_multicast or extracted_ip.is_link_local or extracted_ip.is_reserved:
             continue
 
-        firehol_categories = get_firehol_categories(ip, extracted_ip)
+        # Build FireHol categories from prefetched data
+        firehol_categories = list(firehol_exact.get(ip, []))
+        for network, source in cidr_entries:
+            if source and extracted_ip in network and source not in firehol_categories:
+                firehol_categories.append(source)
 
         # Collect unique sensors from hits, deduplicated by sensor ID
         sensors_map = {hit["_sensor"].id: hit["_sensor"] for hit in hits if hit.get("_sensor") is not None and getattr(hit["_sensor"], "id", None)}
@@ -119,11 +77,16 @@ def iocs_from_hits(hits: list[dict]) -> list[IOC]:
         # Sort sensors by ID for consistent processing order
         sensors.sort(key=lambda s: s.id)
 
+        # Correct IP reputation from prefetched MassScanner set
+        ip_rep = hits[0].get("ip_rep", "")
+        if (not ip_rep or ip_rep == "known attacker") and ip in mass_scanner_ips:
+            ip_rep = "mass scanner"
+
         ioc = IOC(
             name=ip,
             type=get_ioc_type(ip),
             interaction_count=len(hits),
-            ip_reputation=correct_ip_reputation(ip, hits[0].get("ip_rep", "")),
+            ip_reputation=ip_rep,
             asn=hits[0].get("geoip", {}).get("asn"),
             destination_ports=sorted(set(dest_ports)),
             login_attempts=len(hits) if hits[0].get("type", "") == "Heralding" else 0,
