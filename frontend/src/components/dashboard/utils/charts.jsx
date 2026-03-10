@@ -22,7 +22,7 @@ import {
   FEEDS_STATISTICS_TYPES_URI,
   ENRICHMENT_STATISTICS_SOURCES_URI,
   ENRICHMENT_STATISTICS_REQUESTS_URI,
-  FEEDS_STATISTICS_COUNTRIES_URI,
+  IOC_ATTACKER_COUNTRIES_URI,
 } from "../../../constants/api";
 
 import { FEED_COLOR_MAP, ENRICHMENT_COLOR_MAP } from "../../../constants";
@@ -179,7 +179,7 @@ export const AttackOriginCountriesChart = React.memo(() => {
     setLoading(true);
     setError(null);
     axios
-      .get(FEEDS_STATISTICS_COUNTRIES_URI, { params: { range } })
+      .get(IOC_ATTACKER_COUNTRIES_URI, { params: { range } })
       .then((resp) => setData(resp.data))
       .catch((err) => {
         console.error("AttackOriginCountriesChart error:", err);

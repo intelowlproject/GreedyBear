@@ -7,8 +7,8 @@ import {
 } from "react-simple-maps";
 import axios from "axios";
 import { useTimePickerStore } from "@certego/certego-ui";
-import { FEEDS_STATISTICS_COUNTRIES_URI } from "../../constants/api";
-const GEO_URL =
+import { IOC_ATTACKER_COUNTRIES_URI } from "../../constants/api";
+const WORLD_ATLAS_GEO_URL =
   "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
 
 // Normalise country names coming from T-Pot geoip to match the topojson properties.name values
@@ -65,10 +65,10 @@ export default function AttackOriginMap() {
     setLoading(true);
     setError(null);
     axios
-      .get(FEEDS_STATISTICS_COUNTRIES_URI, { params: { range } })
+      .get(IOC_ATTACKER_COUNTRIES_URI, { params: { range } })
       .then((resp) => {
         const map = {};
-        let max = 1;
+        let max = 0;
         resp.data.forEach(({ country, count }) => {
           const key = normalise(country);
           map[key] = count;
@@ -96,21 +96,30 @@ export default function AttackOriginMap() {
     [countryData, maxCount],
   );
 
-  const handleMouseEnter = (geo, evt) => {
-    const name = geo.properties.name;
-    const count = countryData[name] ?? 0;
-    setTooltip({ visible: true, x: evt.clientX, y: evt.clientY, name, count });
-  };
+  const handleMouseEnter = React.useCallback(
+    (geo, evt) => {
+      const name = geo.properties.name;
+      const count = countryData[name] ?? 0;
+      setTooltip({
+        visible: true,
+        x: evt.clientX,
+        y: evt.clientY,
+        name,
+        count,
+      });
+    },
+    [countryData],
+  );
 
-  const handleMouseMove = (evt) => {
-    if (tooltip.visible) {
-      setTooltip((prev) => ({ ...prev, x: evt.clientX, y: evt.clientY }));
-    }
-  };
+  const handleMouseMove = React.useCallback((evt) => {
+    setTooltip((prev) =>
+      prev.visible ? { ...prev, x: evt.clientX, y: evt.clientY } : prev,
+    );
+  }, []);
 
-  const handleMouseLeave = () => {
+  const handleMouseLeave = React.useCallback(() => {
     setTooltip((prev) => ({ ...prev, visible: false }));
-  };
+  }, []);
 
   if (loading) {
     return (
@@ -181,7 +190,7 @@ export default function AttackOriginMap() {
           onMouseLeave={handleMouseLeave}
         >
           <ZoomableGroup zoom={1} minZoom={0.8} maxZoom={6}>
-            <Geographies geography={GEO_URL}>
+            <Geographies geography={WORLD_ATLAS_GEO_URL}>
               {({ geographies }) =>
                 geographies.map((geo) => (
                   <Geography
@@ -209,30 +218,32 @@ export default function AttackOriginMap() {
         </ComposableMap>
       </div>
 
-      {/* Colour-scale legend */}
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 8,
-          justifyContent: "flex-end",
-          marginTop: 4,
-          paddingRight: 8,
-          fontSize: 11,
-          color: "#aaa",
-        }}
-      >
-        <span>0</span>
+      {/* Colour-scale legend*/}
+      {maxCount > 0 && (
         <div
           style={{
-            width: 120,
-            height: 10,
-            borderRadius: 4,
-            background: `linear-gradient(to right, ${COLOR_LOW}, ${COLOR_MID}, ${COLOR_HIGH})`,
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            justifyContent: "flex-end",
+            marginTop: 4,
+            paddingRight: 8,
+            fontSize: 11,
+            color: "#aaa",
           }}
-        />
-        <span>{maxCount.toLocaleString()}</span>
-      </div>
+        >
+          <span>0</span>
+          <div
+            style={{
+              width: 120,
+              height: 10,
+              borderRadius: 4,
+              background: `linear-gradient(to right, ${COLOR_LOW}, ${COLOR_MID}, ${COLOR_HIGH})`,
+            }}
+          />
+          <span>{maxCount.toLocaleString()}</span>
+        </div>
+      )}
     </div>
   );
 }
