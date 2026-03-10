@@ -5,13 +5,11 @@ import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { AUTHENTICATION_STATUSES } from "../../src/constants";
 import IfAuthRedirectGuard from "../../src/wrappers/ifAuthRedirectGuard";
 
-// Mock useAuthStore
 const mockUseAuthStore = vi.fn();
 vi.mock("../../src/stores", () => ({
   useAuthStore: (selector) => mockUseAuthStore(selector),
 }));
 
-// Mock useSearchParam at top level
 const mockUseSearchParam = vi.fn();
 vi.mock("react-use/lib/useSearchParam", () => ({
   default: () => mockUseSearchParam(),
@@ -20,7 +18,7 @@ vi.mock("react-use/lib/useSearchParam", () => ({
 describe("IfAuthRedirectGuard", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockUseSearchParam.mockReturnValue(null); // default: no next param
+    mockUseSearchParam.mockReturnValue(null);
   });
 
   test("renders children when user is not authenticated", () => {
@@ -50,7 +48,7 @@ describe("IfAuthRedirectGuard", () => {
     mockUseAuthStore.mockImplementation((selector) =>
       selector({ isAuthenticated: AUTHENTICATION_STATUSES.TRUE }),
     );
-    mockUseSearchParam.mockReturnValue(null); // no next param
+    mockUseSearchParam.mockReturnValue(null);
 
     render(
       <MemoryRouter initialEntries={["/login"]}>
@@ -76,7 +74,7 @@ describe("IfAuthRedirectGuard", () => {
     mockUseAuthStore.mockImplementation((selector) =>
       selector({ isAuthenticated: AUTHENTICATION_STATUSES.TRUE }),
     );
-    mockUseSearchParam.mockReturnValue("/dashboard"); // next param set
+    mockUseSearchParam.mockReturnValue("/dashboard");
 
     render(
       <MemoryRouter initialEntries={["/login?next=/dashboard"]}>

@@ -4,6 +4,7 @@ import { render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import AuthGuard from "../../src/wrappers/AuthGuard";
 import { AUTHENTICATION_STATUSES } from "../../src/constants";
+import { addToast } from "@certego/certego-ui";
 
 const mockUseAuthStore = vi.fn();
 vi.mock("../../src/stores", () => ({
@@ -76,12 +77,6 @@ describe("AuthGuard", () => {
       selector({ isAuthenticated: AUTHENTICATION_STATUSES.FALSE }),
     );
 
-    let capturedLocation;
-    const LocationCapture = () => {
-      capturedLocation = window.location.href;
-      return <div>Login Page</div>;
-    };
-
     render(
       <MemoryRouter initialEntries={["/me/sessions"]}>
         <Routes>
@@ -93,13 +88,18 @@ describe("AuthGuard", () => {
               </AuthGuard>
             }
           />
-          <Route path="/login" element={<LocationCapture />} />
+          <Route path="/login" element={<div>Login Page</div>} />
         </Routes>
       </MemoryRouter>,
     );
 
     expect(screen.getByText("Login Page")).toBeInTheDocument();
     expect(screen.queryByText("Protected Content")).not.toBeInTheDocument();
+    expect(addToast).toHaveBeenCalledWith(
+      "Login required to access the requested page.",
+      null,
+      "info",
+    );
   });
 
   test("redirects to / when user visits /logout while unauthenticated", () => {
@@ -126,5 +126,6 @@ describe("AuthGuard", () => {
 
     expect(screen.getByText("Home Page")).toBeInTheDocument();
     expect(screen.queryByText("Login Page")).not.toBeInTheDocument();
+    expect(addToast).not.toHaveBeenCalled();
   });
 });
