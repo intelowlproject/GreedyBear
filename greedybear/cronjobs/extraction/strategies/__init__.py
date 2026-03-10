@@ -1,3 +1,4 @@
 from greedybear.cronjobs.extraction.strategies.base import *
 from greedybear.cronjobs.extraction.strategies.cowrie import *
 from greedybear.cronjobs.extraction.strategies.generic import *
+from greedybear.cronjobs.extraction.strategies.tanner import *

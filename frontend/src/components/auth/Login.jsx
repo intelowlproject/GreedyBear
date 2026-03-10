@@ -19,6 +19,10 @@ import {
   // ResendVerificationEmailButton,
   ForgotPasswordButton,
 } from "./utils/registration-buttons";
+import {
+  usePasswordVisibility,
+  ShowPasswordToggle,
+} from "../common/ShowPasswordToggle";
 
 // constants
 const initialValues = {
@@ -43,7 +47,8 @@ function Login() {
   console.debug("Login rendered!");
 
   // local state
-  const [passwordShown, setPasswordShown] = React.useState(false);
+  const { passwordShown, toggleVisibility, inputType } =
+    usePasswordVisibility();
 
   // auth store
   const loginUser = useAuthStore(
@@ -108,22 +113,18 @@ function Login() {
                   <Label for="LoginForm__password">Password</Label>
                   <Input
                     id="LoginForm__password"
-                    type={passwordShown ? "text" : "password"}
+                    type={inputType}
                     name="password"
                     placeholder="Enter password"
                     autoComplete="current-password"
                     onChange={formik.handleChange}
                   />
                 </FormGroup>
-                <FormGroup check>
-                  <Input
-                    id="LoginForm__showPassword"
-                    type="checkbox"
-                    defaultChecked={passwordShown}
-                    onChange={() => setPasswordShown(!passwordShown)}
-                  />
-                  <Label check>Show password</Label>
-                </FormGroup>
+                <ShowPasswordToggle
+                  id="LoginForm__showPassword"
+                  passwordShown={passwordShown}
+                  onChange={toggleVisibility}
+                />
                 {/* Submit */}
                 <FormGroup className="d-flex-center">
                   <Button

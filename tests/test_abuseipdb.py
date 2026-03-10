@@ -36,7 +36,6 @@ class TestAbuseIPDBCron(CustomTestCase):
                 {
                     "ipAddress": self.ioc.name,
                     "abuseConfidenceScore": 84,
-                    "countryCode": "CN",
                 }
             ],
         }
@@ -50,13 +49,9 @@ class TestAbuseIPDBCron(CustomTestCase):
 
         tag_keys = set(tags.values_list("key", flat=True))
         self.assertIn("confidence_of_abuse", tag_keys)
-        self.assertIn("country_code", tag_keys)
 
         confidence_tag = tags.get(key="confidence_of_abuse")
         self.assertEqual(confidence_tag.value, "84%")
-
-        country_tag = tags.get(key="country_code")
-        self.assertEqual(country_tag.value, "CN")
 
     @patch("greedybear.cronjobs.abuseipdb_feed.requests.get")
     @patch("greedybear.cronjobs.abuseipdb_feed.settings")
@@ -70,7 +65,6 @@ class TestAbuseIPDBCron(CustomTestCase):
                 {
                     "ipAddress": "203.0.113.99",
                     "abuseConfidenceScore": 90,
-                    "countryCode": "RU",
                 }
             ],
         }
@@ -97,7 +91,6 @@ class TestAbuseIPDBCron(CustomTestCase):
                 {
                     "ipAddress": self.ioc.name,
                     "abuseConfidenceScore": 95,
-                    "countryCode": "CN",
                 }
             ],
         }
@@ -152,12 +145,10 @@ class TestAbuseIPDBCron(CustomTestCase):
                 {
                     "ipAddress": "999.999.999.999",
                     "abuseConfidenceScore": 90,
-                    "countryCode": "RU",
                 },
                 {
                     "ipAddress": "",
                     "abuseConfidenceScore": 80,
-                    "countryCode": "US",
                 },
             ],
         }
@@ -199,12 +190,10 @@ class TestAbuseIPDBCron(CustomTestCase):
                 {
                     "ipAddress": self.ioc.name,
                     "abuseConfidenceScore": 84,
-                    "countryCode": "CN",
                 },
                 {
                     "ipAddress": self.ioc_2.name,
                     "abuseConfidenceScore": 92,
-                    "countryCode": "RU",
                 },
             ],
         }
