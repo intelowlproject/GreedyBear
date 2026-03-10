@@ -18,7 +18,7 @@ class IocRepository:
     def __init__(self):
         """Initialize the repository and populate the honeypot cache from the database."""
         self.log = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
-        self._honeypot_cache = {self._normalize_name(hp.name): hp.active for hp in GeneralHoneypot.objects.all()}
+        self._honeypot_cache = {self._normalize_name(hp.name): hp for hp in GeneralHoneypot.objects.all()}
 
     def _normalize_name(self, name: str) -> str:
         """Normalize honeypot names for consistent cache and DB usage."""
@@ -38,8 +38,9 @@ class IocRepository:
         honeypot_set = {hp.name for hp in ioc.general_honeypot.all()}
         if honeypot_name not in honeypot_set:
             self.log.debug(f"adding honeypot {honeypot_name} to IoC {ioc}")
-            honeypot = self.get_hp_by_name(honeypot_name)
-            ioc.general_honeypot.add(honeypot)
+            honeypot = self._honeypot_cache.get(self._normalize_name(honeypot_name)) or self.get_hp_by_name(honeypot_name)
+            if honeypot is not None:
+                ioc.general_honeypot.add(honeypot)
         return ioc
 
     def create_honeypot(self, honeypot_name: str) -> GeneralHoneypot:
@@ -69,7 +70,7 @@ class IocRepository:
             if honeypot is None:
                 raise e
 
-        self._honeypot_cache[normalized] = honeypot.active
+        self._honeypot_cache[normalized] = honeypot
         return honeypot
 
     def get_active_honeypots(self) -> list[GeneralHoneypot]:
@@ -92,7 +93,7 @@ class IocRepository:
             The matching IOC, or None if not found.
         """
         try:
-            return IOC.objects.get(name=name)
+            return IOC.objects.prefetch_related("general_honeypot").get(name=name)
         except IOC.DoesNotExist:
             return None
 
@@ -129,7 +130,8 @@ class IocRepository:
             True if the honeypot is enabled, False otherwise.
         """
         normalized = self._normalize_name(honeypot_name)
-        return self._honeypot_cache.get(normalized, False)
+        hp = self._honeypot_cache.get(normalized)
+        return hp.active if hp is not None else False
 
     def is_ready_for_extraction(self, honeypot_name: str) -> bool:
         """

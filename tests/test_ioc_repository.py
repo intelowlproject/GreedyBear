@@ -421,6 +421,47 @@ class TestIocRepository(CustomTestCase):
         self.assertEqual(updated1.recurrence_probability, 0.75)
         self.assertEqual(updated2.recurrence_probability, 0.85)
 
+    # --- Tests for N+1 fix: cache stores GeneralHoneypot objects ---
+
+    def test_honeypot_cache_stores_generalhoneypot_objects(self):
+        """_honeypot_cache must store GeneralHoneypot instances, not booleans."""
+        for key, value in self.repo._honeypot_cache.items():
+            self.assertIsInstance(
+                value,
+                GeneralHoneypot,
+                f"Cache value for '{key}' should be a GeneralHoneypot instance, got {type(value)}",
+            )
+
+    def test_get_ioc_by_name_prefetches_general_honeypot(self):
+        """Accessing general_honeypot on a repo-fetched IOC must not trigger extra DB queries."""
+        ioc = self.repo.get_ioc_by_name("140.246.171.141")
+        self.assertIsNotNone(ioc)
+        with self.assertNumQueries(0):
+            list(ioc.general_honeypot.all())
+
+    def test_add_honeypot_to_ioc_uses_cache_not_db(self):
+        """When honeypot is in cache and the IOC was fetched with prefetch, no extra queries are needed."""
+        # Set up: IOC already associated with Cowrie
+        ioc = IOC.objects.create(name="5.5.5.5", type="ip")
+        ioc.general_honeypot.add(self.cowrie_hp)
+
+        # Fetch via repository (includes prefetch_related)
+        ioc_fetched = self.repo.get_ioc_by_name("5.5.5.5")
+
+        # add_honeypot_to_ioc should read from prefetch cache (.all() = 0 queries)
+        # and skip the add entirely (already associated), producing zero DB queries
+        with self.assertNumQueries(0):
+            result = self.repo.add_honeypot_to_ioc("Cowrie", ioc_fetched)
+
+        self.assertIn(self.cowrie_hp, result.general_honeypot.all())
+
+    def test_create_honeypot_stores_object_in_cache(self):
+        """create_honeypot must store the GeneralHoneypot object in cache, not a boolean."""
+        hp = self.repo.create_honeypot("CacheTestPot")
+        cached = self.repo._honeypot_cache.get("cachetestpot")
+        self.assertIsInstance(cached, GeneralHoneypot)
+        self.assertEqual(cached.pk, hp.pk)
+
 
 class TestScoringIntegration(CustomTestCase):
     """Integration tests for scoring jobs using IocRepository."""
