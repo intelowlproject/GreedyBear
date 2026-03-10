@@ -22,7 +22,7 @@ class ErrorBoundary extends React.Component {
     if (this.state.hasError) {
       // You can render any custom fallback UI
       return (
-        <Container className="d-flex flex-column center mt-5 text-center">
+        <Container className="d-flex flex-column align-items-center mt-5 text-center">
           <h2 className="mb-4">Something went wrong.</h2>
           <p className="text-muted">
             An unexpected error occurred in this section of the application.

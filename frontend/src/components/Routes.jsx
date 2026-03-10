@@ -24,24 +24,25 @@ const publicRoutesLazy = [
   {
     index: true,
     element: <Home />,
+    withErrorBoundary: true,
   },
   /* Dashboard */
   {
     path: "/dashboard",
     element: <Dashboard />,
-    hasErrorBoundary: true,
+    withErrorBoundary: true,
   },
   /* Feeds */
   {
     path: "/feeds",
     element: <Feeds />,
-    hasErrorBoundary: true,
+    withErrorBoundary: true,
   },
 ].map((r) => ({
   ...r,
   element: (
     <ConditionalWrapper
-      condition={r.hasErrorBoundary}
+      condition={r.withErrorBoundary}
       wrapper={(children) => <ErrorBoundary>{children}</ErrorBoundary>}
     >
       <Suspense fallback={<FallBackLoading />}>{r.element}</Suspense>
@@ -54,24 +55,33 @@ const noAuthRoutesLazy = [
   {
     path: "/login",
     element: <Login />,
+    withErrorBoundary: true,
   },
   {
     path: "/register",
     element: <Register />,
+    withErrorBoundary: true,
   },
   {
     path: "/verify-email",
     element: <EmailVerification />,
+    withErrorBoundary: true,
   },
   {
     path: "/reset-password",
     element: <ResetPassword />,
+    withErrorBoundary: true,
   },
 ].map((r) => ({
   ...r,
   element: (
     <IfAuthRedirectGuard>
-      <Suspense fallback={<FallBackLoading />}>{r.element}</Suspense>
+      <ConditionalWrapper
+        condition={r.withErrorBoundary}
+        wrapper={(children) => <ErrorBoundary>{children}</ErrorBoundary>}
+      >
+        <Suspense fallback={<FallBackLoading />}>{r.element}</Suspense>
+      </ConditionalWrapper>
     </IfAuthRedirectGuard>
   ),
 }));
@@ -82,24 +92,26 @@ const authRoutesLazy = [
   {
     path: "/logout",
     element: <Logout />,
+    withErrorBoundary: true,
   },
   /* API Access/Sessions Management */
   {
     path: "/me/sessions",
     element: <Sessions />,
-    hasErrorBoundary: true,
+    withErrorBoundary: true,
   },
   /* Change Password */
   {
     path: "/me/change-password",
     element: <ChangePassword />,
+    withErrorBoundary: true,
   },
 ].map((r) => ({
   ...r,
   element: (
     <AuthGuard>
       <ConditionalWrapper
-        condition={r.hasErrorBoundary}
+        condition={r.withErrorBoundary}
         wrapper={(children) => <ErrorBoundary>{children}</ErrorBoundary>}
       >
         <Suspense fallback={<FallBackLoading />}>{r.element}</Suspense>
