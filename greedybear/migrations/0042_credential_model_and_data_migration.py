@@ -9,8 +9,8 @@ def migrate_credentials(apps, schema_editor):
     schema_editor.execute("""
         INSERT INTO greedybear_credential (username, password)
         SELECT DISTINCT
-            split_part(cred, ' | ', 1),
-            split_part(cred, ' | ', 2)
+            LEFT(split_part(cred, ' | ', 1), 256),
+            LEFT(split_part(cred, ' | ', 2), 256)
         FROM greedybear_cowriesession, unnest(old_credentials) AS cred
         WHERE cred LIKE '%% | %%'
         ON CONFLICT DO NOTHING;
@@ -21,8 +21,8 @@ def migrate_credentials(apps, schema_editor):
         SELECT DISTINCT s.session_id, c.id
         FROM greedybear_cowriesession s, unnest(s.old_credentials) AS cred
         JOIN greedybear_credential c
-            ON c.username = split_part(cred, ' | ', 1)
-            AND c.password = split_part(cred, ' | ', 2)
+            ON c.username = LEFT(split_part(cred, ' | ', 1), 256)
+            AND c.password = LEFT(split_part(cred, ' | ', 2), 256)
         WHERE cred LIKE '%% | %%'
         ON CONFLICT DO NOTHING;
     """)
