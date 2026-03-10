@@ -110,15 +110,27 @@ class CommandSequence(models.Model):
         return cmd_string[:29] + "..." if len(cmd_string) > 32 else cmd_string
 
 
+class Credential(models.Model):
+    username = models.CharField(max_length=256, blank=False)
+    password = models.CharField(max_length=256, blank=False)
+
+    class Meta:
+        constraints = [models.UniqueConstraint(fields=["username", "password"], name="unique_credential")]
+        indexes = [
+            models.Index(fields=["username"]),
+            models.Index(fields=["password"]),
+        ]
+
+    def __str__(self):
+        return f"{self.username} | {self.password}"
+
+
 class CowrieSession(models.Model):
     session_id = models.BigIntegerField(primary_key=True)
     start_time = models.DateTimeField(blank=True, null=True)
     duration = models.FloatField(blank=True, null=True)
     login_attempt = models.BooleanField(default=False)
-    credentials = pg_fields.ArrayField(
-        models.CharField(max_length=256, blank=True),
-        default=list,
-    )
+    credentials = models.ManyToManyField(Credential, blank=True)
     command_execution = models.BooleanField(default=False)
     interaction_count = models.IntegerField(default=0)
     source = models.ForeignKey(IOC, on_delete=models.CASCADE)

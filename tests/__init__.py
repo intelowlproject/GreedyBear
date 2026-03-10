@@ -10,6 +10,7 @@ from greedybear.models import (
     IOC,
     CommandSequence,
     CowrieSession,
+    Credential,
     GeneralHoneypot,
     IocType,
 )
@@ -142,12 +143,13 @@ class CustomTestCase(TestCase):
             start_time=cls.current_time,
             duration=1.234,
             login_attempt=True,
-            credentials=["root | root"],
             command_execution=True,
             interaction_count=5,
             source=cls.ioc,
             commands=cls.command_sequence,
         )
+        credential, _ = Credential.objects.get_or_create(username="root", password="root")
+        cls.cowrie_session.credentials.add(credential)
         cls.cowrie_session.save()
 
         cls.cmd_seq_2 = ["cd bar", "ls -la"]
@@ -165,12 +167,13 @@ class CustomTestCase(TestCase):
             start_time=cls.current_time,
             duration=2.234,
             login_attempt=True,
-            credentials=["user | user"],
             command_execution=True,
             interaction_count=5,
             source=cls.ioc_2,
             commands=cls.command_sequence_2,
         )
+        credential_2, _ = Credential.objects.get_or_create(username="user", password="user")
+        cls.cowrie_session_2.credentials.add(credential_2)
         cls.cowrie_session_2.save()
 
         try:
