@@ -25,16 +25,17 @@ services:
       - static_content:/opt/deploy/greedybear/static
     entrypoint:
       - ./docker/entrypoint_gunicorn.sh
-    command: sh -c "gunicorn greedybear.wsgi:application --bind 0.0.0.0:8001 --protocol uwsgi --workers $$((2 * $$(nproc) + 1)) --graceful-timeout 30 --timeout 120"
+    command: sh -c "gunicorn greedybear.wsgi:application --bind 0.0.0.0:8001 --protocol uwsgi --bind 0.0.0.0:8002 --workers $$((2 * $$(nproc) + 1)) --graceful-timeout 30 --timeout 120"
     expose:
       - "8001"
+      - "8002"
     env_file:
       - env_file
     depends_on:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "python3 -c \"import socket; socket.create_connection(('localhost', 8001), timeout=2)\" || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost:8002 || exit 1"]
       interval: 10s
       timeout: 2s
       retries: 30

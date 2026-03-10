@@ -52,9 +52,6 @@ RUN mkdir -p ${LOG_PATH}/django ${LOG_PATH}/gunicorn \
     && chown -R www-data:www-data ${LOG_PATH} /opt/deploy/ ${PYTHONPATH}/mlmodels/ \
     && rm -rf frontend/
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=120s --retries=3 \
-    CMD python3 -c "import socket; socket.create_connection(('localhost', 8001), timeout=2)" || exit 1
-
 ## ------------------------------- Development Stage ------------------------------ ##
 
 FROM production AS development
