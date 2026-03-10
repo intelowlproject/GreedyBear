@@ -99,7 +99,7 @@ class IocProcessor:
         existing.interaction_count += new.interaction_count
         existing.related_urls = sorted(set(existing.related_urls + new.related_urls))
         existing.destination_ports = sorted(set(existing.destination_ports + new.destination_ports))
-        existing.ip_reputation = new.ip_reputation
+        existing.ip_reputation = existing.ip_reputation or new.ip_reputation
         existing.asn = new.asn
         existing.firehol_categories = list(new.firehol_categories)
         existing.login_attempts += new.login_attempts

@@ -242,7 +242,7 @@ class TestMergeIocs(ExtractionTestCase):
 
         self.assertEqual(result.last_seen, new_time)
         self.assertEqual(result.first_seen, old_time)
-        self.assertEqual(result.ip_reputation, "new")
+        self.assertEqual(result.ip_reputation, "old")
         self.assertEqual(result.asn, 23)
 
     def test_last_seen_not_regressed(self):
@@ -274,6 +274,33 @@ class TestMergeIocs(ExtractionTestCase):
         result = self.processor._merge_iocs(existing, new)
 
         self.assertEqual(result.first_seen, earlier)
+
+    def test_preserves_reputation_when_new_is_empty(self):
+        """Existing ip_reputation must not be overwritten by an empty value."""
+        existing = self._create_mock_ioc(ip_reputation="mass scanner")
+        new = self._create_mock_ioc(ip_reputation="")
+
+        result = self.processor._merge_iocs(existing, new)
+
+        self.assertEqual(result.ip_reputation, "mass scanner")
+
+    def test_preserves_reputation_when_existing_is_set(self):
+        """Existing ip_reputation must not be overwritten even if new has a value."""
+        existing = self._create_mock_ioc(ip_reputation="tor exit node")
+        new = self._create_mock_ioc(ip_reputation="mass scanner")
+
+        result = self.processor._merge_iocs(existing, new)
+
+        self.assertEqual(result.ip_reputation, "tor exit node")
+
+    def test_fills_reputation_when_existing_is_empty(self):
+        """Empty existing ip_reputation should be filled by a non-empty new value."""
+        existing = self._create_mock_ioc(ip_reputation="")
+        new = self._create_mock_ioc(ip_reputation="mass scanner")
+
+        result = self.processor._merge_iocs(existing, new)
+
+        self.assertEqual(result.ip_reputation, "mass scanner")
 
     def test_handles_empty_urls_and_ports(self):
         existing = self._create_mock_ioc(related_urls=[], destination_ports=[])
