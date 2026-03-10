@@ -1,7 +1,6 @@
 # This file is a part of GreedyBear https://github.com/honeynet/GreedyBear
 # See the file 'LICENSE' for copying permission.
 import re
-from datetime import datetime
 from urllib.parse import unquote, unquote_plus, urlparse
 
 from greedybear.consts import PAYLOAD_REQUEST, SCANNER
@@ -9,6 +8,7 @@ from greedybear.cronjobs.extraction.strategies import BaseExtractionStrategy
 from greedybear.cronjobs.extraction.utils import (
     get_ioc_type,
     iocs_from_hits,
+    parse_timestamp,
     threatfox_submission,
 )
 from greedybear.cronjobs.repositories import IocRepository, SensorRepository
@@ -237,7 +237,7 @@ class TannerExtractionStrategy(BaseExtractionStrategy):
         seen_hostnames = set()
 
         timestamp_str = hit.get("@timestamp")
-        hit_time = datetime.fromisoformat(timestamp_str) if timestamp_str else None
+        hit_time = parse_timestamp(timestamp_str) if timestamp_str else None
 
         for url in urls:
             # Strip trailing characters that are almost never unencoded at the end of a URL

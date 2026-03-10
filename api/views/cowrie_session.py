@@ -1,6 +1,5 @@
 # This file is a part of GreedyBear https://github.com/honeynet/GreedyBear
 # See the file 'LICENSE' for copying permission.
-import itertools
 import logging
 import socket
 
@@ -80,7 +79,7 @@ def cowrie_session_view(request):
         return HttpResponseBadRequest("Missing required 'query' parameter")
 
     if is_ip_address(observable):
-        sessions = CowrieSession.objects.filter(source__name=observable, duration__gt=0).prefetch_related("source", "commands")
+        sessions = CowrieSession.objects.filter(source__name=observable, duration__gt=0).prefetch_related("source", "commands", "credentials")
         if not sessions.exists():
             raise Http404(f"No information found for IP: {observable}")
 
@@ -89,14 +88,14 @@ def cowrie_session_view(request):
             commands = CommandSequence.objects.get(commands_hash=observable.lower())
         except CommandSequence.DoesNotExist as exc:
             raise Http404(f"No command sequences found with hash: {observable}") from exc
-        sessions = CowrieSession.objects.filter(commands=commands, duration__gt=0).prefetch_related("source", "commands")
+        sessions = CowrieSession.objects.filter(commands=commands, duration__gt=0).prefetch_related("source", "commands", "credentials")
     else:
         return HttpResponseBadRequest("Query must be a valid IP address or SHA-256 hash")
 
     if include_similar:
         commands = {s.commands for s in sessions if s.commands}
         clusters = {cmd.cluster for cmd in commands if cmd.cluster is not None}
-        related_sessions = CowrieSession.objects.filter(commands__cluster__in=clusters).prefetch_related("source", "commands")
+        related_sessions = CowrieSession.objects.filter(commands__cluster__in=clusters).prefetch_related("source", "commands", "credentials")
         sessions = sessions.union(related_sessions)
 
     response_data = {
@@ -109,7 +108,7 @@ def cowrie_session_view(request):
     response_data["commands"] = sorted("\n".join(cmd.commands) for cmd in unique_commands)
     response_data["sources"] = sorted({s.source.name for s in sessions}, key=socket.inet_aton)
     if include_credentials:
-        response_data["credentials"] = sorted(set(itertools.chain(*[s.credentials for s in sessions])))
+        response_data["credentials"] = sorted({str(c) for s in sessions for c in s.credentials.all()})
     if include_session_data:
         response_data["sessions"] = [
             {
@@ -117,7 +116,7 @@ def cowrie_session_view(request):
                 "duration": s.duration,
                 "source": s.source.name,
                 "interactions": s.interaction_count,
-                "credentials": s.credentials if s.credentials else [],
+                "credentials": [str(c) for c in s.credentials.all()],
                 "commands": "\n".join(s.commands.commands) if s.commands else "",
             }
             for s in sessions

@@ -2,7 +2,6 @@
 # See the file 'LICENSE' for copying permission.
 import re
 from collections import defaultdict
-from datetime import datetime
 from hashlib import sha256
 from urllib.parse import urlparse
 
@@ -11,6 +10,7 @@ from greedybear.cronjobs.extraction.strategies import BaseExtractionStrategy
 from greedybear.cronjobs.extraction.utils import (
     get_ioc_type,
     iocs_from_hits,
+    parse_timestamp,
     threatfox_submission,
 )
 from greedybear.cronjobs.repositories import (
@@ -143,7 +143,7 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
             self.log.info(f"found hidden URL {payload_url} in payload from attacker {scanner_ip}")
             self.log.info(f"extracted hostname {payload_hostname} from {payload_url}")
 
-            hit_time = datetime.fromisoformat(hit["@timestamp"])
+            hit_time = parse_timestamp(hit["@timestamp"])
             ioc = IOC(
                 name=payload_hostname,
                 type=get_ioc_type(payload_hostname),
@@ -183,7 +183,7 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
                     self.log.warning(f"Failed to parse hostname from download URL: {download_url}")
                     continue
 
-                hit_time = datetime.fromisoformat(hit["@timestamp"])
+                hit_time = parse_timestamp(hit["@timestamp"])
                 ioc = IOC(
                     name=hostname,
                     type=get_ioc_type(hostname),
@@ -251,7 +251,7 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
                 session_record.login_attempt = True
                 username = normalize_credential_field(hit["username"])
                 password = normalize_credential_field(hit["password"])
-                session_record.credentials.append(f"{username} | {password}")
+                self.session_repo.add_credential(session_record, username, password)
 
             case "cowrie.command.input":
                 self.log.info(f"found a command execution from {ioc.name}")

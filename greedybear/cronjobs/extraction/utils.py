@@ -11,6 +11,20 @@ from greedybear.consts import DOMAIN, IP
 from greedybear.models import IOC, FireHolList, MassScanner, WhatsMyIPDomain
 
 
+def parse_timestamp(timestamp: str) -> datetime:
+    """
+    Parse an ISO-format timestamp string into a naive datetime.
+    Strips timezone info because the project uses USE_TZ=False.
+
+    Args:
+        timestamp: ISO-format timestamp string.
+
+    Returns:
+        Naive datetime object.
+    """
+    return datetime.fromisoformat(timestamp).replace(tzinfo=None)
+
+
 def is_whatsmyip_domain(domain: str) -> bool:
     """
     Check if a domain is a known "what's my IP" service.
@@ -151,8 +165,8 @@ def iocs_from_hits(hits: list[dict]) -> list[IOC]:
         ioc._sensors_to_add = sensors
 
         if timestamps:
-            ioc.first_seen = datetime.fromisoformat(min(timestamps))
-            ioc.last_seen = datetime.fromisoformat(max(timestamps))
+            ioc.first_seen = parse_timestamp(min(timestamps))
+            ioc.last_seen = parse_timestamp(max(timestamps))
         iocs.append(ioc)
     return iocs
 
