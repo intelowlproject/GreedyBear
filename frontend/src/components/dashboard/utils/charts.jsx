@@ -224,4 +224,3 @@ export const AttackOriginCountriesChart = React.memo(() => {
     </ResponsiveContainer>
   );
 });
-
