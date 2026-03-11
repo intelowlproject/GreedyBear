@@ -73,11 +73,12 @@ class FeedsViewTestCase(CustomTestCase):
         self.assertEqual(len(response.json()["iocs"]), 3)
 
     def test_200_feeds_ignores_undocumented_params(self):
-        # Even if unauthenticated users try to inject variables like feed_size
-        # they must be ignored and the feed should return normally with status 200
-        # and the default feed_size (so it won't crash or behave unexpectedly).
-        response = self.client.get("/api/feeds/all/all/recent.json?feed_size=999999")
+        # Setup data has multiple IOCs. We pass feed_size=1.
+        # If the undocumented param is correctly ignored/filtered,
+        # the response should fallback to the default feed_size and return >1 items.
+        response = self.client.get("/api/feeds/all/all/recent.json?feed_size=1")
         self.assertEqual(response.status_code, 200)
+        self.assertGreater(len(response.json()["iocs"]), 1)
 
     def test_400_feeds(self):
         response = self.client.get("/api/feeds/test/all/recent.json")
@@ -144,11 +145,12 @@ class FeedsViewTestCase(CustomTestCase):
         self.assertIn(self.ioc_domain.name, returned_values)
 
     def test_200_feeds_pagination_ignores_undocumented_params(self):
-        # Even if unauthenticated users try to inject variables like feed_size
-        # they must be ignored and the feed should return normally with status 200
-        # and the default feed_size (so it won't crash or behave unexpectedly).
-        response = self.client.get("/api/feeds/?page_size=10&page=1&feed_type=all&attack_type=all&age=recent&feed_size=9999999")
+        # Setup data has multiple IOCs. We pass feed_size=1.
+        # If the undocumented param is correctly ignored/filtered,
+        # the pagination response should fallback to the default feed_size and return count > 1.
+        response = self.client.get("/api/feeds/?page_size=10&page=1&feed_type=all&attack_type=all&age=recent&feed_size=1")
         self.assertEqual(response.status_code, 200)
+        self.assertGreater(response.json()["count"], 1)
 
     def test_400_feeds_multi_type_with_invalid(self):
         response = self.client.get("/api/feeds/?page_size=10&page=1&feed_type=cowrie,invalid_type&attack_type=all&age=recent")
