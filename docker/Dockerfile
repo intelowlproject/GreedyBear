@@ -1,3 +1,14 @@
+## ------------------------------- UV Stage ------------------------------ ## 
+FROM python:3.13-slim-trixie AS uv
+
+WORKDIR /app
+
+COPY --from=ghcr.io/astral-sh/uv:0.10.9 /uv /bin/uv
+COPY pyproject.toml .  
+
+RUN echo "VITE_GREEDYBEAR_VERSION=\"$(uv version)\"" > .env.local
+
+
 ## ------------------------------- Frontend Build Stage ------------------------------ ## 
 FROM node:lts-alpine3.22 AS frontend-build
 
@@ -9,13 +20,13 @@ RUN npm ci
 
 # copy source code and build
 COPY frontend/ .
-COPY docker/.version .env.local
+COPY --from=uv /app/.env.local .
 RUN VITE_BASE_URL=/static/reactapp/ npm run build
 
 
 ## ------------------------------- Production Stage ------------------------------ ##
 
-FROM python:3.13-slim-trixie AS production
+FROM uv AS production
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONUNBUFFERED=1
@@ -23,26 +34,27 @@ ENV DJANGO_SETTINGS_MODULE=greedybear.settings
 ENV PYTHONPATH=/opt/deploy/greedybear
 ENV LOG_PATH=/var/log/greedybear
 
+
 WORKDIR $PYTHONPATH
 
 # Install runtime dependencies
 #  - libgomp1 is required for model training
-#  - libexpat1 is required by uWSGI
 #  - curl for healthcheck
 RUN apt-get update && apt-get install -y --no-install-recommends \
-       libgomp1 libexpat1 curl \
+    libgomp1 curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Install python packages
-COPY requirements/project-requirements.txt requirements/project-requirements.txt
-RUN pip install --no-cache-dir --root-user-action=ignore --disable-pip-version-check -q -r requirements/project-requirements.txt
+COPY pyproject.toml uv.lock ./
+RUN uv sync --no-dev --locked
+ENV PATH="/opt/deploy/greedybear/.venv/bin:$PATH"
 
 # Copy files
 COPY . $PYTHONPATH
 COPY --from=frontend-build /app/build /var/www/reactapp
 
 # separation is required to avoid to re-execute os installation in case of change of python requirements
-RUN mkdir -p ${LOG_PATH}/django ${LOG_PATH}/uwsgi \
+RUN mkdir -p ${LOG_PATH}/django ${LOG_PATH}/gunicorn \
     && touch ${LOG_PATH}/django/api.log ${LOG_PATH}/django/api_errors.log \
     && touch ${LOG_PATH}/django/greedybear.log ${LOG_PATH}/django/greedybear_errors.log \
     && touch ${LOG_PATH}/django/django_q.log ${LOG_PATH}/django/django_q_errors.log \
@@ -57,8 +69,8 @@ RUN mkdir -p ${LOG_PATH}/django ${LOG_PATH}/uwsgi \
 
 FROM production AS development
 
-# Install dev requirements
-RUN pip install --no-cache-dir --root-user-action=ignore --disable-pip-version-check -q -r requirements/dev-requirements.txt
+# Install dev dependencies
+RUN uv sync --group dev --locked
 
 ## ------------------------------- Default Stage ------------------------------ ##
 
