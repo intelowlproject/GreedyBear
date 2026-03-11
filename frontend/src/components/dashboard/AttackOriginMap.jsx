@@ -8,7 +8,7 @@ import {
 import axios from "axios";
 import { useTimePickerStore } from "@certego/certego-ui";
 import { IOC_ATTACKER_COUNTRIES_URI } from "../../constants/api";
-const WORLD_ATLAS_GEO_URL = "/countries-110m.json";
+const WORLD_ATLAS_GEO_URL = `${import.meta.env.BASE_URL}countries-110m.json`;
 
 // Normalise country names coming from T-Pot geoip to match the topojson properties.name values
 const NAME_FIXES = {
