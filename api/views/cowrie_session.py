@@ -28,13 +28,14 @@ logger = logging.getLogger(__name__)
 def cowrie_session_view(request):
     """
     Retrieve Cowrie honeypot session data including command sequences, credentials, and session details.
-    Queries can be performed using either an IP address to find all sessions from that source,
-    or a SHA-256 hash to find sessions containing a specific command sequence.
+    Queries can be performed using an IP address to find all sessions from that source,
+    a SHA-256 hash to find sessions containing a specific command sequence,
+    or a password to find all sessions where that password was used.
 
     Args:
         request: The HTTP request object containing query parameters
-        query (str, required): The search term, can be either an IP address or the SHA-256 hash of a command sequence.
-            SHA-256 hashes should match command sequences generated using Python's "\\n".join(sequence) format.
+        query (str, required): The search term, can be an IP address, the SHA-256 hash of a command sequence,
+            or a password. SHA-256 hashes should match command sequences generated using Python's "\\n".join(sequence) format.
         include_similar (bool, optional): When "true", expands the result to include all sessions that executed
             command sequences belonging to the same cluster(s) as command sequences found in the initial query result.
             Requires CLUSTER_COWRIE_COMMAND_SEQUENCES enabled in configuration. Default: false
@@ -64,6 +65,7 @@ def cowrie_session_view(request):
         /api/cowrie_session?query=1.2.3.4
         /api/cowrie_session?query=5120e94e366ec83a79ee80454e4d1c76c06499ab19032bcdc7f0b4523bdb37a6
         /api/cowrie_session?query=1.2.3.4&include_credentials=true&include_session_data=true&include_similar=true
+        /api/cowrie_session?query=admin123
     """
     observable = request.query_params.get("query")
     include_similar = request.query_params.get("include_similar", "false").lower() == "true"
@@ -87,7 +89,11 @@ def cowrie_session_view(request):
             raise Http404(f"No command sequences found with hash: {observable}") from exc
         sessions = CowrieSession.objects.filter(commands=commands, duration__gt=0).prefetch_related("source", "commands", "credentials")
     else:
-        return HttpResponseBadRequest("Query must be a valid IP address or SHA-256 hash")
+        if len(observable) > 256:  # max_length of Credential.password field
+            return HttpResponseBadRequest("Query exceeds maximum password length")
+        sessions = CowrieSession.objects.filter(credentials__password=observable, duration__gt=0).prefetch_related("source", "commands", "credentials")
+        if not sessions.exists():
+            raise Http404(f"No information found for password: {observable}")
 
     source_ip = str(request.META["REMOTE_ADDR"])
     Statistics(source=source_ip, view=ViewType.COWRIE_SESSION_VIEW.value).save()
