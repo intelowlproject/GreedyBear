@@ -120,7 +120,7 @@ def iocs_from_hits(hits: list[dict]) -> list[IOC]:
     for hit in hits:
         hits_by_ip[hit["src_ip"]].append(hit)
     iocs = []
-    repo = ASNRepository()  # single instance for this batch
+    asn_repository = ASNRepository()  # single instance for this batch
     for ip, hits in hits_by_ip.items():
         extracted_ip = ip_address(ip)
         if extracted_ip.is_loopback or extracted_ip.is_private or extracted_ip.is_multicast or extracted_ip.is_link_local or extracted_ip.is_reserved:
@@ -152,7 +152,7 @@ def iocs_from_hits(hits: list[dict]) -> list[IOC]:
 
         asn = geoip.get("asn")
         as_name = geoip.get("as_org", "")
-        autonomous_system = repo.get_or_create(asn, as_name) if asn else None
+        autonomous_system = asn_repository.get_or_create(asn, as_name) if asn else None
 
         ioc = IOC(
             name=ip,
