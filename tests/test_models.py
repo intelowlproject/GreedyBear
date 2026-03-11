@@ -1,4 +1,4 @@
-from greedybear.models import IocType, Statistics, Tag, ViewType
+from greedybear.models import IocType, IpReputation, Statistics, Tag, ViewType
 
 from . import CustomTestCase
 
@@ -26,7 +26,7 @@ class ModelsTestCase(CustomTestCase):
         self.assertEqual(self.ioc.recurrence_probability, 0.1)
         self.assertEqual(self.ioc.expected_interactions, 11.1)
 
-        self.assertEqual(self.ioc_2.ip_reputation, "mass scanner")
+        self.assertEqual(self.ioc_2.ip_reputation, IpReputation.MASS_SCANNER)
 
         self.assertIn(self.heralding, self.ioc.general_honeypot.all())
         self.assertIn(self.ciscoasa, self.ioc.general_honeypot.all())

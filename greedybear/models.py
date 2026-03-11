@@ -5,6 +5,12 @@ from django.db import models
 from django.db.models.functions import Lower, Now
 
 
+class IpReputation(models.TextChoices):
+    MASS_SCANNER = "mass scanner"
+    TOR_EXIT_NODE = "tor exit node"
+    KNOWN_ATTACKER = "known attacker"
+
+
 class ViewType(models.TextChoices):
     FEEDS_VIEW = "feeds"
     ENRICHMENT_VIEW = "enrichment"
@@ -189,7 +195,7 @@ class MassScanner(models.Model):
 class TorExitNode(models.Model):
     ip_address = models.GenericIPAddressField(unique=True)
     added = models.DateTimeField(db_default=Now())
-    reason = models.CharField(max_length=64, blank=True, default="tor exit node")
+    reason = models.CharField(max_length=64, blank=True, default=IpReputation.TOR_EXIT_NODE)
 
     class Meta:
         indexes = [
@@ -197,7 +203,7 @@ class TorExitNode(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.ip_address} (tor exit node)"
+        return f"{self.ip_address} ({IpReputation.TOR_EXIT_NODE})"
 
 
 class WhatsMyIPDomain(models.Model):

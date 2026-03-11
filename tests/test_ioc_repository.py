@@ -4,7 +4,7 @@ from unittest.mock import Mock
 from django.db import IntegrityError, transaction
 
 from greedybear.cronjobs.repositories import IocRepository
-from greedybear.models import IOC, GeneralHoneypot
+from greedybear.models import IOC, GeneralHoneypot, IpReputation
 
 from . import CustomTestCase
 
@@ -575,12 +575,12 @@ class TestIocRepositoryCleanup(CustomTestCase):
     def test_update_ioc_reputation_updates_existing(self):
         IOC.objects.create(name="1.2.3.4", type="ip", ip_reputation="")
 
-        result = self.repo.update_ioc_reputation("1.2.3.4", "mass scanner")
+        result = self.repo.update_ioc_reputation("1.2.3.4", IpReputation.MASS_SCANNER)
 
         self.assertTrue(result)
         updated = IOC.objects.get(name="1.2.3.4")
-        self.assertEqual(updated.ip_reputation, "mass scanner")
+        self.assertEqual(updated.ip_reputation, IpReputation.MASS_SCANNER)
 
     def test_update_ioc_reputation_returns_false_for_missing(self):
-        result = self.repo.update_ioc_reputation("9.9.9.9", "mass scanner")
+        result = self.repo.update_ioc_reputation("9.9.9.9", IpReputation.MASS_SCANNER)
         self.assertFalse(result)

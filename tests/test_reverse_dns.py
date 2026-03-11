@@ -4,7 +4,7 @@ from unittest.mock import Mock, patch
 
 from greedybear.cronjobs import reverse_dns as reverse_dns_module
 from greedybear.cronjobs.reverse_dns import ReverseDNSCron
-from greedybear.models import IOC, IocType, Tag
+from greedybear.models import IOC, IocType, IpReputation, Tag
 
 from . import CustomTestCase
 
@@ -66,7 +66,7 @@ class TestReverseDNSCron(CustomTestCase):
 
     def test_skips_ips_with_existing_reputation(self):
         """IPs that already have a reputation should not be checked."""
-        IOC.objects.filter(name=self.candidate_ioc.name).update(ip_reputation="mass scanner")
+        IOC.objects.filter(name=self.candidate_ioc.name).update(ip_reputation=IpReputation.MASS_SCANNER)
 
         with patch.object(self.cron, "_resolve_batch", side_effect=self._mock_resolve("")) as mock_resolve:
             self.cron.run()
@@ -137,7 +137,7 @@ class TestReverseDNSCron(CustomTestCase):
         with patch.object(self.cron, "_resolve_batch", side_effect=self._mock_resolve("probe.censys.io")):
             self.cron.run()
 
-        self.mock_ioc_repo.update_ioc_reputation.assert_called_with(self.candidate_ioc.name, "mass scanner")
+        self.mock_ioc_repo.update_ioc_reputation.assert_called_with(self.candidate_ioc.name, IpReputation.MASS_SCANNER)
 
     def test_no_reputation_update_on_non_scanner_ptr(self):
         """Non-scanner PTR records should not cause reputation updates."""
@@ -364,7 +364,7 @@ class TestReverseDNSCronUpdateIoc(CustomTestCase):
 
         self.cron._update_ioc("1.2.3.4")
 
-        self.mock_ioc_repo.update_ioc_reputation.assert_called_once_with("1.2.3.4", "mass scanner")
+        self.mock_ioc_repo.update_ioc_reputation.assert_called_once_with("1.2.3.4", IpReputation.MASS_SCANNER)
         self.cron.log.info.assert_called_once()
 
     def test_update_ioc_not_found(self):
@@ -372,5 +372,5 @@ class TestReverseDNSCronUpdateIoc(CustomTestCase):
 
         self.cron._update_ioc("9.9.9.9")
 
-        self.mock_ioc_repo.update_ioc_reputation.assert_called_once_with("9.9.9.9", "mass scanner")
+        self.mock_ioc_repo.update_ioc_reputation.assert_called_once_with("9.9.9.9", IpReputation.MASS_SCANNER)
         self.cron.log.info.assert_not_called()

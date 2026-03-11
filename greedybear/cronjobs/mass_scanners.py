@@ -5,6 +5,7 @@ import requests
 from greedybear.cronjobs.base import Cronjob
 from greedybear.cronjobs.extraction.utils import is_valid_ipv4
 from greedybear.cronjobs.repositories import IocRepository, MassScannerRepository
+from greedybear.models import IpReputation
 
 
 class MassScannersCron(Cronjob):
@@ -90,6 +91,6 @@ class MassScannersCron(Cronjob):
         Args:
             ip_address: IP address to update.
         """
-        updated = self.ioc_repo.update_ioc_reputation(ip_address, "mass scanner")
+        updated = self.ioc_repo.update_ioc_reputation(ip_address, IpReputation.MASS_SCANNER)
         if updated:
-            self.log.debug(f"Updated IOC {ip_address} reputation to 'mass scanner'")
+            self.log.debug(f"Updated IOC {ip_address} reputation to '{IpReputation.MASS_SCANNER}'")

@@ -14,6 +14,7 @@ from greedybear.models import (
     Credential,
     GeneralHoneypot,
     IocType,
+    IpReputation,
 )
 
 
@@ -66,7 +67,7 @@ class CustomTestCase(TestCase):
             scanner=True,
             payload_request=True,
             related_urls=[],
-            ip_reputation="mass scanner",
+            ip_reputation=IpReputation.MASS_SCANNER,
             autonomous_system=cls.as_obj,
             destination_ports=[22, 23, 24],
             login_attempts=1,
@@ -87,7 +88,7 @@ class CustomTestCase(TestCase):
             scanner=True,
             payload_request=True,
             related_urls=[],
-            ip_reputation="tor exit node",
+            ip_reputation=IpReputation.TOR_EXIT_NODE,
             autonomous_system=cls.as_obj,
             destination_ports=[22, 23, 24],
             login_attempts=1,
