@@ -1,4 +1,4 @@
-from greedybear.models import IOC, GeneralHoneypot, IocType, Statistics, ViewType
+from greedybear.models import GeneralHoneypot, Statistics, ViewType
 from tests import CustomTestCase
 
 
@@ -52,64 +52,14 @@ class StatisticsViewTestCase(CustomTestCase):
         self.assertEqual(response.json()[0]["Tanner"], 0)
 
     def test_200_countries(self):
-        # Create IOCs with attacker_country set
-        ioc_cn = IOC.objects.create(
-            name="1.2.3.4",
-            type=IocType.IP.value,
-            first_seen=self.current_time,
-            last_seen=self.current_time,
-            days_seen=[self.current_time],
-            number_of_days_seen=1,
-            attack_count=1,
-            interaction_count=1,
-            attacker_country="China",
-        )
-        ioc_cn2 = IOC.objects.create(
-            name="1.2.3.5",
-            type=IocType.IP.value,
-            first_seen=self.current_time,
-            last_seen=self.current_time,
-            days_seen=[self.current_time],
-            number_of_days_seen=1,
-            attack_count=1,
-            interaction_count=1,
-            attacker_country="China",
-        )
-        ioc_us = IOC.objects.create(
-            name="1.2.3.6",
-            type=IocType.IP.value,
-            first_seen=self.current_time,
-            last_seen=self.current_time,
-            days_seen=[self.current_time],
-            number_of_days_seen=1,
-            attack_count=1,
-            interaction_count=1,
-            attacker_country="United States",
-        )
-        ioc_inactive = IOC.objects.create(
-            name="1.2.3.7",
-            type=IocType.IP.value,
-            first_seen=self.current_time,
-            last_seen=self.current_time,
-            days_seen=[self.current_time],
-            number_of_days_seen=1,
-            attack_count=1,
-            interaction_count=1,
-            attacker_country="Russia",
-        )
-        ioc_cn.general_honeypot.add(self.heralding)
-        ioc_cn2.general_honeypot.add(self.heralding)
-        ioc_us.general_honeypot.add(self.heralding)
-        # ioc_inactive is only attached to an inactive honeypot (should be excluded)
-        ioc_inactive.general_honeypot.add(self.ddospot)
-
         response = self.client.get("/api/statistics/countries")
         self.assertEqual(response.status_code, 200)
         data = response.json()
         self.assertIsInstance(data, list)
         countries = [item["country"] for item in data]
         counts = {item["country"]: item["count"] for item in data}
-        # China should appear twice, United States once; Russia (inactive honeypot) must be excluded
+        # China appears on ioc + ioc_2 (both active), United States on ioc_3 (active)
+        # Russia is only on ioc_inactive_country (ddospot, inactive); must be excluded
         self.assertIn("China", countries)
         self.assertIn("United States", countries)
         self.assertNotIn("Russia", countries)
@@ -118,8 +68,3 @@ class StatisticsViewTestCase(CustomTestCase):
         # Results must be ordered descending by count
         count_values = [item["count"] for item in data]
         self.assertEqual(count_values, sorted(count_values, reverse=True))
-
-        ioc_cn.delete()
-        ioc_cn2.delete()
-        ioc_us.delete()
-        ioc_inactive.delete()
