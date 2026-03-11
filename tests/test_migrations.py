@@ -120,79 +120,74 @@ class TestRemoveUnusedLog4pot(MigrationTestCase):
             "Log4pot with IOCs should NOT be deleted",
         )
 
-    @tag("migration")
-    class TestIocAsnToAutonomousSystem(MigrationTestCase):
-        """Tests migration from IOC.asn -> IOC.autonomous_system."""
 
-        migrate_from = "0039_ioc_attacker_country_sensor_country_and_more"
-        migrate_to = "0040_autonomoussystem_remove_ioc_asn_and_more"
+@tag("migration")
+class TestIocAsnToAutonomousSystem(MigrationTestCase):
+    """Tests migration from IOC.asn -> IOC.autonomous_system."""
 
-        def test_asn_migrated_to_autonomous_system(self):
-            ioc_old = self.old_state.apps.get_model(self.app_name, "IOC")
-            self.old_state.apps.get_model(self.app_name, "AutonomousSystem")
+    migrate_from = "0042_credential_model_and_data_migration"
+    migrate_to = "0043_autonomoussystem_remove_ioc_asn_and_more"
 
-            # Create IOCs with ASN
-            ioc1 = ioc_old.objects.create(asn=12345)
-            ioc2 = ioc_old.objects.create(asn=67890)
-            ioc3 = ioc_old.objects.create(asn=None)  # Should stay null
+    def test_asn_migrated_to_autonomous_system(self):
+        ioc_old = self.old_state.apps.get_model(self.app_name, "IOC")
 
-            # Apply migration
-            new_state = self.apply_tested_migration()
-            ioc_new = new_state.apps.get_model(self.app_name, "IOC")
-            as_new = new_state.apps.get_model(self.app_name, "AutonomousSystem")
+        ioc1 = ioc_old.objects.create(asn=12345)
+        ioc2 = ioc_old.objects.create(asn=67890)
+        ioc3 = ioc_old.objects.create(asn=None)
 
-            # Check autonomous_system FK exists and points correctly
-            ioc1_new = ioc_new.objects.get(pk=ioc1.pk)
-            ioc2_new = ioc_new.objects.get(pk=ioc2.pk)
-            ioc3_new = ioc_new.objects.get(pk=ioc3.pk)
+        # Apply migration
+        new_state = self.apply_tested_migration()
+        ioc_new = new_state.apps.get_model(self.app_name, "IOC")
+        as_new = new_state.apps.get_model(self.app_name, "AutonomousSystem")
 
-            self.assertIsNotNone(ioc1_new.autonomous_system)
-            self.assertEqual(ioc1_new.autonomous_system.asn, 12345)
+        ioc1_new = ioc_new.objects.get(pk=ioc1.pk)
+        ioc2_new = ioc_new.objects.get(pk=ioc2.pk)
+        ioc3_new = ioc_new.objects.get(pk=ioc3.pk)
 
-            self.assertIsNotNone(ioc2_new.autonomous_system)
-            self.assertEqual(ioc2_new.autonomous_system.asn, 67890)
+        self.assertIsNotNone(ioc1_new.autonomous_system)
+        self.assertEqual(ioc1_new.autonomous_system.asn, 12345)
 
-            # ioc3 had no ASN, so FK should be null
-            self.assertIsNone(ioc3_new.autonomous_system)
+        self.assertIsNotNone(ioc2_new.autonomous_system)
+        self.assertEqual(ioc2_new.autonomous_system.asn, 67890)
 
-            # Ensure AutonomousSystem table has correct records
-            self.assertEqual(as_new.objects.count(), 2)
-            asns = set(as_new.objects.values_list("asn", flat=True))
-            self.assertSetEqual(asns, {12345, 67890})
+        self.assertIsNone(ioc3_new.autonomous_system)
 
-        def test_duplicate_asns_with_different_names(self):
-            """Ensure migration does not duplicate ASNs even if names differ."""
-            ioc_old = self.old_state.apps.get_model(self.app_name, "IOC")
-            ioc_old.objects.create(asn=12345)
-            ioc_old.objects.create(asn=12345)  # same ASN, maybe had a different name
-            new_state = self.apply_tested_migration()
-            as_new = new_state.apps.get_model(self.app_name, "AutonomousSystem")
-            self.assertEqual(as_new.objects.count(), 1)  # only one record created
+        self.assertEqual(as_new.objects.count(), 2)
+        asns = set(as_new.objects.values_list("asn", flat=True))
+        self.assertSetEqual(asns, {12345, 67890})
 
-        def test_batch_update_large_number_of_iocs(self):
-            """Ensure migration correctly updates large number of IOCs in batches."""
-            ioc_old = self.old_state.apps.get_model(self.app_name, "IOC")
-            new_state = self.apply_tested_migration
-            self.old_state.apps.get_model(self.app_name, "AutonomousSystem")
+    def test_duplicate_asns_with_different_names(self):
+        """Ensure migration does not duplicate ASNs."""
+        ioc_old = self.old_state.apps.get_model(self.app_name, "IOC")
 
-            # creating 3500 IOCs with ASNs batch_size in migration(0041_autonomoussystem_remove_ioc_asn_and_more) is 1000.
-            num_iocs = 3500
-            asns = [10000 + i % 10 for i in range(num_iocs)]  # 10 unique ASNs
-            for asn in asns:
-                ioc_old.objects.create(asn=asn)
+        ioc_old.objects.create(asn=12345)
+        ioc_old.objects.create(asn=12345)
 
-            # applying migration
-            new_state = self.apply_tested_migration()
-            ioc_new = new_state.apps.get_model(self.app_name, "IOC")
-            as_new = new_state.apps.get_model(self.app_name, "AutonomousSystem")
+        new_state = self.apply_tested_migration()
+        as_new = new_state.apps.get_model(self.app_name, "AutonomousSystem")
 
-            # checking that all IOCs have correct AutonomousSystem
-            for ioc in ioc_new.objects.all():
-                self.assertIsNotNone(ioc.autonomous_system)
-                self.assertIn(ioc.autonomous_system.asn, range(10000, 10010))
+        self.assertEqual(as_new.objects.count(), 1)
 
-            # checking that only 10 AutonomousSystem records exist
-            self.assertEqual(as_new.objects.count(), 10)
+    def test_large_number_of_iocs(self):
+        """Ensure migration works correctly for many IOCs."""
+        ioc_old = self.old_state.apps.get_model(self.app_name, "IOC")
+
+        num_iocs = 3500
+        asns = [10000 + i % 10 for i in range(num_iocs)]
+
+        for asn in asns:
+            ioc_old.objects.create(asn=asn)
+
+        new_state = self.apply_tested_migration()
+        ioc_new = new_state.apps.get_model(self.app_name, "IOC")
+        as_new = new_state.apps.get_model(self.app_name, "AutonomousSystem")
+
+        for ioc in ioc_new.objects.all():
+            self.assertIsNotNone(ioc.autonomous_system)
+            self.assertIn(ioc.autonomous_system.asn, range(10000, 10010))
+
+        self.assertEqual(as_new.objects.count(), 10)
+
 
 @tag("migration")
 class TestCredentialModelMigration(MigrationTestCase):

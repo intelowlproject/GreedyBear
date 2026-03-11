@@ -193,7 +193,7 @@ def get_queryset(request, feed_params, valid_feed_types, is_aggregated=False, se
 
     # Advanced filters
     if feed_params.asn:
-        query_dict["asn"] = feed_params.asn
+        query_dict["autonomous_system__asn"] = feed_params.asn
     if feed_params.min_score is not None:
         query_dict["recurrence_probability__gte"] = feed_params.min_score
     if feed_params.port:

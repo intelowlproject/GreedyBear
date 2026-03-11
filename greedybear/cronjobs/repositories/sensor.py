@@ -1,6 +1,7 @@
 import logging
 
 from greedybear.consts import IP
+from greedybear.cronjobs.extraction.utils import get_ioc_type
 from greedybear.models import Sensor
 
 
@@ -30,8 +31,6 @@ class SensorRepository:
         Returns:
             Sensor object if valid, None if invalid IP format.
         """
-        # TODO: circular import erorr occured
-        from greedybear.cronjobs.extraction.utils import get_ioc_type
 
         if ip in self.cache:
             return self.cache[ip]

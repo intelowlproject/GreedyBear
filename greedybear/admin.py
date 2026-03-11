@@ -175,10 +175,11 @@ class IOCModelAdmin(admin.ModelAdmin):
         return "-"
 
     autonomous_system_display.short_description = "Autonomous System"
+    autonomous_system_display.admin_order_field = "autonomous_system__asn"
 
     def get_queryset(self, request):
-        """Override to prefetch related sensors and honeypots, avoiding N+1 queries."""
-        return super().get_queryset(request).prefetch_related("sensors", "general_honeypot", "autonomous_system")
+        """Override to optimize queries and avoid N+1 problems."""
+        return super().get_queryset(request).select_related("autonomous_system").prefetch_related("sensors", "general_honeypot")
 
 
 @admin.register(GeneralHoneypot)
