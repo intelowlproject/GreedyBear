@@ -71,9 +71,6 @@ def cowrie_session_view(request):
     include_session_data = request.query_params.get("include_session_data", "false").lower() == "true"
 
     logger.info(f"Cowrie view requested by {request.user} for {observable}")
-    source_ip = str(request.META["REMOTE_ADDR"])
-    request_source = Statistics(source=source_ip, view=ViewType.COWRIE_SESSION_VIEW.value)
-    request_source.save()
 
     if not observable:
         return HttpResponseBadRequest("Missing required 'query' parameter")
@@ -91,6 +88,9 @@ def cowrie_session_view(request):
         sessions = CowrieSession.objects.filter(commands=commands, duration__gt=0).prefetch_related("source", "commands", "credentials")
     else:
         return HttpResponseBadRequest("Query must be a valid IP address or SHA-256 hash")
+
+    source_ip = str(request.META["REMOTE_ADDR"])
+    Statistics(source=source_ip, view=ViewType.COWRIE_SESSION_VIEW.value).save()
 
     if include_similar:
         commands = {s.commands for s in sessions if s.commands}
