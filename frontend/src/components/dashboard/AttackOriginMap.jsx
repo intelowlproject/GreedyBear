@@ -136,7 +136,7 @@ export default function AttackOriginMap() {
     return (
       <div
         className="d-flex justify-content-center align-items-center text-muted"
-        style={{ height: 320 }}
+        style={{ minHeight: 200 }}
       >
         Loading map…
       </div>
@@ -147,7 +147,7 @@ export default function AttackOriginMap() {
     return (
       <div
         className="d-flex justify-content-center align-items-center text-muted"
-        style={{ height: 320 }}
+        style={{ minHeight: 200 }}
       >
         {error}
       </div>
@@ -155,7 +155,12 @@ export default function AttackOriginMap() {
   }
 
   return (
-    <div style={{ position: "relative", userSelect: "none" }}>
+    <div
+      style={{
+        position: "relative",
+        userSelect: "none",
+      }}
+    >
       {/* Tooltip */}
       {tooltip.visible && (
         <div
@@ -193,14 +198,16 @@ export default function AttackOriginMap() {
       )}
 
       {/* Map */}
-      <div style={{ maxHeight: 340, overflow: "hidden" }}>
+      <div style={{ overflow: "hidden" }}>
         <ComposableMap
           projection="geoNaturalEarth1"
-          style={{ width: "100%", height: "auto", marginTop: -20 }}
+          width={800}
+          height={420}
+          style={{ width: "100%", height: "auto" }}
           onMouseMove={handleMouseMove}
           onMouseLeave={handleMouseLeave}
         >
-          <ZoomableGroup zoom={1} minZoom={0.8} maxZoom={6}>
+          <ZoomableGroup zoom={1} minZoom={0.6} maxZoom={6}>
             <Geographies geography={WORLD_ATLAS_GEO_URL}>
               {({ geographies }) =>
                 geographies.map((geo) => (
