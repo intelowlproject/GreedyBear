@@ -89,6 +89,8 @@ def cowrie_session_view(request):
             raise Http404(f"No command sequences found with hash: {observable}") from exc
         sessions = CowrieSession.objects.filter(commands=commands, duration__gt=0).prefetch_related("source", "commands", "credentials")
     else:
+        if len(observable) > 256:  # max_length of Credential.password field
+            return HttpResponseBadRequest("Query exceeds maximum password length")
         sessions = CowrieSession.objects.filter(credentials__password=observable, duration__gt=0).prefetch_related("source", "commands", "credentials")
         if not sessions.exists():
             raise Http404(f"No information found for password: {observable}")

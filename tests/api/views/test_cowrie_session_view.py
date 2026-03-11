@@ -245,3 +245,24 @@ class CowrieSessionViewTestCase(CustomTestCase):
         """Test that view returns 404 for password with no matching sessions."""
         response = self.client.get("/api/cowrie_session?query=nonexistentpassword123")
         self.assertEqual(response.status_code, 404)
+
+    def test_password_query_with_similar(self):
+        """Test password query including similar sessions."""
+        response = self.client.get("/api/cowrie_session?query=root&include_similar=true")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("query", response.data)
+        self.assertIn("commands", response.data)
+        self.assertIn("sources", response.data)
+
+    def test_password_query_with_session_data(self):
+        """Test password query including session data."""
+        response = self.client.get("/api/cowrie_session?query=root&include_session_data=true")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("sessions", response.data)
+        self.assertEqual(response.data["sessions"][0]["source"], "140.246.171.141")
+        self.assertEqual(response.data["sessions"][0]["credentials"][0], "root | root")
+
+    def test_password_too_long(self):
+        """Test that passwords exceeding max length return 400."""
+        response = self.client.get(f"/api/cowrie_session?query={'a' * 257}")
+        self.assertEqual(response.status_code, 400)
