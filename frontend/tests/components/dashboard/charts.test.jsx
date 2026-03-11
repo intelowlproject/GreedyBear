@@ -1,6 +1,7 @@
 import React from "react";
 import "@testing-library/jest-dom";
 import { render, screen } from "@testing-library/react";
+import { vi } from "vitest";
 
 import {
   FeedsSourcesChart,
@@ -10,17 +11,22 @@ import {
   FeedsTypesChart,
 } from "../../../src/components/dashboard/utils/charts";
 
+import {
+  FEEDS_STATISTICS_SOURCES_URI,
+  FEEDS_STATISTICS_TYPES_URI,
+} from "../../../src/constants/api";
+
 import { AnyChartWidget } from "@certego/certego-ui";
 
 // Mock recharts
-jest.mock("recharts", () => ({
+vi.mock("recharts", () => ({
   Bar: ({ dataKey }) => <div data-testid={`bar-${dataKey}`} />,
   Area: ({ dataKey }) => <div data-testid={`area-${dataKey}`} />,
 }));
 
 // Mock certego-ui
-jest.mock("@certego/certego-ui", () => ({
-  AnyChartWidget: jest.fn(({ url, componentsFn }) => {
+vi.mock("@certego/certego-ui", () => ({
+  AnyChartWidget: vi.fn(({ url, componentsFn }) => {
     const mockData = [{ date: "2024-01-01", feed1: 10, feed2: 20 }];
 
     return (
@@ -29,31 +35,38 @@ jest.mock("@certego/certego-ui", () => ({
       </div>
     );
   }),
-  getRandomColorsArray: jest.fn(() => ["#111111", "#222222", "#333333"]),
+  getRandomColorsArray: vi.fn(() => ["#111111", "#222222", "#333333"]),
 }));
 
 describe("Charts Components", () => {
-  test("createAreaChart factory sets correct displayName", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  test("createAreaChart sets correct displayName", () => {
     expect(FeedsSourcesChart.displayName).toBe("FeedsSourcesChart");
     expect(FeedsDownloadsChart.displayName).toBe("FeedsDownloadsChart");
     expect(EnrichmentSourcesChart.displayName).toBe("EnrichmentSourcesChart");
     expect(EnrichmentRequestsChart.displayName).toBe("EnrichmentRequestsChart");
   });
 
-  test("factory charts pass correct props to AnyChartWidget", () => {
+  test("charts pass correct props to AnyChartWidget", () => {
     render(<FeedsSourcesChart />);
 
-    expect(AnyChartWidget).toHaveBeenCalledWith(
+    expect(AnyChartWidget).toHaveBeenCalled();
+
+    const props = AnyChartWidget.mock.calls[0][0];
+
+    expect(props).toEqual(
       expect.objectContaining({
-        url: "/api/statistics/sources/feeds",
+        url: FEEDS_STATISTICS_SOURCES_URI,
         accessorFnAggregation: expect.any(Function),
         componentsFn: expect.any(Function),
       }),
-      {},
     );
   });
 
-  test("factory charts render Area components", () => {
+  test("charts render Area components", () => {
     render(<FeedsSourcesChart />);
 
     const areas = screen.getAllByTestId(/^area-/);
@@ -63,13 +76,16 @@ describe("Charts Components", () => {
   test("FeedsTypesChart passes correct props to AnyChartWidget", () => {
     render(<FeedsTypesChart />);
 
-    expect(AnyChartWidget).toHaveBeenCalledWith(
+    expect(AnyChartWidget).toHaveBeenCalled();
+
+    const props = AnyChartWidget.mock.calls[0][0];
+
+    expect(props).toEqual(
       expect.objectContaining({
-        url: "/api/statistics/feeds_types",
+        url: FEEDS_STATISTICS_TYPES_URI,
         accessorFnAggregation: expect.any(Function),
         componentsFn: expect.any(Function),
       }),
-      {},
     );
   });
 
