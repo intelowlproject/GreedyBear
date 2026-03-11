@@ -62,7 +62,7 @@ export const createAreaChart = (name, url, colorMap, start, end) => {
               />
             )),
       }),
-      [url, colorMap, start, end]
+      [url, colorMap, start, end],
     );
 
     return <AnyChartWidget {...chartProps} />;
@@ -78,7 +78,7 @@ export const FeedsSourcesChart = createAreaChart(
   FEEDS_STATISTICS_SOURCES_URI,
   FEED_COLOR_MAP,
   0,
-  1
+  1,
 );
 
 export const FeedsDownloadsChart = createAreaChart(
@@ -86,8 +86,7 @@ export const FeedsDownloadsChart = createAreaChart(
   FEEDS_STATISTICS_DOWNLOADS_URI,
   FEED_COLOR_MAP,
   1,
-  2
-
+  2,
 );
 
 export const EnrichmentSourcesChart = createAreaChart(
@@ -95,16 +94,14 @@ export const EnrichmentSourcesChart = createAreaChart(
   ENRICHMENT_STATISTICS_SOURCES_URI,
   ENRICHMENT_COLOR_MAP,
   0,
-  1
-
+  1,
 );
 export const EnrichmentRequestsChart = createAreaChart(
   "EnrichmentRequestsChart",
   ENRICHMENT_STATISTICS_REQUESTS_URI,
   ENRICHMENT_COLOR_MAP,
   1,
-  2
-
+  2,
 );
 
 export const FeedsTypesChart = React.memo(() => {
@@ -132,7 +129,7 @@ export const FeedsTypesChart = React.memo(() => {
         ));
       },
     }),
-    []
+    [],
   );
 
   return <AnyChartWidget {...chartProps} />;
