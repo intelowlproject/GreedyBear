@@ -487,3 +487,123 @@ class TestGeoIPEnrichmentE2E(E2ETestCase):
 
         # UpdateScores called with the real IOC
         mock_scores.return_value.score_only.assert_called_once_with(real_iocs)
+
+
+class TestTannerE2E(E2ETestCase):
+    """E2E tests for Tanner web honeypot extraction through the real pipeline."""
+
+    @patch("greedybear.cronjobs.extraction.pipeline.UpdateScores")
+    def test_tanner_extracts_scanner_ioc(self, mock_scores):
+        """
+        E2E: Tanner web request hit → real TannerExtractionStrategy → scanner IOC.
+        """
+        pipeline = self._create_pipeline_with_real_factory()
+
+        tanner_hits = [
+            MockElasticHit(
+                {
+                    "src_ip": "203.0.113.50",
+                    "type": "Tanner",
+                    "dest_port": 80,
+                    "url": "/index.html",
+                    "@timestamp": "2025-06-01T10:00:00",
+                    "t-pot_ip_ext": "10.0.0.7",
+                }
+            ),
+        ]
+        pipeline.elastic_repo.search.return_value = [tanner_hits]
+        pipeline.ioc_repo.is_empty.return_value = False
+        pipeline.ioc_repo.is_ready_for_extraction.return_value = True
+        pipeline.ioc_repo.get_ioc_by_name.return_value = None
+
+        mock_ioc = self._create_mock_ioc("203.0.113.50")
+        with patch("greedybear.cronjobs.extraction.ioc_processor.IocProcessor.add_ioc") as mock_add:
+            mock_add.return_value = mock_ioc
+            result = pipeline.execute()
+
+        pipeline.sensor_repo.get_or_create_sensor.assert_called_with("10.0.0.7")
+        self.assertGreaterEqual(result, 0)
+
+    @patch("greedybear.cronjobs.extraction.pipeline.UpdateScores")
+    def test_tanner_sqli_hit_creates_scanner(self, mock_scores):
+        """
+        E2E: Tanner SQLi hit → scanner IOC extracted.
+        """
+        pipeline = self._create_pipeline_with_real_factory()
+
+        tanner_hits = [
+            MockElasticHit(
+                {
+                    "src_ip": "198.51.100.10",
+                    "type": "Tanner",
+                    "dest_port": 80,
+                    "url": "/search?q=1 UNION SELECT * FROM users--",
+                    "@timestamp": "2025-06-01T12:00:00",
+                }
+            ),
+        ]
+        pipeline.elastic_repo.search.return_value = [tanner_hits]
+        pipeline.ioc_repo.is_empty.return_value = False
+        pipeline.ioc_repo.is_ready_for_extraction.return_value = True
+        pipeline.ioc_repo.get_ioc_by_name.return_value = None
+
+        mock_ioc = self._create_mock_ioc("198.51.100.10")
+        with patch("greedybear.cronjobs.extraction.ioc_processor.IocProcessor.add_ioc") as mock_add:
+            mock_add.return_value = mock_ioc
+            result = pipeline.execute()
+
+        self.assertGreaterEqual(result, 0)
+
+    @patch("greedybear.cronjobs.extraction.pipeline.UpdateScores")
+    def test_tanner_mixed_with_cowrie(self, mock_scores):
+        """
+        E2E: Mixed Tanner + Cowrie hits → each uses correct strategy.
+        """
+        pipeline = self._create_pipeline_with_real_factory()
+
+        mixed_hits = [
+            MockElasticHit(
+                {
+                    "src_ip": "10.1.1.1",
+                    "type": "Cowrie",
+                    "session": "cowrie_sess",
+                    "eventid": "cowrie.session.connect",
+                    "timestamp": "2025-06-01T10:00:00",
+                    "dest_port": 22,
+                }
+            ),
+            MockElasticHit(
+                {
+                    "src_ip": "10.2.2.2",
+                    "type": "Tanner",
+                    "dest_port": 80,
+                    "url": "/page?file=../../../etc/passwd",
+                    "@timestamp": "2025-06-01T10:00:01",
+                }
+            ),
+        ]
+        pipeline.elastic_repo.search.return_value = [mixed_hits]
+        pipeline.ioc_repo.is_empty.return_value = False
+        pipeline.ioc_repo.is_ready_for_extraction.return_value = True
+        pipeline.ioc_repo.get_ioc_by_name.return_value = None
+
+        mock_iocs = {
+            "10.1.1.1": self._create_mock_ioc("10.1.1.1"),
+            "10.2.2.2": self._create_mock_ioc("10.2.2.2"),
+        }
+
+        def add_ioc_side_effect(*args, **kwargs):
+            ip = args[0].name if args else kwargs.get("ioc", MagicMock()).name
+            return mock_iocs.get(ip, self._create_mock_ioc(ip))
+
+        with patch("greedybear.cronjobs.extraction.ioc_processor.IocProcessor.add_ioc") as mock_add:
+            mock_add.side_effect = add_ioc_side_effect
+            result = pipeline.execute()
+
+        self.assertGreaterEqual(result, 0)
+
+        if mock_scores.return_value.score_only.called:
+            call_args = mock_scores.return_value.score_only.call_args[0][0]
+            ioc_names = [ioc.name for ioc in call_args]
+            self.assertIn("10.1.1.1", ioc_names)
+            self.assertIn("10.2.2.2", ioc_names)

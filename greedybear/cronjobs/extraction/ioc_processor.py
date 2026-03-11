@@ -91,12 +91,15 @@ class IocProcessor:
         Returns:
             The updated existing IOC record.
         """
-        existing.last_seen = new.last_seen
+        if new.first_seen < existing.first_seen:
+            existing.first_seen = new.first_seen
+        if new.last_seen > existing.last_seen:
+            existing.last_seen = new.last_seen
         existing.attack_count += 1
         existing.interaction_count += new.interaction_count
         existing.related_urls = sorted(set(existing.related_urls + new.related_urls))
         existing.destination_ports = sorted(set(existing.destination_ports + new.destination_ports))
-        existing.ip_reputation = new.ip_reputation
+        existing.ip_reputation = existing.ip_reputation or new.ip_reputation
         existing.firehol_categories = list(new.firehol_categories)
         existing.login_attempts += new.login_attempts
 

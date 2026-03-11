@@ -24,6 +24,24 @@ def is_ip_address(string: str) -> bool:
     return True
 
 
+def is_valid_domain(string: str) -> bool:
+    """
+    Validate if a string is a safe domain name for use in STIX patterns.
+
+    Rejects empty values and values containing characters that could be used
+    for STIX pattern injection (quotes, backslashes, newlines).
+
+    Args:
+        string: The string to validate as a domain name
+
+    Returns:
+        bool: True if the string is a safe domain value, False otherwise
+    """
+    if not string:
+        return False
+    return not any(c in string for c in ("'", '"', "\\", "\n", "\r"))
+
+
 def is_sha256hash(string: str) -> bool:
     """
     Validate if a string is a valid SHA-256 hash.

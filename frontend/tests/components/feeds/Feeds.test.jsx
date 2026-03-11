@@ -277,4 +277,82 @@ describe("Feeds component", () => {
       });
     });
   });
+
+  describe("Reset filters button", () => {
+    test("is disabled when all filters are at default values", () => {
+      render(
+        <BrowserRouter>
+          <Feeds />
+        </BrowserRouter>,
+      );
+
+      const resetButton = screen.getByTitle("Reset filters");
+      expect(resetButton).toBeDisabled();
+    });
+
+    test("becomes enabled when a filter is changed from its default", async () => {
+      const user = userEvent.setup();
+      render(
+        <BrowserRouter>
+          <Feeds />
+        </BrowserRouter>,
+      );
+
+      const attackTypeSelect = screen.getByLabelText("Attack type:");
+      const resetButton = screen.getByTitle("Reset filters");
+
+      expect(resetButton).toBeDisabled();
+
+      await user.selectOptions(attackTypeSelect, "scanner");
+
+      await waitFor(() => {
+        expect(resetButton).not.toBeDisabled();
+      });
+    });
+
+    test("resets all filters to defaults and disables itself when clicked", async () => {
+      const user = userEvent.setup();
+      render(
+        <BrowserRouter>
+          <Feeds />
+        </BrowserRouter>,
+      );
+
+      const feedTypeSelect = screen.getByLabelText("Feed type:");
+      const attackTypeSelect = screen.getByLabelText("Attack type:");
+      const iocTypeSelect = screen.getByLabelText("IOC type:");
+      const prioritizationSelect = screen.getByLabelText("Prioritize:");
+      const buttonRawData = screen.getByRole("link", { name: /Raw data/i });
+      const resetButton = screen.getByTitle("Reset filters");
+
+      // change all filters away from defaults
+      await user.selectOptions(feedTypeSelect, ["cowrie"]);
+      await user.selectOptions(attackTypeSelect, "scanner");
+      await user.selectOptions(iocTypeSelect, "ip");
+      await user.selectOptions(prioritizationSelect, "persistent");
+
+      await waitFor(() => {
+        expect(resetButton).not.toBeDisabled();
+        expect(buttonRawData).toHaveAttribute(
+          "href",
+          "/api/feeds/cowrie/scanner/persistent.json?ioc_type=ip",
+        );
+      });
+
+      // click reset
+      await user.click(resetButton);
+
+      await waitFor(() => {
+        expect(attackTypeSelect).toHaveValue("all");
+        expect(iocTypeSelect).toHaveValue("all");
+        expect(prioritizationSelect).toHaveValue("recent");
+        expect(feedTypeSelect).toHaveValue([]);
+        expect(buttonRawData).toHaveAttribute(
+          "href",
+          "/api/feeds/all/all/recent.json?ioc_type=all",
+        );
+        expect(resetButton).toBeDisabled();
+      });
+    });
+  });
 });
