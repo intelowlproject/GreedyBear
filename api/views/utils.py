@@ -356,7 +356,7 @@ def feeds_response(request=None, iocs=None, feed_params=None, valid_feed_types=N
 
                 if not verbose:
                     data_.pop("destination_ports", None)
-
+                data_.pop("autonomous_system", None)
                 data_.pop("honeypots", None)
                 data_.pop("id", None)
 

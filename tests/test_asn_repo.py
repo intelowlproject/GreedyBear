@@ -60,3 +60,22 @@ class ASNRepositoryTestCase(CustomTestCase):
             AutonomousSystem.objects.create(asn=64505, name="")
             self.repo.get_or_create(64505, "UpdatedName")
         self.assertTrue(any("Updated ASN" in msg for msg in log_cm2.output))
+
+    def test_cache_usage(self):
+        """Ensure that ASNRepository uses its internal cache to avoid duplicate DB hits."""
+        asn_number = 64506
+        as_name = "CacheTest"
+
+        # First call creates the ASN
+        as_obj1 = self.repo.get_or_create(asn_number, as_name)
+        self.assertEqual(as_obj1.name, as_name)
+
+        # Directly modify the DB to simulate change
+        AutonomousSystem.objects.filter(asn=asn_number).update(name="ModifiedName")
+
+        # Second call should return cached object, not the DB modified one
+        as_obj2 = self.repo.get_or_create(asn_number, None)
+        self.assertEqual(as_obj2.name, as_name)  # cache still has old name
+
+        # The objects should be the same instance if cached internally
+        self.assertEqual(as_obj1.asn, as_obj2.asn)

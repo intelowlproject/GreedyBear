@@ -98,7 +98,7 @@ class TestFeatExtraction(CustomTestCase):
             self.assertEqual(feature["first_seen"], today)
             self.assertEqual(len(feature["days_seen"]), 1)
             self.assertEqual(str(feature["days_seen"][0]), today)
-            self.assertEqual(feature["autonomous_system"], "12345")
+            self.assertEqual(feature["asn"], "12345")
             self.assertTrue(len(feature["honeypots"]) > 0)
             self.assertTrue(set(feature["honeypots"]).issubset({"heralding", "ciscoasa", "log4pot", "cowrie"}))
             self.assertEqual(feature["honeypot_count"], len(feature["honeypots"]))

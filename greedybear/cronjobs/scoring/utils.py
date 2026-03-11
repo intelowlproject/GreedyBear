@@ -79,7 +79,7 @@ def get_features(iocs: list[dict], reference_day: str) -> pd.DataFrame:
                 "first_seen": ioc["first_seen"],
                 "days_seen": ioc["days_seen"],
                 # CATEGORICAL FEATURES
-                "autonomous_system": str(ioc["autonomous_system"]),
+                "asn": str(ioc["asn"]),
                 "ip_reputation": ioc["ip_reputation"],
                 # MULTI VALUE FEATURES
                 "honeypots": ioc["feed_type"],
