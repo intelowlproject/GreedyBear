@@ -27,6 +27,7 @@ vi.mock("react-simple-maps", () => ({
       geographies: [
         { rsmKey: "geo-cn", properties: { name: "China" } },
         { rsmKey: "geo-usa", properties: { name: "United States of America" } },
+        { rsmKey: "geo-fr", properties: { name: "France" } },
       ],
     }),
   Geography: ({ fill, onMouseEnter, onMouseLeave, geography }) => (
@@ -108,11 +109,13 @@ describe("AttackOriginMap", () => {
   test("empty country for a geo gets the empty fill colour", async () => {
     axios.get.mockResolvedValue({ data: COUNTRIES_DATA });
     render(<AttackOriginMap />);
-    // Germany is in the data but not in the mocked geographies, so the USA
-    // geo should get a non-empty colour and an unknown geo should get COLOR_EMPTY
     await waitFor(() =>
-      expect(screen.getByTestId("geography-geo-cn")).toBeInTheDocument(),
+      expect(screen.getByTestId("geography-geo-fr")).toBeInTheDocument(),
     );
+    // France is not in COUNTRIES_DATA so it must receive the empty/default colour
+    const franceEl = screen.getByTestId("geography-geo-fr");
+    expect(franceEl.dataset.fill).toBe("#2a2a3a");
+    // China IS in the data so it must not receive the empty colour
     const chinaEl = screen.getByTestId("geography-geo-cn");
     expect(chinaEl.dataset.fill).not.toBe("#2a2a3a");
   });
