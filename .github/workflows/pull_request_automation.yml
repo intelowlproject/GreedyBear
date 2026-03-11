@@ -53,17 +53,9 @@ jobs:
      with:
       working_directory: .
 
-      use_black: false
-      use_isort: false
-      use_flake8: false
-      use_pylint: false
-      use_bandit: false
-      use_autoflake: false
       use_ruff_formatter: true
       use_ruff_linter: true
 
-      requirements_path: requirements/project-requirements.txt
-      project_dev_requirements_file: requirements/dev-requirements.txt
       packages_path: packages.txt
       django_settings_module: greedybear.settings
 
