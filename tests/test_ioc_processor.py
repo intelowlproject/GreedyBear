@@ -397,3 +397,48 @@ class TestUpdateDaysSeen(ExtractionTestCase):
         result.last_seen = datetime(2025, 1, 2, 0, 0, 0)
         result = self.processor._update_days_seen(result)
         self.assertEqual(len(result.days_seen), 2)
+
+    def test_sort_guard_non_chronological(self):
+        """Sort guard heals non-chronological days_seen."""
+        ioc = self._create_mock_ioc(
+            last_seen=datetime(2025, 1, 4, 12, 0, 0),
+        )
+        ioc.days_seen = [date(2025, 1, 5)]
+        ioc.number_of_days_seen = 1
+
+        result = self.processor._update_days_seen(ioc)
+
+        self.assertEqual(
+            result.days_seen,
+            [date(2025, 1, 4), date(2025, 1, 5)],
+        )
+        self.assertEqual(result.number_of_days_seen, 2)
+
+    def test_sort_guard_adjacent_day_reversal(self):
+        """Adjacent-day reversal is sorted — no ZeroDivisionError path."""
+        ioc = self._create_mock_ioc(
+            last_seen=datetime(2025, 1, 4, 23, 58, 0),
+        )
+        ioc.days_seen = [date(2025, 1, 5)]
+        ioc.number_of_days_seen = 1
+
+        result = self.processor._update_days_seen(ioc)
+
+        self.assertEqual(
+            result.days_seen,
+            [date(2025, 1, 4), date(2025, 1, 5)],
+        )
+        self.assertEqual(result.number_of_days_seen, 2)
+
+    def test_sort_guard_no_duplicate(self):
+        """Duplicate date is not appended."""
+        ioc = self._create_mock_ioc(
+            last_seen=datetime(2025, 1, 5, 10, 0, 0),
+        )
+        ioc.days_seen = [date(2025, 1, 5)]
+        ioc.number_of_days_seen = 1
+
+        result = self.processor._update_days_seen(ioc)
+
+        self.assertEqual(len(result.days_seen), 1)
+        self.assertEqual(result.number_of_days_seen, 1)

@@ -128,7 +128,9 @@ class IocProcessor:
         Returns:
             The updated IOC record.
         """
-        if len(ioc.days_seen) == 0 or ioc.days_seen[-1] != ioc.last_seen.date():
-            ioc.days_seen.append(ioc.last_seen.date())
-            ioc.number_of_days_seen = len(ioc.days_seen)
+        new_date = ioc.last_seen.date()
+        if new_date not in ioc.days_seen:
+            ioc.days_seen.append(new_date)
+            ioc.days_seen.sort()
+        ioc.number_of_days_seen = len(ioc.days_seen)
         return ioc
