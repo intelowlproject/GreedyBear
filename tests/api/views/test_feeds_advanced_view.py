@@ -340,3 +340,36 @@ class FeedsEnhancementsTestCase(CustomTestCase):
         response = self.client.get("/api/feeds/advanced/?format=csv")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response["Content-Type"], "text/csv")
+
+    # ── Country filter ────────────────────────────────────────────────────────
+
+    def test_filter_by_country(self):
+        """Filter by country returns only IOCs with matching attacker_country."""
+        self.ioc.attacker_country = "DE"
+        self.ioc.save()
+        self.ioc2.attacker_country = "US"
+        self.ioc2.save()
+
+        response = self.client.get("/api/feeds/advanced/?country=DE")
+        self.assertEqual(response.status_code, 200)
+        iocs = response.json()["iocs"]
+        self.assertEqual(len(iocs), 1)
+        self.assertEqual(iocs[0]["value"], self.ioc.name)
+        self.assertEqual(iocs[0]["attacker_country"], "DE")
+
+    def test_filter_by_country_case_insensitive(self):
+        """Country filter is case-insensitive (lowercase `de` matches `DE`)."""
+        self.ioc.attacker_country = "DE"
+        self.ioc.save()
+
+        response = self.client.get("/api/feeds/advanced/?country=de")
+        self.assertEqual(response.status_code, 200)
+        iocs = response.json()["iocs"]
+        values = [i["value"] for i in iocs]
+        self.assertIn(self.ioc.name, values)
+
+    def test_filter_by_country_no_results(self):
+        """Filter by a country with no matching IOCs returns empty list."""
+        response = self.client.get("/api/feeds/advanced/?country=ZZ")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["iocs"], [])

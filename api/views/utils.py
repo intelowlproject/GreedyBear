@@ -103,6 +103,7 @@ class FeedRequestParams:
         self.port = query_params.get("port")
         self.start_date = query_params.get("start_date")
         self.end_date = query_params.get("end_date")
+        self.country = query_params.get("country", None)
 
     def apply_default_filters(self, query_params):
         if not query_params:
@@ -204,6 +205,8 @@ def get_queryset(request, feed_params, valid_feed_types, is_aggregated=False, se
         query_dict["last_seen__gte"] = feed_params.start_date
     if feed_params.end_date:
         query_dict["last_seen__lte"] = feed_params.end_date
+    if feed_params.country:
+        query_dict["attacker_country__iexact"] = feed_params.country
 
     # Fallback to max_age ONLY if no date range is specified
     if not (feed_params.start_date or feed_params.end_date):
