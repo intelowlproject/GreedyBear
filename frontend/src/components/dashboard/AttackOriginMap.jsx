@@ -10,13 +10,25 @@ import { useTimePickerStore } from "@certego/certego-ui";
 import { IOC_ATTACKER_COUNTRIES_URI } from "../../constants/api";
 const WORLD_ATLAS_GEO_URL = `${import.meta.env.BASE_URL}countries-110m.json`;
 
-// Normalise country names coming from T-Pot geoip to match the topojson properties.name values
+// Normalise country names from T-Pot geoip to match Natural Earth names used by world-atlas@2. (https://github.com/topojson/world-atlas)
 const NAME_FIXES = {
   "United States": "United States of America",
   "Czech Republic": "Czechia",
   "Ivory Coast": "Côte d'Ivoire",
   "Democratic Republic of the Congo": "Dem. Rep. Congo",
   "Republic of the Congo": "Congo",
+  "Bosnia and Herzegovina": "Bosnia and Herz.",
+  "Central African Republic": "Central African Rep.",
+  "Dominican Republic": "Dominican Rep.",
+  "Equatorial Guinea": "Eq. Guinea",
+  "South Sudan": "S. Sudan",
+  "North Macedonia": "Macedonia",
+  Eswatini: "eSwatini",
+  "State of Palestine": "Palestine",
+  "Western Sahara": "W. Sahara",
+  "Solomon Islands": "Solomon Is.",
+  "Falkland Islands": "Falkland Is.",
+  "French Southern Territories": "Fr. S. Antarctic Lands",
 };
 
 function normalise(name) {
