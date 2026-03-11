@@ -92,7 +92,7 @@ class StatisticsViewSet(viewsets.ViewSet):
         qs = (
             IOC.objects.filter(last_seen__gte=delta)
             .exclude(attacker_country="")
-            .exclude(general_honeypot__active=False)
+            .filter(general_honeypot__active=True)
             .values("attacker_country")
             .annotate(count=Count("id", distinct=True))
             .order_by("-count")
