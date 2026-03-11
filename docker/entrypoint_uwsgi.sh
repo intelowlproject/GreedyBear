@@ -20,11 +20,10 @@ python manage.py collectstatic --noinput --clear --verbosity 0
 chown -R 2000:82 /var/log/greedybear
 
 # Obtain the current GreedyBear version number
-. /opt/deploy/greedybear/docker/.version
-export VITE_GREEDYBEAR_VERSION
+GREEDYBEAR_VERSION=$(uv version)
 
 echo "------------------------------"
-echo "GreedyBear $VITE_GREEDYBEAR_VERSION"
+echo "GreedyBear $GREEDYBEAR_VERSION"
 echo "DEBUG: $DEBUG"
 echo "DJANGO_TEST_SERVER: $DJANGO_TEST_SERVER"
 echo "------------------------------"
