@@ -62,7 +62,7 @@ class StatisticsViewTestCase(CustomTestCase):
             number_of_days_seen=1,
             attack_count=1,
             interaction_count=1,
-            attacker_country="CN",
+            attacker_country="China",
         )
         ioc_cn2 = IOC.objects.create(
             name="1.2.3.5",
@@ -73,7 +73,7 @@ class StatisticsViewTestCase(CustomTestCase):
             number_of_days_seen=1,
             attack_count=1,
             interaction_count=1,
-            attacker_country="CN",
+            attacker_country="China",
         )
         ioc_us = IOC.objects.create(
             name="1.2.3.6",
@@ -84,7 +84,7 @@ class StatisticsViewTestCase(CustomTestCase):
             number_of_days_seen=1,
             attack_count=1,
             interaction_count=1,
-            attacker_country="US",
+            attacker_country="United States",
         )
         ioc_inactive = IOC.objects.create(
             name="1.2.3.7",
@@ -95,7 +95,7 @@ class StatisticsViewTestCase(CustomTestCase):
             number_of_days_seen=1,
             attack_count=1,
             interaction_count=1,
-            attacker_country="RU",
+            attacker_country="Russia",
         )
         ioc_cn.general_honeypot.add(self.heralding)
         ioc_cn2.general_honeypot.add(self.heralding)
@@ -109,12 +109,12 @@ class StatisticsViewTestCase(CustomTestCase):
         self.assertIsInstance(data, list)
         countries = [item["country"] for item in data]
         counts = {item["country"]: item["count"] for item in data}
-        # CN should appear twice, US once; RU (inactive honeypot) must be excluded
-        self.assertIn("CN", countries)
-        self.assertIn("US", countries)
-        self.assertNotIn("RU", countries)
-        self.assertEqual(counts["CN"], 2)
-        self.assertEqual(counts["US"], 1)
+        # China should appear twice, United States once; Russia (inactive honeypot) must be excluded
+        self.assertIn("China", countries)
+        self.assertIn("United States", countries)
+        self.assertNotIn("Russia", countries)
+        self.assertEqual(counts["China"], 2)
+        self.assertEqual(counts["United States"], 1)
         # Results must be ordered descending by count
         count_values = [item["count"] for item in data]
         self.assertEqual(count_values, sorted(count_values, reverse=True))
