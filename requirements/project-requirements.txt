@@ -19,8 +19,8 @@ gunicorn==25.1.0
 joblib==1.5.3
 pandas==3.0.1
 scikit-learn==1.8.0
-numpy==2.4.2
+numpy==2.4.3
 datasketch==1.9.0
 
 feedparser==6.0.12
-stix2==3.0.1
+stix2==3.0.2

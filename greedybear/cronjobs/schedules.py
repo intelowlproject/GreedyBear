@@ -71,6 +71,12 @@ def setup_schedules():
             "func": "greedybear.tasks.get_tor_exit_nodes",
             "cron": "7 1 * * 0",
         },
+        # 10. Reverse DNS Scanner Check: Daily at 06:07
+        {
+            "name": "check_reverse_dns",
+            "func": "greedybear.tasks.check_reverse_dns",
+            "cron": "7 6 * * *",
+        },
         # 11. ThreatFox Enrichment: Weekly (Sunday) at 01:07
         {
             "name": "enrich_threatfox",

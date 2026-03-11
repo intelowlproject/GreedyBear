@@ -1,4 +1,7 @@
-from greedybear.cronjobs.commands.cluster import tokenize
+from unittest.mock import patch
+
+from greedybear.cronjobs.commands.cluster import ClusterCommandSequences, tokenize
+from greedybear.models import CommandSequence
 
 from . import CustomTestCase
 
@@ -81,3 +84,68 @@ class TokenizeTestCase(CustomTestCase):
             "'update'",
         ]
         self.assertEqual(tokenize(input_seq), expected)
+
+
+class ClusterCommandSequencesTestCase(CustomTestCase):
+    """Tests for ClusterCommandSequences.run() — covers lines 46–60."""
+
+    def _run_job(self, labels):
+        """Helper: run ClusterCommandSequences with mocked get_components()."""
+        with patch("greedybear.cronjobs.commands.cluster.LSHConnectedComponents") as mock_lsh_cls:
+            mock_lsh_cls.return_value.get_components.return_value = labels
+            ClusterCommandSequences().run()
+
+    def test_run_empty_db(self):
+        """Early return when no CommandSequence objects exist (lines 47–49)."""
+        CommandSequence.objects.all().delete()
+        with patch("greedybear.cronjobs.commands.cluster.LSHConnectedComponents") as mock_lsh:
+            ClusterCommandSequences().run()
+            # get_components must NOT be called — we returned before reaching it
+            mock_lsh.return_value.get_components.assert_not_called()
+
+    def test_run_no_label_changes(self):
+        """seqs_to_update stays empty → bulk_update skipped (line 59 else branch)."""
+        seqs = list(CommandSequence.objects.all())
+        current_labels = [s.cluster for s in seqs]
+        self._run_job(current_labels)
+        for seq, original_label in zip(seqs, current_labels, strict=False):
+            seq.refresh_from_db()
+            self.assertEqual(seq.cluster, original_label)
+
+    def test_run_partial_label_changes(self):
+        """Only the sequence whose label changed is written to DB (lines 53–59)."""
+        # Delete inherited fixtures and work with a single, known sequence so
+        # there is no ordering ambiguity between this call and run()'s queryset.
+        CommandSequence.objects.all().delete()
+        seq = CommandSequence.objects.create(
+            first_seen=self.current_time,
+            last_seen=self.current_time,
+            commands=["ls -la"],
+            commands_hash="testhash_partial",
+            cluster=11,
+        )
+        self._run_job([999])  # single sequence, label changes 11 → 999
+        seq.refresh_from_db()
+        self.assertEqual(seq.cluster, 999)
+
+    def test_run_all_labels_changed(self):
+        """All sequences are updated when every label differs (lines 53–59)."""
+        seqs = list(CommandSequence.objects.all())
+        new_labels = [777] * len(seqs)
+        self._run_job(new_labels)
+        for seq in seqs:
+            seq.refresh_from_db()
+            self.assertEqual(seq.cluster, 777)
+
+    def test_run_bulk_update_called_with_correct_args(self):
+        """bulk_update is called with field='cluster' and batch_size=1000 (line 59)."""
+        seqs = list(CommandSequence.objects.all())
+        new_labels = [888] * len(seqs)
+        with patch("greedybear.cronjobs.commands.cluster.LSHConnectedComponents") as mock_lsh_cls:
+            mock_lsh_cls.return_value.get_components.return_value = new_labels
+            with patch("greedybear.models.CommandSequence.objects.bulk_update") as mock_bulk:
+                ClusterCommandSequences().run()
+                mock_bulk.assert_called_once()
+                call_args = mock_bulk.call_args
+                self.assertIn("cluster", call_args[0][1])
+                self.assertEqual(call_args[1].get("batch_size"), 1000)
