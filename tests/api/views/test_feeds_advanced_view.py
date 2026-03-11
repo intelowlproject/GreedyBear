@@ -345,24 +345,24 @@ class FeedsEnhancementsTestCase(CustomTestCase):
 
     def test_filter_by_country(self):
         """Filter by country returns only IOCs with matching attacker_country."""
-        self.ioc.attacker_country = "DE"
+        self.ioc.attacker_country = "Germany"
         self.ioc.save()
-        self.ioc2.attacker_country = "US"
+        self.ioc2.attacker_country = "United States"
         self.ioc2.save()
 
-        response = self.client.get("/api/feeds/advanced/?country=DE")
+        response = self.client.get("/api/feeds/advanced/?country=Germany")
         self.assertEqual(response.status_code, 200)
         iocs = response.json()["iocs"]
         self.assertEqual(len(iocs), 1)
         self.assertEqual(iocs[0]["value"], self.ioc.name)
-        self.assertEqual(iocs[0]["attacker_country"], "DE")
+        self.assertEqual(iocs[0]["attacker_country"], "Germany")
 
     def test_filter_by_country_case_insensitive(self):
-        """Country filter is case-insensitive (lowercase `de` matches `DE`)."""
-        self.ioc.attacker_country = "DE"
+        """Country filter is case-insensitive."""
+        self.ioc.attacker_country = "Germany"
         self.ioc.save()
 
-        response = self.client.get("/api/feeds/advanced/?country=de")
+        response = self.client.get("/api/feeds/advanced/?country=germany")
         self.assertEqual(response.status_code, 200)
         iocs = response.json()["iocs"]
         values = [i["value"] for i in iocs]
