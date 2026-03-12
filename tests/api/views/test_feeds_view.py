@@ -69,13 +69,10 @@ class FeedsViewTestCase(CustomTestCase):
             self.assertEqual(response.json()["license"], settings.FEEDS_LICENSE)
         else:
             self.assertNotIn("license", response.json())
-        # Expecting 3 because setupTestData creates 3 IOCs (ioc, ioc_2, ioc_domain) associated with Heralding
-        self.assertEqual(len(response.json()["iocs"]), 3)
+        # ioc, ioc_2 (mass scanner now included), ioc_domain, ioc_4 — all on Heralding
+        self.assertEqual(len(response.json()["iocs"]), 4)
 
     def test_200_feeds_ignores_undocumented_params(self):
-        # Setup data has multiple IOCs. We pass feed_size=1.
-        # If the undocumented param is correctly ignored/filtered,
-        # the response should fallback to the default feed_size and return >1 items.
         response = self.client.get("/api/feeds/all/all/recent.json?feed_size=1")
         self.assertEqual(response.status_code, 200)
         self.assertGreater(len(response.json()["iocs"]), 1)
@@ -87,39 +84,39 @@ class FeedsViewTestCase(CustomTestCase):
     def test_200_feeds_pagination(self):
         response = self.client.get("/api/feeds/?page_size=10&page=1&feed_type=all&attack_type=all&age=recent")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["count"], 2)
+        # ioc, ioc_domain, ioc_4 — ioc_2 excluded (mass scanner), ioc_3 excluded (tor exit node)
+        self.assertEqual(response.json()["count"], 3)
         self.assertEqual(response.json()["total_pages"], 1)
 
     def test_200_feeds_pagination_inclusion_mass(self):
         response = self.client.get("/api/feeds/?page_size=10&page=1&feed_type=all&attack_type=all&age=recent&include_mass_scanners")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["count"], 3)
+        # ioc, ioc_2, ioc_domain, ioc_4 — only tor exit node excluded
+        self.assertEqual(response.json()["count"], 4)
 
     def test_200_feeds_pagination_inclusion_tor(self):
         response = self.client.get("/api/feeds/?page_size=10&page=1&feed_type=all&attack_type=all&age=recent&include_tor_exit_nodes")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["count"], 3)
+        # ioc, ioc_3, ioc_domain, ioc_4 — only mass scanner excluded
+        self.assertEqual(response.json()["count"], 4)
 
     def test_200_feeds_pagination_inclusion_mass_and_tor(self):
         response = self.client.get("/api/feeds/?page_size=10&page=1&feed_type=all&attack_type=all&age=recent&include_mass_scanners&include_tor_exit_nodes")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["count"], 4)
+        # all 5 IOCs: ioc, ioc_2, ioc_3, ioc_domain, ioc_4
+        self.assertEqual(response.json()["count"], 5)
 
     def test_200_feeds_filter_ip_only(self):
         response = self.client.get("/api/feeds/all/all/recent.json?ioc_type=ip")
         self.assertEqual(response.status_code, 200)
-        # Should only return IP addresses, not domains
         for ioc in response.json()["iocs"]:
-            # Verify all returned values are IPs (contain dots and numbers pattern)
             self.assertRegex(ioc["value"], r"^\d+\.\d+\.\d+\.\d+$")
 
     def test_200_feeds_filter_domain_only(self):
         response = self.client.get("/api/feeds/all/all/recent.json?ioc_type=domain")
         self.assertEqual(response.status_code, 200)
-        # Should only return domains, not IPs
         self.assertGreater(len(response.json()["iocs"]), 0)
         for ioc in response.json()["iocs"]:
-            # Verify all returned values are domains (contain alphabetic characters)
             self.assertRegex(ioc["value"], r"[a-zA-Z]")
 
     def test_200_feeds_pagination_filter_ip(self):
@@ -127,27 +124,26 @@ class FeedsViewTestCase(CustomTestCase):
             "/api/feeds/?page_size=10&page=1&feed_type=all&attack_type=all&age=recent&ioc_type=ip&include_mass_scanners&include_tor_exit_nodes"
         )
         self.assertEqual(response.status_code, 200)
-        # Should return only IPs (3 in test data)
-        self.assertEqual(response.json()["count"], 3)
+        # ioc, ioc_2, ioc_3, ioc_4 — all 4 IP-type IOCs
+        self.assertEqual(response.json()["count"], 4)
 
     def test_200_feeds_pagination_filter_domain(self):
         response = self.client.get("/api/feeds/?page_size=10&page=1&feed_type=all&attack_type=all&age=recent&ioc_type=domain")
         self.assertEqual(response.status_code, 200)
-        # Should return only domains (1 in test data)
+        # Only ioc_domain (1 domain in test data)
         self.assertEqual(response.json()["count"], 1)
 
     def test_200_feeds_multi_type_union(self):
         response = self.client.get("/api/feeds/?page_size=10&page=1&feed_type=cowrie,heralding&attack_type=all&age=recent")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json()["count"], 2)
+        # ioc, ioc_domain, ioc_4 — ioc_2 excluded (mass scanner), ioc_3 excluded (tor exit node)
+        self.assertEqual(response.json()["count"], 3)
         returned_values = {ioc["value"] for ioc in response.json()["results"]["iocs"]}
         self.assertIn(self.ioc.name, returned_values)
         self.assertIn(self.ioc_domain.name, returned_values)
+        self.assertIn(self.ioc_4.name, returned_values)
 
     def test_200_feeds_pagination_ignores_undocumented_params(self):
-        # Setup data has multiple IOCs. We pass feed_size=1.
-        # If the undocumented param is correctly ignored/filtered,
-        # the pagination response should fallback to the default feed_size and return count > 1.
         response = self.client.get("/api/feeds/?page_size=10&page=1&feed_type=all&attack_type=all&age=recent&feed_size=1")
         self.assertEqual(response.status_code, 200)
         self.assertGreater(response.json()["count"], 1)

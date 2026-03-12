@@ -63,6 +63,7 @@ class FeedRequestParams:
         verbose (str): Whether to include IOC properties that contain a lot of data (default: "false")
         paginate (str): Whether to paginate results (default: "false")
         format_ (str): Response format type (default: "json")
+        country (str, optional): Attacker country name to filter by (case-insensitive). (default: None)
     """
 
     def __init__(self, query_params: dict):
@@ -103,7 +104,10 @@ class FeedRequestParams:
         self.port = query_params.get("port")
         self.start_date = query_params.get("start_date")
         self.end_date = query_params.get("end_date")
-        self.country = query_params.get("country", None)
+        country = query_params.get("country")
+        if isinstance(country, str):
+            country = country.strip()
+        self.country = country or None
 
     def apply_default_filters(self, query_params):
         if not query_params:

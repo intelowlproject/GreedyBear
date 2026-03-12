@@ -44,11 +44,12 @@ class StatisticsViewTestCase(CustomTestCase):
 
         response = self.client.get("/api/statistics/feeds_types")
         self.assertEqual(response.status_code, 200)
-        # Expecting 3 because setupTestData creates 3 IOCs (ioc, ioc_2, ioc_domain) associated with Heralding
-        self.assertEqual(response.json()[0]["Heralding"], 3)
+        # Heralding: ioc, ioc_2, ioc_domain, ioc_4
+        self.assertEqual(response.json()[0]["Heralding"], 4)
         self.assertEqual(response.json()[0]["Ciscoasa"], 2)
         self.assertEqual(response.json()[0]["Log4pot"], 3)
-        self.assertEqual(response.json()[0]["Cowrie"], 3)
+        # Cowrie: ioc, ioc_2, ioc_3, ioc_4
+        self.assertEqual(response.json()[0]["Cowrie"], 4)
         self.assertEqual(response.json()[0]["Tanner"], 0)
 
     def test_200_countries(self):
@@ -58,7 +59,8 @@ class StatisticsViewTestCase(CustomTestCase):
         self.assertIsInstance(data, list)
         countries = [item["country"] for item in data]
         counts = {item["country"]: item["count"] for item in data}
-        # China appears on ioc + ioc_2 (both active), United States on ioc_3 (active)
+        # China appears on ioc_2 and ioc_3 (both active honeypots)
+        # United States appears on ioc_4 (active: cowrie + heralding)
         # Russia is only on ioc_inactive_country (ddospot, inactive); must be excluded
         self.assertIn("China", countries)
         self.assertIn("United States", countries)
