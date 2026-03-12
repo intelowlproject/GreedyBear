@@ -10,6 +10,7 @@ from greedybear.models import (
     IOC,
     CommandSequence,
     CowrieSession,
+    Credential,
     GeneralHoneypot,
     IocType,
 )
@@ -69,6 +70,7 @@ class CustomTestCase(TestCase):
             login_attempts=1,
             recurrence_probability=0.1,
             expected_interactions=11.1,
+            attacker_country="China",
         )
 
         cls.ioc_3 = IOC.objects.create(
@@ -89,6 +91,7 @@ class CustomTestCase(TestCase):
             login_attempts=1,
             recurrence_probability=0.1,
             expected_interactions=11.1,
+            attacker_country="United States",
         )
 
         cls.ioc_domain = IOC.objects.create(
@@ -127,6 +130,21 @@ class CustomTestCase(TestCase):
         cls.ioc_domain.general_honeypot.add(cls.log4pot_hp)  # Log4pot honeypot
         cls.ioc_domain.save()
 
+        # IOC with an inactive-only honeypot
+        cls.ioc_inactive_country = IOC.objects.create(
+            name="1.2.3.7",
+            type=IocType.IP.value,
+            first_seen=cls.current_time,
+            last_seen=cls.current_time,
+            days_seen=[cls.current_time],
+            number_of_days_seen=1,
+            attack_count=1,
+            interaction_count=1,
+            attacker_country="Russia",
+        )
+        cls.ioc_inactive_country.general_honeypot.add(cls.ddospot)
+        cls.ioc_inactive_country.save()
+
         cls.cmd_seq = ["cd foo", "ls -la"]
         cls.hash = sha256("\n".join(cls.cmd_seq).encode()).hexdigest()
         cls.command_sequence = CommandSequence.objects.create(
@@ -143,12 +161,13 @@ class CustomTestCase(TestCase):
             start_time=cls.current_time,
             duration=1.234,
             login_attempt=True,
-            credentials=["root | root"],
             command_execution=True,
             interaction_count=5,
             source=cls.ioc,
             commands=cls.command_sequence,
         )
+        credential, _ = Credential.objects.get_or_create(username="root", password="root")
+        cls.cowrie_session.credentials.add(credential)
         cls.cowrie_session.save()
 
         cls.cmd_seq_2 = ["cd bar", "ls -la"]
@@ -166,12 +185,13 @@ class CustomTestCase(TestCase):
             start_time=cls.current_time,
             duration=2.234,
             login_attempt=True,
-            credentials=["user | user"],
             command_execution=True,
             interaction_count=5,
             source=cls.ioc_2,
             commands=cls.command_sequence_2,
         )
+        credential_2, _ = Credential.objects.get_or_create(username="user", password="user")
+        cls.cowrie_session_2.credentials.add(credential_2)
         cls.cowrie_session_2.save()
 
         try:
@@ -201,6 +221,7 @@ class ExtractionTestCase(CustomTestCase):
         destination_ports=None,
         login_attempts=0,
         days_seen=None,
+        first_seen=None,
         last_seen=None,
         ip_reputation="",
         asn=1234,
@@ -217,6 +238,7 @@ class ExtractionTestCase(CustomTestCase):
         mock.destination_ports = destination_ports if destination_ports is not None else []
         mock.days_seen = days_seen if days_seen is not None else []
         mock.login_attempts = login_attempts
+        mock.first_seen = first_seen if first_seen is not None else datetime.now()
         mock.last_seen = last_seen if last_seen is not None else datetime.now()
         mock.ip_reputation = ip_reputation
         mock.asn = asn

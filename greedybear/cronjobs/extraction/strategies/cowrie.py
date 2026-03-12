@@ -2,7 +2,6 @@
 # See the file 'LICENSE' for copying permission.
 import re
 from collections import defaultdict
-from datetime import datetime
 from hashlib import sha256
 from urllib.parse import urlparse
 
@@ -11,6 +10,7 @@ from greedybear.cronjobs.extraction.strategies import BaseExtractionStrategy
 from greedybear.cronjobs.extraction.utils import (
     get_ioc_type,
     iocs_from_hits,
+    parse_timestamp,
     threatfox_submission,
 )
 from greedybear.cronjobs.repositories import (
@@ -143,7 +143,7 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
             self.log.info(f"found hidden URL {payload_url} in payload from attacker {scanner_ip}")
             self.log.info(f"extracted hostname {payload_hostname} from {payload_url}")
 
-            hit_time = datetime.fromisoformat(hit["@timestamp"])
+            hit_time = parse_timestamp(hit["@timestamp"])
             ioc = IOC(
                 name=payload_hostname,
                 type=get_ioc_type(payload_hostname),
@@ -183,7 +183,7 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
                     self.log.warning(f"Failed to parse hostname from download URL: {download_url}")
                     continue
 
-                hit_time = datetime.fromisoformat(hit["@timestamp"])
+                hit_time = parse_timestamp(hit["@timestamp"])
                 ioc = IOC(
                     name=hostname,
                     type=get_ioc_type(hostname),
@@ -251,7 +251,7 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
                 session_record.login_attempt = True
                 username = normalize_credential_field(hit["username"])
                 password = normalize_credential_field(hit["password"])
-                session_record.credentials.append(f"{username} | {password}")
+                self.session_repo.add_credential(session_record, username, password)
 
             case "cowrie.command.input":
                 self.log.info(f"found a command execution from {ioc.name}")
@@ -269,31 +269,6 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
                 session_record.duration = hit["duration"]
 
         session_record.interaction_count += 1
-
-    def _add_fks(self, scanner_ip: str, hostname: str) -> None:
-        """
-        Link related IOCs bidirectionally (scanner IP <-> hostname).
-
-        Args:
-            scanner_ip: Scanner IP address
-            hostname: Hostname to link with scanner
-        """
-        scanner_ip_instance = self.ioc_repo.get_ioc_by_name(scanner_ip)
-        hostname_instance = self.ioc_repo.get_ioc_by_name(hostname)
-
-        # Log warning if IOCs are missing - shouldn't happen in normal operation
-        if not scanner_ip_instance or not hostname_instance:
-            self.log.warning(
-                f"Cannot link IOCs - missing from database: scanner_ip={scanner_ip_instance is not None}, hostname={hostname_instance is not None}"
-            )
-            return
-
-        # Link bidirectionally - Django's .add() handles deduplication automatically
-        scanner_ip_instance.related_ioc.add(hostname_instance)
-        self.ioc_repo.save(scanner_ip_instance)
-
-        hostname_instance.related_ioc.add(scanner_ip_instance)
-        self.ioc_repo.save(hostname_instance)
 
     def _deduplicate_command_sequence(self, session: CowrieSession) -> bool:
         """

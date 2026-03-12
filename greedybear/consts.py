@@ -33,6 +33,23 @@ REQUIRED_FIELDS = [
 ]
 
 
+# Mass scanner service domains for reverse DNS filtering.
+# If a PTR record ends with one of these, the IP is classified as a mass scanner.
+MASS_SCANNER_DOMAINS = frozenset(
+    {
+        "shodan.io",
+        "censys.io",
+        "onyphe.net",
+        "binaryedge.io",
+        "shadowserver.org",
+        "internet-census.org",
+        "stretchoid.com",
+        "internet-measurement.com",
+        "recyber.net",
+    }
+)
+
+
 # we used this const to implement news feature
 RSS_FEED_URL = "https://intelowlproject.github.io/feed.xml"
 CACHE_KEY_GREEDYBEAR_NEWS = "greedybear_news"
