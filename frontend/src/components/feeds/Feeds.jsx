@@ -103,22 +103,17 @@ export default function Feeds() {
   const [searchParams, setSearchParams] = useSearchParams();
   const formikRef = React.useRef(null);
 
-  // Read initial filter values from URL query params, fall back to defaults
-  const getInitialValues = React.useCallback(() => {
-    return {
+  const initialValues = React.useMemo(
+    () => ({
       feeds_type: searchParams.get("feed_type") || DEFAULT_VALUES.feeds_type,
       attack_type:
         searchParams.get("attack_type") || DEFAULT_VALUES.attack_type,
       ioc_type: searchParams.get("ioc_type") || DEFAULT_VALUES.ioc_type,
       prioritize: searchParams.get("prioritize") || DEFAULT_VALUES.prioritize,
-    };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const initialValues = React.useMemo(
-    () => getInitialValues(),
-    [getInitialValues],
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }),
+    [],
   );
-
   const [feedsState, setFeedsState] = React.useState(() => {
     const values = initialValues;
     return {

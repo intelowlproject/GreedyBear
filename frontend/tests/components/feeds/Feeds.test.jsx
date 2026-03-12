@@ -128,7 +128,7 @@ describe("Feeds component", () => {
     const buttonRawData = screen.getByRole("link", { name: /Raw data/i });
     expect(buttonRawData).toHaveAttribute(
       "href",
-      "/api/feeds/all/all/recent.json",
+      "/api/feeds/all/all/recent.json?ioc_type=all",
     );
 
     await user.selectOptions(feedTypeSelectElement, "cowrie");
