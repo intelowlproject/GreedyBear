@@ -129,7 +129,7 @@ class CustomTestCase(TestCase):
             payload_request=False,
             related_urls=[],
             ip_reputation="",
-            asn=12345,
+            autonomous_system=cls.as_obj,
             destination_ports=[],
             login_attempts=0,
             recurrence_probability=0.1,
