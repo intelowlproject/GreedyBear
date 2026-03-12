@@ -1,4 +1,4 @@
-from greedybear.cronjobs.repositories.asn import *
+from greedybear.cronjobs.repositories.autonomous_system import *
 from greedybear.cronjobs.repositories.cowrie_session import *
 from greedybear.cronjobs.repositories.elastic import *
 from greedybear.cronjobs.repositories.firehol import *

@@ -1,12 +1,12 @@
-from greedybear.cronjobs.repositories import ASNRepository
+from greedybear.cronjobs.repositories import ASRepository
 from greedybear.models import AutonomousSystem
 from tests import CustomTestCase
 
 
-class ASNRepositoryTestCase(CustomTestCase):
+class ASRepositoryTestCase(CustomTestCase):
     def setUp(self):
         super().setUp()
-        self.repo = ASNRepository()
+        self.repo = ASRepository()
 
     def test_create_new_asn(self):
         """Test that a new ASN is created with the given name."""
@@ -53,13 +53,13 @@ class ASNRepositoryTestCase(CustomTestCase):
         with self.assertLogs(self.repo.log, level="INFO") as log_cm:
             # Creation
             self.repo.get_or_create(asn_number, as_name)
-        self.assertTrue(any("Created new ASN" in msg for msg in log_cm.output))
+        self.assertTrue(any("Created new AS" in msg for msg in log_cm.output))
 
         with self.assertLogs(self.repo.log, level="INFO") as log_cm2:
             # Update
             AutonomousSystem.objects.create(asn=64505, name="")
             self.repo.get_or_create(64505, "UpdatedName")
-        self.assertTrue(any("Updated ASN" in msg for msg in log_cm2.output))
+        self.assertTrue(any("Updated AS" in msg for msg in log_cm2.output))
 
     def test_cache_usage(self):
         """Ensure that ASNRepository uses its internal cache to avoid duplicate DB hits."""
