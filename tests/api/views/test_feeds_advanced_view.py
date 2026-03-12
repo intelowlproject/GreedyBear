@@ -130,6 +130,7 @@ class FeedsEnhancementsTestCase(CustomTestCase):
             attack_count=1,
             interaction_count=1,
             login_attempts=0,
+            attacker_country="United States",
         )
         self.ioc2.general_honeypot.add(self.cowrie_hp)
         self.ioc2.save()
@@ -345,11 +346,6 @@ class FeedsEnhancementsTestCase(CustomTestCase):
 
     def test_filter_by_country(self):
         """Filter by country returns only IOCs with matching attacker_country."""
-        self.ioc.attacker_country = "Germany"
-        self.ioc.save()
-        self.ioc2.attacker_country = "United States"
-        self.ioc2.save()
-
         response = self.client.get("/api/feeds/advanced/?country=Germany")
         self.assertEqual(response.status_code, 200)
         iocs = response.json()["iocs"]
@@ -359,9 +355,6 @@ class FeedsEnhancementsTestCase(CustomTestCase):
 
     def test_filter_by_country_case_insensitive(self):
         """Country filter is case-insensitive."""
-        self.ioc.attacker_country = "Germany"
-        self.ioc.save()
-
         response = self.client.get("/api/feeds/advanced/?country=germany")
         self.assertEqual(response.status_code, 200)
         iocs = response.json()["iocs"]
