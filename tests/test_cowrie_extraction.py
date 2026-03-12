@@ -74,6 +74,13 @@ class TestHelperFunctions(ExtractionTestCase):
         result = normalize_credential_field("admin")
         self.assertEqual(result, "admin")
 
+    def test_normalize_credential_field_truncation(self):
+        """Test credential field truncation to 256 characters."""
+        long_field = "A" * 300
+        result = normalize_credential_field(long_field)
+        self.assertEqual(len(result), 256)
+        self.assertTrue(result.startswith("A"))
+
 
 class TestCowrieExtractionStrategy(ExtractionTestCase):
     """Test CowrieExtractionStrategy class."""
