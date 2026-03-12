@@ -18,7 +18,8 @@ from stix2 import Bundle, ExternalReference, Indicator
 
 from api.serializers import FeedsRequestSerializer, parse_feed_types
 from greedybear.consts import CACHE_KEY_GREEDYBEAR_NEWS, CACHE_TIMEOUT_SECONDS, RSS_FEED_URL
-from greedybear.models import IOC, GeneralHoneypot, IpReputation, Statistics
+from greedybear.enums import IpReputation
+from greedybear.models import IOC, GeneralHoneypot, Statistics
 from greedybear.utils import is_ip_address, is_valid_domain
 
 logger = logging.getLogger(__name__)

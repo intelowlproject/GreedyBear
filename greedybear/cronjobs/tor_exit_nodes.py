@@ -6,7 +6,7 @@ from greedybear.cronjobs.base import Cronjob
 from greedybear.cronjobs.extraction.utils import is_valid_ipv4
 from greedybear.cronjobs.repositories import IocRepository
 from greedybear.cronjobs.repositories.tor import TorRepository
-from greedybear.models import IpReputation
+from greedybear.enums import IpReputation
 
 
 class TorExitNodesCron(Cronjob):

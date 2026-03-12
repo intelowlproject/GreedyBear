@@ -4,7 +4,8 @@ from unittest.mock import Mock
 from django.db import IntegrityError, transaction
 
 from greedybear.cronjobs.repositories import IocRepository
-from greedybear.models import IOC, GeneralHoneypot, IpReputation
+from greedybear.enums import IpReputation
+from greedybear.models import IOC, GeneralHoneypot
 
 from . import CustomTestCase
 

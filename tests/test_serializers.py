@@ -5,7 +5,8 @@ from rest_framework.serializers import ValidationError
 
 from api.serializers import FeedsRequestSerializer, FeedsResponseSerializer, parse_feed_types
 from greedybear.consts import PAYLOAD_REQUEST, SCANNER
-from greedybear.models import IOC, GeneralHoneypot, IpReputation
+from greedybear.enums import IpReputation
+from greedybear.models import IOC, GeneralHoneypot
 from tests import CustomTestCase
 
 

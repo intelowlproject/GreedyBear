@@ -3,7 +3,8 @@ from unittest.mock import Mock
 
 from greedybear.consts import PAYLOAD_REQUEST, SCANNER
 from greedybear.cronjobs.extraction.ioc_processor import IocProcessor
-from greedybear.models import IocType, IpReputation
+from greedybear.enums import IpReputation
+from greedybear.models import IocType
 
 from . import ExtractionTestCase
 

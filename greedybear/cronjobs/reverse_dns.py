@@ -7,7 +7,8 @@ from greedybear.consts import MASS_SCANNER_DOMAINS
 from greedybear.cronjobs.base import Cronjob
 from greedybear.cronjobs.repositories import IocRepository
 from greedybear.cronjobs.repositories.tag import TagRepository
-from greedybear.models import IOC, IocType, IpReputation
+from greedybear.enums import IpReputation
+from greedybear.models import IOC, IocType
 
 # Number of concurrent DNS lookups.
 THREAD_POOL_SIZE = 20

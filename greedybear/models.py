@@ -4,11 +4,7 @@ from django.contrib.postgres import fields as pg_fields
 from django.db import models
 from django.db.models.functions import Lower, Now
 
-
-class IpReputation(models.TextChoices):
-    MASS_SCANNER = "mass scanner"
-    TOR_EXIT_NODE = "tor exit node"
-    KNOWN_ATTACKER = "known attacker"
+from greedybear.enums import IpReputation
 
 
 class ViewType(models.TextChoices):

@@ -1,6 +1,7 @@
 import logging
 
-from greedybear.models import IpReputation, TorExitNode
+from greedybear.enums import IpReputation
+from greedybear.models import TorExitNode
 
 
 class TorRepository:

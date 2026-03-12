@@ -4,7 +4,8 @@ from unittest.mock import Mock, patch
 
 from greedybear.cronjobs import reverse_dns as reverse_dns_module
 from greedybear.cronjobs.reverse_dns import ReverseDNSCron
-from greedybear.models import IOC, IocType, IpReputation, Tag
+from greedybear.enums import IpReputation
+from greedybear.models import IOC, IocType, Tag
 
 from . import CustomTestCase
 

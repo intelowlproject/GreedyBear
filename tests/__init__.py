@@ -6,6 +6,7 @@ from certego_saas.apps.user.models import User
 from django.test import TestCase, TransactionTestCase
 from django_test_migrations.migrator import Migrator
 
+from greedybear.enums import IpReputation
 from greedybear.models import (
     IOC,
     AutonomousSystem,
@@ -14,7 +15,6 @@ from greedybear.models import (
     Credential,
     GeneralHoneypot,
     IocType,
-    IpReputation,
 )
 
 

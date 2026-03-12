@@ -4,7 +4,7 @@ import requests
 
 from greedybear.cronjobs.repositories.tor import TorRepository
 from greedybear.cronjobs.tor_exit_nodes import TorExitNodesCron
-from greedybear.models import IpReputation
+from greedybear.enums import IpReputation
 from tests import CustomTestCase
 
 

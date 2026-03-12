@@ -1,4 +1,5 @@
-from greedybear.models import IocType, IpReputation, Statistics, Tag, ViewType
+from greedybear.enums import IpReputation
+from greedybear.models import IocType, Statistics, Tag, ViewType
 
 from . import CustomTestCase
 
