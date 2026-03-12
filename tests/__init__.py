@@ -8,6 +8,7 @@ from django_test_migrations.migrator import Migrator
 
 from greedybear.models import (
     IOC,
+    AutonomousSystem,
     CommandSequence,
     CowrieSession,
     Credential,
@@ -21,6 +22,7 @@ class CustomTestCase(TestCase):
     def setUpTestData(cls):
         super().setUpTestData()
 
+        cls.as_obj, _ = AutonomousSystem.objects.get_or_create(asn="12345", defaults={"name": "greedybear"})
         cls.heralding = GeneralHoneypot.objects.get_or_create(name="Heralding", defaults={"active": True})[0]
         cls.ciscoasa = GeneralHoneypot.objects.get_or_create(name="Ciscoasa", defaults={"active": True})[0]
         cls.ddospot = GeneralHoneypot.objects.get_or_create(name="Ddospot", defaults={"active": False})[0]
@@ -44,7 +46,7 @@ class CustomTestCase(TestCase):
             payload_request=True,
             related_urls=[],
             ip_reputation="",
-            asn="12345",
+            autonomous_system=cls.as_obj,
             destination_ports=[22, 23, 24],
             login_attempts=1,
             recurrence_probability=0.1,
@@ -65,7 +67,7 @@ class CustomTestCase(TestCase):
             payload_request=True,
             related_urls=[],
             ip_reputation="mass scanner",
-            asn="12345",
+            autonomous_system=cls.as_obj,
             destination_ports=[22, 23, 24],
             login_attempts=1,
             recurrence_probability=0.1,
@@ -86,7 +88,7 @@ class CustomTestCase(TestCase):
             payload_request=True,
             related_urls=[],
             ip_reputation="tor exit node",
-            asn="12345",
+            autonomous_system=cls.as_obj,
             destination_ports=[22, 23, 24],
             login_attempts=1,
             recurrence_probability=0.1,
@@ -107,7 +109,7 @@ class CustomTestCase(TestCase):
             payload_request=True,
             related_urls=[],
             ip_reputation="",
-            asn=None,
+            autonomous_system=None,
             destination_ports=[],
             login_attempts=0,
             recurrence_probability=0.2,
@@ -241,9 +243,15 @@ class ExtractionTestCase(CustomTestCase):
         mock.first_seen = first_seen if first_seen is not None else datetime.now()
         mock.last_seen = last_seen if last_seen is not None else datetime.now()
         mock.ip_reputation = ip_reputation
-        mock.asn = asn
         mock.firehol_categories = firehol_categories if firehol_categories is not None else []
         mock.number_of_days_seen = len(mock.days_seen)
+
+        if asn is not None:
+            mock.autonomous_system = Mock()
+            mock.autonomous_system.asn = asn
+        else:
+            mock.autonomous_system = None
+
         return mock
 
 
