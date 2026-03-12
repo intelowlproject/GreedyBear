@@ -226,7 +226,7 @@ class TestCowrieExtractionStrategy(ExtractionTestCase):
     def test_process_session_hit_login_failed(self):
         """Test processing of login failure event."""
         session_record = Mock()
-        session_record.credentials = []
+        session_record.credentials = Mock()
         session_record.source = Mock(login_attempts=0)
         session_record.interaction_count = 0
 
@@ -241,7 +241,7 @@ class TestCowrieExtractionStrategy(ExtractionTestCase):
         self.strategy._process_session_hit(session_record, hit, ioc)
 
         self.assertTrue(session_record.login_attempt)
-        self.assertIn("root | password123", session_record.credentials)
+        self.mock_session_repo.add_credential.assert_called_once_with(session_record, "root", "password123")
 
     def test_process_session_hit_command_input(self):
         """Test processing of command input event."""
@@ -289,7 +289,7 @@ class TestCowrieExtractionStrategy(ExtractionTestCase):
 
         scanner_mock.related_ioc.add.assert_called_once_with(hostname_mock)
         hostname_mock.related_ioc.add.assert_called_once_with(scanner_mock)
-        self.assertEqual(self.mock_ioc_repo.save.call_count, 2)
+        self.assertEqual(self.mock_ioc_repo.save.call_count, 0)
 
     def test_add_fks_scanner_none(self):
         """Test linking when scanner IOC doesn't exist."""

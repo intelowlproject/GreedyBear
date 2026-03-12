@@ -31,6 +31,15 @@ from greedybear.models import ShareToken
 
 logger = logging.getLogger(__name__)
 
+ALLOWED_UNAUTHENTICATED_QUERY_PARAMS = [
+    "feed_type",
+    "attack_type",
+    "ioc_type",
+    "include_mass_scanners",
+    "include_tor_exit_nodes",
+    "prioritize",
+]
+
 
 @api_view([GET])
 @throttle_classes([FeedsThrottle])
@@ -52,10 +61,12 @@ def feeds(request, feed_type, attack_type, prioritize, format_):
     """
     logger.info(f"request /api/feeds with params: feed type: {feed_type}, attack_type: {attack_type}, prioritization: {prioritize}, format: {format_}")
 
-    feed_params_data = request.query_params.dict()
+    filtered_query_params = {key: request.query_params.get(key) for key in ALLOWED_UNAUTHENTICATED_QUERY_PARAMS if key in request.query_params}
+
+    feed_params_data = filtered_query_params.copy()
     feed_params_data.update({"feed_type": feed_type, "attack_type": attack_type, "format": format_})
     feed_params = FeedRequestParams(feed_params_data)
-    feed_params.apply_default_filters(request.query_params)
+    feed_params.apply_default_filters(filtered_query_params)
     feed_params.set_prioritization(prioritize)
 
     valid_feed_types = get_valid_feed_types()
@@ -78,10 +89,12 @@ def feeds_pagination(request):
 
     logger.info(f"request /api/feeds with params: {request.query_params}")
 
-    feed_params = FeedRequestParams(request.query_params)
+    filtered_query_params = {key: request.query_params.get(key) for key in ALLOWED_UNAUTHENTICATED_QUERY_PARAMS if key in request.query_params}
+
+    feed_params = FeedRequestParams(filtered_query_params)
     feed_params.format = "json"
-    feed_params.apply_default_filters(request.query_params)
-    feed_params.set_prioritization(request.query_params.get("prioritize"))
+    feed_params.apply_default_filters(filtered_query_params)
+    feed_params.set_prioritization(filtered_query_params.get("prioritize"))
 
     valid_feed_types = get_valid_feed_types()
     iocs_queryset = get_queryset(request, feed_params, valid_feed_types)

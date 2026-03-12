@@ -91,12 +91,15 @@ class IocProcessor:
         Returns:
             The updated existing IOC record.
         """
-        existing.last_seen = new.last_seen
+        if new.first_seen < existing.first_seen:
+            existing.first_seen = new.first_seen
+        if new.last_seen > existing.last_seen:
+            existing.last_seen = new.last_seen
         existing.attack_count += 1
         existing.interaction_count += new.interaction_count
         existing.related_urls = sorted(set(existing.related_urls + new.related_urls))
         existing.destination_ports = sorted(set(existing.destination_ports + new.destination_ports))
-        existing.ip_reputation = new.ip_reputation
+        existing.ip_reputation = existing.ip_reputation or new.ip_reputation
         existing.asn = new.asn
         existing.firehol_categories = list(new.firehol_categories)
         existing.login_attempts += new.login_attempts
@@ -125,7 +128,9 @@ class IocProcessor:
         Returns:
             The updated IOC record.
         """
-        if len(ioc.days_seen) == 0 or ioc.days_seen[-1] != ioc.last_seen.date():
-            ioc.days_seen.append(ioc.last_seen.date())
-            ioc.number_of_days_seen = len(ioc.days_seen)
+        new_date = ioc.last_seen.date()
+        if new_date not in ioc.days_seen:
+            ioc.days_seen.append(new_date)
+            ioc.days_seen.sort()
+        ioc.number_of_days_seen = len(ioc.days_seen)
         return ioc
