@@ -28,10 +28,19 @@ const initialValues = {
 const ipv4Regex =
   /^(25[0-5]|2[0-4]\d|1?\d?\d)(\.(25[0-5]|2[0-4]\d|1?\d?\d)){3}$/;
 
-// Very loose IPv6 check – enough to catch obvious garbage.
+// Very loose IPv6 checks – enough to catch obvious garbage.
 // Full IPv6 validation with regex is possible but overly complex for the UI.
 const ipv6Regex =
   /^(([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|(::)|(([0-9a-fA-F]{1,4}:){1,7}:)|(:([0-9a-fA-F]{1,4}:){1,7})|(([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4})|(([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2})|(([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3})|(([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4})|(([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5})|([0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})))$/;
+
+// Support common IPv4-mapped / IPv4-compatible IPv6 notations:
+// - ::ffff:192.168.1.1
+// - ::192.168.1.1
+const ipv4MappedIpv6Regex =
+  /^::ffff:(25[0-5]|2[0-4]\d|1?\d?\d)(\.(25[0-5]|2[0-4]\d|1?\d?\d)){3}$/;
+
+const ipv4CompatibleIpv6Regex =
+  /^::(25[0-5]|2[0-4]\d|1?\d?\d)(\.(25[0-5]|2[0-4]\d|1?\d?\d)){3}$/;
 
 // Pragmatic domain validation:
 // - letters/digits/hyphen labels separated by dots
@@ -43,7 +52,13 @@ const domainRegex = /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/i;
 const isValidQuery = (value) => {
   const q = value.trim();
   if (!q) return false;
-  return ipv4Regex.test(q) || ipv6Regex.test(q) || domainRegex.test(q);
+  return (
+    ipv4Regex.test(q) ||
+    ipv6Regex.test(q) ||
+    ipv4MappedIpv6Regex.test(q) ||
+    ipv4CompatibleIpv6Regex.test(q) ||
+    domainRegex.test(q)
+  );
 };
 
 export default function EnrichmentLookup() {

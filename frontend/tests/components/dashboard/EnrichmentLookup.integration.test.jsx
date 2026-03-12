@@ -238,19 +238,29 @@ describe("Enrichment Lookup Integration Tests", () => {
     const inputElement = screen.getByLabelText("IP Address or Domain:");
     const submitButton = screen.getByRole("button", { name: /Search/i });
 
-    // Search for an obviously invalid input
-    await user.type(inputElement, "invalid-ip-address");
-    await user.click(submitButton);
+    const invalidInputs = [
+      "invalid-ip-address",
+      "not-valid",
+      "999.999.999.999",
+      "192.168.1",
+      "hello world",
+      "http://example.com",
+    ];
+
+    for (const value of invalidInputs) {
+      await user.clear(inputElement);
+      await user.type(inputElement, value);
+      await user.click(submitButton);
+
+      expect(
+        screen.getByText(/Please enter a valid IPv4, IPv6, or domain/i),
+      ).toBeInTheDocument();
+    }
 
     // Verify API was NOT called due to client-side validation
     await waitFor(() => {
       expect(axios.get).not.toHaveBeenCalled();
     });
-
-    // Verify client-side validation error message is displayed
-    expect(
-      screen.getByText(/Please enter a valid IPv4, IPv6, or domain/i),
-    ).toBeInTheDocument();
   });
 
   test("uses only formik isSubmitting for button state, no redundant loading state", async () => {
