@@ -1,5 +1,5 @@
 from datetime import date, datetime
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 from greedybear.consts import PAYLOAD_REQUEST, SCANNER
 from greedybear.cronjobs.extraction.ioc_processor import IocProcessor
@@ -22,15 +22,13 @@ class TestAddIoc(ExtractionTestCase):
         self.assertIsNone(result)
         self.mock_ioc_repo.save.assert_not_called()
 
-    @patch("greedybear.cronjobs.extraction.ioc_processor.is_whatsmyip_domain")
-    def test_filters_whatsmyip_domains(self, mock_whatsmyip):
-        mock_whatsmyip.return_value = True
+    def test_filters_whatsmyip_domains(self):
+        self.processor._whatsmyip_domains = {"some.domain.com"}
         ioc = self._create_mock_ioc(name="some.domain.com", ioc_type=IocType.DOMAIN)
 
         result = self.processor.add_ioc(ioc, attack_type=SCANNER)
 
         self.assertIsNone(result)
-        mock_whatsmyip.assert_called_once_with("some.domain.com")
         self.mock_ioc_repo.save.assert_not_called()
 
     def test_creates_new_ioc_when_not_exists(self):
@@ -178,8 +176,8 @@ class TestAddIoc(ExtractionTestCase):
         self.assertEqual(len(result.days_seen), 2)
         self.assertTrue(result.payload_request)
 
-    @patch("greedybear.cronjobs.extraction.ioc_processor.is_whatsmyip_domain")
-    def test_only_checks_whatsmyip_for_domains(self, mock_whatsmyip):
+    def test_only_checks_whatsmyip_for_domains(self):
+        self.processor._whatsmyip_domains = {"1.2.3.4"}
         self.mock_sensor_repo.cache = {}
         self.mock_ioc_repo.get_ioc_by_name.return_value = None
         ioc = self._create_mock_ioc(name="1.2.3.4", ioc_type=IocType.IP)
@@ -187,7 +185,6 @@ class TestAddIoc(ExtractionTestCase):
 
         result = self.processor.add_ioc(ioc, attack_type=SCANNER)
 
-        mock_whatsmyip.assert_not_called()
         self.assertIsNotNone(result)
 
 
