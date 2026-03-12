@@ -249,9 +249,7 @@ describe("Enrichment Lookup Integration Tests", () => {
 
     // Verify client-side validation error message is displayed
     expect(
-      screen.getByText(
-        /Please enter a valid IPv4, IPv6, or domain/i,
-      ),
+      screen.getByText(/Please enter a valid IPv4, IPv6, or domain/i),
     ).toBeInTheDocument();
   });
 

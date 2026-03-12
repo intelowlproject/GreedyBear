@@ -38,17 +38,12 @@ const ipv6Regex =
 // - labels don't start/end with hyphen
 // - TLD at least 2 chars
 // This intentionally ignores very edge‑case/IDN domains.
-const domainRegex =
-  /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/i;
+const domainRegex = /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/i;
 
 const isValidQuery = (value) => {
   const q = value.trim();
   if (!q) return false;
-  return (
-    ipv4Regex.test(q) ||
-    ipv6Regex.test(q) ||
-    domainRegex.test(q)
-  );
+  return ipv4Regex.test(q) || ipv6Regex.test(q) || domainRegex.test(q);
 };
 
 export default function EnrichmentLookup() {
