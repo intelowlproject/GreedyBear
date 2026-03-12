@@ -126,6 +126,7 @@ class CowrieSessionRepository:
     def add_credential(self, session: CowrieSession, username: str, password: str) -> None:
         """
         Get or create a Credential and associate it with the session.
+        Handles oversized credentials by truncating them to 256 characters.
 
         Args:
             session: The CowrieSession instance to associate the credential with.
@@ -133,6 +134,15 @@ class CowrieSessionRepository:
             password: The credential password.
         """
         from greedybear.models import Credential
+
+        # Ensure credentials fit within model constraints (max_length=256)
+        if len(username) > 256:
+            self.log.warning(f"Username too long ({len(username)} chars), truncating to 256: {username[:50]}...")
+            username = username[:256]
+
+        if len(password) > 256:
+            self.log.warning(f"Password too long ({len(password)} chars), truncating to 256: {password[:50]}...")
+            password = password[:256]
 
         credential, _ = Credential.objects.get_or_create(username=username, password=password)
         session.credentials.add(credential)
