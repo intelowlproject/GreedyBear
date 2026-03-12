@@ -69,6 +69,7 @@ class CustomTestCase(TestCase):
             login_attempts=1,
             recurrence_probability=0.1,
             expected_interactions=11.1,
+            attacker_country="China",
         )
 
         cls.ioc_3 = IOC.objects.create(
@@ -89,6 +90,7 @@ class CustomTestCase(TestCase):
             login_attempts=1,
             recurrence_probability=0.1,
             expected_interactions=11.1,
+            attacker_country="China",
         )
 
         cls.ioc_domain = IOC.objects.create(
