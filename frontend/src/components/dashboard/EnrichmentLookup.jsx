@@ -23,6 +23,34 @@ const initialValues = {
   query: "",
 };
 
+// Basic client-side validation for IPv4, IPv6, and domain names.
+// This is intentionally pragmatic rather than "perfect" RFC coverage.
+const ipv4Regex =
+  /^(25[0-5]|2[0-4]\d|1?\d?\d)(\.(25[0-5]|2[0-4]\d|1?\d?\d)){3}$/;
+
+// Very loose IPv6 check – enough to catch obvious garbage.
+// Full IPv6 validation with regex is possible but overly complex for the UI.
+const ipv6Regex =
+  /^(([0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}|(::)|(([0-9a-fA-F]{1,4}:){1,7}:)|(:([0-9a-fA-F]{1,4}:){1,7})|(([0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4})|(([0-9a-fA-F]{1,4}:){1,5}(:[0-9a-fA-F]{1,4}){1,2})|(([0-9a-fA-F]{1,4}:){1,4}(:[0-9a-fA-F]{1,4}){1,3})|(([0-9a-fA-F]{1,4}:){1,3}(:[0-9a-fA-F]{1,4}){1,4})|(([0-9a-fA-F]{1,4}:){1,2}(:[0-9a-fA-F]{1,4}){1,5})|([0-9a-fA-F]{1,4}:((:[0-9a-fA-F]{1,4}){1,6})))$/;
+
+// Pragmatic domain validation:
+// - letters/digits/hyphen labels separated by dots
+// - labels don't start/end with hyphen
+// - TLD at least 2 chars
+// This intentionally ignores very edge‑case/IDN domains.
+const domainRegex =
+  /^(?:[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/i;
+
+const isValidQuery = (value) => {
+  const q = value.trim();
+  if (!q) return false;
+  return (
+    ipv4Regex.test(q) ||
+    ipv6Regex.test(q) ||
+    domainRegex.test(q)
+  );
+};
+
 export default function EnrichmentLookup() {
   const [result, setResult] = React.useState(null);
 
@@ -50,6 +78,14 @@ export default function EnrichmentLookup() {
 
       if (!values.query || values.query.trim() === "") {
         setError("Please enter an IP address or domain to search.");
+        setSubmitting(false);
+        return;
+      }
+
+      if (!isValidQuery(values.query)) {
+        setError(
+          "Please enter a valid IPv4, IPv6, or domain (e.g., 192.168.1.1, 2001:db8::1, example.com).",
+        );
         setSubmitting(false);
         return;
       }
