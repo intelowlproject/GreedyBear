@@ -104,12 +104,21 @@ class TestIocRepository(CustomTestCase):
         result = self.repo.add_honeypot_to_ioc("Cowrie", ioc)
         self.assertIn(honeypot, result.general_honeypot.all())
 
+    def test_add_honeypot_to_ioc_cache_miss_logs_error(self):
+        """Honeypot created after repo init is not in cache; association is skipped and error is logged."""
+        ioc = IOC.objects.create(name="1.2.3.4", type="ip")
+        GeneralHoneypot.objects.create(name="NewPot", active=True)
+        with self.assertLogs("greedybear.cronjobs.repositories.ioc", level="ERROR") as cm:
+            result = self.repo.add_honeypot_to_ioc("NewPot", ioc)
+        self.assertEqual(result.general_honeypot.count(), 0)
+        self.assertTrue(any("NewPot" in msg for msg in cm.output))
+
     def test_add_honeypot_to_ioc_idempotent(self):
         ioc = IOC.objects.create(name="1.2.3.4", type="ip")
-        honeypot = GeneralHoneypot.objects.create(name="TestPot", active=True)
+        honeypot = GeneralHoneypot.objects.get(name="Cowrie")
         ioc.general_honeypot.add(honeypot)
         initial_count = ioc.general_honeypot.count()
-        result = self.repo.add_honeypot_to_ioc("TestPot", ioc)
+        result = self.repo.add_honeypot_to_ioc("Cowrie", ioc)
         self.assertEqual(result.general_honeypot.count(), initial_count)
         self.assertEqual(ioc.general_honeypot.count(), 1)
 
