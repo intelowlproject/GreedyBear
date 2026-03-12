@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from django.conf import settings
 from rest_framework.test import APIClient
 
-from greedybear.models import IOC, IocType
+from greedybear.models import IOC, AutonomousSystem, IocType
 from tests import CustomTestCase
 
 
@@ -107,8 +107,10 @@ class FeedsEnhancementsTestCase(CustomTestCase):
         self.client = APIClient()
         self.client.force_authenticate(user=self.superuser)
 
+        as_obj1, _ = AutonomousSystem.objects.get_or_create(asn=11111, defaults={"name": ""})
+        as_obj2, _ = AutonomousSystem.objects.get_or_create(asn=22222, defaults={"name": ""})
+        self.ioc.autonomous_system = as_obj1
         # Give the base IOC unique values to isolate filter tests
-        self.ioc.asn = 11111
         self.ioc.destination_ports = [9001, 9002]
         self.ioc.recurrence_probability = 0.8
         self.ioc.save()
@@ -125,7 +127,7 @@ class FeedsEnhancementsTestCase(CustomTestCase):
             first_seen=datetime.now() - timedelta(days=1),
             last_seen=datetime.now(),
             recurrence_probability=0.2,
-            asn=22222,
+            autonomous_system=as_obj2,
             destination_ports=[9003],
             attack_count=1,
             interaction_count=1,

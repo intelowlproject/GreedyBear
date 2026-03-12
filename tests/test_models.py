@@ -20,7 +20,7 @@ class ModelsTestCase(CustomTestCase):
         self.assertEqual(self.ioc.payload_request, True)
         self.assertEqual(self.ioc.related_urls, [])
         self.assertEqual(self.ioc.ip_reputation, "")
-        self.assertEqual(self.ioc.asn, 12345)
+        self.assertEqual(self.ioc.autonomous_system.asn, "12345")
         self.assertEqual(self.ioc.destination_ports, [22, 23, 24])
         self.assertEqual(self.ioc.login_attempts, 1)
         self.assertEqual(self.ioc.recurrence_probability, 0.1)

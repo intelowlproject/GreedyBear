@@ -141,7 +141,7 @@ class IOCModelAdmin(admin.ModelAdmin):
         "sensor_list",
         "ip_reputation",
         "firehol_categories",
-        "asn",
+        "autonomous_system_display",
         "destination_ports",
         "login_attempts",
     ]
@@ -150,7 +150,7 @@ class IOCModelAdmin(admin.ModelAdmin):
         "scanner",
         "payload_request",
         "ip_reputation",
-        "asn",
+        "autonomous_system",
     ]
     search_fields = ["name", "related_ioc__name"]
     search_help_text = ["search for the IP address source"]
@@ -164,9 +164,22 @@ class IOCModelAdmin(admin.ModelAdmin):
     def sensor_list(self, ioc):
         return ", ".join([str(sensor.address) for sensor in ioc.sensors.all()])
 
+    def autonomous_system_display(self, ioc):
+        """
+        Shows ASN and AS name neatly in list_display.
+        """
+        if ioc.autonomous_system:
+            asn = ioc.autonomous_system.asn
+            name = ioc.autonomous_system.name
+            return f"{asn} ({name})" if name else str(asn)
+        return "-"
+
+    autonomous_system_display.short_description = "Autonomous System"
+    autonomous_system_display.admin_order_field = "autonomous_system__asn"
+
     def get_queryset(self, request):
-        """Override to prefetch related sensors and honeypots, avoiding N+1 queries."""
-        return super().get_queryset(request).prefetch_related("sensors", "general_honeypot")
+        """Override to optimize queries and avoid N+1 problems."""
+        return super().get_queryset(request).select_related("autonomous_system").prefetch_related("sensors", "general_honeypot")
 
 
 @admin.register(GeneralHoneypot)
