@@ -220,23 +220,13 @@ describe("Enrichment Lookup Integration Tests", () => {
     });
   });
 
-  test("look up an IP with authentication - validation error", async () => {
+  test("client-side validation prevents obvious invalid queries", async () => {
     const user = userEvent.setup();
 
     // Mock authenticated state
     mockUseAuthStore.mockImplementation((selector) =>
       selector({ isAuthenticated: AUTHENTICATION_STATUSES.TRUE }),
     );
-
-    // Mock API validation error
-    const errorMessage = "Observable is not a valid IP";
-    axios.get.mockRejectedValue({
-      response: {
-        data: {
-          non_field_errors: [errorMessage],
-        },
-      },
-    });
 
     render(
       <BrowserRouter>
@@ -248,19 +238,21 @@ describe("Enrichment Lookup Integration Tests", () => {
     const inputElement = screen.getByLabelText("IP Address or Domain:");
     const submitButton = screen.getByRole("button", { name: /Search/i });
 
-    // Search for an invalid IP
+    // Search for an obviously invalid input
     await user.type(inputElement, "invalid-ip-address");
     await user.click(submitButton);
 
-    // Verify API was called
+    // Verify API was NOT called due to client-side validation
     await waitFor(() => {
-      expect(axios.get).toHaveBeenCalled();
+      expect(axios.get).not.toHaveBeenCalled();
     });
 
-    // Verify validation error message is displayed
-    await waitFor(() => {
-      expect(screen.getByText(errorMessage)).toBeInTheDocument();
-    });
+    // Verify client-side validation error message is displayed
+    expect(
+      screen.getByText(
+        /Please enter a valid IPv4, IPv6, or domain/i,
+      ),
+    ).toBeInTheDocument();
   });
 
   test("uses only formik isSubmitting for button state, no redundant loading state", async () => {
