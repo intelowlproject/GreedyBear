@@ -110,7 +110,7 @@ export default function Feeds() {
         searchParams.get("attack_type") || DEFAULT_VALUES.attack_type,
       ioc_type: searchParams.get("ioc_type") || DEFAULT_VALUES.ioc_type,
       prioritize: searchParams.get("prioritize") || DEFAULT_VALUES.prioritize,
-      // eslint-disable-next-line react-hooks/exhaustive-deps
+      // eslint-disable-next-line
     }),
     [],
   );
