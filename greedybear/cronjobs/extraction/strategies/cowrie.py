@@ -63,7 +63,8 @@ def normalize_credential_field(field: str) -> str:
     Returns:
         Normalized credential field
     """
-    return field.replace("\x00", "[NUL]")
+    # Truncate to 256 chars to match Credential model field max_length
+    return field.replace("\x00", "[NUL]")[:256]
 
 
 class CowrieExtractionStrategy(BaseExtractionStrategy):
