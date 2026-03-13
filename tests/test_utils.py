@@ -24,10 +24,10 @@ class UtilsTestCase(SimpleTestCase):
         self.assertTrue(is_valid_domain("example.com"))
         self.assertTrue(is_valid_domain("sub.example.co.uk"))
         self.assertTrue(is_valid_domain("valid-domain.org"))
-        
+
         # Invalid domains (empty)
         self.assertFalse(is_valid_domain(""))
-        
+
         # Invalid domains (STIX injection characters)
         self.assertFalse(is_valid_domain("example.com'"))
         self.assertFalse(is_valid_domain('example.com"'))
