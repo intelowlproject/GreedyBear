@@ -9,6 +9,7 @@ from greedybear.cronjobs.extraction.strategies.heralding import (
     HERALDING_HONEYPOT,
     HERALDING_PROTOCOLS,
     HERALDING_SOURCE,
+    PROTOCOL_TAG_KEY,
     HeraldingExtractionStrategy,
 )
 
@@ -170,7 +171,7 @@ class TestHeraldingCredentialClassification(ExtractionTestCase):
 
         mock_tag_objects.get_or_create.assert_called_once_with(
             ioc=mock_ioc_record,
-            key="protocol",
+            key=PROTOCOL_TAG_KEY,
             value="ssh",
             source=HERALDING_SOURCE,
         )

@@ -3,7 +3,7 @@
 from collections import defaultdict
 
 from greedybear.consts import SCANNER
-from greedybear.cronjobs.extraction.strategies import BaseExtractionStrategy
+from greedybear.cronjobs.extraction.strategies.base import BaseExtractionStrategy
 from greedybear.cronjobs.extraction.utils import (
     iocs_from_hits,
     threatfox_submission,
@@ -13,6 +13,7 @@ from greedybear.models import IOC, Tag
 
 HERALDING_SOURCE = "heralding"
 HERALDING_HONEYPOT = "Heralding"
+PROTOCOL_TAG_KEY = "protocol"
 
 # Protocols that Heralding emulates for credential capture.
 HERALDING_PROTOCOLS = frozenset(
@@ -43,7 +44,6 @@ class HeraldingExtractionStrategy(BaseExtractionStrategy):
     and captures credential brute-force attempts. This strategy:
     - Extracts scanner IPs as IOCs
     - Tags scanners with the protocols they targeted
-    - Tracks login attempt counts per IP
     """
 
     def __init__(
@@ -89,14 +89,14 @@ class HeraldingExtractionStrategy(BaseExtractionStrategy):
 
         Groups hits by source IP and extracts the set of protocols each
         attacker targeted. Each protocol is stored as a Tag record
-        (key="protocol", source="heralding") on the corresponding IOC.
+        (key=PROTOCOL_TAG_KEY, source="heralding") on the corresponding IOC.
 
         Args:
             hits: List of Elasticsearch hit documents.
         """
         # Seed cache from IOC records loaded by _get_scanners so we avoid
         # repeated DB lookups for the same scanner IP across many hits.
-        ioc_cache: dict[str, object] = {ioc.name: ioc for ioc in self.ioc_records}
+        ioc_cache: dict[str, IOC | None] = {ioc.name: ioc for ioc in self.ioc_records}
 
         # Group protocols per source IP
         protocols_by_ip: dict[str, set[str]] = defaultdict(set)
@@ -109,13 +109,12 @@ class HeraldingExtractionStrategy(BaseExtractionStrategy):
                 protocols_by_ip[scanner_ip].add(protocol)
 
         for scanner_ip, protocols in protocols_by_ip.items():
-            if scanner_ip not in ioc_cache:
-                ioc_cache[scanner_ip] = self.ioc_repo.get_ioc_by_name(scanner_ip)
-            ioc_record = ioc_cache[scanner_ip]
-            if not ioc_record:
-                continue
-
-            self._add_protocol_tags(ioc_record, protocols)
+            ioc_record = ioc_cache.get(scanner_ip)
+            if ioc_record is None:
+                ioc_record = self.ioc_repo.get_ioc_by_name(scanner_ip)
+                ioc_cache[scanner_ip] = ioc_record
+            if ioc_record:
+                self._add_protocol_tags(ioc_record, protocols)
 
     def _extract_protocol(self, hit: dict) -> str | None:
         """
@@ -132,12 +131,11 @@ class HeraldingExtractionStrategy(BaseExtractionStrategy):
         Returns:
             Normalised protocol string, or ``None`` if absent/unknown.
         """
-        raw = hit.get("protocol", "")
-        if not raw:
-            return None
-        normalised = str(raw).strip().lower()
-        if normalised in HERALDING_PROTOCOLS:
-            return normalised
+        raw = hit.get("protocol")
+        if raw:
+            normalised = str(raw).strip().lower()
+            if normalised in HERALDING_PROTOCOLS:
+                return normalised
         return None
 
     def _add_protocol_tags(self, ioc_record: IOC, protocols: set[str]) -> None:
@@ -154,7 +152,7 @@ class HeraldingExtractionStrategy(BaseExtractionStrategy):
         for protocol in sorted(protocols):
             _, created = Tag.objects.get_or_create(
                 ioc=ioc_record,
-                key="protocol",
+                key=PROTOCOL_TAG_KEY,
                 value=protocol,
                 source=HERALDING_SOURCE,
             )
