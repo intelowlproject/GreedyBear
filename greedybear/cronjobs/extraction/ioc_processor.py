@@ -3,7 +3,7 @@ import logging
 from greedybear.consts import PAYLOAD_REQUEST, SCANNER
 from greedybear.cronjobs.extraction.utils import is_whatsmyip_domain
 from greedybear.cronjobs.repositories import IocRepository, SensorRepository
-from greedybear.models import IOC, IocType
+from greedybear.models import IOC, IocType, WhatsMyIPDomain
 
 
 class IocProcessor:
@@ -25,6 +25,7 @@ class IocProcessor:
         self.log = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
         self.ioc_repo = ioc_repo
         self.sensor_repo = sensor_repo
+        self._whatsmyip_domains = set(WhatsMyIPDomain.objects.values_list("domain", flat=True))
 
     def add_ioc(
         self,
@@ -52,7 +53,7 @@ class IocProcessor:
             self.log.debug(f"not saved {ioc} because it is a sensor")
             return None
 
-        if ioc.type == IocType.DOMAIN and is_whatsmyip_domain(ioc.name):
+        if ioc.type == IocType.DOMAIN and is_whatsmyip_domain(ioc.name, self._whatsmyip_domains):
             self.log.debug(f"not saved {ioc} because it is a whats-my-ip domain")
             return None
 

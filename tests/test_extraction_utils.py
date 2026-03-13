@@ -11,7 +11,7 @@ from greedybear.cronjobs.extraction.utils import (
     is_whatsmyip_domain,
     threatfox_submission,
 )
-from greedybear.models import FireHolList, MassScanner, WhatsMyIPDomain
+from greedybear.models import FireHolList, MassScanner
 
 from . import CustomTestCase, ExtractionTestCase
 
@@ -286,33 +286,29 @@ class TestIsValidCIDR(CustomTestCase):
 
 class TestIsWhatsmyipDomain(CustomTestCase):
     def test_returns_true_for_known_domain(self):
-        WhatsMyIPDomain.objects.create(domain="some.domain.com")
-        result = is_whatsmyip_domain("some.domain.com")
+        result = is_whatsmyip_domain("some.domain.com", {"some.domain.com"})
         self.assertTrue(result)
 
     def test_returns_false_for_unknown_domain(self):
-        result = is_whatsmyip_domain("another.domain.com")
+        result = is_whatsmyip_domain("another.domain.com", {"some.domain.com"})
         self.assertFalse(result)
 
 
 class TestCorrectIpReputationTestCase(CustomTestCase):
-    def test_returns_mass_scanner_when_in_database(self):
-        MassScanner.objects.create(ip_address="1.2.3.4")
-        result = correct_ip_reputation("1.2.3.4", "known attacker")
+    def test_returns_mass_scanner_when_in_set(self):
+        result = correct_ip_reputation("1.2.3.4", "known attacker", {"1.2.3.4"})
         self.assertEqual(result, "mass scanner")
 
-    def test_returns_original_when_not_in_database(self):
-        result = correct_ip_reputation("1.2.3.4", "known attacker")
+    def test_returns_original_when_not_in_set(self):
+        result = correct_ip_reputation("1.2.3.4", "known attacker", {"5.6.7.8"})
         self.assertEqual(result, "known attacker")
 
     def test_checks_mass_scanner_for_empty_reputation(self):
-        MassScanner.objects.create(ip_address="1.2.3.4")
-        result = correct_ip_reputation("1.2.3.4", "")
+        result = correct_ip_reputation("1.2.3.4", "", {"1.2.3.4"})
         self.assertEqual(result, "mass scanner")
 
     def test_preserves_other_reputations(self):
-        MassScanner.objects.create(ip_address="1.2.3.4")
-        result = correct_ip_reputation("1.2.3.4", "bot")
+        result = correct_ip_reputation("1.2.3.4", "bot", {"1.2.3.4"})
         self.assertEqual(result, "bot")
 
 
