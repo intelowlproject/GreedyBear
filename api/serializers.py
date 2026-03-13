@@ -29,13 +29,10 @@ class TagSerializer(serializers.ModelSerializer):
 class IOCSerializer(serializers.ModelSerializer):
     general_honeypot = GeneralHoneypotSerializer(many=True, read_only=True)
     tags = TagSerializer(many=True, read_only=True)
-    
-    
     sensors = serializers.SlugRelatedField(many=True, read_only=True, slug_field="address")
 
     class Meta:
         model = IOC
-        
         fields = [
             "name",
             "type",
@@ -44,7 +41,7 @@ class IOCSerializer(serializers.ModelSerializer):
             "days_back",
             "general_honeypot",
             "tags",
-            "sensors", # Ye add kar dein
+            "sensors",  
         ]
         
 
