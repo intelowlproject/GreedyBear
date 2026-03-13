@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from django.db import IntegrityError
 
 from greedybear.cronjobs.repositories import CowrieSessionRepository
-from greedybear.models import IOC, CommandSequence, CowrieSession, CowrieFileTransfer
+from greedybear.models import IOC, CommandSequence, CowrieFileTransfer, CowrieSession
 
 from . import CustomTestCase
 

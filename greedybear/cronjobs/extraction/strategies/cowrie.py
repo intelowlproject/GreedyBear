@@ -18,7 +18,7 @@ from greedybear.cronjobs.repositories import (
     IocRepository,
     SensorRepository,
 )
-from greedybear.models import IOC, CommandSequence, CowrieSession, CowrieFileTransfer
+from greedybear.models import IOC, CommandSequence, CowrieSession
 from greedybear.regex import REGEX_URL_PROTOCOL
 
 
@@ -268,7 +268,7 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
 
             case "cowrie.session.closed":
                 session_record.duration = hit["duration"]
-            
+
             case "cowrie.session.file_download" | "cowrie.session.file_upload":
                 shasum = hit.get("shasum")
                 if shasum:

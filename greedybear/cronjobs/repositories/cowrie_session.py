@@ -1,6 +1,6 @@
 import logging
 
-from greedybear.models import IOC, CommandSequence, CowrieSession, CowrieFileTransfer
+from greedybear.models import IOC, CommandSequence, CowrieFileTransfer, CowrieSession
 
 
 class CowrieSessionRepository:
@@ -32,7 +32,7 @@ class CowrieSessionRepository:
         record, created = CowrieSession.objects.get_or_create(session_id=pk, defaults={"source": source})
         self.log.debug(f"created new session {session_id}" if created else f"{session_id} already exists")
         return record
-    
+
     def get_or_create_file_transfer(self, session: CowrieSession, shasum: str, url: str, outfile: str, timestamp) -> CowrieFileTransfer:
         """
         Create or update a file transfer associated with a Cowrie session.

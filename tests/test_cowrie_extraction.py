@@ -315,7 +315,7 @@ class TestCowrieExtractionStrategy(ExtractionTestCase):
             timestamp="2023-01-01T10:00:04",
         )
         self.assertEqual(session_record.interaction_count, 1)
-    
+
     def test_process_session_hit_file_upload_creates_transfer(self):
         """Test processing of file upload event creates file transfer."""
         session_record = Mock()
