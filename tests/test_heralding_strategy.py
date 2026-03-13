@@ -27,9 +27,11 @@ class TestHeraldingExtractionStrategy(ExtractionTestCase):
         )
 
     @patch("greedybear.cronjobs.extraction.strategies.heralding.iocs_from_hits")
+    @patch("greedybear.cronjobs.extraction.strategies.heralding.Tag.objects")
     @patch("greedybear.cronjobs.extraction.strategies.heralding.threatfox_submission")
-    def test_extract_scanner_ips(self, mock_threatfox, mock_iocs_from_hits):
+    def test_extract_scanner_ips(self, mock_threatfox, mock_tag_objects, mock_iocs_from_hits):
         """Scanner IPs are extracted as SCANNER-type IOCs tagged with Heralding."""
+        mock_tag_objects.get_or_create.return_value = (Mock(), True)
         mock_ioc = self._create_mock_ioc("1.2.3.4")
         mock_iocs_from_hits.return_value = [mock_ioc]
         self.strategy.ioc_processor.add_ioc = Mock(return_value=mock_ioc)
@@ -59,9 +61,11 @@ class TestHeraldingExtractionStrategy(ExtractionTestCase):
         self.assertEqual(len(self.strategy.ioc_records), 0)
 
     @patch("greedybear.cronjobs.extraction.strategies.heralding.iocs_from_hits")
+    @patch("greedybear.cronjobs.extraction.strategies.heralding.Tag.objects")
     @patch("greedybear.cronjobs.extraction.strategies.heralding.threatfox_submission")
-    def test_multiple_scanners(self, mock_threatfox, mock_iocs_from_hits):
+    def test_multiple_scanners(self, mock_threatfox, mock_tag_objects, mock_iocs_from_hits):
         """Multiple scanner IPs from the same batch are all processed."""
+        mock_tag_objects.get_or_create.return_value = (Mock(), True)
         ioc1 = self._create_mock_ioc("1.2.3.4")
         ioc2 = self._create_mock_ioc("5.6.7.8")
         mock_iocs_from_hits.return_value = [ioc1, ioc2]
