@@ -234,13 +234,11 @@ class TestMergeIocs(ExtractionTestCase):
         new_time = datetime(2025, 1, 2, 12, 0, 0)
         existing = self._create_mock_ioc(first_seen=old_time, last_seen=old_time, ip_reputation="old", asn=12)
         new = self._create_mock_ioc(first_seen=new_time, last_seen=new_time, ip_reputation="new", asn=23)
-
         result = self.processor._merge_iocs(existing, new)
-
         self.assertEqual(result.last_seen, new_time)
+        self.assertEqual(result.autonomous_system.asn, 23)
         self.assertEqual(result.first_seen, old_time)
         self.assertEqual(result.ip_reputation, "old")
-        self.assertEqual(result.asn, 23)
 
     def test_last_seen_not_regressed(self):
         later = datetime(2025, 1, 2, 12, 0, 0)

@@ -32,109 +32,77 @@ const COUNTRY_BAR_COLOR = "#e05252";
 // constants
 const colors = getRandomColorsArray(30, true);
 
-export const FeedsSourcesChart = React.memo(() => {
-  console.debug("FeedsSourcesChart rendered!");
+/**
+ * Creates an area chart component to avoid duplicating chart setup code.
+ *
+ * @param {string} name - Display name for the generated chart component.
+ * @param {string} url - API endpoint used to fetch chart data.
+ * @param {Object} colorMap - Map of data keys to color values.
+ * @param {number} start - Start index for slicing the color map.
+ * @param {number} end - End index for slicing the color map.
+ */
+export const createAreaChart = (name, url, colorMap, start, end) => {
+  const Component = React.memo(() => {
+    console.debug(`${name} rendered!`);
 
-  const chartProps = React.useMemo(
-    () => ({
-      url: FEEDS_STATISTICS_SOURCES_URI,
-      accessorFnAggregation: (d) => d,
-      componentsFn: () =>
-        Object.entries(FEED_COLOR_MAP)
-          .slice(0, 1)
-          .map(([dkey, color]) => (
-            <Area
-              type="monotone"
-              key={dkey}
-              dataKey={dkey}
-              fill={color}
-              stroke={color}
-            />
-          )),
-    }),
-    [],
-  );
+    const chartProps = React.useMemo(
+      () => ({
+        url,
+        accessorFnAggregation: (d) => d,
+        componentsFn: () =>
+          Object.entries(colorMap)
+            .slice(start, end)
+            .map(([key, color]) => (
+              <Area
+                key={key}
+                type="monotone"
+                dataKey={key}
+                fill={color}
+                stroke={color}
+              />
+            )),
+      }),
+      [url, colorMap, start, end],
+    );
 
-  return <AnyChartWidget {...chartProps} />;
-});
+    return <AnyChartWidget {...chartProps} />;
+  });
 
-export const FeedsDownloadsChart = React.memo(() => {
-  console.debug("FeedsDownloadsChart rendered!");
+  Component.displayName = name;
 
-  const chartProps = React.useMemo(
-    () => ({
-      url: FEEDS_STATISTICS_DOWNLOADS_URI,
-      accessorFnAggregation: (d) => d,
-      componentsFn: () =>
-        Object.entries(FEED_COLOR_MAP)
-          .slice(1, 2)
-          .map(([dkey, color]) => (
-            <Area
-              type="monotone"
-              key={dkey}
-              dataKey={dkey}
-              fill={color}
-              stroke={color}
-            />
-          )),
-    }),
-    [],
-  );
+  return Component;
+};
 
-  return <AnyChartWidget {...chartProps} />;
-});
+export const FeedsSourcesChart = createAreaChart(
+  "FeedsSourcesChart",
+  FEEDS_STATISTICS_SOURCES_URI,
+  FEED_COLOR_MAP,
+  0,
+  1,
+);
 
-export const EnrichmentSourcesChart = React.memo(() => {
-  console.debug("EnrichmentSourcesChart rendered!");
+export const FeedsDownloadsChart = createAreaChart(
+  "FeedsDownloadsChart",
+  FEEDS_STATISTICS_DOWNLOADS_URI,
+  FEED_COLOR_MAP,
+  1,
+  2,
+);
 
-  const chartProps = React.useMemo(
-    () => ({
-      url: ENRICHMENT_STATISTICS_SOURCES_URI,
-      accessorFnAggregation: (d) => d,
-      componentsFn: () =>
-        Object.entries(ENRICHMENT_COLOR_MAP)
-          .slice(0, 1)
-          .map(([dkey, color]) => (
-            <Area
-              type="monotone"
-              key={dkey}
-              dataKey={dkey}
-              fill={color}
-              stroke={color}
-            />
-          )),
-    }),
-    [],
-  );
-
-  return <AnyChartWidget {...chartProps} />;
-});
-
-export const EnrichmentRequestsChart = React.memo(() => {
-  console.debug("EnrichmentRequestsChart rendered!");
-
-  const chartProps = React.useMemo(
-    () => ({
-      url: ENRICHMENT_STATISTICS_REQUESTS_URI,
-      accessorFnAggregation: (d) => d,
-      componentsFn: () =>
-        Object.entries(ENRICHMENT_COLOR_MAP)
-          .slice(1, 2)
-          .map(([dkey, color]) => (
-            <Area
-              type="monotone"
-              key={dkey}
-              dataKey={dkey}
-              fill={color}
-              stroke={color}
-            />
-          )),
-    }),
-    [],
-  );
-
-  return <AnyChartWidget {...chartProps} />;
-});
+export const EnrichmentSourcesChart = createAreaChart(
+  "EnrichmentSourcesChart",
+  ENRICHMENT_STATISTICS_SOURCES_URI,
+  ENRICHMENT_COLOR_MAP,
+  0,
+  1,
+);
+export const EnrichmentRequestsChart = createAreaChart(
+  "EnrichmentRequestsChart",
+  ENRICHMENT_STATISTICS_REQUESTS_URI,
+  ENRICHMENT_COLOR_MAP,
+  1,
+  2,
+);
 
 export const FeedsTypesChart = React.memo(() => {
   console.debug("FeedsTypesChart rendered!");

@@ -101,9 +101,12 @@ class IocProcessor:
         existing.related_urls = sorted(set(existing.related_urls + new.related_urls))
         existing.destination_ports = sorted(set(existing.destination_ports + new.destination_ports))
         existing.ip_reputation = existing.ip_reputation or new.ip_reputation
-        existing.asn = new.asn
         existing.firehol_categories = list(new.firehol_categories)
         existing.login_attempts += new.login_attempts
+
+        # updating autonomous_system fk
+        if new.autonomous_system:
+            existing.autonomous_system = new.autonomous_system
 
         # we will always update attacker_country if incoming value exists
         if new.attacker_country:
