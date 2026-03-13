@@ -114,7 +114,7 @@ class TestHeraldingProtocolExtraction(ExtractionTestCase):
         )
 
     def test_known_protocol_returned(self):
-        for proto in ["ssh", "ftp", "telnet", "http", "https", "pop3", "imap", "smtp", "vnc", "rdp"]:
+        for proto in ["ssh", "ftp", "telnet", "http", "https", "pop3", "imap", "smtp", "vnc", "rdp", "socks5"]:
             with self.subTest(protocol=proto):
                 hit = {"src_ip": "1.2.3.4", "protocol": proto}
                 result = self.strategy._extract_protocol(hit)
@@ -336,7 +336,7 @@ class TestHeraldingProtocolSet(ExtractionTestCase):
     """Validate the HERALDING_PROTOCOLS set for completeness and correctness."""
 
     def test_common_protocols_present(self):
-        expected = {"ssh", "telnet", "ftp", "http", "https", "pop3", "imap", "smtp", "vnc", "rdp"}
+        expected = {"ssh", "telnet", "ftp", "http", "https", "pop3", "imap", "smtp", "vnc", "rdp", "socks5"}
         for proto in expected:
             self.assertIn(proto, HERALDING_PROTOCOLS, f"Protocol {proto!r} missing from HERALDING_PROTOCOLS")
 
