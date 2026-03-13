@@ -239,12 +239,11 @@ describe("Enrichment Lookup Integration Tests", () => {
     const submitButton = screen.getByRole("button", { name: /Search/i });
 
     const invalidInputs = [
-      "invalid-ip-address",
-      "not-valid",
-      "999.999.999.999",
-      "192.168.1",
-      "hello world",
-      "http://example.com",
+      "invalid ip", // space
+      "http://example.com", // protocol
+      "exa mple.com", // space in domain
+      "!!!", // invalid characters
+      "justtext", // no dot, not IP-like
     ];
 
     for (const value of invalidInputs) {
@@ -253,7 +252,9 @@ describe("Enrichment Lookup Integration Tests", () => {
       await user.click(submitButton);
 
       expect(
-        screen.getByText(/Please enter a valid IPv4, IPv6, or domain/i),
+        screen.getByText(
+          /Please enter a value that looks like an IP or domain/i,
+        ),
       ).toBeInTheDocument();
     }
 
