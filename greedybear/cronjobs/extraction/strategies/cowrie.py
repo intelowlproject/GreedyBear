@@ -55,16 +55,21 @@ def normalize_command(message: str) -> str:
 
 def normalize_credential_field(field: str) -> str:
     """
-    Normalize credential fields by replacing null characters.
+    Normalize credential fields by replacing null characters and truncating.
 
     Args:
         field: Credential field string
 
     Returns:
-        Normalized credential field
+        Normalized credential field, truncated to 256 characters.
+        Any partial [NUL] replacement at the boundary is removed.
     """
-    # Truncate to 256 chars to match Credential model field max_length
-    return field.replace("\x00", "[NUL]")[:256]
+    # Truncate to 256 chars to match Credential model field max_length.
+    # Strip trailing partial [NUL] that may result from truncation mid-replacement.
+    result = field.replace("\x00", "[NUL]")[:256]
+    if result.endswith(("[N", "[NU", "[NUL")):
+        result = result[: result.rfind("[")]
+    return result
 
 
 class CowrieExtractionStrategy(BaseExtractionStrategy):

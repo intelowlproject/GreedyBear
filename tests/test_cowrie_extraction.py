@@ -81,6 +81,14 @@ class TestHelperFunctions(ExtractionTestCase):
         self.assertEqual(len(result), 256)
         self.assertTrue(result.startswith("A"))
 
+    def test_normalize_credential_field_partial_nul_at_boundary(self):
+        """Test that partial [NUL] at the 256-char boundary is removed."""
+        # Place a null byte so that [NUL] replacement straddles position 256
+        field = "A" * 254 + "\x00" + "B" * 100
+        result = normalize_credential_field(field)
+        self.assertFalse(result.endswith(("[N", "[NU", "[NUL")))
+        self.assertTrue(len(result) <= 256)
+
 
 class TestCowrieExtractionStrategy(ExtractionTestCase):
     """Test CowrieExtractionStrategy class."""
