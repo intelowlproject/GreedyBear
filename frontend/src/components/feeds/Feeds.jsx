@@ -103,14 +103,21 @@ export default function Feeds() {
   const [searchParams, setSearchParams] = useSearchParams();
   const formikRef = React.useRef(null);
 
+  const initialSearchParams = React.useRef(searchParams);
+
   const initialValues = React.useMemo(
     () => ({
-      feeds_type: searchParams.get("feed_type") || DEFAULT_VALUES.feeds_type,
+      feeds_type:
+        initialSearchParams.current.get("feed_type") ||
+        DEFAULT_VALUES.feeds_type,
       attack_type:
-        searchParams.get("attack_type") || DEFAULT_VALUES.attack_type,
-      ioc_type: searchParams.get("ioc_type") || DEFAULT_VALUES.ioc_type,
-      prioritize: searchParams.get("prioritize") || DEFAULT_VALUES.prioritize,
-      // eslint-disable-next-line
+        initialSearchParams.current.get("attack_type") ||
+        DEFAULT_VALUES.attack_type,
+      ioc_type:
+        initialSearchParams.current.get("ioc_type") || DEFAULT_VALUES.ioc_type,
+      prioritize:
+        initialSearchParams.current.get("prioritize") ||
+        DEFAULT_VALUES.prioritize,
     }),
     [],
   );
@@ -171,7 +178,6 @@ export default function Feeds() {
     [setSearchParams],
   );
 
-  // reset the prioritize dropdown to "recent"
   const handleSortChange = React.useCallback(async () => {
     const formik = formikRef.current;
     if (!formik) return;
@@ -179,7 +185,8 @@ export default function Feeds() {
     await formik.setFieldValue("prioritize", "recent", true);
     await formik.setFieldTouched("prioritize", true, false);
     await formik.submitForm();
-  }, []);
+    updateSearchParams({ ...formik.values, prioritize: "recent" });
+  }, [updateSearchParams]);
 
   // callbacks
   const onSubmit = React.useCallback(
