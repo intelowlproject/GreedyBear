@@ -37,7 +37,7 @@ else:
     print("WARNING!!! You need an ElasticSearch TPOT instance to have the Greedybear to work correctly.")
     if not DEBUG:
         print("you are in production mode: closing the application")
-        pass
+        exit(9)
 
 if ELASTIC_ENDPOINT and not STAGE_CI:
     ELASTIC_CLIENT = Elasticsearch(

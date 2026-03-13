@@ -530,12 +530,7 @@ class IocsFromHitsTestCase(CustomTestCase):
         """Heralding hits with credentials are counted as login attempts."""
         hits = [
             self._create_hit(src_ip="8.8.8.8", hit_type="Heralding", username="root", password="1234"),
-            self._create_hit(
-                src_ip="8.8.8.8",
-                hit_type="Heralding",
-                username="admin",
-                password="admin",
-            ),
+            self._create_hit(src_ip="8.8.8.8", hit_type="Heralding", username="admin", password="admin"),
             self._create_hit(src_ip="8.8.8.8", hit_type="Heralding", username="test", password="test"),
         ]
         iocs = iocs_from_hits(hits)
@@ -756,11 +751,7 @@ class ThreatfoxSubmissionTestCase(ExtractionTestCase):
         mock_honeypot_log4pot.name = "Log4pot"
         mock_honeypot_dionaea = Mock()
         mock_honeypot_dionaea.name = "Dionaea"
-        ioc_record.general_honeypot.all.return_value = [
-            mock_honeypot_cowrie,
-            mock_honeypot_log4pot,
-            mock_honeypot_dionaea,
-        ]
+        ioc_record.general_honeypot.all.return_value = [mock_honeypot_cowrie, mock_honeypot_log4pot, mock_honeypot_dionaea]
         threatfox_submission(ioc_record, ["http://malicious.com/payload.sh"], self.mock_log)
         call_kwargs = mock_post.call_args[1]
         comment = call_kwargs["json"]["comment"]
