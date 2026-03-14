@@ -30,6 +30,10 @@ import {
   UsernameValidator,
   ComparePassword,
 } from "./utils/validator";
+import {
+  usePasswordVisibility,
+  ShowPasswordToggle,
+} from "../common/ShowPasswordToggle";
 
 // constants
 const hearAboutUsChoices = [
@@ -106,19 +110,6 @@ const onValidate = (values) => {
     }
   });
 
-  // store in localStorage so user doesn't have to fill all fields again
-  localStorage.setItem(
-    REGISTRATION_FORM_STORAGE_KEY,
-    JSON.stringify({
-      ...values,
-      password: "",
-      confirmPassword: "",
-    }),
-  );
-  Object.keys(initialValues).forEach((key) => {
-    initialValues[key] = values[key];
-  });
-
   // password fields
   const passwordErrors = PasswordValidator(values.password);
   if (passwordErrors.password) {
@@ -143,6 +134,23 @@ const onValidate = (values) => {
   return errors;
 };
 
+// Isolated component to handle localStorage persistence as a proper React
+// side effect, completely separated from validation logic.
+function FormPersist({ values, storageKey }) {
+  React.useEffect(() => {
+    localStorage.setItem(
+      storageKey,
+      JSON.stringify({
+        ...values,
+        password: "",
+        confirmPassword: "",
+      }),
+    );
+  }, [values, storageKey]);
+
+  return null;
+}
+
 // Component
 export default function Register() {
   /* ATTENTION! The Register page has been temporarily disabled due to not proper Terms of Service */
@@ -156,7 +164,8 @@ export default function Register() {
     React.useState(false);
   const [showConfigurationModal, setShowConfigurationModal] =
     React.useState(false);
-  const [passwordShown, setPasswordShown] = React.useState(false);
+  const { passwordShown, toggleVisibility, inputType } =
+    usePasswordVisibility();
 
   console.debug("showAfterRegistrationModal:", showAfterRegistrationModal);
 
@@ -194,9 +203,6 @@ export default function Register() {
 
         // deleted user data after successful registration
         localStorage.removeItem(REGISTRATION_FORM_STORAGE_KEY);
-        Object.keys(INITIAL_VALUES).forEach((key) => {
-          initialValues[key] = INITIAL_VALUES[key];
-        });
 
         setShowAfterRegistrationModal(true);
       } catch (e) {
@@ -239,6 +245,10 @@ export default function Register() {
           >
             {(formik) => (
               <Form>
+                <FormPersist
+                  values={formik.values}
+                  storageKey={REGISTRATION_FORM_STORAGE_KEY}
+                />
                 {/* Name */}
                 <FormGroup row>
                   <Col sm={12} md={6}>
@@ -356,7 +366,7 @@ export default function Register() {
                     <Input
                       id="RegisterForm__password"
                       name="password"
-                      type={passwordShown ? "text" : "password"}
+                      type={inputType}
                       className="form-control"
                       placeholder="Create a strong password..."
                       autoComplete="new-password"
@@ -381,7 +391,7 @@ export default function Register() {
                     <Input
                       id="RegisterForm__confirmPassword"
                       name="confirmPassword"
-                      type={passwordShown ? "text" : "password"}
+                      type={inputType}
                       className="form-control"
                       placeholder="Re-enter password"
                       autoComplete="new-password"
@@ -398,15 +408,11 @@ export default function Register() {
                     )}
                   </Col>
                 </FormGroup>
-                <FormGroup check>
-                  <Input
-                    id="RegisterForm__showPassword"
-                    type="checkbox"
-                    defaultChecked={passwordShown}
-                    onChange={() => setPasswordShown(!passwordShown)}
-                  />
-                  <Label check>Show password</Label>
-                </FormGroup>
+                <ShowPasswordToggle
+                  id="RegisterForm__showPassword"
+                  passwordShown={passwordShown}
+                  onChange={toggleVisibility}
+                />
                 <Col sm={12} md={12} className="text-center standout alert">
                   We ask you to provide the following information to better
                   understand what you intend to use GreedyBear for
@@ -517,7 +523,7 @@ export default function Register() {
                 <FormGroup className="mt-3 d-flex">
                   <Button
                     type="submit"
-                    disabled={!(formik.isValid || formik.isSubmitting)}
+                    disabled={!formik.isValid || formik.isSubmitting}
                     color="primary"
                     outline
                     className="mx-auto"

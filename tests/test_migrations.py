@@ -119,3 +119,101 @@ class TestRemoveUnusedLog4pot(MigrationTestCase):
             hp_new.objects.filter(name="Log4pot").exists(),
             "Log4pot with IOCs should NOT be deleted",
         )
+
+
+@tag("migration")
+class TestIocAsnToAutonomousSystem(MigrationTestCase):
+    """Tests migration from IOC.asn -> IOC.autonomous_system."""
+
+    migrate_from = "0042_credential_model_and_data_migration"
+    migrate_to = "0043_autonomoussystem_remove_ioc_asn_and_more"
+
+    def test_asn_migrated_to_autonomous_system(self):
+        ioc_old = self.old_state.apps.get_model(self.app_name, "IOC")
+
+        ioc1 = ioc_old.objects.create(asn=12345)
+        ioc2 = ioc_old.objects.create(asn=67890)
+        ioc3 = ioc_old.objects.create(asn=None)
+
+        # Apply migration
+        new_state = self.apply_tested_migration()
+        ioc_new = new_state.apps.get_model(self.app_name, "IOC")
+        as_new = new_state.apps.get_model(self.app_name, "AutonomousSystem")
+
+        ioc1_new = ioc_new.objects.get(pk=ioc1.pk)
+        ioc2_new = ioc_new.objects.get(pk=ioc2.pk)
+        ioc3_new = ioc_new.objects.get(pk=ioc3.pk)
+
+        self.assertIsNotNone(ioc1_new.autonomous_system)
+        self.assertEqual(ioc1_new.autonomous_system.asn, 12345)
+
+        self.assertIsNotNone(ioc2_new.autonomous_system)
+        self.assertEqual(ioc2_new.autonomous_system.asn, 67890)
+
+        self.assertIsNone(ioc3_new.autonomous_system)
+
+        self.assertEqual(as_new.objects.count(), 2)
+        asns = set(as_new.objects.values_list("asn", flat=True))
+        self.assertSetEqual(asns, {12345, 67890})
+
+    def test_duplicate_asns_with_different_names(self):
+        """Ensure migration does not duplicate ASNs."""
+        ioc_old = self.old_state.apps.get_model(self.app_name, "IOC")
+
+        ioc_old.objects.create(asn=12345)
+        ioc_old.objects.create(asn=12345)
+
+        new_state = self.apply_tested_migration()
+        as_new = new_state.apps.get_model(self.app_name, "AutonomousSystem")
+
+        self.assertEqual(as_new.objects.count(), 1)
+
+    def test_large_number_of_iocs(self):
+        """Ensure migration works correctly for many IOCs."""
+        ioc_old = self.old_state.apps.get_model(self.app_name, "IOC")
+
+        num_iocs = 3500
+        asns = [10000 + i % 10 for i in range(num_iocs)]
+
+        for asn in asns:
+            ioc_old.objects.create(asn=asn)
+
+        new_state = self.apply_tested_migration()
+        ioc_new = new_state.apps.get_model(self.app_name, "IOC")
+        as_new = new_state.apps.get_model(self.app_name, "AutonomousSystem")
+
+        for ioc in ioc_new.objects.all():
+            self.assertIsNotNone(ioc.autonomous_system)
+            self.assertIn(ioc.autonomous_system.asn, range(10000, 10010))
+
+        self.assertEqual(as_new.objects.count(), 10)
+
+
+@tag("migration")
+class TestCredentialModelMigration(MigrationTestCase):
+    """Tests that credentials are correctly migrated from ArrayField to Credential model."""
+
+    migrate_from = "0041_sharetoken"
+    migrate_to = "0042_credential_model_and_data_migration"
+
+    def test_credentials_migrated_to_credential_model(self):
+        IOC = self.old_state.apps.get_model(self.app_name, "IOC")
+        CowrieSession = self.old_state.apps.get_model(self.app_name, "CowrieSession")
+
+        ioc = IOC.objects.create(name="1.2.3.4", type="ip")
+        session = CowrieSession.objects.create(
+            session_id=1,
+            source=ioc,
+            credentials=["root | password123", "admin | admin"],
+        )
+
+        new_state = self.apply_tested_migration()
+        Credential = new_state.apps.get_model(self.app_name, "Credential")
+        CowrieSession = new_state.apps.get_model(self.app_name, "CowrieSession")
+
+        self.assertEqual(Credential.objects.count(), 2)
+        self.assertTrue(Credential.objects.filter(username="root", password="password123").exists())
+        self.assertTrue(Credential.objects.filter(username="admin", password="admin").exists())
+
+        session = CowrieSession.objects.get(session_id=1)
+        self.assertEqual(session.credentials.count(), 2)

@@ -3,7 +3,7 @@ import logging
 from greedybear.consts import PAYLOAD_REQUEST, SCANNER
 from greedybear.cronjobs.extraction.utils import is_whatsmyip_domain
 from greedybear.cronjobs.repositories import IocRepository, SensorRepository
-from greedybear.models import IOC, IocType
+from greedybear.models import IOC, IocType, WhatsMyIPDomain
 
 
 class IocProcessor:
@@ -25,6 +25,7 @@ class IocProcessor:
         self.log = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
         self.ioc_repo = ioc_repo
         self.sensor_repo = sensor_repo
+        self._whatsmyip_domains = set(WhatsMyIPDomain.objects.values_list("domain", flat=True))
 
     def add_ioc(
         self,
@@ -52,7 +53,7 @@ class IocProcessor:
             self.log.debug(f"not saved {ioc} because it is a sensor")
             return None
 
-        if ioc.type == IocType.DOMAIN and is_whatsmyip_domain(ioc.name):
+        if ioc.type == IocType.DOMAIN and is_whatsmyip_domain(ioc.name, self._whatsmyip_domains):
             self.log.debug(f"not saved {ioc} because it is a whats-my-ip domain")
             return None
 
@@ -91,14 +92,25 @@ class IocProcessor:
         Returns:
             The updated existing IOC record.
         """
-        existing.last_seen = new.last_seen
+        if new.first_seen < existing.first_seen:
+            existing.first_seen = new.first_seen
+        if new.last_seen > existing.last_seen:
+            existing.last_seen = new.last_seen
         existing.attack_count += 1
         existing.interaction_count += new.interaction_count
         existing.related_urls = sorted(set(existing.related_urls + new.related_urls))
         existing.destination_ports = sorted(set(existing.destination_ports + new.destination_ports))
-        existing.ip_reputation = new.ip_reputation
-        existing.asn = new.asn
+        existing.ip_reputation = existing.ip_reputation or new.ip_reputation
+        existing.firehol_categories = list(new.firehol_categories)
         existing.login_attempts += new.login_attempts
+
+        # updating autonomous_system fk
+        if new.autonomous_system:
+            existing.autonomous_system = new.autonomous_system
+
+        # we will always update attacker_country if incoming value exists
+        if new.attacker_country:
+            existing.attacker_country = new.attacker_country
 
         # Add sensors from new IOC (existing is already saved, so ManyToMany works).
         # We retrieve sensors from the temporary attribute of the input IOC object.
@@ -120,7 +132,9 @@ class IocProcessor:
         Returns:
             The updated IOC record.
         """
-        if len(ioc.days_seen) == 0 or ioc.days_seen[-1] != ioc.last_seen.date():
-            ioc.days_seen.append(ioc.last_seen.date())
-            ioc.number_of_days_seen = len(ioc.days_seen)
+        new_date = ioc.last_seen.date()
+        if new_date not in ioc.days_seen:
+            ioc.days_seen.append(new_date)
+            ioc.days_seen.sort()
+        ioc.number_of_days_seen = len(ioc.days_seen)
         return ioc

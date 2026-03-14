@@ -3,6 +3,7 @@ import { FallBackLoading } from "@certego/certego-ui";
 
 import IfAuthRedirectGuard from "../wrappers/ifAuthRedirectGuard";
 import AuthGuard from "../wrappers/AuthGuard";
+import ErrorBoundary from "../wrappers/ErrorBoundary";
 
 const Home = React.lazy(() => import("./home/Home"));
 const Login = React.lazy(() => import("./auth/Login"));
@@ -22,33 +23,31 @@ const publicRoutesLazy = [
   /* Home */
   {
     index: true,
-    element: (
-      <Suspense fallback={<FallBackLoading />}>
-        <Home />
-      </Suspense>
-    ),
+    element: <Home />,
+    withErrorBoundary: true,
   },
   /* Dashboard */
   {
     path: "/dashboard",
-    element: (
-      <Suspense fallback={<FallBackLoading />}>
-        <Dashboard />
-      </Suspense>
-    ),
+    element: <Dashboard />,
+    withErrorBoundary: true,
   },
   /* Feeds */
   {
     path: "/feeds",
-    element: (
-      <Suspense fallback={<FallBackLoading />}>
-        <Feeds />
-      </Suspense>
-    ),
+    element: <Feeds />,
+    withErrorBoundary: true,
   },
 ].map((r) => ({
   ...r,
-  element: <Suspense fallback={<FallBackLoading />}>{r.element}</Suspense>,
+  element: (
+    <ConditionalWrapper
+      condition={r.withErrorBoundary}
+      wrapper={(children) => <ErrorBoundary>{children}</ErrorBoundary>}
+    >
+      <Suspense fallback={<FallBackLoading />}>{r.element}</Suspense>
+    </ConditionalWrapper>
+  ),
 }));
 
 // no auth public components
@@ -56,24 +55,33 @@ const noAuthRoutesLazy = [
   {
     path: "/login",
     element: <Login />,
+    withErrorBoundary: true,
   },
   {
     path: "/register",
     element: <Register />,
+    withErrorBoundary: true,
   },
   {
     path: "/verify-email",
     element: <EmailVerification />,
+    withErrorBoundary: true,
   },
   {
     path: "/reset-password",
     element: <ResetPassword />,
+    withErrorBoundary: true,
   },
 ].map((r) => ({
   ...r,
   element: (
     <IfAuthRedirectGuard>
-      <Suspense fallback={<FallBackLoading />}>{r.element}</Suspense>
+      <ConditionalWrapper
+        condition={r.withErrorBoundary}
+        wrapper={(children) => <ErrorBoundary>{children}</ErrorBoundary>}
+      >
+        <Suspense fallback={<FallBackLoading />}>{r.element}</Suspense>
+      </ConditionalWrapper>
     </IfAuthRedirectGuard>
   ),
 }));
@@ -83,37 +91,37 @@ const authRoutesLazy = [
   /* auth */
   {
     path: "/logout",
-    element: (
-      <Suspense fallback={<FallBackLoading />}>
-        <Logout />
-      </Suspense>
-    ),
+    element: <Logout />,
+    withErrorBoundary: true,
   },
   /* API Access/Sessions Management */
   {
     path: "/me/sessions",
-    element: (
-      <Suspense fallback={<FallBackLoading />}>
-        <Sessions />
-      </Suspense>
-    ),
+    element: <Sessions />,
+    withErrorBoundary: true,
   },
   /* Change Password */
   {
     path: "/me/change-password",
-    element: (
-      <Suspense fallback={<FallBackLoading />}>
-        <ChangePassword />
-      </Suspense>
-    ),
+    element: <ChangePassword />,
+    withErrorBoundary: true,
   },
 ].map((r) => ({
   ...r,
   element: (
     <AuthGuard>
-      <Suspense fallback={<FallBackLoading />}>{r.element}</Suspense>
+      <ConditionalWrapper
+        condition={r.withErrorBoundary}
+        wrapper={(children) => <ErrorBoundary>{children}</ErrorBoundary>}
+      >
+        <Suspense fallback={<FallBackLoading />}>{r.element}</Suspense>
+      </ConditionalWrapper>
     </AuthGuard>
   ),
 }));
+
+function ConditionalWrapper({ condition, wrapper, children }) {
+  return condition ? wrapper(children) : children;
+}
 
 export { publicRoutesLazy, noAuthRoutesLazy, authRoutesLazy };
