@@ -35,8 +35,8 @@ class IocRepository:
         Returns:
             The updated IOC instance.
         """
-        honeypot_set = {self._normalize_name(hp.name) for hp in ioc.general_honeypot.all()}
-        if self._normalize_name(honeypot_name) not in honeypot_set:
+        honeypot_set = {hp.name for hp in ioc.general_honeypot.all()}
+        if honeypot_name not in honeypot_set:
             self.log.debug(f"adding honeypot {honeypot_name} to IoC {ioc}")
             honeypot = self._honeypot_cache.get(self._normalize_name(honeypot_name))
             if honeypot is not None:
