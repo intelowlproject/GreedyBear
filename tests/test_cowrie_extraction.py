@@ -331,6 +331,45 @@ class TestCowrieExtractionStrategy(ExtractionTestCase):
         self.assertEqual(session.commands, existing_cmd_seq)
         self.assertEqual(session.commands.last_seen, "2023-01-01T10:00:10")
 
+    def test_get_sessions_handles_integrity_error(self):
+        """Test that _get_sessions handles IntegrityError from concurrent saves."""
+        from django.db import IntegrityError
+
+        mock_ioc = Mock()
+        mock_ioc.name = "1.2.3.4"
+
+        mock_session = Mock()
+        mock_session.commands = Mock()
+        mock_session.commands.commands = ["ls", "pwd"]
+        mock_session.commands.commands_hash = "abc123"
+        mock_session.commands.last_seen = "2023-01-01T10:00:10"
+
+        self.mock_session_repo.get_or_create_session.return_value = mock_session
+        # First save raises IntegrityError (race condition),
+        # then the fetched existing sequence saves successfully
+        existing_cmd_seq = Mock()
+        self.mock_session_repo.save_command_sequence.side_effect = [IntegrityError("duplicate key"), None]
+        self.mock_session_repo.get_command_sequence_by_hash.return_value = existing_cmd_seq
+
+        hits = [
+            {
+                "src_ip": "1.2.3.4",
+                "session": "abc123",
+                "timestamp": "2023-01-01T10:00:00",
+                "eventid": "cowrie.command.input",
+                "message": "CMD: ls",
+            }
+        ]
+
+        with patch.object(self.strategy, "_deduplicate_command_sequence", return_value=False):
+            with patch("greedybear.cronjobs.extraction.strategies.cowrie.transaction"):
+                self.strategy._get_sessions(mock_ioc, hits)
+
+        # Should have fetched the existing sequence after IntegrityError
+        self.mock_session_repo.get_command_sequence_by_hash.assert_called_with(
+            commands_hash=mock_session.commands.commands_hash
+        )
+
     @patch("greedybear.cronjobs.extraction.strategies.cowrie.iocs_from_hits")
     def test_extract_from_hits_integration(self, mock_iocs_from_hits):
         """Test the main extract_from_hits coordination."""
