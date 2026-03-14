@@ -232,6 +232,48 @@ class TestClassifierSingleClassSplit(CustomTestCase):
         self.assertEqual(len(y_train) + len(y_test), len(y_all_positive))
 
 
+class TestLogFeatureImportances(CustomTestCase):
+    """Test that _log_feature_importances logs features sorted by descending importance."""
+
+    class MockRFModel(RFModel):
+        @property
+        def features(self) -> list[str]:
+            return FEATURES
+
+    class MockRFClassifier(MockRFModel, Classifier):
+        def __init__(self):
+            super().__init__("Mock RF Classifier", "mock_score")
+
+        @property
+        def untrained_model(self):
+            mock = Mock()
+            mock.feature_names_in_ = np.array(["feature1", "feature2", "feature3"])
+            mock.feature_importances_ = np.array([0.1, 0.6, 0.3])
+            mock.fit.return_value = mock
+            a = np.zeros((5, 2))
+            a[:, 1] = [0.9, 0.8, 0.3, 0.2, 0.1]
+            mock.predict_proba.return_value = a
+            return mock
+
+    def test_log_feature_importances_sorted_descending(self):
+        """_log_feature_importances should log all features sorted by descending importance."""
+        classifier = self.MockRFClassifier()
+        classifier.model = classifier.untrained_model
+
+        with self.assertLogs(classifier.log, level="INFO") as log_ctx:
+            classifier._log_feature_importances()
+
+        output = "\n".join(log_ctx.output)
+        self.assertIn("feature2: 0.6000", output)
+        self.assertIn("feature3: 0.3000", output)
+        self.assertIn("feature1: 0.1000", output)
+        feature2_pos = output.index("feature2")
+        feature3_pos = output.index("feature3")
+        feature1_pos = output.index("feature1")
+        self.assertLess(feature2_pos, feature3_pos)
+        self.assertLess(feature3_pos, feature1_pos)
+
+
 class TestTrainModelsSaveOnFailure(CustomTestCase):
     """Test that TrainModels.run() always calls save_training_data() even on training failure."""
 
