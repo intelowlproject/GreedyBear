@@ -52,7 +52,21 @@ class RFModel(MLModel):
 
         self.model = self.untrained_model.fit(x_train, y_train)
         self.log.info(f"finished training {self.name} - recall AUC: {self.recall_auc(x_test, y_test):.4f}")
+        self._log_feature_importances()
         self.save()
+
+    def _log_feature_importances(self) -> None:
+        """
+        Log feature importances sorted by descending importance.
+
+        Uses feature_names_in_ and feature_importances_ from the fitted model.
+        Only called after training, so self.model is guaranteed to be fitted.
+        """
+        names = self.model.feature_names_in_
+        importances = self.model.feature_importances_
+        ranked = sorted(zip(names, importances), key=lambda pair: pair[1], reverse=True)
+        lines = [f"{name}: {importance:.4f}" for name, importance in ranked]
+        self.log.info(f"feature importances for {self.name}:\n" + "\n".join(lines))
 
     @property
     @abstractmethod
