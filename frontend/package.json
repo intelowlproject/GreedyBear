@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "@certego/certego-ui": "0.1.14",
-    "axios": "^1.13.5",
+    "axios": "^1.13.6",
     "axios-hooks": "^3.0.4",
     "bootstrap": ">=5.3.8",
     "formik": "^2.4.9",
@@ -19,6 +19,7 @@
     "react-dom": "^17.0.2",
     "react-icons": "^4.12.0",
     "react-router-dom": "^6.30.3",
+    "react-simple-maps": "^3.0.0",
     "react-table": "^7.8.0",
     "react-use": "^17.6.0",
     "reactstrap": "^9.2.3",
@@ -41,6 +42,9 @@
     "formatter": "prettier 'src/**/*.{js,jsx}' 'tests/**/*.{js,jsx}' 'src/styles/*.{css,scss}' --check",
     "formatter-fix": "npm run formatter -- --write"
   },
+  "overrides": {
+    "d3-color": "^3.1.0"
+  },
   "devDependencies": {
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^12.1.5",
@@ -55,7 +59,7 @@
     "eslint-plugin-react-hooks": "^4.6.0",
     "jsdom": "^28.1.0",
     "prettier": "^3.8.1",
-    "stylelint": "^17.3.0",
+    "stylelint": "^17.4.0",
     "vite": "^7.3.1",
     "vitest": "^4.0.18"
   }

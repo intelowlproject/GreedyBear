@@ -173,3 +173,35 @@ class TestCowrieSessionRepositoryCleanup(CustomTestCase):
         self.assertEqual(deleted_count, 1)
         self.assertFalse(CowrieSession.objects.filter(session_id=777).exists())
         self.assertTrue(CowrieSession.objects.filter(session_id=888).exists())
+
+    def test_delete_orphaned_command_sequences(self):
+        """Test deletion of command sequences with null hash older than cutoff."""
+        old_date = datetime.now() - timedelta(days=3)
+        recent_date = datetime.now() - timedelta(hours=6)
+
+        # Old orphaned sequence (null hash, old) - should be deleted
+        old_orphan = CommandSequence.objects.create(
+            commands=["ls", "pwd"],
+            commands_hash=None,
+            last_seen=old_date,
+        )
+        # Recent orphaned sequence (null hash, recent) - should be kept
+        recent_orphan = CommandSequence.objects.create(
+            commands=["whoami"],
+            commands_hash=None,
+            last_seen=recent_date,
+        )
+        # Old sequence with hash - should be kept
+        hashed_seq = CommandSequence.objects.create(
+            commands=["cat /etc/passwd"],
+            commands_hash="valid_hash_123",
+            last_seen=old_date,
+        )
+
+        cutoff = datetime.now() - timedelta(days=1)
+        deleted_count = self.repo.delete_orphaned_command_sequences(cutoff)
+
+        self.assertEqual(deleted_count, 1)
+        self.assertFalse(CommandSequence.objects.filter(pk=old_orphan.pk).exists())
+        self.assertTrue(CommandSequence.objects.filter(pk=recent_orphan.pk).exists())
+        self.assertTrue(CommandSequence.objects.filter(pk=hashed_seq.pk).exists())

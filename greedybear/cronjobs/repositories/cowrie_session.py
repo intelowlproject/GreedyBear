@@ -122,3 +122,37 @@ class CowrieSessionRepository:
         """
         deleted_count, _ = CowrieSession.objects.filter(start_time__lte=cutoff_date, commands__isnull=True).delete()
         return deleted_count
+
+    def delete_orphaned_command_sequences(self, cutoff_date) -> int:
+        """
+        Delete command sequences without a commands_hash that are older than cutoff_date.
+
+        These orphaned records occur when the closing event from cowrie is missed,
+        resulting in command sequences that bypass the unique hash constraint and
+        cause duplicates in the database.
+
+        Args:
+            cutoff_date: DateTime threshold - sequences with last_seen before this will be deleted.
+
+        Returns:
+            Number of CommandSequence objects deleted.
+        """
+        deleted_count, _ = CommandSequence.objects.filter(
+            commands_hash__isnull=True,
+            last_seen__lte=cutoff_date,
+        ).delete()
+        return deleted_count
+
+    def add_credential(self, session: CowrieSession, username: str, password: str) -> None:
+        """
+        Get or create a Credential and associate it with the session.
+
+        Args:
+            session: The CowrieSession instance to associate the credential with.
+            username: The credential username.
+            password: The credential password.
+        """
+        from greedybear.models import Credential
+
+        credential, _ = Credential.objects.get_or_create(username=username, password=password)
+        session.credentials.add(credential)

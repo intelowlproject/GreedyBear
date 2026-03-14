@@ -37,15 +37,17 @@ class CleanUp(Cronjob):
         This method:
         1. Calculates expiration dates for different record types
         2. Deletes IOCs older than IOC_RETENTION days
-        3. Deletes incomplete Cowrie sessions (those without start time)
-        4. Deletes Cowrie sessions without login attempts older than 30 days
-        5. Deletes all Cowrie sessions older than COWRIE_SESSION_RETENTION days
-        6. Deletes all command sequences older than COMMAND_SEQUENCE_RETENTION days
+        3. Deletes all command sequences older than COMMAND_SEQUENCE_RETENTION days
+        4. Deletes orphaned command sequences (null hash) older than 1 day
+        5. Deletes incomplete Cowrie sessions (those without start time)
+        6. Deletes Cowrie sessions without login attempts older than 30 days
+        7. Deletes all Cowrie sessions older than COWRIE_SESSION_RETENTION days
 
         Each deletion operation is logged with the number of affected records.
         """
         ioc_expiration_date = datetime.now() - timedelta(days=IOC_RETENTION)
         command_expiration_date = datetime.now() - timedelta(days=COMMAND_SEQUENCE_RETENTION)
+        orphaned_command_expiration_date = datetime.now() - timedelta(days=1)
         session_expiration_date = datetime.now() - timedelta(days=30)
         session_with_login_expiration_date = datetime.now() - timedelta(days=COWRIE_SESSION_RETENTION)
 
@@ -55,6 +57,10 @@ class CleanUp(Cronjob):
 
         self.log.info(f"deleting all command sequences older then {COMMAND_SEQUENCE_RETENTION} days")
         n = self.cowrie_repo.delete_old_command_sequences(command_expiration_date)
+        self.log.info(f"{n} objects deleted")
+
+        self.log.info("deleting orphaned command sequences without hash older than 1 day")
+        n = self.cowrie_repo.delete_orphaned_command_sequences(orphaned_command_expiration_date)
         self.log.info(f"{n} objects deleted")
 
         self.log.info("deleting all Cowrie sessions without start time (incomplete extractions)")

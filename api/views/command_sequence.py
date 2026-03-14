@@ -14,9 +14,9 @@ from rest_framework.decorators import (
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from api.views.utils import is_ip_address, is_sha256hash
 from greedybear.consts import GET
 from greedybear.models import IOC, CommandSequence, CowrieSession, Statistics, ViewType
+from greedybear.utils import is_ip_address, is_sha256hash
 
 logger = logging.getLogger(__name__)
 
@@ -47,12 +47,15 @@ def command_sequence_view(request):
     observable = request.query_params.get("query")
     include_similar = request.query_params.get("include_similar") is not None
     logger.info(f"Command Sequence view requested by {request.user} for {observable}")
-    source_ip = str(request.META["REMOTE_ADDR"])
-    request_source = Statistics(source=source_ip, view=ViewType.COMMAND_SEQUENCE_VIEW.value)
-    request_source.save()
 
     if not observable:
         return HttpResponseBadRequest("Missing required 'query' parameter")
+
+    if not is_ip_address(observable) and not is_sha256hash(observable):
+        return HttpResponseBadRequest("Query must be a valid IP address or SHA-256 hash")
+
+    source_ip = str(request.META["REMOTE_ADDR"])
+    Statistics(source=source_ip, view=ViewType.COMMAND_SEQUENCE_VIEW.value).save()
 
     if is_ip_address(observable):
         sessions = CowrieSession.objects.filter(source__name=observable, start_time__isnull=False, commands__isnull=False)
@@ -68,7 +71,9 @@ def command_sequence_view(request):
         related_iocs = IOC.objects.filter(cowriesession__commands__in=sequences).distinct().only("name")
         if include_similar:
             related_clusters = {s.cluster for s in sequences if s.cluster is not None}
-            related_iocs = IOC.objects.filter(cowriesession__commands__cluster__in=related_clusters).distinct().only("name")
+            if related_clusters:
+                cluster_iocs = IOC.objects.filter(cowriesession__commands__cluster__in=related_clusters).distinct().only("name")
+                related_iocs = related_iocs.union(cluster_iocs)
         if not seqs:
             raise Http404(f"No command sequences found for IP: {observable}")
         data = {
@@ -79,27 +84,25 @@ def command_sequence_view(request):
             data["license"] = settings.FEEDS_LICENSE
         return Response(data, status=status.HTTP_200_OK)
 
-    if is_sha256hash(observable):
-        try:
-            seq = CommandSequence.objects.get(commands_hash=observable)
-            seqs = CommandSequence.objects.filter(cluster=seq.cluster) if include_similar and seq.cluster is not None else [seq]
-            commands = ["\n".join(seq.commands) for seq in seqs]
-            sessions = CowrieSession.objects.filter(commands__in=seqs, start_time__isnull=False)
-            iocs = [
-                {
-                    "time": s.start_time,
-                    "ip": s.source.name,
-                }
-                for s in sessions
-            ]
-            data = {
-                "commands": commands,
-                "iocs": sorted(iocs, key=lambda d: d["time"], reverse=True),
+    # observable is a SHA-256 hash (validated above)
+    try:
+        seq = CommandSequence.objects.get(commands_hash=observable)
+        seqs = CommandSequence.objects.filter(cluster=seq.cluster) if include_similar and seq.cluster is not None else [seq]
+        commands = ["\n".join(seq.commands) for seq in seqs]
+        sessions = CowrieSession.objects.filter(commands__in=seqs, start_time__isnull=False)
+        iocs = [
+            {
+                "time": s.start_time,
+                "ip": s.source.name,
             }
-            if settings.FEEDS_LICENSE:
-                data["license"] = settings.FEEDS_LICENSE
-            return Response(data, status=status.HTTP_200_OK)
-        except CommandSequence.DoesNotExist as exc:
-            raise Http404(f"No command sequences found with hash: {observable}") from exc
-
-    return HttpResponseBadRequest("Query must be a valid IP address or SHA-256 hash")
+            for s in sessions
+        ]
+        data = {
+            "commands": commands,
+            "iocs": sorted(iocs, key=lambda d: d["time"], reverse=True),
+        }
+        if settings.FEEDS_LICENSE:
+            data["license"] = settings.FEEDS_LICENSE
+        return Response(data, status=status.HTTP_200_OK)
+    except CommandSequence.DoesNotExist as exc:
+        raise Http404(f"No command sequences found with hash: {observable}") from exc

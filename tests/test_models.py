@@ -1,4 +1,4 @@
-from greedybear.models import IocType, Statistics, ViewType
+from greedybear.models import IocType, Statistics, Tag, ViewType
 
 from . import CustomTestCase
 
@@ -20,7 +20,7 @@ class ModelsTestCase(CustomTestCase):
         self.assertEqual(self.ioc.payload_request, True)
         self.assertEqual(self.ioc.related_urls, [])
         self.assertEqual(self.ioc.ip_reputation, "")
-        self.assertEqual(self.ioc.asn, "12345")
+        self.assertEqual(self.ioc.autonomous_system.asn, "12345")
         self.assertEqual(self.ioc.destination_ports, [22, 23, 24])
         self.assertEqual(self.ioc.login_attempts, 1)
         self.assertEqual(self.ioc.recurrence_probability, 0.1)
@@ -43,7 +43,7 @@ class ModelsTestCase(CustomTestCase):
         self.assertEqual(self.cowrie_session.start_time, self.current_time)
         self.assertEqual(self.cowrie_session.duration, 1.234)
         self.assertEqual(self.cowrie_session.login_attempt, True)
-        self.assertEqual(self.cowrie_session.credentials, ["root | root"])
+        self.assertEqual(str(self.cowrie_session.credentials.first()), "root | root")
         self.assertEqual(self.cowrie_session.command_execution, True)
         self.assertEqual(self.cowrie_session.interaction_count, 5)
         self.assertEqual(self.cowrie_session.source.name, "140.246.171.141")
@@ -62,3 +62,29 @@ class ModelsTestCase(CustomTestCase):
     def test_general_honeypot_model(self):
         self.assertEqual(self.heralding.name, "Heralding")
         self.assertEqual(self.heralding.active, True)
+
+    def test_tag_model(self):
+        tag = Tag.objects.create(
+            ioc=self.ioc,
+            key="malware",
+            value="Mirai",
+            source="threatfox",
+        )
+        self.assertEqual(tag.key, "malware")
+        self.assertEqual(tag.value, "Mirai")
+        self.assertEqual(tag.source, "threatfox")
+        self.assertEqual(tag.ioc, self.ioc)
+        self.assertEqual(str(tag), "140.246.171.141 - malware: Mirai (threatfox)")
+
+    def test_tag_cascade_delete(self):
+        """Tags should be deleted when their IOC is deleted."""
+        from greedybear.models import IOC, IocType
+
+        temp_ioc = IOC.objects.create(name="10.20.30.40", type=IocType.IP.value)
+        Tag.objects.create(ioc=temp_ioc, key="test", value="test_val", source="test_source")
+
+        self.assertEqual(Tag.objects.filter(ioc=temp_ioc).count(), 1)
+
+        temp_ioc.delete()
+
+        self.assertEqual(Tag.objects.filter(ioc_id=temp_ioc.id).count(), 0)

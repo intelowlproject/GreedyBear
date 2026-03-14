@@ -1,6 +1,7 @@
 import { UncontrolledPopover, PopoverBody } from "reactstrap";
 import { FiInfo } from "react-icons/fi";
 import { BooleanIcon, IconButton } from "@certego/certego-ui";
+import { INTELOWL_URL, PUBLIC_URL } from "../../constants/environment";
 
 const formatInteger = (value) => {
   if (value === null || value === undefined || Number.isNaN(value)) return "-";
@@ -33,6 +34,7 @@ const feedsTableColumns = [
   {
     Header: "Feed type",
     accessor: "feed_type",
+    disableSortBy: true,
     maxWidth: 60,
     Cell: ({ value }) =>
       Array.isArray(value) ? (
@@ -67,6 +69,7 @@ const feedsTableColumns = [
   {
     Header: "Details",
     accessor: "details",
+    disableSortBy: true,
     Cell: ({ row }) => {
       const {
         recurrence_probability,
@@ -76,6 +79,7 @@ const feedsTableColumns = [
         login_attempts,
         asn,
         ip_reputation,
+        attacker_country,
       } = row.original;
       const popoverId = `feeds-details-${row.id}`;
       return (
@@ -114,6 +118,7 @@ const feedsTableColumns = [
               <div className="text-muted">Enrichment</div>
               <div>ASN: {asn ?? "-"}</div>
               <div>Reputation: {ip_reputation || "-"}</div>
+              <div>Country: {attacker_country || "-"}</div>
             </PopoverBody>
           </UncontrolledPopover>
         </div>
@@ -121,6 +126,33 @@ const feedsTableColumns = [
     },
     maxWidth: 60,
   },
+  ...(INTELOWL_URL
+    ? [
+        {
+          Header: "Analyze",
+          id: "intelowl",
+          disableSortBy: true,
+          maxWidth: 60,
+          Cell: ({ row }) => (
+            <div className="d-flex justify-content-center">
+              <a
+                href={`${INTELOWL_URL}/scan?observable_name=${encodeURIComponent(row.original.value)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                title={`Analyze ${row.original.value} on IntelOwl`}
+              >
+                <img
+                  src={`${PUBLIC_URL}/intelowl.png`}
+                  alt="IntelOwl"
+                  height="30"
+                  style={{ opacity: 0.85 }}
+                />
+              </a>
+            </div>
+          ),
+        },
+      ]
+    : []),
 ];
 
 export { feedsTableColumns };

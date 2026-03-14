@@ -13,3 +13,7 @@ export const VERSION = isTest
 export const PUBLIC_URL = isTest
   ? (process.env.PUBLIC_URL || "/").replace(/\/$/, "")
   : import.meta.env.BASE_URL.replace(/\/$/, "");
+
+export const INTELOWL_URL = isTest
+  ? (process.env.VITE_INTELOWL_URL || "").replace(/\/$/, "")
+  : (import.meta.env.VITE_INTELOWL_URL || "").replace(/\/$/, "");
