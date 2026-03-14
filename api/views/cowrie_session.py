@@ -1,7 +1,7 @@
 # This file is a part of GreedyBear https://github.com/honeynet/GreedyBear
 # See the file 'LICENSE' for copying permission.
 import logging
-import socket
+from ipaddress import ip_address
 
 from certego_saas.apps.auth.backend import CookieTokenAuthentication
 from django.conf import settings
@@ -112,7 +112,10 @@ def cowrie_session_view(request):
 
     unique_commands = {s.commands for s in sessions if s.commands}
     response_data["commands"] = sorted("\n".join(cmd.commands) for cmd in unique_commands)
-    response_data["sources"] = sorted({s.source.name for s in sessions}, key=socket.inet_aton)
+    response_data["sources"] = sorted(
+        {s.source.name for s in sessions},
+        key=lambda addr: (ip_address(addr).version, ip_address(addr).packed),
+    )
     if include_credentials:
         response_data["credentials"] = sorted({str(c) for s in sessions for c in s.credentials.all()})
     if include_session_data:

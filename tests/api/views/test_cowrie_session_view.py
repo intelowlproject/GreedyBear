@@ -104,7 +104,15 @@ class CowrieSessionViewTestCase(CustomTestCase):
     def test_ipv6_address_query(self):
         """Test view with a valid IPv6 address query."""
         response = self.client.get("/api/cowrie_session?query=2001:db8::1")
-        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("sources", response.data)
+        self.assertIn("2001:db8::1", response.data["sources"])
+
+    def test_ipv6_source_in_hash_query(self):
+        """Sorting sources by ip_address must not crash for IPv6 session sources."""
+        response = self.client.get(f"/api/cowrie_session?query={self.command_sequence_ipv6.commands_hash}")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("2001:db8::1", response.data["sources"])
 
     def test_invalid_ip_format(self):
         """Test that malformed IP addresses are treated as password lookups."""

@@ -196,6 +196,47 @@ class CustomTestCase(TestCase):
         cls.cowrie_session_2.credentials.add(credential_2)
         cls.cowrie_session_2.save()
 
+        cls.ioc_ipv6 = IOC.objects.create(
+            name="2001:db8::1",
+            type=IocType.IP.value,
+            first_seen=cls.current_time,
+            last_seen=cls.current_time,
+            days_seen=[cls.current_time],
+            number_of_days_seen=1,
+            attack_count=1,
+            interaction_count=1,
+            scanner=True,
+            payload_request=False,
+            related_urls=[],
+            ip_reputation="",
+            destination_ports=[22],
+            login_attempts=1,
+        )
+        cls.ioc_ipv6.general_honeypot.add(cls.cowrie_hp)
+        cls.ioc_ipv6.save()
+
+        cls.cmd_seq_ipv6 = ["uname -a"]
+        cls.command_sequence_ipv6 = CommandSequence.objects.create(
+            first_seen=cls.current_time,
+            last_seen=cls.current_time,
+            commands=cls.cmd_seq_ipv6,
+            commands_hash=sha256("\n".join(cls.cmd_seq_ipv6).encode()).hexdigest(),
+            cluster=None,
+        )
+        cls.command_sequence_ipv6.save()
+
+        cls.cowrie_session_ipv6 = CowrieSession.objects.create(
+            session_id=int("dddddddddddd", 16),
+            start_time=cls.current_time,
+            duration=0.5,
+            login_attempt=True,
+            command_execution=True,
+            interaction_count=2,
+            source=cls.ioc_ipv6,
+            commands=cls.command_sequence_ipv6,
+        )
+        cls.cowrie_session_ipv6.save()
+
         try:
             cls.superuser = User.objects.get(is_superuser=True)
         except User.DoesNotExist:
