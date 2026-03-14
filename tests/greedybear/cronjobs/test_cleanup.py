@@ -27,6 +27,7 @@ class TestCleanUp(CustomTestCase):
         # Setup return values for logging purposes
         ioc_repo.delete_old_iocs.return_value = 10
         cowrie_repo.delete_old_command_sequences.return_value = 20
+        cowrie_repo.delete_orphaned_command_sequences.return_value = 3
         cowrie_repo.delete_incomplete_sessions.return_value = 5
         cowrie_repo.delete_sessions_without_login.return_value = 15
         cowrie_repo.delete_sessions_without_commands.return_value = 8
@@ -59,10 +60,18 @@ class TestCleanUp(CustomTestCase):
         time_diff = abs((actual_date - expected_cmd_date).total_seconds())
         self.assertLess(time_diff, 1, f"Date difference ({time_diff}s) exceeds 1 second tolerance")
 
-        # 2. delete_incomplete_sessions
+        # 2. delete_orphaned_command_sequences (null hash, older than 1 day)
+        cowrie_repo.delete_orphaned_command_sequences.assert_called_once()
+        expected_orphan_date = datetime.now() - timedelta(days=1)
+        args, _ = cowrie_repo.delete_orphaned_command_sequences.call_args
+        actual_date = args[0]
+        time_diff = abs((actual_date - expected_orphan_date).total_seconds())
+        self.assertLess(time_diff, 1, f"Date difference ({time_diff}s) exceeds 1 second tolerance")
+
+        # 3. delete_incomplete_sessions
         cowrie_repo.delete_incomplete_sessions.assert_called_once()
 
-        # 3. delete_sessions_without_login
+        # 4. delete_sessions_without_login
         cowrie_repo.delete_sessions_without_login.assert_called_once()
         expected_session_login_date = datetime.now() - timedelta(days=30)
         args, _ = cowrie_repo.delete_sessions_without_login.call_args
@@ -70,7 +79,7 @@ class TestCleanUp(CustomTestCase):
         time_diff = abs((actual_date - expected_session_login_date).total_seconds())
         self.assertLess(time_diff, 1, f"Date difference ({time_diff}s) exceeds 1 second tolerance")
 
-        # 4. delete_sessions_without_commands
+        # 5. delete_sessions_without_commands
         cowrie_repo.delete_sessions_without_commands.assert_called_once()
         expected_session_cmd_date = datetime.now() - timedelta(days=80)
         args, _ = cowrie_repo.delete_sessions_without_commands.call_args
@@ -79,13 +88,14 @@ class TestCleanUp(CustomTestCase):
         self.assertLess(time_diff, 1, f"Date difference ({time_diff}s) exceeds 1 second tolerance")
 
         # Verify logging messages
-        # We expect 5 pairs of logs (start + result)
-        # 10 calls to info level
-        self.assertEqual(cleanup_job.log.info.call_count, 10)
+        # We expect 6 pairs of logs (start + result)
+        # 12 calls to info level
+        self.assertEqual(cleanup_job.log.info.call_count, 12)
 
         # Check specific log messages to ensure counts are logged
         cleanup_job.log.info.assert_any_call("10 objects deleted")
         cleanup_job.log.info.assert_any_call("20 objects deleted")
+        cleanup_job.log.info.assert_any_call("3 objects deleted")
         cleanup_job.log.info.assert_any_call("5 objects deleted")
         cleanup_job.log.info.assert_any_call("15 objects deleted")
         cleanup_job.log.info.assert_any_call("8 objects deleted")
@@ -98,6 +108,7 @@ class TestCleanUp(CustomTestCase):
         # Setup return values as 0
         ioc_repo.delete_old_iocs.return_value = 0
         cowrie_repo.delete_old_command_sequences.return_value = 0
+        cowrie_repo.delete_orphaned_command_sequences.return_value = 0
         cowrie_repo.delete_incomplete_sessions.return_value = 0
         cowrie_repo.delete_sessions_without_login.return_value = 0
         cowrie_repo.delete_sessions_without_commands.return_value = 0
@@ -110,6 +121,7 @@ class TestCleanUp(CustomTestCase):
         # Verify invocations still happen
         ioc_repo.delete_old_iocs.assert_called_once()
         cowrie_repo.delete_old_command_sequences.assert_called_once()
+        cowrie_repo.delete_orphaned_command_sequences.assert_called_once()
         cowrie_repo.delete_incomplete_sessions.assert_called_once()
         cowrie_repo.delete_sessions_without_login.assert_called_once()
         cowrie_repo.delete_sessions_without_commands.assert_called_once()

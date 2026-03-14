@@ -5,6 +5,8 @@ from collections import defaultdict
 from hashlib import sha256
 from urllib.parse import urlparse
 
+from django.db import IntegrityError, transaction
+
 from greedybear.consts import PAYLOAD_REQUEST, SCANNER
 from greedybear.cronjobs.extraction.strategies import BaseExtractionStrategy
 from greedybear.cronjobs.extraction.utils import (
@@ -224,8 +226,22 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
 
             if session_record.commands is not None:
                 self._deduplicate_command_sequence(session_record)
-                self.session_repo.save_command_sequence(session_record.commands)
-                self.log.info(f"saved new command execute from {ioc.name} with hash {session_record.commands.commands_hash}")
+                try:
+                    with transaction.atomic():
+                        self.session_repo.save_command_sequence(session_record.commands)
+                except IntegrityError:
+                    # Race condition: another worker saved the same hash concurrently.
+                    # Fetch the existing record instead.
+                    cmd_seq = self.session_repo.get_command_sequence_by_hash(
+                        commands_hash=session_record.commands.commands_hash
+                    )
+                    if cmd_seq is not None:
+                        last_seen = session_record.commands.last_seen
+                        session_record.commands = cmd_seq
+                        session_record.commands.last_seen = last_seen
+                        self.session_repo.save_command_sequence(session_record.commands)
+                    self.log.info(f"resolved duplicate hash conflict for {ioc.name}")
+                self.log.info(f"saved command sequence from {ioc.name} with hash {session_record.commands.commands_hash}")
 
             self.ioc_repo.save(session_record.source)
             self.session_repo.save_session(session_record)
