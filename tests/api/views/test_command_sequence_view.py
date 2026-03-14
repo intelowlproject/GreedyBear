@@ -1,6 +1,7 @@
 from django.test import override_settings
 from rest_framework.test import APIClient
 
+from greedybear.models import Statistics
 from tests import CustomTestCase
 
 
@@ -125,3 +126,17 @@ class CommandSequenceViewTestCase(CustomTestCase):
         response = self.client.get(f"/api/command_sequence?query={self.hash}")
         self.assertEqual(response.status_code, 200)
         self.assertNotIn("license", response.data)
+
+    def test_missing_query_does_not_record_statistics(self):
+        """Statistics must not be written for requests that fail input validation."""
+        before = Statistics.objects.count()
+        response = self.client.get("/api/command_sequence")
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(Statistics.objects.count(), before)
+
+    def test_invalid_query_does_not_record_statistics(self):
+        """Statistics must not be written when the query is neither an IP nor a SHA-256 hash."""
+        before = Statistics.objects.count()
+        response = self.client.get("/api/command_sequence?query=not-valid")
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(Statistics.objects.count(), before)
