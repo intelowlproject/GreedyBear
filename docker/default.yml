@@ -23,19 +23,17 @@ services:
     volumes:
       - generic_logs:/var/log/greedybear
       - static_content:/opt/deploy/greedybear/static
+      - gunicorn_sockets:/run
     entrypoint:
       - ./docker/entrypoint_gunicorn.sh
-    command: sh -c "gunicorn greedybear.wsgi:application --bind 0.0.0.0:8001 --protocol uwsgi --bind 0.0.0.0:8002 --workers $$((2 * $$(nproc) + 1)) --graceful-timeout 30 --timeout 120"
-    expose:
-      - "8001"
-      - "8002"
+    command: sh -c "gunicorn greedybear.wsgi:application --protocol uwsgi --bind unix:/run/gunicorn-main.sock --bind unix:/run/gunicorn-health.sock --workers $$((2 * $$(nproc) + 1)) --graceful-timeout 30 --timeout 120"
     env_file:
       - env_file
     depends_on:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8002 || exit 1"]
+      test: ["CMD-SHELL", "test -S /run/gunicorn-health.sock || exit 1"]
       interval: 10s
       timeout: 2s
       retries: 30
@@ -52,6 +50,7 @@ services:
       - ../configuration/nginx/locations.conf:/etc/nginx/locations.conf
       - nginx_logs:/var/log/nginx
       - static_content:/var/www/static
+      - gunicorn_sockets:/run
     ports:
       - "80:80"
     depends_on:
@@ -92,3 +91,4 @@ volumes:
   generic_logs:
   static_content:
   mlmodels:
+  gunicorn_sockets:
