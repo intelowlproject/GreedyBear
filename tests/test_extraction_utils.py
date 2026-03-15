@@ -11,7 +11,7 @@ from greedybear.cronjobs.extraction.utils import (
     is_whatsmyip_domain,
     threatfox_submission,
 )
-from greedybear.models import FireHolList, MassScanner, WhatsMyIPDomain
+from greedybear.models import FireHolList, MassScanner
 
 from . import CustomTestCase, ExtractionTestCase
 
@@ -286,33 +286,29 @@ class TestIsValidCIDR(CustomTestCase):
 
 class TestIsWhatsmyipDomain(CustomTestCase):
     def test_returns_true_for_known_domain(self):
-        WhatsMyIPDomain.objects.create(domain="some.domain.com")
-        result = is_whatsmyip_domain("some.domain.com")
+        result = is_whatsmyip_domain("some.domain.com", {"some.domain.com"})
         self.assertTrue(result)
 
     def test_returns_false_for_unknown_domain(self):
-        result = is_whatsmyip_domain("another.domain.com")
+        result = is_whatsmyip_domain("another.domain.com", {"some.domain.com"})
         self.assertFalse(result)
 
 
 class TestCorrectIpReputationTestCase(CustomTestCase):
-    def test_returns_mass_scanner_when_in_database(self):
-        MassScanner.objects.create(ip_address="1.2.3.4")
-        result = correct_ip_reputation("1.2.3.4", "known attacker")
+    def test_returns_mass_scanner_when_in_set(self):
+        result = correct_ip_reputation("1.2.3.4", "known attacker", {"1.2.3.4"})
         self.assertEqual(result, "mass scanner")
 
-    def test_returns_original_when_not_in_database(self):
-        result = correct_ip_reputation("1.2.3.4", "known attacker")
+    def test_returns_original_when_not_in_set(self):
+        result = correct_ip_reputation("1.2.3.4", "known attacker", {"5.6.7.8"})
         self.assertEqual(result, "known attacker")
 
     def test_checks_mass_scanner_for_empty_reputation(self):
-        MassScanner.objects.create(ip_address="1.2.3.4")
-        result = correct_ip_reputation("1.2.3.4", "")
+        result = correct_ip_reputation("1.2.3.4", "", {"1.2.3.4"})
         self.assertEqual(result, "mass scanner")
 
     def test_preserves_other_reputations(self):
-        MassScanner.objects.create(ip_address="1.2.3.4")
-        result = correct_ip_reputation("1.2.3.4", "bot")
+        result = correct_ip_reputation("1.2.3.4", "bot", {"1.2.3.4"})
         self.assertEqual(result, "bot")
 
 
@@ -408,13 +404,13 @@ class IocsFromHitsTestCase(CustomTestCase):
         hits = [self._create_hit(src_ip="8.8.8.8", asn=15169)]
         iocs = iocs_from_hits(hits)
         ioc = iocs[0]
-        self.assertEqual(ioc.asn, 15169)
+        self.assertEqual(ioc.autonomous_system.asn, 15169)
 
     def test_handles_missing_geoip(self):
         hits = [{"src_ip": "8.8.8.8", "@timestamp": "2025-01-01T12:00:00.000Z"}]
         iocs = iocs_from_hits(hits)
         ioc = iocs[0]
-        self.assertIsNone(ioc.asn)
+        self.assertIsNone(ioc.autonomous_system)
 
     def test_extracts_timestamps(self):
         hits = [
@@ -670,6 +666,33 @@ class IocsFromHitsTestCase(CustomTestCase):
         self.assertEqual(ioc.attacker_country, "Nepal")
 
         self.assertEqual(ioc.interaction_count, 1)
+
+    def test_ioc_autonomous_system_set_correctly(self):
+        """Verify that iocs_from_hits sets autonomous_system FK correctly from hits."""
+
+        hits = [
+            self._create_hit(
+                src_ip="8.8.8.8",
+                dest_port=80,
+                hit_type="Cowrie",
+            )
+        ]
+
+        # Manually injecting the geoip info to simulate AS enrichment
+        hits[0]["geoip"] = {"asn": 2945, "as_org": "greedybear", "country_name": "Nepal"}
+
+        iocs = iocs_from_hits(hits)
+        self.assertEqual(len(iocs), 1)
+
+        ioc = iocs[0]
+
+        # Verify autonomous_system is properly created
+        self.assertIsNotNone(ioc.autonomous_system)
+        self.assertEqual(ioc.autonomous_system.asn, 2945)
+        self.assertEqual(ioc.autonomous_system.name, "greedybear")
+
+        # Also check attacker_country is still set correctly
+        self.assertEqual(ioc.attacker_country, "Nepal")
 
 
 class ThreatfoxSubmissionTestCase(ExtractionTestCase):
