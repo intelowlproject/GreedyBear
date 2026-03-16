@@ -461,8 +461,12 @@ def asn_aggregated_queryset(iocs_qs, request, feed_params):
 
     asn_filter = request.query_params.get("asn")
 
+    # Restrict ASNs to those present in the currently filtered IOC queryset.
+    asns_in_iocs = iocs_qs.exclude(autonomous_system__isnull=True).values_list("autonomous_system__asn", flat=True).distinct()
+
     # Read pre-computed aggregates directly from the AutonomousSystem table.
-    as_qs = AutonomousSystem.objects.filter(ioc_count__gt=0)
+    # This is limited to ASNs that actually appear in the filtered IOC set.
+    as_qs = AutonomousSystem.objects.filter(ioc_count__gt=0, asn__in=asns_in_iocs)
 
     if asn_filter:
         as_qs = as_qs.filter(asn=asn_filter)
