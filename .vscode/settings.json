@@ -1,0 +1,34 @@
+{
+    "editor.mouseWheelZoom": true,
+    "code-runner.runInTerminal": true,
+    "code-runner.saveFileBeforeRun": true,
+    "editor.fontSize": 20,
+    "tabnine.experimentalAutoImports": true,
+    "vscode-edge-devtools.webhintInstallNotification": true,
+    "liveServer.settings.donotShowInfoMsg": true,
+    "files.autoSave": "afterDelay",
+    "git.openRepositoryInParentFolders": "never",
+    "workbench.colorTheme": "JellyFish",
+    "redhat.telemetry.enabled": true,
+    "explorer.confirmDragAndDrop": false,
+    "explorer.confirmDelete": false,
+    "emmet.triggerExpansionOnTab": true,
+    "git.enableSmartCommit": true,
+    "python.createEnvironment.trigger": "off",
+    
+    // --- FIXES START HERE ---
+    "python.defaultInterpreterPath": "C:\\Users\\jiyac\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+    "[python]": {
+        "editor.defaultFormatter": "ms-python.black-formatter",
+        "editor.formatOnSave": true
+    },
+    // --- FIXES END HERE ---
+
+    "rsp-ui.enableStartServerOnActivation": [
+        {
+            "id": "redhat.vscode-community-server-connector",
+            "name": "Community Server Connector",
+            "startOnActivation": true
+        }
+    ]
+}

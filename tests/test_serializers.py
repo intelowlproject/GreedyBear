@@ -242,6 +242,7 @@ class FeedsResponseSerializersTestCase(CustomTestCase):
                 "recurrence_probability": "0.1",
                 "expected_interactions": "11.1",
                 "attacker_country": "Nepal",
+                "sensors": [],
             }
             serializer = FeedsResponseSerializer(
                 data=data_,
