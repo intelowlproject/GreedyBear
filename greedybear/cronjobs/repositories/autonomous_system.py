@@ -1,6 +1,7 @@
 import logging
 
 from django.db.models import Count, Max, Min, Sum
+from django.db.models.functions import Coalesce
 
 from greedybear.models import IOC, AutonomousSystem
 
@@ -70,11 +71,11 @@ class ASRepository:
             .values("autonomous_system__asn")
             .annotate(
                 ioc_count=Count("id"),
-                total_attack_count=Sum("attack_count"),
-                total_interaction_count=Sum("interaction_count"),
-                total_login_attempts=Sum("login_attempts"),
-                expected_ioc_count=Sum("recurrence_probability"),
-                expected_interactions=Sum("expected_interactions"),
+                total_attack_count=Coalesce(Sum("attack_count"), 0),
+                total_interaction_count=Coalesce(Sum("interaction_count"), 0),
+                total_login_attempts=Coalesce(Sum("login_attempts"), 0),
+                expected_ioc_count=Coalesce(Sum("recurrence_probability"), 0.0),
+                expected_interactions=Coalesce(Sum("expected_interactions"), 0.0),
                 first_seen=Min("first_seen"),
                 last_seen=Max("last_seen"),
             )
