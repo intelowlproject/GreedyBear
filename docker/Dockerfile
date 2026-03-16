@@ -27,7 +27,7 @@ WORKDIR $PYTHONPATH
 
 # Install runtime dependencies
 #  - libgomp1 is required for model training
-#  - python3 used for healthcheck via TCP socket
+#  - curl is used for healthcheck
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libgomp1 curl \
     && rm -rf /var/lib/apt/lists/*
