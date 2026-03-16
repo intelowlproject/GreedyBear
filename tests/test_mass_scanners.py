@@ -261,11 +261,11 @@ class TestMassScannersCron(CustomTestCase):
         self.assertEqual(MassScanner.objects.count(), 0)
 
     def test_execute_sets_success_false_on_http_error(self):
-        """Test that base class execute() marks task as failed on HTTP error."""
+        """Test that base class execute() propagates HTTPError."""
         mock_response = Mock()
         mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError("500 Server Error")
         with patch("greedybear.cronjobs.mass_scanners.requests.get") as mock_get:
             mock_get.return_value = mock_response
-            self.cron.execute()
-
-        self.assertFalse(self.cron.success)
+            # Expect exception to be raised now
+            with self.assertRaises(requests.exceptions.HTTPError):
+                 self.cron.execute()
