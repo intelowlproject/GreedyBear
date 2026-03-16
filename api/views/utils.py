@@ -18,7 +18,7 @@ from stix2 import Bundle, ExternalReference, Indicator
 
 from api.serializers import FeedsRequestSerializer, parse_feed_types
 from greedybear.consts import CACHE_KEY_GREEDYBEAR_NEWS, CACHE_TIMEOUT_SECONDS, RSS_FEED_URL
-from greedybear.models import IOC, GeneralHoneypot, Statistics
+from greedybear.models import IOC, AutonomousSystem, GeneralHoneypot, Statistics
 from greedybear.utils import is_ip_address, is_valid_domain
 
 logger = logging.getLogger(__name__)
@@ -458,7 +458,6 @@ def asn_aggregated_queryset(iocs_qs, request, feed_params):
 
     Returns: A list of dicts with aggregated metrics and honeypot arrays per ASN.
     """
-    from greedybear.models import AutonomousSystem
 
     asn_filter = request.query_params.get("asn")
 
