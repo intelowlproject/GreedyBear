@@ -29,7 +29,9 @@ class TagSerializer(serializers.ModelSerializer):
 class IOCSerializer(serializers.ModelSerializer):
     general_honeypot = GeneralHoneypotSerializer(many=True, read_only=True)
     tags = TagSerializer(many=True, read_only=True)
-    sensors = serializers.SlugRelatedField(many=True, read_only=True, slug_field="address")
+    sensors = serializers.SlugRelatedField(
+        many=True, read_only=True, slug_field="address"
+    )
 
     class Meta:
         model = IOC
@@ -41,9 +43,8 @@ class IOCSerializer(serializers.ModelSerializer):
             "days_back",
             "general_honeypot",
             "tags",
-            "sensors",  
+            "sensors",
         ]
-        
 
 
 class EnrichmentSerializer(serializers.Serializer):
@@ -59,10 +60,14 @@ class EnrichmentSerializer(serializers.Serializer):
         data["query"] = observable
 
         # A valid domain must match the domain regex AND contain at least one alphabetic character
-        is_domain = bool(re.match(REGEX_DOMAIN, observable)) and any(c.isalpha() for c in observable)
+        is_domain = bool(re.match(REGEX_DOMAIN, observable)) and any(
+            c.isalpha() for c in observable
+        )
 
         if not is_ip_address(observable) and not is_domain:
-            raise serializers.ValidationError("Observable is not a valid IP address or domain")
+            raise serializers.ValidationError(
+                "Observable is not a valid IP address or domain"
+            )
 
         try:
             required_object = IOC.objects.prefetch_related("tags").get(name=observable)
@@ -134,17 +139,27 @@ class FeedsRequestSerializer(serializers.Serializer):
     ioc_type = serializers.ChoiceField(choices=["ip", "domain", "all"])
     max_age = serializers.IntegerField(min_value=1)
     min_days_seen = serializers.IntegerField(min_value=1)
-    include_reputation = serializers.ListField(child=serializers.CharField(max_length=120))
-    exclude_reputation = serializers.ListField(child=serializers.CharField(max_length=120))
+    include_reputation = serializers.ListField(
+        child=serializers.CharField(max_length=120)
+    )
+    exclude_reputation = serializers.ListField(
+        child=serializers.CharField(max_length=120)
+    )
     feed_size = serializers.IntegerField(min_value=1)
     ordering = serializers.CharField(max_length=120)
     verbose = serializers.ChoiceField(choices=["true", "false"])
     paginate = serializers.ChoiceField(choices=["true", "false"])
     format = serializers.ChoiceField(choices=["csv", "json", "txt", "stix21"])
     asn = serializers.IntegerField(min_value=1, required=False, allow_null=True)
-    min_score = serializers.FloatField(min_value=0, max_value=1, required=False, allow_null=True)
-    port = serializers.IntegerField(min_value=1, max_value=65535, required=False, allow_null=True)
-    start_date = serializers.DateField(format="%Y-%m-%d", required=False, allow_null=True)
+    min_score = serializers.FloatField(
+        min_value=0, max_value=1, required=False, allow_null=True
+    )
+    port = serializers.IntegerField(
+        min_value=1, max_value=65535, required=False, allow_null=True
+    )
+    start_date = serializers.DateField(
+        format="%Y-%m-%d", required=False, allow_null=True
+    )
     end_date = serializers.DateField(format="%Y-%m-%d", required=False, allow_null=True)
     tag_key = serializers.CharField(max_length=128, required=False, allow_blank=True)
     tag_value = serializers.CharField(max_length=256, required=False, allow_blank=True)
@@ -156,9 +171,13 @@ class FeedsRequestSerializer(serializers.Serializer):
             raise serializers.ValidationError("Invalid feed_type: must not be empty")
         valid_feed_types = self.context["valid_feed_types"]
         if len(feed_types) > len(valid_feed_types):
-            raise serializers.ValidationError(f"Invalid feed_type: too many types specified (max {len(valid_feed_types)})")
+            raise serializers.ValidationError(
+                f"Invalid feed_type: too many types specified (max {len(valid_feed_types)})"
+            )
         if "all" in feed_types and len(feed_types) > 1:
-            raise serializers.ValidationError("Invalid feed_type: 'all' cannot be combined with other feed types")
+            raise serializers.ValidationError(
+                "Invalid feed_type: 'all' cannot be combined with other feed types"
+            )
         for ft in feed_types:
             feed_type_validation(ft, valid_feed_types)
         return feed_type
@@ -227,15 +246,22 @@ class FeedsResponseSerializer(serializers.Serializer):
     attack_count = serializers.IntegerField(min_value=1)
     interaction_count = serializers.IntegerField(min_value=1)
     ip_reputation = serializers.CharField(allow_blank=True, max_length=32)
-    firehol_categories = serializers.ListField(child=serializers.CharField(max_length=64), allow_empty=True)
+    firehol_categories = serializers.ListField(
+        child=serializers.CharField(max_length=64), allow_empty=True
+    )
     asn = serializers.IntegerField(allow_null=True, min_value=1)
     destination_port_count = serializers.IntegerField(min_value=0)
     login_attempts = serializers.IntegerField(min_value=0)
     recurrence_probability = serializers.FloatField(min_value=0, max_value=1)
     expected_interactions = serializers.FloatField(min_value=0)
-    attacker_country = serializers.CharField(allow_null=True, allow_blank=True, max_length=120)
+    attacker_country = serializers.CharField(
+        allow_null=True, allow_blank=True, max_length=120
+    )
     tags = TagSerializer(many=True, required=False, default=list)
 
     def validate_feed_type(self, feed_type):
         logger.debug(f"FeedsResponseSerializer - validation feed_type: '{feed_type}'")
-        return [feed_type_validation(feed, self.context["valid_feed_types"]) for feed in feed_type]
+        return [
+            feed_type_validation(feed, self.context["valid_feed_types"])
+            for feed in feed_type
+        ]
