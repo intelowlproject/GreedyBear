@@ -9,6 +9,7 @@ from django.conf import settings
 
 from greedybear.consts import DOMAIN, IP
 from greedybear.cronjobs.repositories import ASRepository
+from greedybear.enums import IpReputation
 from greedybear.models import IOC, FireHolList, MassScanner
 
 
@@ -43,8 +44,8 @@ def is_whatsmyip_domain(domain: str, whatsmyip_domains: set) -> bool:
 def correct_ip_reputation(ip: str, ip_reputation: str, mass_scanner_ips: set) -> str:
     """
     Correct IP reputation based on mass scanner database.
-    Overrides reputation to "mass scanner" if the IP is found in the MassScanners table.
-    This is necessary because we have seen "mass scanners" incorrectly flagged.
+    Overrides reputation to MASS_SCANNER if the IP is found in the MassScanners table.
+    This is necessary because we have seen mass scanners incorrectly flagged.
 
     Args:
         ip: IP address to check.
@@ -54,9 +55,9 @@ def correct_ip_reputation(ip: str, ip_reputation: str, mass_scanner_ips: set) ->
     Returns:
         Corrected reputation string.
     """
-    if not ip_reputation or ip_reputation == "known attacker":
+    if not ip_reputation or ip_reputation == IpReputation.KNOWN_ATTACKER:
         if ip in mass_scanner_ips:
-            ip_reputation = "mass scanner"
+            ip_reputation = IpReputation.MASS_SCANNER
     return ip_reputation
 
 

@@ -4,6 +4,7 @@ import requests
 
 from greedybear.cronjobs.repositories.tor import TorRepository
 from greedybear.cronjobs.tor_exit_nodes import TorExitNodesCron
+from greedybear.enums import IpReputation
 from tests import CustomTestCase
 
 
@@ -26,7 +27,7 @@ class TestTorRepository(CustomTestCase):
 
         # Assert
         self.assertTrue(created)
-        mock_get_or_create.assert_called_once_with(ip_address="1.2.3.4", defaults={"reason": "tor exit node"})
+        mock_get_or_create.assert_called_once_with(ip_address="1.2.3.4", defaults={"reason": IpReputation.TOR_EXIT_NODE})
 
     @patch("greedybear.models.TorExitNode.objects.get_or_create")
     def test_get_or_create_existing_tor_node(self, mock_get_or_create):
@@ -94,4 +95,4 @@ class TestTorExitNodesCron(CustomTestCase):
         self.cron._update_old_ioc("1.2.3.4")
 
         # Assert
-        self.mock_ioc_repo.update_ioc_reputation.assert_called_once_with("1.2.3.4", "tor exit node")
+        self.mock_ioc_repo.update_ioc_reputation.assert_called_once_with("1.2.3.4", IpReputation.TOR_EXIT_NODE)

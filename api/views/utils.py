@@ -18,6 +18,7 @@ from stix2 import Bundle, ExternalReference, Indicator
 
 from api.serializers import FeedsRequestSerializer, parse_feed_types
 from greedybear.consts import CACHE_KEY_GREEDYBEAR_NEWS, CACHE_TIMEOUT_SECONDS, RSS_FEED_URL
+from greedybear.enums import IpReputation
 from greedybear.models import IOC, GeneralHoneypot, Statistics
 from greedybear.utils import is_ip_address, is_valid_domain
 
@@ -108,9 +109,9 @@ class FeedRequestParams:
         if not query_params:
             query_params = {}
         if "include_mass_scanners" not in query_params:
-            self.exclude_reputation.append("mass scanner")
+            self.exclude_reputation.append(IpReputation.MASS_SCANNER)
         if "include_tor_exit_nodes" not in query_params:
-            self.exclude_reputation.append("tor exit node")
+            self.exclude_reputation.append(IpReputation.TOR_EXIT_NODE)
 
     def set_prioritization(self, prioritize: str):
         match prioritize:

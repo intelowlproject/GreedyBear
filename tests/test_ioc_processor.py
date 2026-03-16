@@ -3,6 +3,7 @@ from unittest.mock import Mock
 
 from greedybear.consts import PAYLOAD_REQUEST, SCANNER
 from greedybear.cronjobs.extraction.ioc_processor import IocProcessor
+from greedybear.enums import IpReputation
 from greedybear.models import IocType
 
 from . import ExtractionTestCase
@@ -272,30 +273,30 @@ class TestMergeIocs(ExtractionTestCase):
 
     def test_preserves_reputation_when_new_is_empty(self):
         """Existing ip_reputation must not be overwritten by an empty value."""
-        existing = self._create_mock_ioc(ip_reputation="mass scanner")
+        existing = self._create_mock_ioc(ip_reputation=IpReputation.MASS_SCANNER)
         new = self._create_mock_ioc(ip_reputation="")
 
         result = self.processor._merge_iocs(existing, new)
 
-        self.assertEqual(result.ip_reputation, "mass scanner")
+        self.assertEqual(result.ip_reputation, IpReputation.MASS_SCANNER)
 
     def test_preserves_reputation_when_existing_is_set(self):
         """Existing ip_reputation must not be overwritten even if new has a value."""
-        existing = self._create_mock_ioc(ip_reputation="tor exit node")
-        new = self._create_mock_ioc(ip_reputation="mass scanner")
+        existing = self._create_mock_ioc(ip_reputation=IpReputation.TOR_EXIT_NODE)
+        new = self._create_mock_ioc(ip_reputation=IpReputation.MASS_SCANNER)
 
         result = self.processor._merge_iocs(existing, new)
 
-        self.assertEqual(result.ip_reputation, "tor exit node")
+        self.assertEqual(result.ip_reputation, IpReputation.TOR_EXIT_NODE)
 
     def test_fills_reputation_when_existing_is_empty(self):
         """Empty existing ip_reputation should be filled by a non-empty new value."""
         existing = self._create_mock_ioc(ip_reputation="")
-        new = self._create_mock_ioc(ip_reputation="mass scanner")
+        new = self._create_mock_ioc(ip_reputation=IpReputation.MASS_SCANNER)
 
         result = self.processor._merge_iocs(existing, new)
 
-        self.assertEqual(result.ip_reputation, "mass scanner")
+        self.assertEqual(result.ip_reputation, IpReputation.MASS_SCANNER)
 
     def test_handles_empty_urls_and_ports(self):
         existing = self._create_mock_ioc(related_urls=[], destination_ports=[])

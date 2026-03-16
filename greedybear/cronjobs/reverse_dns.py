@@ -7,6 +7,7 @@ from greedybear.consts import MASS_SCANNER_DOMAINS
 from greedybear.cronjobs.base import Cronjob
 from greedybear.cronjobs.repositories import IocRepository
 from greedybear.cronjobs.repositories.tag import TagRepository
+from greedybear.enums import IpReputation
 from greedybear.models import IOC, IocType
 
 # Number of concurrent DNS lookups.
@@ -184,6 +185,6 @@ class ReverseDNSCron(Cronjob):
         Args:
             ip_address: IP address to update.
         """
-        updated = self.ioc_repo.update_ioc_reputation(ip_address, "mass scanner")
+        updated = self.ioc_repo.update_ioc_reputation(ip_address, IpReputation.MASS_SCANNER)
         if updated:
-            self.log.info(f"Marked {ip_address} as mass scanner via rDNS")
+            self.log.info(f"Marked {ip_address} as {IpReputation.MASS_SCANNER} via rDNS")
