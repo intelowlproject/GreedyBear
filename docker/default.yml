@@ -24,7 +24,7 @@ services:
       - ../configuration/gunicorn/config.py:/etc/gunicorn/config.py
       - generic_logs:/var/log/greedybear
       - static_content:/opt/deploy/greedybear/static
-      - gunicorn_sockets:/run
+      - gunicorn_sockets:/run/gunicorn
     entrypoint:
       - ./docker/entrypoint_gunicorn.sh
     command: ["gunicorn", "greedybear.wsgi:application", "-c", "/etc/gunicorn/config.py"]
@@ -34,7 +34,7 @@ services:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "test -S /run/gunicorn-health.sock || exit 1"]
+      test: ["CMD-SHELL", "test -S /run/gunicorn/main.sock && kill -0 $(cat /run/gunicorn/gunicorn.pid)"]
       interval: 10s
       timeout: 2s
       retries: 30
@@ -51,14 +51,14 @@ services:
       - ../configuration/nginx/locations.conf:/etc/nginx/locations.conf
       - nginx_logs:/var/log/nginx
       - static_content:/var/www/static
-      - gunicorn_sockets:/run
+      - gunicorn_sockets:/run/gunicorn
     ports:
       - "80:80"
     depends_on:
       app:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost/hc || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost/api/ || exit 1"]
       interval: 10s
       timeout: 2s
       retries: 3
