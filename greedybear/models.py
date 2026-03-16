@@ -4,6 +4,8 @@ from django.contrib.postgres import fields as pg_fields
 from django.db import models
 from django.db.models.functions import Lower, Now
 
+from greedybear.enums import IpReputation
+
 
 class ViewType(models.TextChoices):
     FEEDS_VIEW = "feeds"
@@ -200,7 +202,7 @@ class MassScanner(models.Model):
 class TorExitNode(models.Model):
     ip_address = models.GenericIPAddressField(unique=True)
     added = models.DateTimeField(db_default=Now())
-    reason = models.CharField(max_length=64, blank=True, default="tor exit node")
+    reason = models.CharField(max_length=64, blank=True, default=IpReputation.TOR_EXIT_NODE)
 
     class Meta:
         indexes = [
@@ -208,7 +210,7 @@ class TorExitNode(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.ip_address} (tor exit node)"
+        return f"{self.ip_address} ({IpReputation.TOR_EXIT_NODE})"
 
 
 class WhatsMyIPDomain(models.Model):

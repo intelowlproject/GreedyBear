@@ -5,6 +5,7 @@ from rest_framework.serializers import ValidationError
 
 from api.serializers import FeedsRequestSerializer, FeedsResponseSerializer, parse_feed_types
 from greedybear.consts import PAYLOAD_REQUEST, SCANNER
+from greedybear.enums import IpReputation
 from greedybear.models import IOC, GeneralHoneypot
 from tests import CustomTestCase
 
@@ -46,13 +47,13 @@ class FeedsRequestSerializersTestCase(CustomTestCase):
             "min_days_seen": [str(n) for n in [1, 2, 4, 8, 16]],
             "include_reputation": [
                 [],
-                ["known attacker"],
-                ["known attacker", "mass scanner"],
+                [IpReputation.KNOWN_ATTACKER],
+                [IpReputation.KNOWN_ATTACKER, IpReputation.MASS_SCANNER],
             ],
             "exclude_reputation": [
                 [],
-                ["known attacker"],
-                ["known attacker", "mass scanner"],
+                [IpReputation.KNOWN_ATTACKER],
+                [IpReputation.KNOWN_ATTACKER, IpReputation.MASS_SCANNER],
             ],
             "feed_size": [str(n) for n in [100, 200, 5000, 10_000_000]],
             "ordering": [field.name for field in IOC._meta.get_fields()],
@@ -234,7 +235,7 @@ class FeedsResponseSerializersTestCase(CustomTestCase):
                 "last_seen": "2023-03-21",
                 "attack_count": "5",
                 "interaction_count": "50",
-                "ip_reputation": "known attacker",
+                "ip_reputation": IpReputation.KNOWN_ATTACKER,
                 "firehol_categories": [],
                 "asn": "8400",
                 "destination_port_count": "14",

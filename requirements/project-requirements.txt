@@ -14,8 +14,7 @@ psycopg2-binary==2.9.11
 certego-saas==0.7.11
 slack-sdk==3.40.1
 
-uwsgitop==0.12
-pyuwsgi==2.0.30
+gunicorn==25.1.0
 
 joblib==1.5.3
 pandas==3.0.1

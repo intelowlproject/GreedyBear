@@ -11,6 +11,7 @@ from greedybear.cronjobs.extraction.utils import (
     is_whatsmyip_domain,
     threatfox_submission,
 )
+from greedybear.enums import IpReputation
 from greedybear.models import FireHolList, MassScanner
 
 from . import CustomTestCase, ExtractionTestCase
@@ -296,16 +297,16 @@ class TestIsWhatsmyipDomain(CustomTestCase):
 
 class TestCorrectIpReputationTestCase(CustomTestCase):
     def test_returns_mass_scanner_when_in_set(self):
-        result = correct_ip_reputation("1.2.3.4", "known attacker", {"1.2.3.4"})
-        self.assertEqual(result, "mass scanner")
+        result = correct_ip_reputation("1.2.3.4", IpReputation.KNOWN_ATTACKER, {"1.2.3.4"})
+        self.assertEqual(result, IpReputation.MASS_SCANNER)
 
     def test_returns_original_when_not_in_set(self):
-        result = correct_ip_reputation("1.2.3.4", "known attacker", {"5.6.7.8"})
-        self.assertEqual(result, "known attacker")
+        result = correct_ip_reputation("1.2.3.4", IpReputation.KNOWN_ATTACKER, {"5.6.7.8"})
+        self.assertEqual(result, IpReputation.KNOWN_ATTACKER)
 
     def test_checks_mass_scanner_for_empty_reputation(self):
         result = correct_ip_reputation("1.2.3.4", "", {"1.2.3.4"})
-        self.assertEqual(result, "mass scanner")
+        self.assertEqual(result, IpReputation.MASS_SCANNER)
 
     def test_preserves_other_reputations(self):
         result = correct_ip_reputation("1.2.3.4", "bot", {"1.2.3.4"})
@@ -539,10 +540,10 @@ class IocsFromHitsTestCase(CustomTestCase):
 
     def test_corrects_ip_reputation(self):
         MassScanner.objects.create(ip_address="8.8.8.8")
-        hits = [self._create_hit(src_ip="8.8.8.8", ip_rep="known attacker")]
+        hits = [self._create_hit(src_ip="8.8.8.8", ip_rep=IpReputation.KNOWN_ATTACKER)]
         iocs = iocs_from_hits(hits)
         ioc = iocs[0]
-        self.assertEqual(ioc.ip_reputation, "mass scanner")
+        self.assertEqual(ioc.ip_reputation, IpReputation.MASS_SCANNER)
 
     def test_empty_hits_returns_empty_list(self):
         iocs = iocs_from_hits([])
