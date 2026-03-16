@@ -460,16 +460,8 @@ def asn_aggregated_queryset(iocs_qs, request, feed_params):
     """
 
     asn_filter = request.query_params.get("asn")
-
-    # Restrict ASNs to those present in the currently filtered IOC queryset.
-    asns_in_iocs = iocs_qs.exclude(autonomous_system__isnull=True).values_list("autonomous_system__asn", flat=True).distinct()
-
-    # Read pre-computed aggregates directly from the AutonomousSystem table.
-    # This is limited to ASNs that actually appear in the filtered IOC set.
-    as_qs = AutonomousSystem.objects.filter(ioc_count__gt=0, asn__in=asns_in_iocs)
-
     if asn_filter:
-        as_qs = as_qs.filter(asn=asn_filter)
+        iocs_qs = iocs_qs.filter(autonomous_system__asn=asn_filter)
 
     # default ordering is overridden here because of serializer default(-last-seen) behaviour
     ordering = feed_params.ordering
@@ -479,25 +471,68 @@ def asn_aggregated_queryset(iocs_qs, request, feed_params):
     else:
         ordering = ordering.strip()
 
-    # Map API-facing 'as_name' ordering to the underlying 'name' model field
-    if ordering in {"as_name", "-as_name"}:
-        prefix = "-" if ordering.startswith("-") else ""
-        ordering = f"{prefix}name"
+    numeric_agg = None
+    has_non_default_filters = (
+        feed_params.feed_type != "all"
+        or feed_params.attack_type != "all"
+        or feed_params.min_days_seen != "1"
+        or feed_params.include_reputation
+        or feed_params.exclude_reputation != ["mass scanner", "tor exit node"]
+        or feed_params.min_score is not None
+        or feed_params.port is not None
+        or feed_params.start_date is not None
+        or feed_params.end_date is not None
+    )
 
-    as_qs = as_qs.order_by(ordering)
+    if has_non_default_filters:
+        # Dynamic aggregation for filtered queries
+        from django.db.models import Count, Max, Min, Sum
 
-    as_fields = [
-        "asn",
-        "name",
-        "ioc_count",
-        "total_attack_count",
-        "total_interaction_count",
-        "total_login_attempts",
-        "expected_ioc_count",
-        "expected_interactions",
-        "first_seen",
-        "last_seen",
-    ]
+        numeric_agg = (
+            iocs_qs.exclude(autonomous_system__isnull=True)
+            .values(
+                asn=F("autonomous_system__asn"),
+                as_name=F("autonomous_system__name"),
+            )
+            .annotate(
+                ioc_count=Count("id"),
+                total_attack_count=Sum("attack_count"),
+                total_interaction_count=Sum("interaction_count"),
+                total_login_attempts=Sum("login_attempts"),
+                expected_ioc_count=Sum("recurrence_probability"),
+                expected_interactions=Sum("expected_interactions"),
+                first_seen=Min("first_seen"),
+                last_seen=Max("last_seen"),
+            )
+        )
+        # Map API-facing 'as_name' ordering to the underlying 'as_name' alias
+        if ordering in {"name", "-name"}:
+            prefix = "-" if ordering.startswith("-") else ""
+            ordering = f"{prefix}as_name"
+
+        numeric_agg = numeric_agg.order_by(ordering)
+    else:
+        # O(1) Pre-computed lookup for general, non-filtered queries (using max_age limits)
+        asns_in_iocs = iocs_qs.exclude(autonomous_system__isnull=True).values_list("autonomous_system__asn", flat=True).distinct()
+        as_qs = AutonomousSystem.objects.filter(ioc_count__gt=0, asn__in=asns_in_iocs)
+
+        # Map API-facing 'as_name' ordering to the underlying 'name' model field
+        if ordering in {"as_name", "-as_name"}:
+            prefix = "-" if ordering.startswith("-") else ""
+            ordering = f"{prefix}name"
+
+        numeric_agg = as_qs.order_by(ordering).values(
+            "asn",
+            as_name=F("name"),
+            ioc_count=F("ioc_count"),
+            total_attack_count=F("total_attack_count"),
+            total_interaction_count=F("total_interaction_count"),
+            total_login_attempts=F("total_login_attempts"),
+            expected_ioc_count=F("expected_ioc_count"),
+            expected_interactions=F("expected_interactions"),
+            first_seen=F("first_seen"),
+            last_seen=F("last_seen"),
+        )
 
     # Honeypot names still require a lightweight aggregation because
     # they depend on the active flag which can change independently.
@@ -516,11 +551,11 @@ def asn_aggregated_queryset(iocs_qs, request, feed_params):
     hp_lookup = {row["asn"]: row["honeypots"] or [] for row in honeypot_agg}
 
     result = []
-    for row in as_qs.values(*as_fields):
+    for row in numeric_agg:
         asn = row["asn"]
         row_dict = {
             "asn": asn,
-            "as_name": row["name"],
+            "as_name": row["as_name"],
             "ioc_count": row["ioc_count"],
             "total_attack_count": row["total_attack_count"],
             "total_interaction_count": row["total_interaction_count"],
