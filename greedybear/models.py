@@ -58,6 +58,17 @@ class AutonomousSystem(models.Model):
     asn = models.IntegerField(primary_key=True)
     name = models.CharField(max_length=256, blank=True)
 
+    # Pre-computed aggregate fields — refreshed by the extraction cronjob
+    # so /api/feeds/asn/ can read them in O(1) instead of aggregating on every request.
+    ioc_count = models.IntegerField(default=0)
+    total_attack_count = models.IntegerField(default=0)
+    total_interaction_count = models.IntegerField(default=0)
+    total_login_attempts = models.IntegerField(default=0)
+    expected_ioc_count = models.FloatField(default=0)
+    expected_interactions = models.FloatField(default=0)
+    first_seen = models.DateTimeField(null=True, blank=True)
+    last_seen = models.DateTimeField(null=True, blank=True)
+
     def __str__(self):
         return f"{self.name} ({self.asn})" if self.name else str(self.asn)
 

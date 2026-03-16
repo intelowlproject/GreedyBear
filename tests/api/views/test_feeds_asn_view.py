@@ -1,6 +1,7 @@
 from django.utils import timezone
 from rest_framework.test import APIClient
 
+from greedybear.cronjobs.repositories.autonomous_system import ASRepository
 from greedybear.models import IOC, AutonomousSystem, GeneralHoneypot
 from tests import CustomTestCase
 
@@ -60,6 +61,9 @@ class FeedsASNViewTestCase(CustomTestCase):
             expected_interactions=3.0,
         )
         cls.ioc_low.general_honeypot.add(cls.testpot1, cls.testpot2)
+
+        # Pre-compute aggregates so the view can read them
+        ASRepository().refresh_aggregates()
 
     def setUp(self):
         super().setUp()
@@ -221,3 +225,89 @@ class FeedsASNViewTestCase(CustomTestCase):
             # Restore original name
             self.as_low.name = original_name
             self.as_low.save(update_fields=["name"])
+
+
+class ASNRefreshAggregatesTestCase(CustomTestCase):
+    """Tests for the ASRepository.refresh_aggregates() background update logic."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        IOC.objects.all().delete()
+        cls.hp, _ = GeneralHoneypot.objects.get_or_create(name="testpot", active=True)
+
+    def test_refresh_aggregates_computes_correct_totals(self):
+        """Aggregates should match the sum of IOC fields for each ASN."""
+        as_obj = AutonomousSystem.objects.create(asn=99999, name="TEST-AS")
+        ioc1 = IOC.objects.create(
+            name="agg1.test.com",
+            type="ip",
+            autonomous_system=as_obj,
+            attack_count=10,
+            interaction_count=20,
+            login_attempts=3,
+            recurrence_probability=0.5,
+            expected_interactions=15.0,
+            first_seen=timezone.now() - timezone.timedelta(days=5),
+        )
+        ioc1.general_honeypot.add(self.hp)
+        ioc2 = IOC.objects.create(
+            name="agg2.test.com",
+            type="ip",
+            autonomous_system=as_obj,
+            attack_count=5,
+            interaction_count=8,
+            login_attempts=1,
+            recurrence_probability=0.3,
+            expected_interactions=7.0,
+        )
+        ioc2.general_honeypot.add(self.hp)
+
+        repo = ASRepository()
+        repo.refresh_aggregates()
+
+        as_obj.refresh_from_db()
+        self.assertEqual(as_obj.ioc_count, 2)
+        self.assertEqual(as_obj.total_attack_count, 15)
+        self.assertEqual(as_obj.total_interaction_count, 28)
+        self.assertEqual(as_obj.total_login_attempts, 4)
+        self.assertAlmostEqual(as_obj.expected_ioc_count, 0.8)
+        self.assertAlmostEqual(as_obj.expected_interactions, 22.0)
+        self.assertIsNotNone(as_obj.first_seen)
+        self.assertIsNotNone(as_obj.last_seen)
+
+        # Clean up
+        ioc1.delete()
+        ioc2.delete()
+        as_obj.delete()
+
+    def test_refresh_aggregates_resets_empty_asn(self):
+        """ASNs with no remaining IOCs should be reset to zero/null."""
+        as_obj = AutonomousSystem.objects.create(asn=88888, name="EMPTY-AS")
+        ioc = IOC.objects.create(
+            name="temp.test.com",
+            type="ip",
+            autonomous_system=as_obj,
+            attack_count=5,
+            interaction_count=10,
+        )
+        ioc.general_honeypot.add(self.hp)
+
+        repo = ASRepository()
+        repo.refresh_aggregates()
+
+        as_obj.refresh_from_db()
+        self.assertEqual(as_obj.ioc_count, 1)
+
+        # Delete the IOC and refresh again
+        ioc.delete()
+        repo.refresh_aggregates()
+
+        as_obj.refresh_from_db()
+        self.assertEqual(as_obj.ioc_count, 0)
+        self.assertEqual(as_obj.total_attack_count, 0)
+        self.assertIsNone(as_obj.first_seen)
+        self.assertIsNone(as_obj.last_seen)
+
+        # Clean up
+        as_obj.delete()

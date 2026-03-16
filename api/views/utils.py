@@ -9,7 +9,7 @@ import requests
 from django.conf import settings
 from django.contrib.postgres.aggregates import ArrayAgg
 from django.core.cache import cache
-from django.db.models import Count, F, Max, Min, Q, Sum, Value
+from django.db.models import F, Q, Value
 from django.db.models.functions import JSONObject
 from django.http import HttpResponse, HttpResponseBadRequest, StreamingHttpResponse
 from rest_framework import status
@@ -445,43 +445,51 @@ def feeds_response(request=None, iocs=None, feed_params=None, valid_feed_types=N
 
 def asn_aggregated_queryset(iocs_qs, request, feed_params):
     """
-    Perform DB-level aggregation grouped by ASN.
+    Retrieve pre-computed ASN aggregation data, enriched with honeypot names.
+
+    Reads the pre-calculated aggregate fields from AutonomousSystem (refreshed
+    by the extraction cronjob) instead of performing expensive GROUP BY queries
+    on every API request.
 
     Args
         iocs_qs (QuerySet): Filtered IOC queryset from get_queryset;
         request (Request): The API request object;
         feed_params (FeedRequestParams): Validated parameter object
 
-    Returns: A values-grouped queryset with annotated  metrics and honeypot arrays.
+    Returns: A list of dicts with aggregated metrics and honeypot arrays per ASN.
     """
+    from greedybear.models import AutonomousSystem
+
     asn_filter = request.query_params.get("asn")
+
+    # Read pre-computed aggregates directly from the AutonomousSystem table.
+    as_qs = AutonomousSystem.objects.filter(ioc_count__gt=0)
+
     if asn_filter:
-        iocs_qs = iocs_qs.filter(autonomous_system__asn=asn_filter)
+        as_qs = as_qs.filter(asn=asn_filter)
 
     # default ordering is overridden here because of serializer default(-last-seen) behaviour
     ordering = feed_params.ordering
     if not ordering or ordering.strip() in {"", "-last_seen", "last_seen"}:
         ordering = "-ioc_count"
 
-    numeric_agg = (
-        iocs_qs.exclude(autonomous_system__isnull=True)
-        .values(
-            asn=F("autonomous_system__asn"),
-            as_name=F("autonomous_system__name"),
-        )
-        .annotate(
-            ioc_count=Count("id"),
-            total_attack_count=Sum("attack_count"),
-            total_interaction_count=Sum("interaction_count"),
-            total_login_attempts=Sum("login_attempts"),
-            expected_ioc_count=Sum("recurrence_probability"),
-            expected_interactions=Sum("expected_interactions"),
-            first_seen=Min("first_seen"),
-            last_seen=Max("last_seen"),
-        )
-        .order_by(ordering)
-    )
+    as_qs = as_qs.order_by(ordering)
 
+    as_fields = [
+        "asn",
+        "name",
+        "ioc_count",
+        "total_attack_count",
+        "total_interaction_count",
+        "total_login_attempts",
+        "expected_ioc_count",
+        "expected_interactions",
+        "first_seen",
+        "last_seen",
+    ]
+
+    # Honeypot names still require a lightweight aggregation because
+    # they depend on the active flag which can change independently.
     honeypot_agg = (
         iocs_qs.exclude(autonomous_system__isnull=True)
         .filter(general_honeypot__active=True)
@@ -496,12 +504,22 @@ def asn_aggregated_queryset(iocs_qs, request, feed_params):
 
     hp_lookup = {row["asn"]: row["honeypots"] or [] for row in honeypot_agg}
 
-    # merging numeric aggregate with honeypot names for each asn
     result = []
-    for row in numeric_agg:
+    for row in as_qs.values(*as_fields):
         asn = row["asn"]
-        row_dict = dict(row)
-        row_dict["honeypots"] = sorted(hp_lookup.get(asn, []))
+        row_dict = {
+            "asn": asn,
+            "as_name": row["name"],
+            "ioc_count": row["ioc_count"],
+            "total_attack_count": row["total_attack_count"],
+            "total_interaction_count": row["total_interaction_count"],
+            "total_login_attempts": row["total_login_attempts"],
+            "expected_ioc_count": row["expected_ioc_count"],
+            "expected_interactions": row["expected_interactions"],
+            "first_seen": row["first_seen"],
+            "last_seen": row["last_seen"],
+            "honeypots": sorted(hp_lookup.get(asn, [])),
+        }
         result.append(row_dict)
 
     return result
