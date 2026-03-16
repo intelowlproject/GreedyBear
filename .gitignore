@@ -23,3 +23,7 @@ coverage.xml
 
 # gbctl configuration file
 .gbctl.conf
+
+# Python runtime & package versioning.
+.python-version
+uv.lock
