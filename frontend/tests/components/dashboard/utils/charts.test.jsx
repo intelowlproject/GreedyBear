@@ -35,7 +35,7 @@ describe("Dashboard Chart Components", () => {
     render(<FeedsSourcesChart />);
     expect(screen.getByTestId("chart-widget")).toHaveAttribute(
       "data-url",
-      "/api/statistics/sources/feeds"
+      "/api/statistics/sources/feeds",
     );
   });
 
@@ -43,7 +43,7 @@ describe("Dashboard Chart Components", () => {
     render(<FeedsDownloadsChart />);
     expect(screen.getByTestId("chart-widget")).toHaveAttribute(
       "data-url",
-      "/api/statistics/downloads/feeds"
+      "/api/statistics/downloads/feeds",
     );
   });
 
@@ -51,7 +51,7 @@ describe("Dashboard Chart Components", () => {
     render(<EnrichmentSourcesChart />);
     expect(screen.getByTestId("chart-widget")).toHaveAttribute(
       "data-url",
-      "/api/statistics/sources/enrichment"
+      "/api/statistics/sources/enrichment",
     );
   });
 
@@ -59,7 +59,7 @@ describe("Dashboard Chart Components", () => {
     render(<EnrichmentRequestsChart />);
     expect(screen.getByTestId("chart-widget")).toHaveAttribute(
       "data-url",
-      "/api/statistics/requests/enrichment"
+      "/api/statistics/requests/enrichment",
     );
   });
 
@@ -67,7 +67,7 @@ describe("Dashboard Chart Components", () => {
     render(<FeedsTypesChart />);
     expect(screen.getByTestId("chart-widget")).toHaveAttribute(
       "data-url",
-      "/api/statistics/feeds_types"
+      "/api/statistics/feeds_types",
     );
   });
 });
