@@ -514,7 +514,7 @@ def asn_aggregated_queryset(iocs_qs, request, feed_params):
     else:
         # O(1) Pre-computed lookup for general, non-filtered queries (using max_age limits)
         asns_in_iocs = iocs_qs.exclude(autonomous_system__isnull=True).values_list("autonomous_system__asn", flat=True).distinct()
-        as_qs = AutonomousSystem.objects.filter(ioc_count__gt=0, asn__in=asns_in_iocs)
+        as_qs = AutonomousSystem.objects.filter(asn__in=asns_in_iocs)
 
         # Map API-facing 'as_name' ordering to the underlying 'name' model field
         if ordering in {"as_name", "-as_name"}:
