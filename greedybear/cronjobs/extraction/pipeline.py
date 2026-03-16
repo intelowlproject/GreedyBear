@@ -107,6 +107,6 @@ class ExtractionPipeline:
 
         # 5. Refresh pre-computed ASN aggregates
         self.log.info("Refreshing ASN aggregate fields")
-        ASRepository().refresh_aggregates()
+        ASRepository(preload_cache=False).refresh_aggregates()
 
         return ioc_record_count

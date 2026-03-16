@@ -20,10 +20,12 @@ class ASRepository:
         "last_seen",
     ]
 
-    def __init__(self):
+    def __init__(self, preload_cache: bool = True):
         self.log = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
-        self._cache = {as_obj.asn: as_obj for as_obj in AutonomousSystem.objects.all()}
-        self.log.info(f"Preloaded {len(self._cache)} ASs into cache")
+        self._cache = {}
+        if preload_cache:
+            self._cache = {as_obj.asn: as_obj for as_obj in AutonomousSystem.objects.all()}
+            self.log.info(f"Preloaded {len(self._cache)} ASs into cache")
 
     def get_or_create(self, asn: int, name: str) -> AutonomousSystem:
         """
@@ -112,6 +114,9 @@ class ASRepository:
 
         if to_update:
             AutonomousSystem.objects.bulk_update(to_update, self.AGGREGATE_FIELDS, batch_size=500)
+
+        # Rebuild in-memory cache so it reflects the refreshed aggregate values.
+        self._cache = {as_obj.asn: as_obj for as_obj in all_as_objects}
 
         self.log.info(f"Refreshed aggregates for {len(to_update)} ASs ({len(agg_by_asn)} with IOCs)")
         return len(to_update)

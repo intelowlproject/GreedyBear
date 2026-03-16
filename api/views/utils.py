@@ -465,8 +465,9 @@ def asn_aggregated_queryset(iocs_qs, request, feed_params):
 
     # default ordering is overridden here because of serializer default(-last-seen) behaviour
     ordering = feed_params.ordering
-    # Normalize ordering and apply default if needed
-    if not ordering or ordering.strip() in {"", "-last_seen", "last_seen"}:
+    ordering_param_present = "ordering" in request.query_params
+    # Normalize ordering and apply default if needed.
+    if (not ordering or ordering.strip() in {"", "-last_seen", "last_seen"}) and not ordering_param_present:
         ordering = "-ioc_count"
     else:
         ordering = ordering.strip()
