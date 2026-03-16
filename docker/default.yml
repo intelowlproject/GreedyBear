@@ -21,6 +21,7 @@ services:
     restart: unless-stopped
     stop_grace_period: 30s
     volumes:
+      - ../configuration/gunicorn/config.py:/etc/gunicorn/config.py
       - generic_logs:/var/log/greedybear
       - static_content:/opt/deploy/greedybear/static
       - gunicorn_sockets:/run
