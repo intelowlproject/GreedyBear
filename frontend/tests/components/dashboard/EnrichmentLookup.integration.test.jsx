@@ -264,6 +264,39 @@ describe("Enrichment Lookup Integration Tests", () => {
     });
   });
 
+  test("accepts domains with underscores (e.g., service records)", async () => {
+    const user = userEvent.setup();
+
+    mockUseAuthStore.mockImplementation((selector) =>
+      selector({ isAuthenticated: AUTHENTICATION_STATUSES.TRUE }),
+    );
+
+    axios.get.mockResolvedValue({
+      data: { found: false, query: "_acme-challenge.example.com", ioc: null },
+    });
+
+    render(
+      <BrowserRouter>
+        <Dashboard />
+      </BrowserRouter>,
+    );
+
+    const inputElement = screen.getByLabelText("IP Address or Domain:");
+    const submitButton = screen.getByRole("button", { name: /Search/i });
+
+    // Search for a domain starting with an underscore
+    await user.type(inputElement, "_acme-challenge.example.com");
+    await user.click(submitButton);
+
+    // Verify API WAS called (validation passed)
+    await waitFor(() => {
+      expect(axios.get).toHaveBeenCalledWith(ENRICHMENT_URI, {
+        params: { query: "_acme-challenge.example.com" },
+        headers: { "Content-Type": "application/json" },
+      });
+    });
+  });
+
   test("uses only formik isSubmitting for button state, no redundant loading state", async () => {
     const user = userEvent.setup();
 

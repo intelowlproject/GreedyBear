@@ -36,8 +36,8 @@ const looksLikeIp = (value) => {
 };
 
 const looksLikeDomain = (value) => {
-  // letters/digits/dot/hyphen, at least one dot, and no leading/trailing dot or hyphen
-  if (!/^[a-zA-Z0-9.-]+$/.test(value)) return false;
+  // letters/digits/dot/hyphen/underscore, at least one dot, and no leading/trailing dot or hyphen
+  if (!/^[a-zA-Z0-9._-]+$/.test(value)) return false;
   if (!value.includes(".")) return false;
   if (/^[-.]/.test(value) || /[-.]$/.test(value)) return false;
   return true;
