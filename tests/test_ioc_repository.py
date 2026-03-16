@@ -100,25 +100,34 @@ class TestIocRepository(CustomTestCase):
 
     def test_add_honeypot_to_ioc_adds_new_honeypot(self):
         ioc = IOC.objects.create(name="1.2.3.4", type="ip")
-        honeypot = GeneralHoneypot.objects.create(name="TestPot", active=True)
-        result = self.repo.add_honeypot_to_ioc("TestPot", ioc)
+        honeypot = GeneralHoneypot.objects.get(name="Cowrie")
+        result = self.repo.add_honeypot_to_ioc("Cowrie", ioc)
         self.assertIn(honeypot, result.general_honeypot.all())
+
+    def test_add_honeypot_to_ioc_cache_miss_logs_error(self):
+        """Honeypot created after repo init is not in cache; association is skipped and error is logged."""
+        ioc = IOC.objects.create(name="1.2.3.4", type="ip")
+        GeneralHoneypot.objects.create(name="NewPot", active=True)
+        with self.assertLogs("greedybear.cronjobs.repositories.ioc", level="ERROR") as cm:
+            result = self.repo.add_honeypot_to_ioc("NewPot", ioc)
+        self.assertEqual(result.general_honeypot.count(), 0)
+        self.assertTrue(any("NewPot" in msg for msg in cm.output))
 
     def test_add_honeypot_to_ioc_idempotent(self):
         ioc = IOC.objects.create(name="1.2.3.4", type="ip")
-        honeypot = GeneralHoneypot.objects.create(name="TestPot", active=True)
+        honeypot = GeneralHoneypot.objects.get(name="Cowrie")
         ioc.general_honeypot.add(honeypot)
         initial_count = ioc.general_honeypot.count()
-        result = self.repo.add_honeypot_to_ioc("TestPot", ioc)
+        result = self.repo.add_honeypot_to_ioc("Cowrie", ioc)
         self.assertEqual(result.general_honeypot.count(), initial_count)
         self.assertEqual(ioc.general_honeypot.count(), 1)
 
     def test_add_honeypot_to_ioc_multiple_honeypots(self):
         ioc = IOC.objects.create(name="1.2.3.4", type="ip")
-        hp1 = GeneralHoneypot.objects.create(name="Pot1", active=True)
-        hp2 = GeneralHoneypot.objects.create(name="Pot2", active=True)
-        self.repo.add_honeypot_to_ioc("Pot1", ioc)
-        self.repo.add_honeypot_to_ioc("Pot2", ioc)
+        hp1 = GeneralHoneypot.objects.get(name="Cowrie")
+        hp2 = GeneralHoneypot.objects.get(name="Log4pot")
+        self.repo.add_honeypot_to_ioc("Cowrie", ioc)
+        self.repo.add_honeypot_to_ioc("Log4pot", ioc)
         self.assertEqual(ioc.general_honeypot.count(), 2)
         self.assertIn(hp1, ioc.general_honeypot.all())
         self.assertIn(hp2, ioc.general_honeypot.all())
@@ -420,6 +429,57 @@ class TestIocRepository(CustomTestCase):
         updated2 = IOC.objects.get(name="5.6.7.8")
         self.assertEqual(updated1.recurrence_probability, 0.75)
         self.assertEqual(updated2.recurrence_probability, 0.85)
+
+    # --- Tests for N+1 fix ---
+
+    def test_honeypot_cache_stores_generalhoneypot_objects(self):
+        """_honeypot_cache must store GeneralHoneypot instances, not booleans."""
+        self.assertGreater(
+            len(self.repo._honeypot_cache),
+            0,
+            "Cache must be non-empty for this test to be meaningful",
+        )
+        for key, value in self.repo._honeypot_cache.items():
+            self.assertIsInstance(
+                value,
+                GeneralHoneypot,
+                f"Cache value for '{key}' should be a GeneralHoneypot instance, got {type(value)}",
+            )
+
+    def test_get_ioc_by_name_prefetches_general_honeypot(self):
+        """Accessing general_honeypot on an IOC fetched via get_ioc_by_name must not trigger extra DB queries."""
+        ioc = self.repo.get_ioc_by_name("140.246.171.141")
+        self.assertIsNotNone(ioc)
+        with self.assertNumQueries(0):
+            list(ioc.general_honeypot.all())
+
+    def test_add_honeypot_to_ioc_uses_cache_not_db(self):
+        """When honeypot is in cache and the IOC was fetched with prefetch, no extra queries are needed."""
+        cowrie_hp = GeneralHoneypot.objects.get_or_create(name="Cowrie", defaults={"active": True})[0]
+
+        # Case 1: IOC already associated with Cowrie - membership check uses prefetch (0 queries),
+        # and skips the add entirely (already associated), producing zero DB queries
+        ioc = IOC.objects.create(name="5.5.5.5", type="ip")
+        ioc.general_honeypot.add(cowrie_hp)
+        ioc_fetched = self.repo.get_ioc_by_name("5.5.5.5")
+        with self.assertNumQueries(0):
+            result = self.repo.add_honeypot_to_ioc("Cowrie", ioc_fetched)
+        self.assertIn(cowrie_hp, result.general_honeypot.all())
+
+        # Case 2: IOC not yet associated - membership check uses prefetch (0 queries),
+        # honeypot lookup uses in-memory cache (0 queries), only the M2M INSERT fires
+        IOC.objects.create(name="6.6.6.6", type="ip")
+        ioc2_fetched = self.repo.get_ioc_by_name("6.6.6.6")
+        with self.assertNumQueries(1):  # only M2M INSERT
+            result2 = self.repo.add_honeypot_to_ioc("Cowrie", ioc2_fetched)
+        self.assertIn(cowrie_hp, result2.general_honeypot.all())
+
+    def test_create_honeypot_stores_object_in_cache(self):
+        """create_honeypot must store the GeneralHoneypot object in cache, not a boolean."""
+        hp = self.repo.create_honeypot("CacheTestPot")
+        cached = self.repo._honeypot_cache.get("cachetestpot")
+        self.assertIsInstance(cached, GeneralHoneypot)
+        self.assertEqual(cached.pk, hp.pk)
 
 
 class TestScoringIntegration(CustomTestCase):
