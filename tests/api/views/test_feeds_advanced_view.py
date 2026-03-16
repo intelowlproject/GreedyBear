@@ -133,7 +133,7 @@ class FeedsEnhancementsTestCase(CustomTestCase):
             interaction_count=1,
             login_attempts=0,
         )
-        self.ioc2.general_honeypot.add(self.cowrie_hp)
+        self.ioc2.honeypots.add(self.cowrie_hp)
         self.ioc2.save()
 
     # ── Advanced filtering ────────────────────────────────────────────────────

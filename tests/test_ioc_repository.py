@@ -5,7 +5,7 @@ from django.db import IntegrityError, transaction
 
 from greedybear.cronjobs.repositories import IocRepository
 from greedybear.enums import IpReputation
-from greedybear.models import IOC, GeneralHoneypot
+from greedybear.models import IOC, Honeypot
 
 from . import CustomTestCase
 
@@ -45,14 +45,14 @@ class TestIocRepository(CustomTestCase):
 
     def test_create_honeypot(self):
         self.repo.create_honeypot("NewHoneypot")
-        self.assertTrue(GeneralHoneypot.objects.filter(name="NewHoneypot").exists())
-        hp = GeneralHoneypot.objects.get(name="NewHoneypot")
+        self.assertTrue(Honeypot.objects.filter(name="NewHoneypot").exists())
+        hp = Honeypot.objects.get(name="NewHoneypot")
         self.assertTrue(hp.active)
 
     def test_get_active_honeypots_returns_only_active(self):
-        GeneralHoneypot.objects.create(name="TestActivePot1", active=True)
-        GeneralHoneypot.objects.create(name="TestActivePot2", active=True)
-        GeneralHoneypot.objects.create(name="TestInactivePot", active=False)
+        Honeypot.objects.create(name="TestActivePot1", active=True)
+        Honeypot.objects.create(name="TestActivePot2", active=True)
+        Honeypot.objects.create(name="TestInactivePot", active=False)
 
         result = self.repo.get_active_honeypots()
         names = [hp.name for hp in result]
@@ -62,15 +62,15 @@ class TestIocRepository(CustomTestCase):
         self.assertNotIn("TestInactivePot", names)
 
     def test_get_active_honeypots_returns_empty_if_none_active(self):
-        GeneralHoneypot.objects.update(active=False)
+        Honeypot.objects.update(active=False)
 
         result = self.repo.get_active_honeypots()
         self.assertEqual(len(result), 0)
 
-        GeneralHoneypot.objects.update(active=True)
+        Honeypot.objects.update(active=True)
 
     def test_get_hp_by_name_returns_existing(self):
-        GeneralHoneypot.objects.create(name="TestPot", active=True)
+        Honeypot.objects.create(name="TestPot", active=True)
         result = self.repo.get_hp_by_name("TestPot")
         self.assertIsNotNone(result)
         self.assertEqual(result.name, "TestPot")
@@ -101,37 +101,37 @@ class TestIocRepository(CustomTestCase):
 
     def test_add_honeypot_to_ioc_adds_new_honeypot(self):
         ioc = IOC.objects.create(name="1.2.3.4", type="ip")
-        honeypot = GeneralHoneypot.objects.get(name="Cowrie")
+        honeypot = Honeypot.objects.get(name="Cowrie")
         result = self.repo.add_honeypot_to_ioc("Cowrie", ioc)
-        self.assertIn(honeypot, result.general_honeypot.all())
+        self.assertIn(honeypot, result.honeypots.all())
 
     def test_add_honeypot_to_ioc_cache_miss_logs_error(self):
         """Honeypot created after repo init is not in cache; association is skipped and error is logged."""
         ioc = IOC.objects.create(name="1.2.3.4", type="ip")
-        GeneralHoneypot.objects.create(name="NewPot", active=True)
+        Honeypot.objects.create(name="NewPot", active=True)
         with self.assertLogs("greedybear.cronjobs.repositories.ioc", level="ERROR") as cm:
             result = self.repo.add_honeypot_to_ioc("NewPot", ioc)
-        self.assertEqual(result.general_honeypot.count(), 0)
+        self.assertEqual(result.honeypots.count(), 0)
         self.assertTrue(any("NewPot" in msg for msg in cm.output))
 
     def test_add_honeypot_to_ioc_idempotent(self):
         ioc = IOC.objects.create(name="1.2.3.4", type="ip")
-        honeypot = GeneralHoneypot.objects.get(name="Cowrie")
-        ioc.general_honeypot.add(honeypot)
-        initial_count = ioc.general_honeypot.count()
+        honeypot = Honeypot.objects.get(name="Cowrie")
+        ioc.honeypots.add(honeypot)
+        initial_count = ioc.honeypots.count()
         result = self.repo.add_honeypot_to_ioc("Cowrie", ioc)
-        self.assertEqual(result.general_honeypot.count(), initial_count)
-        self.assertEqual(ioc.general_honeypot.count(), 1)
+        self.assertEqual(result.honeypots.count(), initial_count)
+        self.assertEqual(ioc.honeypots.count(), 1)
 
     def test_add_honeypot_to_ioc_multiple_honeypots(self):
         ioc = IOC.objects.create(name="1.2.3.4", type="ip")
-        hp1 = GeneralHoneypot.objects.get(name="Cowrie")
-        hp2 = GeneralHoneypot.objects.get(name="Log4pot")
+        hp1 = Honeypot.objects.get(name="Cowrie")
+        hp2 = Honeypot.objects.get(name="Log4pot")
         self.repo.add_honeypot_to_ioc("Cowrie", ioc)
         self.repo.add_honeypot_to_ioc("Log4pot", ioc)
-        self.assertEqual(ioc.general_honeypot.count(), 2)
-        self.assertIn(hp1, ioc.general_honeypot.all())
-        self.assertIn(hp2, ioc.general_honeypot.all())
+        self.assertEqual(ioc.honeypots.count(), 2)
+        self.assertIn(hp1, ioc.honeypots.all())
+        self.assertIn(hp2, ioc.honeypots.all())
 
     def test_existing_honeypots(self):
         expected_honeypots = ["Cowrie", "Log4pot", "Heralding", "Ciscoasa", "Ddospot"]
@@ -141,21 +141,21 @@ class TestIocRepository(CustomTestCase):
     def test_is_ready_for_extraction_creates_and_enables(self):
         result = self.repo.is_ready_for_extraction("FooPot")
         self.assertTrue(result)
-        self.assertTrue(GeneralHoneypot.objects.filter(name="FooPot").exists())
+        self.assertTrue(Honeypot.objects.filter(name="FooPot").exists())
 
     def test_is_ready_for_extraction_case_insensitive(self):
-        GeneralHoneypot.objects.get_or_create(name="Cowrie", defaults={"active": True})
+        Honeypot.objects.get_or_create(name="Cowrie", defaults={"active": True})
         result = self.repo.is_ready_for_extraction("cowrie")
         self.assertTrue(result)
-        self.assertEqual(GeneralHoneypot.objects.filter(name__iexact="cowrie").count(), 1)
+        self.assertEqual(Honeypot.objects.filter(name__iexact="cowrie").count(), 1)
 
     def test_get_hp_by_name_insensitive(self):
-        GeneralHoneypot.objects.get_or_create(name="Cowrie", defaults={"active": True})
+        Honeypot.objects.get_or_create(name="Cowrie", defaults={"active": True})
         result = self.repo.get_hp_by_name("cowrie")
         self.assertIsNotNone(result)
 
     def test_disabled_honeypot_case_insensitive(self):
-        GeneralHoneypot.objects.create(name="Testpot69", active=False)
+        Honeypot.objects.create(name="Testpot69", active=False)
 
         # reiniting repo after DB change to refresh the cache
         repo = IocRepository()
@@ -163,7 +163,7 @@ class TestIocRepository(CustomTestCase):
         self.assertFalse(result)
 
     def test_special_and_normal_honeypots(self):
-        GeneralHoneypot.objects.create(name="NormalPot", active=False)
+        Honeypot.objects.create(name="NormalPot", active=False)
 
         repo = IocRepository()
 
@@ -173,29 +173,29 @@ class TestIocRepository(CustomTestCase):
         self.assertFalse(repo.is_ready_for_extraction("normalpot"))
 
     def test_create_honeypot_case_insensitive_uniqueness(self):
-        initial_count = GeneralHoneypot.objects.count()
-        GeneralHoneypot.objects.create(name="TestPot123", active=True)
-        self.assertEqual(GeneralHoneypot.objects.count(), initial_count + 1)
+        initial_count = Honeypot.objects.count()
+        Honeypot.objects.create(name="TestPot123", active=True)
+        self.assertEqual(Honeypot.objects.count(), initial_count + 1)
 
         with self.assertRaises(IntegrityError):
             with transaction.atomic():
-                GeneralHoneypot.objects.create(name="testpot123", active=True)
+                Honeypot.objects.create(name="testpot123", active=True)
 
-        self.assertEqual(GeneralHoneypot.objects.count(), initial_count + 1)
-        self.assertEqual(GeneralHoneypot.objects.get(name__iexact="testpot123").name, "TestPot123")
+        self.assertEqual(Honeypot.objects.count(), initial_count + 1)
+        self.assertEqual(Honeypot.objects.get(name__iexact="testpot123").name, "TestPot123")
 
     def test_create_honeypot_integrity_error_handling(self):
-        initial_count = GeneralHoneypot.objects.count()
-        GeneralHoneypot.objects.create(name="Log4PotTest123", active=True)
+        initial_count = Honeypot.objects.count()
+        Honeypot.objects.create(name="Log4PotTest123", active=True)
 
         try:
             with transaction.atomic():
-                GeneralHoneypot.objects.create(name="log4pottest123", active=True)
+                Honeypot.objects.create(name="log4pottest123", active=True)
         except IntegrityError:
-            hp = GeneralHoneypot.objects.filter(name__iexact="log4pottest123").first()
+            hp = Honeypot.objects.filter(name__iexact="log4pottest123").first()
 
         self.assertEqual(hp.name, "Log4PotTest123")
-        self.assertEqual(GeneralHoneypot.objects.count(), initial_count + 1)
+        self.assertEqual(Honeypot.objects.count(), initial_count + 1)
 
     def test_create_new_honeypot_creates_and_updates_cache(self):
         self.repo._honeypot_cache.clear()
@@ -204,30 +204,30 @@ class TestIocRepository(CustomTestCase):
         self.assertIn("uniquenewpot123", self.repo._honeypot_cache)
         self.assertTrue(hp.active)
 
-        db_hp = GeneralHoneypot.objects.get(name="UniqueNewPot123")
+        db_hp = Honeypot.objects.get(name="UniqueNewPot123")
         self.assertEqual(db_hp.name, "UniqueNewPot123")
         self.assertTrue(db_hp.active)
 
     def test_honeypot_unique_constraint_case_insensitive(self):
-        initial_count = GeneralHoneypot.objects.count()
+        initial_count = Honeypot.objects.count()
         hp1 = self.repo.create_honeypot("TestPot456")
         self.assertIsNotNone(hp1)
 
         with self.assertRaises(IntegrityError):
             with transaction.atomic():
-                GeneralHoneypot.objects.create(name="testpot456", active=True)
+                Honeypot.objects.create(name="testpot456", active=True)
 
-        self.assertEqual(GeneralHoneypot.objects.filter(name__iexact="testpot456").count(), 1)
-        self.assertEqual(GeneralHoneypot.objects.count(), initial_count + 1)
+        self.assertEqual(Honeypot.objects.filter(name__iexact="testpot456").count(), 1)
+        self.assertEqual(Honeypot.objects.count(), initial_count + 1)
 
     def test_get_scanners_for_scoring_returns_scanners(self):
         # Create scanners
-        cowrie_hp = GeneralHoneypot.objects.get_or_create(name="Cowrie", defaults={"active": True})[0]
-        log4pot_hp = GeneralHoneypot.objects.get_or_create(name="Log4pot", defaults={"active": True})[0]
+        cowrie_hp = Honeypot.objects.get_or_create(name="Cowrie", defaults={"active": True})[0]
+        log4pot_hp = Honeypot.objects.get_or_create(name="Log4pot", defaults={"active": True})[0]
         ioc1 = IOC.objects.create(name="1.2.3.4", type="ip", scanner=True)
-        ioc1.general_honeypot.add(cowrie_hp)
+        ioc1.honeypots.add(cowrie_hp)
         ioc2 = IOC.objects.create(name="5.6.7.8", type="ip", scanner=True)
-        ioc2.general_honeypot.add(log4pot_hp)
+        ioc2.honeypots.add(log4pot_hp)
 
         result = self.repo.get_scanners_for_scoring(["recurrence_probability", "expected_interactions"])
 
@@ -236,9 +236,9 @@ class TestIocRepository(CustomTestCase):
         self.assertIn("5.6.7.8", names)
 
     def test_get_scanners_for_scoring_excludes_non_scanners(self):
-        cowrie_hp = GeneralHoneypot.objects.get_or_create(name="Cowrie", defaults={"active": True})[0]
+        cowrie_hp = Honeypot.objects.get_or_create(name="Cowrie", defaults={"active": True})[0]
         ioc = IOC.objects.create(name="1.2.3.4", type="ip", scanner=False)
-        ioc.general_honeypot.add(cowrie_hp)
+        ioc.honeypots.add(cowrie_hp)
 
         result = self.repo.get_scanners_for_scoring(["recurrence_probability"])
 
@@ -246,9 +246,9 @@ class TestIocRepository(CustomTestCase):
         self.assertNotIn("1.2.3.4", names)
 
     def test_get_scanners_for_scoring_only_loads_specified_fields(self):
-        cowrie_hp = GeneralHoneypot.objects.get_or_create(name="Cowrie", defaults={"active": True})[0]
+        cowrie_hp = Honeypot.objects.get_or_create(name="Cowrie", defaults={"active": True})[0]
         ioc = IOC.objects.create(name="1.2.3.4", type="ip", scanner=True, attack_count=100)
-        ioc.general_honeypot.add(cowrie_hp)
+        ioc.honeypots.add(cowrie_hp)
 
         result = list(self.repo.get_scanners_for_scoring(["recurrence_probability"]))
 
@@ -273,9 +273,9 @@ class TestIocRepository(CustomTestCase):
         self.assertNotIn("9.10.11.12", values)
 
     def test_get_scanners_by_pks_includes_honeypot_annotation(self):
-        hp = GeneralHoneypot.objects.create(name="TestPot", active=True)
+        hp = Honeypot.objects.create(name="TestPot", active=True)
         ioc = IOC.objects.create(name="1.2.3.4", type="ip")
-        ioc.general_honeypot.add(hp)
+        ioc.honeypots.add(hp)
 
         result = list(self.repo.get_scanners_by_pks({ioc.pk}))
 
@@ -286,11 +286,11 @@ class TestIocRepository(CustomTestCase):
         recent_date = datetime.now() - timedelta(days=5)
         old_date = datetime.now() - timedelta(days=40)
 
-        cowrie_hp = GeneralHoneypot.objects.get_or_create(name="Cowrie", defaults={"active": True})[0]
+        cowrie_hp = Honeypot.objects.get_or_create(name="Cowrie", defaults={"active": True})[0]
         ioc1 = IOC.objects.create(name="1.2.3.4", type="ip", scanner=True, last_seen=recent_date)
-        ioc1.general_honeypot.add(cowrie_hp)
+        ioc1.honeypots.add(cowrie_hp)
         ioc2 = IOC.objects.create(name="5.6.7.8", type="ip", scanner=True, last_seen=old_date)
-        ioc2.general_honeypot.add(cowrie_hp)
+        ioc2.honeypots.add(cowrie_hp)
 
         cutoff = datetime.now() - timedelta(days=30)
         result = list(self.repo.get_recent_scanners(cutoff, days_lookback=30))
@@ -301,9 +301,9 @@ class TestIocRepository(CustomTestCase):
 
     def test_get_recent_scanners_excludes_non_scanners(self):
         recent_date = datetime.now() - timedelta(days=5)
-        cowrie_hp = GeneralHoneypot.objects.get_or_create(name="Cowrie", defaults={"active": True})[0]
+        cowrie_hp = Honeypot.objects.get_or_create(name="Cowrie", defaults={"active": True})[0]
         ioc = IOC.objects.create(name="1.2.3.4", type="ip", scanner=False, last_seen=recent_date)
-        ioc.general_honeypot.add(cowrie_hp)
+        ioc.honeypots.add(cowrie_hp)
 
         cutoff = datetime.now() - timedelta(days=30)
         result = list(self.repo.get_recent_scanners(cutoff))
@@ -353,9 +353,9 @@ class TestIocRepository(CustomTestCase):
         self.assertEqual(len(result), 0)
 
     def test_get_scanners_for_scoring_excludes_inactive_honeypots(self):
-        hp = GeneralHoneypot.objects.create(name="InactivePot", active=False)
+        hp = Honeypot.objects.create(name="InactivePot", active=False)
         ioc = IOC.objects.create(name="1.2.3.4", type="ip", scanner=True)
-        ioc.general_honeypot.add(hp)
+        ioc.honeypots.add(hp)
 
         result = list(self.repo.get_scanners_for_scoring(["recurrence_probability"]))
 
@@ -363,10 +363,10 @@ class TestIocRepository(CustomTestCase):
         self.assertNotIn("1.2.3.4", names)
 
     def test_get_scanners_for_scoring_with_multiple_honeypots(self):
-        hp1 = GeneralHoneypot.objects.create(name="Pot1", active=True)
-        hp2 = GeneralHoneypot.objects.create(name="Pot2", active=True)
+        hp1 = Honeypot.objects.create(name="Pot1", active=True)
+        hp2 = Honeypot.objects.create(name="Pot2", active=True)
         ioc = IOC.objects.create(name="1.2.3.4", type="ip", scanner=True)
-        ioc.general_honeypot.add(hp1, hp2)
+        ioc.honeypots.add(hp1, hp2)
 
         result = list(self.repo.get_scanners_for_scoring(["recurrence_probability"]))
 
@@ -394,9 +394,9 @@ class TestIocRepository(CustomTestCase):
 
     def test_get_recent_scanners_all_iocs_older_than_cutoff(self):
         old_date = datetime.now() - timedelta(days=40)
-        cowrie_hp = GeneralHoneypot.objects.get_or_create(name="Cowrie", defaults={"active": True})[0]
+        cowrie_hp = Honeypot.objects.get_or_create(name="Cowrie", defaults={"active": True})[0]
         ioc = IOC.objects.create(name="1.2.3.4", type="ip", scanner=True, last_seen=old_date)
-        ioc.general_honeypot.add(cowrie_hp)
+        ioc.honeypots.add(cowrie_hp)
 
         cutoff = datetime.now() - timedelta(days=30)
         result = list(self.repo.get_recent_scanners(cutoff))
@@ -405,10 +405,10 @@ class TestIocRepository(CustomTestCase):
         self.assertNotIn("1.2.3.4", values)
 
     def test_get_recent_scanners_with_inactive_honeypot(self):
-        hp = GeneralHoneypot.objects.create(name="InactivePot", active=False)
+        hp = Honeypot.objects.create(name="InactivePot", active=False)
         recent_date = datetime.now() - timedelta(days=5)
         ioc = IOC.objects.create(name="1.2.3.4", type="ip", scanner=True, last_seen=recent_date)
-        ioc.general_honeypot.add(hp)
+        ioc.honeypots.add(hp)
 
         cutoff = datetime.now() - timedelta(days=30)
         result = list(self.repo.get_recent_scanners(cutoff))
@@ -434,7 +434,7 @@ class TestIocRepository(CustomTestCase):
     # --- Tests for N+1 fix ---
 
     def test_honeypot_cache_stores_generalhoneypot_objects(self):
-        """_honeypot_cache must store GeneralHoneypot instances, not booleans."""
+        """_honeypot_cache must store Honeypot instances, not booleans."""
         self.assertGreater(
             len(self.repo._honeypot_cache),
             0,
@@ -443,8 +443,8 @@ class TestIocRepository(CustomTestCase):
         for key, value in self.repo._honeypot_cache.items():
             self.assertIsInstance(
                 value,
-                GeneralHoneypot,
-                f"Cache value for '{key}' should be a GeneralHoneypot instance, got {type(value)}",
+                Honeypot,
+                f"Cache value for '{key}' should be a Honeypot instance, got {type(value)}",
             )
 
     def test_get_ioc_by_name_prefetches_general_honeypot(self):
@@ -452,20 +452,20 @@ class TestIocRepository(CustomTestCase):
         ioc = self.repo.get_ioc_by_name("140.246.171.141")
         self.assertIsNotNone(ioc)
         with self.assertNumQueries(0):
-            list(ioc.general_honeypot.all())
+            list(ioc.honeypots.all())
 
     def test_add_honeypot_to_ioc_uses_cache_not_db(self):
         """When honeypot is in cache and the IOC was fetched with prefetch, no extra queries are needed."""
-        cowrie_hp = GeneralHoneypot.objects.get_or_create(name="Cowrie", defaults={"active": True})[0]
+        cowrie_hp = Honeypot.objects.get_or_create(name="Cowrie", defaults={"active": True})[0]
 
         # Case 1: IOC already associated with Cowrie - membership check uses prefetch (0 queries),
         # and skips the add entirely (already associated), producing zero DB queries
         ioc = IOC.objects.create(name="5.5.5.5", type="ip")
-        ioc.general_honeypot.add(cowrie_hp)
+        ioc.honeypots.add(cowrie_hp)
         ioc_fetched = self.repo.get_ioc_by_name("5.5.5.5")
         with self.assertNumQueries(0):
             result = self.repo.add_honeypot_to_ioc("Cowrie", ioc_fetched)
-        self.assertIn(cowrie_hp, result.general_honeypot.all())
+        self.assertIn(cowrie_hp, result.honeypots.all())
 
         # Case 2: IOC not yet associated - membership check uses prefetch (0 queries),
         # honeypot lookup uses in-memory cache (0 queries), only the M2M INSERT fires
@@ -473,13 +473,13 @@ class TestIocRepository(CustomTestCase):
         ioc2_fetched = self.repo.get_ioc_by_name("6.6.6.6")
         with self.assertNumQueries(1):  # only M2M INSERT
             result2 = self.repo.add_honeypot_to_ioc("Cowrie", ioc2_fetched)
-        self.assertIn(cowrie_hp, result2.general_honeypot.all())
+        self.assertIn(cowrie_hp, result2.honeypots.all())
 
     def test_create_honeypot_stores_object_in_cache(self):
-        """create_honeypot must store the GeneralHoneypot object in cache, not a boolean."""
+        """create_honeypot must store the Honeypot object in cache, not a boolean."""
         hp = self.repo.create_honeypot("CacheTestPot")
         cached = self.repo._honeypot_cache.get("cachetestpot")
-        self.assertIsInstance(cached, GeneralHoneypot)
+        self.assertIsInstance(cached, Honeypot)
         self.assertEqual(cached.pk, hp.pk)
 
 
@@ -496,12 +496,12 @@ class TestScoringIntegration(CustomTestCase):
         from greedybear.cronjobs.scoring.scoring_jobs import UpdateScores
 
         # Create test data
-        cowrie_hp = GeneralHoneypot.objects.get_or_create(name="Cowrie", defaults={"active": True})[0]
-        log4pot_hp = GeneralHoneypot.objects.get_or_create(name="Log4pot", defaults={"active": True})[0]
+        cowrie_hp = Honeypot.objects.get_or_create(name="Cowrie", defaults={"active": True})[0]
+        log4pot_hp = Honeypot.objects.get_or_create(name="Log4pot", defaults={"active": True})[0]
         ioc1 = IOC.objects.create(name="10.1.2.3", type="ip", scanner=True, recurrence_probability=0.0)
-        ioc1.general_honeypot.add(cowrie_hp)
+        ioc1.honeypots.add(cowrie_hp)
         ioc2 = IOC.objects.create(name="10.5.6.7", type="ip", scanner=True, recurrence_probability=0.0)
-        ioc2.general_honeypot.add(log4pot_hp)
+        ioc2.honeypots.add(log4pot_hp)
 
         # Create score dataframe
         df = pd.DataFrame(
@@ -530,12 +530,12 @@ class TestScoringIntegration(CustomTestCase):
         from greedybear.cronjobs.scoring.scoring_jobs import UpdateScores
 
         # Create test data - one IOC will be missing from df
-        cowrie_hp = GeneralHoneypot.objects.get_or_create(name="Cowrie", defaults={"active": True})[0]
-        log4pot_hp = GeneralHoneypot.objects.get_or_create(name="Log4pot", defaults={"active": True})[0]
+        cowrie_hp = Honeypot.objects.get_or_create(name="Cowrie", defaults={"active": True})[0]
+        log4pot_hp = Honeypot.objects.get_or_create(name="Log4pot", defaults={"active": True})[0]
         ioc1 = IOC.objects.create(name="10.2.3.4", type="ip", scanner=True, recurrence_probability=0.9)
-        ioc1.general_honeypot.add(cowrie_hp)
+        ioc1.honeypots.add(cowrie_hp)
         ioc2 = IOC.objects.create(name="10.6.7.8", type="ip", scanner=True, recurrence_probability=0.8)
-        ioc2.general_honeypot.add(log4pot_hp)
+        ioc2.honeypots.add(log4pot_hp)
 
         # DataFrame only has one IOC
         df = pd.DataFrame({"value": ["10.2.3.4"], "recurrence_probability": [0.75], "expected_interactions": [10.0]})
@@ -554,9 +554,9 @@ class TestScoringIntegration(CustomTestCase):
         from greedybear.cronjobs.scoring.utils import get_current_data
 
         recent_date = datetime.now() - timedelta(days=5)
-        cowrie_hp = GeneralHoneypot.objects.get_or_create(name="Cowrie", defaults={"active": True})[0]
+        cowrie_hp = Honeypot.objects.get_or_create(name="Cowrie", defaults={"active": True})[0]
         ioc = IOC.objects.create(name="1.2.3.4", type="ip", scanner=True, last_seen=recent_date)
-        ioc.general_honeypot.add(cowrie_hp)
+        ioc.honeypots.add(cowrie_hp)
 
         result = get_current_data(days_lookback=30, ioc_repo=self.repo)
 

@@ -182,7 +182,7 @@ class TestCowrieExtractionStrategy(ExtractionTestCase):
 
         self.mock_ioc_repo.get_ioc_by_name.side_effect = [scanner_mock, payload_mock]
         mock_payload_record = Mock()
-        mock_payload_record.general_honeypot.all.return_value = []
+        mock_payload_record.honeypots.all.return_value = []
         self.strategy.ioc_processor.add_ioc.return_value = mock_payload_record
 
         self.strategy._get_url_downloads(hits)

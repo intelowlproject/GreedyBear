@@ -19,7 +19,7 @@ from stix2 import Bundle, ExternalReference, Indicator
 from api.serializers import FeedsRequestSerializer, parse_feed_types
 from greedybear.consts import CACHE_KEY_GREEDYBEAR_NEWS, CACHE_TIMEOUT_SECONDS, RSS_FEED_URL
 from greedybear.enums import IpReputation
-from greedybear.models import IOC, GeneralHoneypot, Statistics
+from greedybear.models import IOC, Honeypot, Statistics
 from greedybear.utils import is_ip_address, is_valid_domain
 
 logger = logging.getLogger(__name__)
@@ -144,7 +144,7 @@ def get_valid_feed_types() -> frozenset[str]:
     Returns:
         frozenset[str]: An immutable set of valid feed type strings
     """
-    general_honeypots = GeneralHoneypot.objects.filter(active=True)
+    general_honeypots = Honeypot.objects.filter(active=True)
     feed_types = ["all"] + [hp.name.lower() for hp in general_honeypots]
     return frozenset(feed_types)
 
