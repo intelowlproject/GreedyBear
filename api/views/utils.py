@@ -473,8 +473,16 @@ def asn_aggregated_queryset(iocs_qs, request, feed_params):
 
     # default ordering is overridden here because of serializer default(-last-seen) behaviour
     ordering = feed_params.ordering
+    # Normalize ordering and apply default if needed
     if not ordering or ordering.strip() in {"", "-last_seen", "last_seen"}:
         ordering = "-ioc_count"
+    else:
+        ordering = ordering.strip()
+
+    # Map API-facing 'as_name' ordering to the underlying 'name' model field
+    if ordering in {"as_name", "-as_name"}:
+        prefix = "-" if ordering.startswith("-") else ""
+        ordering = f"{prefix}name"
 
     as_qs = as_qs.order_by(ordering)
 
