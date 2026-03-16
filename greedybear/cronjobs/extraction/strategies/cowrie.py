@@ -62,14 +62,9 @@ def normalize_credential_field(field: str) -> str:
 
     Returns:
         Normalized credential field, truncated to 256 characters.
-        Any partial [NUL] replacement at the boundary is removed.
     """
-    # Truncate to 256 chars to match Credential model field max_length.
-    # Strip trailing partial [NUL] that may result from truncation mid-replacement.
-    result = field.replace("\x00", "[NUL]")[:256]
-    if result.endswith(("[N", "[NU", "[NUL")):
-        result = result[: result.rfind("[")]
-    return result
+    # Truncate to 256 chars to match Credential model field max_length
+    return field.replace("\x00", "[NUL]")[:256]
 
 
 class CowrieExtractionStrategy(BaseExtractionStrategy):
