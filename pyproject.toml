@@ -1,2 +1,9 @@
 [tool.ruff]
 extend = ".github/configurations/python_linters/.ruff.toml"
+
+[dependency-groups]
+dev = [
+    "coverage>=7.3.2",
+    "django-test-migrations>=1.5.0",
+    "django-watchfiles>=1.4.0",
+]
