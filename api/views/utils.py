@@ -9,7 +9,7 @@ import requests
 from django.conf import settings
 from django.contrib.postgres.aggregates import ArrayAgg
 from django.core.cache import cache
-from django.db.models import F, Q, Value
+from django.db.models import Count, F, Max, Min, Q, Sum, Value
 from django.db.models.functions import JSONObject
 from django.http import HttpResponse, HttpResponseBadRequest, StreamingHttpResponse
 from rest_framework import status
@@ -479,17 +479,16 @@ def asn_aggregated_queryset(iocs_qs, request, feed_params):
         or feed_params.attack_type != "all"
         or feed_params.min_days_seen != "1"
         or feed_params.include_reputation
-        or feed_params.exclude_reputation != ["mass scanner", "tor exit node"]
+        or bool(feed_params.exclude_reputation)
         or feed_params.min_score is not None
         or feed_params.port is not None
         or feed_params.start_date is not None
         or feed_params.end_date is not None
     )
 
-    if has_non_default_filters:
+    use_dynamic_aggregation = has_non_default_filters or iocs_qs.query.has_filters()
+    if use_dynamic_aggregation:
         # Dynamic aggregation for filtered queries
-        from django.db.models import Count, Max, Min, Sum
-
         numeric_agg = (
             iocs_qs.exclude(autonomous_system__isnull=True)
             .values(

@@ -63,7 +63,7 @@ class FeedsASNViewTestCase(CustomTestCase):
         cls.ioc_low.general_honeypot.add(cls.testpot1, cls.testpot2)
 
         # Pre-compute aggregates so the view can read them
-        ASRepository().refresh_aggregates()
+        ASRepository(preload_cache=False).refresh_aggregates()
 
     def setUp(self):
         super().setUp()

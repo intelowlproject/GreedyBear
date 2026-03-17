@@ -106,8 +106,8 @@ class ASRepository:
                 as_obj.total_attack_count = 0
                 as_obj.total_interaction_count = 0
                 as_obj.total_login_attempts = 0
-                as_obj.expected_ioc_count = 0
-                as_obj.expected_interactions = 0
+                as_obj.expected_ioc_count = 0.0
+                as_obj.expected_interactions = 0.0
                 as_obj.first_seen = None
                 as_obj.last_seen = None
             to_update.append(as_obj)
