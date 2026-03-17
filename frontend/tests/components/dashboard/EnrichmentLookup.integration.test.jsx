@@ -220,23 +220,13 @@ describe("Enrichment Lookup Integration Tests", () => {
     });
   });
 
-  test("look up an IP with authentication - validation error", async () => {
+  test("client-side validation prevents obvious invalid queries", async () => {
     const user = userEvent.setup();
 
     // Mock authenticated state
     mockUseAuthStore.mockImplementation((selector) =>
       selector({ isAuthenticated: AUTHENTICATION_STATUSES.TRUE }),
     );
-
-    // Mock API validation error
-    const errorMessage = "Observable is not a valid IP";
-    axios.get.mockRejectedValue({
-      response: {
-        data: {
-          non_field_errors: [errorMessage],
-        },
-      },
-    });
 
     render(
       <BrowserRouter>
@@ -248,18 +238,62 @@ describe("Enrichment Lookup Integration Tests", () => {
     const inputElement = screen.getByLabelText("IP Address or Domain:");
     const submitButton = screen.getByRole("button", { name: /Search/i });
 
-    // Search for an invalid IP
-    await user.type(inputElement, "invalid-ip-address");
-    await user.click(submitButton);
+    const invalidInputs = [
+      "invalid ip", // space
+      "http://example.com", // protocol
+      "exa mple.com", // space in domain
+      "!!!", // invalid characters
+      "justtext", // no dot, not IP-like
+    ];
 
-    // Verify API was called
+    for (const value of invalidInputs) {
+      await user.clear(inputElement);
+      await user.type(inputElement, value);
+      await user.click(submitButton);
+
+      expect(
+        screen.getByText(
+          /Please enter a value that looks like an IP or domain/i,
+        ),
+      ).toBeInTheDocument();
+    }
+
+    // Verify API was NOT called due to client-side validation
     await waitFor(() => {
-      expect(axios.get).toHaveBeenCalled();
+      expect(axios.get).not.toHaveBeenCalled();
+    });
+  });
+
+  test("accepts domains with underscores (e.g., service records)", async () => {
+    const user = userEvent.setup();
+
+    mockUseAuthStore.mockImplementation((selector) =>
+      selector({ isAuthenticated: AUTHENTICATION_STATUSES.TRUE }),
+    );
+
+    axios.get.mockResolvedValue({
+      data: { found: false, query: "_acme-challenge.example.com", ioc: null },
     });
 
-    // Verify validation error message is displayed
+    render(
+      <BrowserRouter>
+        <Dashboard />
+      </BrowserRouter>,
+    );
+
+    const inputElement = screen.getByLabelText("IP Address or Domain:");
+    const submitButton = screen.getByRole("button", { name: /Search/i });
+
+    // Search for a domain starting with an underscore
+    await user.type(inputElement, "_acme-challenge.example.com");
+    await user.click(submitButton);
+
+    // Verify API WAS called (validation passed)
     await waitFor(() => {
-      expect(screen.getByText(errorMessage)).toBeInTheDocument();
+      expect(axios.get).toHaveBeenCalledWith(ENRICHMENT_URI, {
+        params: { query: "_acme-challenge.example.com" },
+        headers: { "Content-Type": "application/json" },
+      });
     });
   });
 
