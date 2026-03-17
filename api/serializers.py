@@ -38,7 +38,6 @@ class IOCSerializer(serializers.ModelSerializer):
             "type",
             "first_seen",
             "last_seen",
-            "days_back",
             "general_honeypot",
             "tags",
             "sensors",
