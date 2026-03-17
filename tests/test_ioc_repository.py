@@ -280,7 +280,7 @@ class TestIocRepository(CustomTestCase):
         result = list(self.repo.get_scanners_by_pks({ioc.pk}))
 
         self.assertEqual(len(result), 1)
-        self.assertIn("honeypots", result[0])
+        self.assertIn("honeypot_names", result[0])
 
     def test_get_recent_scanners_returns_recent_only(self):
         recent_date = datetime.now() - timedelta(days=5)
@@ -390,7 +390,7 @@ class TestIocRepository(CustomTestCase):
         result = list(self.repo.get_scanners_by_pks({ioc.pk}))
 
         self.assertEqual(len(result), 1)
-        self.assertIn("honeypots", result[0])
+        self.assertIn("honeypot_names", result[0])
 
     def test_get_recent_scanners_all_iocs_older_than_cutoff(self):
         old_date = datetime.now() - timedelta(days=40)

@@ -144,8 +144,8 @@ def get_valid_feed_types() -> frozenset[str]:
     Returns:
         frozenset[str]: An immutable set of valid feed type strings
     """
-    general_honeypots = Honeypot.objects.filter(active=True)
-    feed_types = ["all"] + [hp.name.lower() for hp in general_honeypots]
+    honeypots = Honeypot.objects.filter(active=True)
+    feed_types = ["all"] + [hp.name.lower() for hp in honeypots]
     return frozenset(feed_types)
 
 
@@ -226,13 +226,13 @@ def get_queryset(request, feed_params, valid_feed_types, is_aggregated=False, se
     if "all" not in feed_params.feed_types:
         type_filter = Q()
         for ft in feed_params.feed_types:
-            type_filter |= Q(general_honeypot__name__iexact=ft)
+            type_filter |= Q(honeypots__name__iexact=ft)
         iocs = iocs.filter(type_filter)
 
     # aggregated feeds calculate metrics differently and need all rows to be accurate.
     if not is_aggregated:
-        iocs = iocs.filter(general_honeypot__active=True)
-        iocs = iocs.annotate(honeypots=ArrayAgg("general_honeypot__name", distinct=True))
+        iocs = iocs.filter(honeypots__active=True)
+        iocs = iocs.annotate(honeypot_names=ArrayAgg("honeypots__name", distinct=True))
         # Only annotate tags metadata when the response format needs it (e.g. JSON),
         # to avoid unnecessary joins and aggregation work for txt/csv feeds.
         if getattr(feed_params, "format", "").lower() == "json":
@@ -315,7 +315,7 @@ def feeds_response(request=None, iocs=None, feed_params=None, valid_feed_types=N
                 "login_attempts",
                 "recurrence_probability",
                 "expected_interactions",
-                "honeypots",  # used to build feed_type; removed from response
+                "honeypot_names",  # used to build feed_type; removed from response
                 "destination_ports",  # used to calculate destination_port_count
                 "attacker_country",
                 "autonomous_system",
@@ -344,7 +344,7 @@ def feeds_response(request=None, iocs=None, feed_params=None, valid_feed_types=N
             else:
                 iocs_iter = iocs.values(*required_fields).iterator(chunk_size=2000)
             for ioc in iocs_iter:
-                ioc_feed_type = [hp.lower() for hp in ioc.get("honeypots", []) if hp]
+                ioc_feed_type = [hp.lower() for hp in ioc.get("honeypot_names", []) if hp]
 
                 data_ = ioc | {
                     "first_seen": ioc["first_seen"].strftime("%Y-%m-%d"),
@@ -358,7 +358,7 @@ def feeds_response(request=None, iocs=None, feed_params=None, valid_feed_types=N
                 if not verbose:
                     data_.pop("destination_ports", None)
                 data_.pop("autonomous_system", None)
-                data_.pop("honeypots", None)
+                data_.pop("honeypot_names", None)
                 data_.pop("id", None)
 
                 json_list.append(data_)
@@ -386,7 +386,7 @@ def feeds_response(request=None, iocs=None, feed_params=None, valid_feed_types=N
                 "first_seen",
                 "last_seen",
                 "recurrence_probability",
-                "honeypots",
+                "honeypot_names",
                 "ip_reputation",
             }
             # Fetch fields from database
@@ -416,7 +416,7 @@ def feeds_response(request=None, iocs=None, feed_params=None, valid_feed_types=N
                 confidence = 90
 
                 # Labels
-                labels = [hp.lower() for hp in ioc.get("honeypots", []) if hp]
+                labels = [hp.lower() for hp in ioc.get("honeypot_names", []) if hp]
                 if ioc.get("ip_reputation"):
                     labels.append(ioc["ip_reputation"])
 
@@ -485,17 +485,17 @@ def asn_aggregated_queryset(iocs_qs, request, feed_params):
 
     honeypot_agg = (
         iocs_qs.exclude(autonomous_system__isnull=True)
-        .filter(general_honeypot__active=True)
+        .filter(honeypots__active=True)
         .values(asn=F("autonomous_system__asn"))
         .annotate(
-            honeypots=ArrayAgg(
-                "general_honeypot__name",
+            honeypot_names=ArrayAgg(
+                "honeypots__name",
                 distinct=True,
             )
         )
     )
 
-    hp_lookup = {row["asn"]: row["honeypots"] or [] for row in honeypot_agg}
+    hp_lookup = {row["asn"]: row["honeypot_names"] or [] for row in honeypot_agg}
 
     # merging numeric aggregate with honeypot names for each asn
     result = []

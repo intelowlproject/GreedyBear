@@ -194,7 +194,7 @@ class IocRepository:
             IOC.objects.filter(pk__in=primary_keys)
             .prefetch_related("honeypots")
             .annotate(value=F("name"))
-            .annotate(honeypots=ArrayAgg("honeypots__name", distinct=True))
+            .annotate(honeypot_names=ArrayAgg("honeypots__name", distinct=True))
             .values()
         )
 
@@ -217,7 +217,7 @@ class IocRepository:
             .filter(last_seen__gte=cutoff_date, scanner=True)
             .prefetch_related("honeypots")
             .annotate(value=F("name"))
-            .annotate(honeypots=ArrayAgg("honeypots__name", distinct=True))
+            .annotate(honeypot_names=ArrayAgg("honeypots__name", distinct=True))
             .values()
         )
 

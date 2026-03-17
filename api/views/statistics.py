@@ -91,6 +91,7 @@ class StatisticsViewSet(viewsets.ViewSet):
         delta, _ = self.__parse_range(self.request)
         qs = (
             IOC.objects.filter(last_seen__gte=delta)
+            .exclude(attacker_country="")
             .filter(honeypots__active=True)
             .values("attacker_country")
             .annotate(count=Count("id", distinct=True))
