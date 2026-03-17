@@ -1,11 +1,15 @@
 import React from "react";
 import { render, screen } from "@testing-library/react";
-import { vi, describe, it, expect } from "vitest";
+import { vi, describe, it, expect, beforeEach } from "vitest";
+
+const { mockAnyChartWidget } = vi.hoisted(() => ({
+  mockAnyChartWidget: vi.fn(({ url }) => (
+    <div data-testid="chart-widget" data-url={url} />
+  )),
+}));
 
 vi.mock("@certego/certego-ui", () => ({
-  AnyChartWidget: ({ url }) => (
-    <div data-testid="chart-widget" data-url={url} />
-  ),
+  AnyChartWidget: mockAnyChartWidget,
   getRandomColorsArray: () => Array(30).fill("#000000"),
 }));
 
@@ -29,6 +33,12 @@ import {
   EnrichmentRequestsChart,
   FeedsTypesChart,
 } from "../../../../src/components/dashboard/utils/charts";
+
+beforeEach(() => {
+  mockAnyChartWidget.mockImplementation(({ url }) => (
+    <div data-testid="chart-widget" data-url={url} />
+  ));
+});
 
 describe("Dashboard Chart Components", () => {
   it("FeedsSourcesChart renders with correct URL", () => {
@@ -69,5 +79,29 @@ describe("Dashboard Chart Components", () => {
       "data-url",
       "/api/statistics/feeds_types",
     );
+  });
+});
+
+describe("FeedsTypesChart - componentsFn behavior", () => {
+  it("componentsFn returns null when respData is empty array", () => {
+    let capturedComponentsFn;
+    mockAnyChartWidget.mockImplementationOnce(({ componentsFn }) => {
+      capturedComponentsFn = componentsFn;
+      return <div data-testid="chart-widget" />;
+    });
+    render(<FeedsTypesChart />);
+    const result = capturedComponentsFn([]);
+    expect(result).toBeNull();
+  });
+
+  it("componentsFn returns null when respData is undefined", () => {
+    let capturedComponentsFn;
+    mockAnyChartWidget.mockImplementationOnce(({ componentsFn }) => {
+      capturedComponentsFn = componentsFn;
+      return <div data-testid="chart-widget" />;
+    });
+    render(<FeedsTypesChart />);
+    const result = capturedComponentsFn(undefined);
+    expect(result).toBeNull();
   });
 });
