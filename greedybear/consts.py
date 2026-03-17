@@ -31,7 +31,7 @@ REQUIRED_FIELDS = [
     "password",
     "t-pot_ip_ext",
     "shasum",
-    "outfile"
+    "outfile",
 ]
 
 
