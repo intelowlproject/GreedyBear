@@ -185,8 +185,7 @@ export default function Feeds() {
     await formik.setFieldValue("prioritize", "recent", true);
     await formik.setFieldTouched("prioritize", true, false);
     await formik.submitForm();
-    updateSearchParams({ ...formik.values, prioritize: "recent" });
-  }, [updateSearchParams]);
+  }, []);
 
   // callbacks
   const onSubmit = React.useCallback(
