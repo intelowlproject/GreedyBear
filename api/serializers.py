@@ -27,12 +27,14 @@ class TagSerializer(serializers.ModelSerializer):
 
 
 class IOCSerializer(serializers.ModelSerializer):
-    # Aapka naya sensors field
+    general_honeypot = GeneralHoneypotSerializer(many=True, read_only=True)
+    tags = TagSerializer(many=True, read_only=True)
+
     sensors = serializers.SlugRelatedField(many=True, read_only=True, slug_field="address")
 
     class Meta:
         model = IOC
-        fields = (
+        fields = [
             "name",
             "type",
             "first_seen",
@@ -43,8 +45,10 @@ class IOCSerializer(serializers.ModelSerializer):
             "ip_reputation",
             "asn",
             "login_attempts",
+            "general_honeypot",
+            "tags",
             "sensors",
-        )
+        ]
 
 
 class EnrichmentSerializer(serializers.Serializer):
