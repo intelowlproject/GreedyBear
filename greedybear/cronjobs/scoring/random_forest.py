@@ -52,6 +52,15 @@ class RFModel(MLModel):
 
         self.model = self.untrained_model.fit(x_train, y_train)
         self.log.info(f"finished training {self.name} - recall AUC: {self.recall_auc(x_test, y_test):.4f}")
+
+        feature_names = x_train.columns.tolist()
+
+        importances = self.model.feature_importances_
+
+        sorted_features = sorted(zip(feature_names, importances, strict=False), key=lambda pair: pair[1], reverse=True)
+        importance_lines = "\n".join(f"  {name}: {score:.4f}" for name, score in sorted_features)
+
+        self.log.info(f"Feature importances for {self.name}:\n{importance_lines}")
         self.save()
 
     @property
