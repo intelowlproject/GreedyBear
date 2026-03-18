@@ -29,7 +29,6 @@ class TagSerializer(serializers.ModelSerializer):
 class IOCSerializer(serializers.ModelSerializer):
     general_honeypot = GeneralHoneypotSerializer(many=True, read_only=True)
     tags = TagSerializer(many=True, read_only=True)
-
     sensors = serializers.SlugRelatedField(many=True, read_only=True, slug_field="address")
 
     class Meta:
@@ -42,8 +41,6 @@ class IOCSerializer(serializers.ModelSerializer):
             "number_of_days_seen",
             "attack_count",
             "interaction_count",
-            "ip_reputation",
-            "asn",
             "login_attempts",
             "general_honeypot",
             "tags",
