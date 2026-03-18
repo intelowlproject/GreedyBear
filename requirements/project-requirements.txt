@@ -1,5 +1,5 @@
 django-q2==1.9.0
-croniter==6.0.0
+croniter==6.2.2
 
 # if you change this, update the documentation
 elasticsearch==9.3.0
