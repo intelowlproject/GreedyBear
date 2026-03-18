@@ -16,6 +16,9 @@ python manage.py migrate
 # Collect static files, overwriting existing ones
 python manage.py collectstatic --noinput --clear --verbosity 0
 
+# Ensure log directories exist (volumes may persist from older builds)
+mkdir -p /var/log/greedybear/gunicorn
+
 # Fix log file ownership (manage.py commands above run as root and may create new log files)
 chown -R 2000:82 /var/log/greedybear
 

@@ -1,5 +1,6 @@
 import logging
 
+from greedybear.enums import IpReputation
 from greedybear.models import TorExitNode
 
 
@@ -9,7 +10,7 @@ class TorRepository:
     def __init__(self):
         self.log = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
 
-    def get_or_create(self, ip_address: str, reason: str = "tor exit node") -> tuple[TorExitNode, bool]:
+    def get_or_create(self, ip_address: str, reason: str = IpReputation.TOR_EXIT_NODE) -> tuple[TorExitNode, bool]:
         """
         Get an existing Tor exit node entry or create a new one.
 

@@ -23,6 +23,33 @@ const initialValues = {
   query: "",
 };
 
+// Very simple, human-readable checks:
+// - only allow characters that make sense for IPs/domains
+// - and make sure the value at least "looks like" an IP or a domain.
+// The backend still performs strict validation.
+const validCharRegex = /^[a-zA-Z0-9.:_-]+$/;
+
+const looksLikeIp = (value) => {
+  // digits, dots and/or colons, and at least one dot or colon
+  if (!/^[0-9.:]+$/.test(value)) return false;
+  return /[.:]/.test(value);
+};
+
+const looksLikeDomain = (value) => {
+  // letters/digits/dot/hyphen/underscore, at least one dot, and no leading/trailing dot or hyphen
+  if (!/^[a-zA-Z0-9._-]+$/.test(value)) return false;
+  if (!value.includes(".")) return false;
+  if (/^[-.]/.test(value) || /[-.]$/.test(value)) return false;
+  return true;
+};
+
+const isValidQuery = (value) => {
+  const q = value.trim();
+  if (!q) return false;
+  if (!validCharRegex.test(q)) return false;
+  return looksLikeIp(q) || looksLikeDomain(q);
+};
+
 export default function EnrichmentLookup() {
   const [result, setResult] = React.useState(null);
 
@@ -50,6 +77,14 @@ export default function EnrichmentLookup() {
 
       if (!values.query || values.query.trim() === "") {
         setError("Please enter an IP address or domain to search.");
+        setSubmitting(false);
+        return;
+      }
+
+      if (!isValidQuery(values.query)) {
+        setError(
+          "Please enter a value that looks like an IP or domain (e.g., 192.168.1.1 or example.com).",
+        );
         setSubmitting(false);
         return;
       }

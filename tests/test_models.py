@@ -1,3 +1,4 @@
+from greedybear.enums import IpReputation
 from greedybear.models import IocType, Statistics, Tag, ViewType
 
 from . import CustomTestCase
@@ -20,13 +21,13 @@ class ModelsTestCase(CustomTestCase):
         self.assertEqual(self.ioc.payload_request, True)
         self.assertEqual(self.ioc.related_urls, [])
         self.assertEqual(self.ioc.ip_reputation, "")
-        self.assertEqual(self.ioc.asn, "12345")
+        self.assertEqual(self.ioc.autonomous_system.asn, "12345")
         self.assertEqual(self.ioc.destination_ports, [22, 23, 24])
         self.assertEqual(self.ioc.login_attempts, 1)
         self.assertEqual(self.ioc.recurrence_probability, 0.1)
         self.assertEqual(self.ioc.expected_interactions, 11.1)
 
-        self.assertEqual(self.ioc_2.ip_reputation, "mass scanner")
+        self.assertEqual(self.ioc_2.ip_reputation, IpReputation.MASS_SCANNER)
 
         self.assertIn(self.heralding, self.ioc.general_honeypot.all())
         self.assertIn(self.ciscoasa, self.ioc.general_honeypot.all())

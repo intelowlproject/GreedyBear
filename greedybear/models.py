@@ -4,6 +4,8 @@ from django.contrib.postgres import fields as pg_fields
 from django.db import models
 from django.db.models.functions import Lower, Now
 
+from greedybear.enums import IpReputation
+
 
 class ViewType(models.TextChoices):
     FEEDS_VIEW = "feeds"
@@ -54,6 +56,14 @@ class FireHolList(models.Model):
         return f"{self.ip_address} ({self.source or 'unknown'})"
 
 
+class AutonomousSystem(models.Model):
+    asn = models.IntegerField(primary_key=True)
+    name = models.CharField(max_length=256, blank=True)
+
+    def __str__(self):
+        return f"{self.name} ({self.asn})" if self.name else str(self.asn)
+
+
 class IOC(models.Model):
     name = models.CharField(max_length=256)
     type = models.CharField(max_length=32, choices=IocType.choices)
@@ -68,6 +78,13 @@ class IOC(models.Model):
         blank=True,
         default="",
     )
+    autonomous_system = models.ForeignKey(
+        AutonomousSystem,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="iocs",
+    )
     # FEEDS - list of honeypots from general list, from which the IOC was detected
     general_honeypot = models.ManyToManyField(GeneralHoneypot, blank=True)
     # SENSORS - list of T-Pot sensors that detected this IOC
@@ -78,7 +95,6 @@ class IOC(models.Model):
     related_urls = pg_fields.ArrayField(models.CharField(max_length=900, blank=True), blank=True, default=list)
     ip_reputation = models.CharField(max_length=32, blank=True)
     firehol_categories = pg_fields.ArrayField(models.CharField(max_length=64, blank=True), blank=True, default=list)
-    asn = models.IntegerField(blank=True, null=True)
     destination_ports = pg_fields.ArrayField(models.IntegerField(), default=list)
     login_attempts = models.IntegerField(default=0)
     # SCORES
@@ -175,7 +191,7 @@ class MassScanner(models.Model):
 class TorExitNode(models.Model):
     ip_address = models.GenericIPAddressField(unique=True)
     added = models.DateTimeField(db_default=Now())
-    reason = models.CharField(max_length=64, blank=True, default="tor exit node")
+    reason = models.CharField(max_length=64, blank=True, default=IpReputation.TOR_EXIT_NODE)
 
     class Meta:
         indexes = [
@@ -183,7 +199,7 @@ class TorExitNode(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.ip_address} (tor exit node)"
+        return f"{self.ip_address} ({IpReputation.TOR_EXIT_NODE})"
 
 
 class WhatsMyIPDomain(models.Model):

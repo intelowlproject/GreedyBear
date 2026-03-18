@@ -1,8 +1,9 @@
 from datetime import date, datetime
-from unittest.mock import Mock, patch
+from unittest.mock import Mock
 
 from greedybear.consts import PAYLOAD_REQUEST, SCANNER
 from greedybear.cronjobs.extraction.ioc_processor import IocProcessor
+from greedybear.enums import IpReputation
 from greedybear.models import IocType
 
 from . import ExtractionTestCase
@@ -22,15 +23,13 @@ class TestAddIoc(ExtractionTestCase):
         self.assertIsNone(result)
         self.mock_ioc_repo.save.assert_not_called()
 
-    @patch("greedybear.cronjobs.extraction.ioc_processor.is_whatsmyip_domain")
-    def test_filters_whatsmyip_domains(self, mock_whatsmyip):
-        mock_whatsmyip.return_value = True
+    def test_filters_whatsmyip_domains(self):
+        self.processor._whatsmyip_domains = {"some.domain.com"}
         ioc = self._create_mock_ioc(name="some.domain.com", ioc_type=IocType.DOMAIN)
 
         result = self.processor.add_ioc(ioc, attack_type=SCANNER)
 
         self.assertIsNone(result)
-        mock_whatsmyip.assert_called_once_with("some.domain.com")
         self.mock_ioc_repo.save.assert_not_called()
 
     def test_creates_new_ioc_when_not_exists(self):
@@ -178,8 +177,8 @@ class TestAddIoc(ExtractionTestCase):
         self.assertEqual(len(result.days_seen), 2)
         self.assertTrue(result.payload_request)
 
-    @patch("greedybear.cronjobs.extraction.ioc_processor.is_whatsmyip_domain")
-    def test_only_checks_whatsmyip_for_domains(self, mock_whatsmyip):
+    def test_only_checks_whatsmyip_for_domains(self):
+        self.processor._whatsmyip_domains = {"1.2.3.4"}
         self.mock_sensor_repo.cache = {}
         self.mock_ioc_repo.get_ioc_by_name.return_value = None
         ioc = self._create_mock_ioc(name="1.2.3.4", ioc_type=IocType.IP)
@@ -187,7 +186,6 @@ class TestAddIoc(ExtractionTestCase):
 
         result = self.processor.add_ioc(ioc, attack_type=SCANNER)
 
-        mock_whatsmyip.assert_not_called()
         self.assertIsNotNone(result)
 
 
@@ -237,13 +235,11 @@ class TestMergeIocs(ExtractionTestCase):
         new_time = datetime(2025, 1, 2, 12, 0, 0)
         existing = self._create_mock_ioc(first_seen=old_time, last_seen=old_time, ip_reputation="old", asn=12)
         new = self._create_mock_ioc(first_seen=new_time, last_seen=new_time, ip_reputation="new", asn=23)
-
         result = self.processor._merge_iocs(existing, new)
-
         self.assertEqual(result.last_seen, new_time)
+        self.assertEqual(result.autonomous_system.asn, 23)
         self.assertEqual(result.first_seen, old_time)
         self.assertEqual(result.ip_reputation, "old")
-        self.assertEqual(result.asn, 23)
 
     def test_last_seen_not_regressed(self):
         later = datetime(2025, 1, 2, 12, 0, 0)
@@ -277,30 +273,30 @@ class TestMergeIocs(ExtractionTestCase):
 
     def test_preserves_reputation_when_new_is_empty(self):
         """Existing ip_reputation must not be overwritten by an empty value."""
-        existing = self._create_mock_ioc(ip_reputation="mass scanner")
+        existing = self._create_mock_ioc(ip_reputation=IpReputation.MASS_SCANNER)
         new = self._create_mock_ioc(ip_reputation="")
 
         result = self.processor._merge_iocs(existing, new)
 
-        self.assertEqual(result.ip_reputation, "mass scanner")
+        self.assertEqual(result.ip_reputation, IpReputation.MASS_SCANNER)
 
     def test_preserves_reputation_when_existing_is_set(self):
         """Existing ip_reputation must not be overwritten even if new has a value."""
-        existing = self._create_mock_ioc(ip_reputation="tor exit node")
-        new = self._create_mock_ioc(ip_reputation="mass scanner")
+        existing = self._create_mock_ioc(ip_reputation=IpReputation.TOR_EXIT_NODE)
+        new = self._create_mock_ioc(ip_reputation=IpReputation.MASS_SCANNER)
 
         result = self.processor._merge_iocs(existing, new)
 
-        self.assertEqual(result.ip_reputation, "tor exit node")
+        self.assertEqual(result.ip_reputation, IpReputation.TOR_EXIT_NODE)
 
     def test_fills_reputation_when_existing_is_empty(self):
         """Empty existing ip_reputation should be filled by a non-empty new value."""
         existing = self._create_mock_ioc(ip_reputation="")
-        new = self._create_mock_ioc(ip_reputation="mass scanner")
+        new = self._create_mock_ioc(ip_reputation=IpReputation.MASS_SCANNER)
 
         result = self.processor._merge_iocs(existing, new)
 
-        self.assertEqual(result.ip_reputation, "mass scanner")
+        self.assertEqual(result.ip_reputation, IpReputation.MASS_SCANNER)
 
     def test_handles_empty_urls_and_ports(self):
         existing = self._create_mock_ioc(related_urls=[], destination_ports=[])
