@@ -268,4 +268,4 @@ class TestMassScannersCron(CustomTestCase):
             mock_get.return_value = mock_response
             # Expect exception to be raised now
             with self.assertRaises(requests.exceptions.HTTPError):
-                 self.cron.execute()
+                self.cron.execute()
