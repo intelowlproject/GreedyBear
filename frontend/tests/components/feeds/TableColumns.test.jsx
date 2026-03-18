@@ -155,4 +155,32 @@ describe("Feeds table details popover", () => {
 
     expect(await screen.findByText(/Country:\s*-/i)).toBeInTheDocument();
   });
+
+  test("shows sensors in popover details when sensors are provided", async () => {
+    const user = userEvent.setup();
+    const detailsColumn = feedsTableColumns.find(
+      (column) => column.accessor === "details",
+    );
+
+    const row = {
+      id: "3",
+      original: {
+        sensors: [
+          { address: "10.0.0.1", label: "AWS-West" },
+          { address: "10.0.0.2", label: "" },
+        ],
+      },
+    };
+
+    const DetailsCell = detailsColumn.Cell;
+    render(<DetailsCell row={row} />);
+
+    const detailsButton = screen.getByLabelText(/view details/i);
+    await user.click(detailsButton);
+
+    expect(await screen.findByText(/Sensors/i)).toBeInTheDocument();
+    expect(await screen.findByText(/10\.0\.0\.1/i)).toBeInTheDocument();
+    expect(await screen.findByText(/\(AWS-West\)/i)).toBeInTheDocument();
+    expect(await screen.findByText(/10\.0\.0\.2/i)).toBeInTheDocument();
+  });
 });

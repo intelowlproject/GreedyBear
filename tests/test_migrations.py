@@ -217,3 +217,20 @@ class TestCredentialModelMigration(MigrationTestCase):
 
         session = CowrieSession.objects.get(session_id=1)
         self.assertEqual(session.credentials.count(), 2)
+
+
+@tag("migration")
+class TestSensorLabelMigration(MigrationTestCase):
+    """Tests the addition of the label field to the Sensor model."""
+
+    migrate_from = "0043_autonomoussystem_remove_ioc_asn_and_more"
+    migrate_to = "0044_sensor_label"
+
+    def test_existing_sensors_get_empty_label(self):
+        Sensor = self.old_state.apps.get_model(self.app_name, "Sensor")
+        Sensor.objects.create(address="10.0.0.1")
+
+        new_state = self.apply_tested_migration()
+        sensor_new = new_state.apps.get_model(self.app_name, "Sensor")
+        migrated = sensor_new.objects.get(address="10.0.0.1")
+        self.assertEqual(migrated.label, "")

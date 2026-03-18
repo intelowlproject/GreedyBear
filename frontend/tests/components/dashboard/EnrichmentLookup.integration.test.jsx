@@ -306,4 +306,58 @@ describe("Enrichment Lookup Integration Tests", () => {
       ).toBeInTheDocument();
     });
   });
+
+  test("look up an IP with authentication - sensors display scenario", async () => {
+    const user = userEvent.setup();
+
+    // Mock authenticated state
+    mockUseAuthStore.mockImplementation((selector) =>
+      selector({ isAuthenticated: AUTHENTICATION_STATUSES.TRUE }),
+    );
+
+    // Mock successful API response with sensors data
+    const mockIocData = {
+      name: "8.8.8.8",
+      type: "ip",
+      attack_count: 10,
+      interaction_count: 20,
+      login_attempts: 5,
+      first_seen: "2024-01-01",
+      last_seen: "2024-01-15",
+      scanner: true,
+      payload_request: false,
+      sensors: [
+        { address: "10.0.0.1", label: "AWS-Prod" },
+        { address: "10.0.0.2", label: "" },
+      ],
+    };
+
+    axios.get.mockResolvedValue({
+      data: {
+        found: true,
+        query: "8.8.8.8",
+        ioc: mockIocData,
+      },
+    });
+
+    render(
+      <BrowserRouter>
+        <Dashboard />
+      </BrowserRouter>,
+    );
+
+    const inputElement = screen.getByLabelText("IP Address or Domain:");
+    const submitButton = screen.getByRole("button", { name: /Search/i });
+
+    await user.type(inputElement, "8.8.8.8");
+    await user.click(submitButton);
+
+    // Verify sensors are displayed
+    await waitFor(() => {
+      expect(screen.getByText(/Sensors:/i)).toBeInTheDocument();
+      expect(screen.getByText(/10\.0\.0\.1/i)).toBeInTheDocument();
+      expect(screen.getByText(/\(AWS-Prod\)/i)).toBeInTheDocument();
+      expect(screen.getByText(/10\.0\.0\.2/i)).toBeInTheDocument();
+    });
+  });
 });
