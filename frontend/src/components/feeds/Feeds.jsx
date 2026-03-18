@@ -3,7 +3,7 @@ import { Container, Button, Col, Label, FormGroup, Row } from "reactstrap";
 import { VscJson } from "react-icons/vsc";
 import { TbLicense } from "react-icons/tb";
 import { MdFilterAltOff } from "react-icons/md";
-import { useLocation } from "react-router-dom";
+import { useLocation, useSearchParams } from "react-router-dom";
 import { FEEDS_BASE_URI, GENERAL_HONEYPOT_URI } from "../../constants/api";
 import {
   ContentSection,
@@ -99,17 +99,40 @@ function FeedsTable({ tableParams, onDataLoad, onSortChange }) {
 export default function Feeds() {
   console.debug("Feeds rendered!");
   console.debug("Feeds-DEFAULT_VALUES", DEFAULT_VALUES);
+
+  const [searchParams, setSearchParams] = useSearchParams();
   const formikRef = React.useRef(null);
 
-  const [feedsState, setFeedsState] = React.useState({
-    url: `${FEEDS_BASE_URI}/${DEFAULT_VALUES.feeds_type}/${DEFAULT_VALUES.attack_type}/${DEFAULT_VALUES.prioritize}.json`,
-    tableParams: {
-      feed_type: DEFAULT_VALUES.feeds_type,
-      attack_type: DEFAULT_VALUES.attack_type,
-      ioc_type: DEFAULT_VALUES.ioc_type,
-      prioritize: DEFAULT_VALUES.prioritize,
-    },
-    tableKey: 0,
+  const initialSearchParams = React.useRef(searchParams);
+
+  const initialValues = React.useMemo(
+    () => ({
+      feeds_type:
+        initialSearchParams.current.get("feed_type") ||
+        DEFAULT_VALUES.feeds_type,
+      attack_type:
+        initialSearchParams.current.get("attack_type") ||
+        DEFAULT_VALUES.attack_type,
+      ioc_type:
+        initialSearchParams.current.get("ioc_type") || DEFAULT_VALUES.ioc_type,
+      prioritize:
+        initialSearchParams.current.get("prioritize") ||
+        DEFAULT_VALUES.prioritize,
+    }),
+    [],
+  );
+  const [feedsState, setFeedsState] = React.useState(() => {
+    const values = initialValues;
+    return {
+      url: `${FEEDS_BASE_URI}/${values.feeds_type}/${values.attack_type}/${values.prioritize}.json?ioc_type=${values.ioc_type}`,
+      tableParams: {
+        feed_type: values.feeds_type,
+        attack_type: values.attack_type,
+        ioc_type: values.ioc_type,
+        prioritize: values.prioritize,
+      },
+      tableKey: 0,
+    };
   });
 
   // feedsData is lifted from FeedsTable so we can show the count in the header
@@ -137,7 +160,24 @@ export default function Feeds() {
     [honeypots],
   );
 
-  // reset the prioritize dropdown to "recent"
+  // Update URL query params to reflect current filter state
+  // Uses replace: true so filter changes don't pollute browser history
+  const updateSearchParams = React.useCallback(
+    (values) => {
+      const params = {};
+      if (values.feeds_type !== DEFAULT_VALUES.feeds_type)
+        params.feed_type = values.feeds_type;
+      if (values.attack_type !== DEFAULT_VALUES.attack_type)
+        params.attack_type = values.attack_type;
+      if (values.ioc_type !== DEFAULT_VALUES.ioc_type)
+        params.ioc_type = values.ioc_type;
+      if (values.prioritize !== DEFAULT_VALUES.prioritize)
+        params.prioritize = values.prioritize;
+      setSearchParams(params, { replace: true });
+    },
+    [setSearchParams],
+  );
+
   const handleSortChange = React.useCallback(async () => {
     const formik = formikRef.current;
     if (!formik) return;
@@ -148,22 +188,26 @@ export default function Feeds() {
   }, []);
 
   // callbacks
-  const onSubmit = React.useCallback((values) => {
-    try {
-      setFeedsState((prev) => ({
-        url: `${FEEDS_BASE_URI}/${values.feeds_type}/${values.attack_type}/${values.prioritize}.json?ioc_type=${values.ioc_type}`,
-        tableParams: {
-          feed_type: values.feeds_type,
-          attack_type: values.attack_type,
-          ioc_type: values.ioc_type,
-          prioritize: values.prioritize,
-        },
-        tableKey: prev.tableKey + 1,
-      }));
-    } catch (e) {
-      console.debug(e);
-    }
-  }, []);
+  const onSubmit = React.useCallback(
+    (values) => {
+      try {
+        setFeedsState((prev) => ({
+          url: `${FEEDS_BASE_URI}/${values.feeds_type}/${values.attack_type}/${values.prioritize}.json?ioc_type=${values.ioc_type}`,
+          tableParams: {
+            feed_type: values.feeds_type,
+            attack_type: values.attack_type,
+            ioc_type: values.ioc_type,
+            prioritize: values.prioritize,
+          },
+          tableKey: prev.tableKey + 1,
+        }));
+        updateSearchParams(values);
+      } catch (e) {
+        console.debug(e);
+      }
+    },
+    [updateSearchParams],
+  );
 
   return (
     <Container>
@@ -191,7 +235,7 @@ export default function Feeds() {
             <Loader
               render={() => (
                 <Formik
-                  initialValues={DEFAULT_VALUES}
+                  initialValues={initialValues}
                   onSubmit={onSubmit}
                   innerRef={formikRef}
                 >
@@ -328,7 +372,9 @@ export default function Feeds() {
                               title="Reset filters"
                               aria-label="Reset filters"
                               onClick={() => {
-                                formikRef.current?.resetForm();
+                                formikRef.current?.resetForm({
+                                  values: DEFAULT_VALUES,
+                                });
                                 onSubmit(DEFAULT_VALUES);
                               }}
                             >
