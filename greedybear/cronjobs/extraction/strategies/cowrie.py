@@ -175,7 +175,7 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
             scanner_ip = str(hit["src_ip"])
             download_url = str(hit["url"])
             shasum = hit.get("shasum")
-            self.log.info(f"found IP {scanner_ip} downloading from {download_url}" + f" (SHA256: {shasum})" if shasum else "")
+            self.log.info(f"found IP {scanner_ip} downloading from {download_url}" + (f" (SHA256: {shasum})" if shasum else ""))
 
             # Extract and track download URL
             if download_url:
