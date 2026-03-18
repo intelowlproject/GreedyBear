@@ -1,7 +1,7 @@
 import React from "react";
 import "@testing-library/jest-dom";
 import { render, screen, waitFor } from "@testing-library/react";
-import { BrowserRouter } from "react-router-dom";
+import { BrowserRouter, MemoryRouter } from "react-router-dom";
 import userEvent from "@testing-library/user-event";
 import Feeds from "../../../src/components/feeds/Feeds";
 
@@ -128,7 +128,7 @@ describe("Feeds component", () => {
     const buttonRawData = screen.getByRole("link", { name: /Raw data/i });
     expect(buttonRawData).toHaveAttribute(
       "href",
-      "/api/feeds/all/all/recent.json",
+      "/api/feeds/all/all/recent.json?ioc_type=all",
     );
 
     await user.selectOptions(feedTypeSelectElement, "cowrie");
@@ -352,6 +352,107 @@ describe("Feeds component", () => {
           "/api/feeds/all/all/recent.json?ioc_type=all",
         );
         expect(resetButton).toBeDisabled();
+      });
+    });
+  });
+
+  // ─── NEW: URL query param persistence tests ───────────────────────────────
+
+  describe("URL query param persistence", () => {
+    test("initializes filters from URL query params on page load", async () => {
+      render(
+        <MemoryRouter
+          initialEntries={[
+            "/?attack_type=scanner&ioc_type=ip&prioritize=persistent",
+          ]}
+        >
+          <Feeds />
+        </MemoryRouter>,
+      );
+
+      await waitFor(() => {
+        expect(screen.getByLabelText("Attack type:")).toHaveValue("scanner");
+        expect(screen.getByLabelText("IOC type:")).toHaveValue("ip");
+        expect(screen.getByLabelText("Prioritize:")).toHaveValue("persistent");
+      });
+    });
+
+    test("updates raw data URL when a filter is changed", async () => {
+      const user = userEvent.setup();
+
+      render(
+        <MemoryRouter initialEntries={["/"]}>
+          <Feeds />
+        </MemoryRouter>,
+      );
+
+      const attackTypeSelect = screen.getByLabelText("Attack type:");
+      await user.selectOptions(attackTypeSelect, "scanner");
+
+      await waitFor(() => {
+        expect(screen.getByRole("link", { name: /Raw data/i })).toHaveAttribute(
+          "href",
+          "/api/feeds/all/scanner/recent.json?ioc_type=all",
+        );
+      });
+    });
+
+    test("raw data URL starts with defaults when no query params present", () => {
+      render(
+        <MemoryRouter initialEntries={["/"]}>
+          <Feeds />
+        </MemoryRouter>,
+      );
+
+      expect(screen.getByRole("link", { name: /Raw data/i })).toHaveAttribute(
+        "href",
+        "/api/feeds/all/all/recent.json?ioc_type=all",
+      );
+    });
+    test("clears filters when reset button is clicked after loading from query params", async () => {
+      const user = userEvent.setup();
+
+      render(
+        <MemoryRouter initialEntries={["/?attack_type=scanner&ioc_type=ip"]}>
+          <Feeds />
+        </MemoryRouter>,
+      );
+
+      const resetButton = screen.getByTitle("Reset filters");
+      const attackTypeSelect = screen.getByLabelText("Attack type:");
+      const iocTypeSelect = screen.getByLabelText("IOC type:");
+
+      await waitFor(() => {
+        expect(attackTypeSelect).toHaveValue("scanner");
+        expect(iocTypeSelect).toHaveValue("ip");
+        expect(resetButton).not.toBeDisabled();
+      });
+
+      await user.click(resetButton);
+
+      await waitFor(() => {
+        expect(attackTypeSelect).toHaveValue("all");
+        expect(iocTypeSelect).toHaveValue("all");
+        expect(resetButton).toBeDisabled();
+      });
+    });
+
+    test("raw data URL reflects filters loaded from query params", async () => {
+      render(
+        <MemoryRouter
+          initialEntries={[
+            "/?feed_type=cowrie&attack_type=scanner&ioc_type=ip&prioritize=persistent",
+          ]}
+        >
+          <Feeds />
+        </MemoryRouter>,
+      );
+
+      await waitFor(() => {
+        expect(screen.getByRole("link", { name: /Raw data/i })).toHaveAttribute(
+          "href",
+          "/api/feeds/cowrie/scanner/persistent.json?ioc_type=ip",
+        );
       });
     });
   });
