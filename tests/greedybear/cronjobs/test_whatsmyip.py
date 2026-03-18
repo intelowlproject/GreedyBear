@@ -181,7 +181,6 @@ class WhatsMyIPTestCase(CustomTestCase):
         mock_get.return_value = mock_response
 
         cron = whatsmyip.WhatsMyIPCron()
-        cron.execute()
 
         with self.assertRaises(requests.exceptions.HTTPError):
             cron.execute()
