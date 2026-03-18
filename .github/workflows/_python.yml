@@ -17,9 +17,9 @@ on:
         type: string
         required: true
       requirements_path:
-        description: Path to the requirements.txt file
+        description: Path to the requirements.txt file (deprecated, unused with uv)
         type: string
-        required: true
+        required: false
       project_dev_requirements_file:
         description: Path to an additional project dev requirements file
         type: string
@@ -264,7 +264,7 @@ jobs:
         id: setup_python
         uses: actions/setup-python@v5
         with:
-          python-version: ${{ matrix.python_version }}
+          python-version-file: "pyproject.toml"
 
       - name: Inject stuff to environment
         run: |
@@ -312,127 +312,18 @@ jobs:
         with:
           apt_requirements_file_path: ${{ inputs.packages_path }}
 
-      - name: Create linter requirements file
-        uses: ./.github/actions/python_requirements/create_linter_requirements_file
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
         with:
-          install_from: ${{ inputs.install_from }}
-          django_settings_module: ${{ inputs.django_settings_module }}
-          use_autoflake: ${{ inputs.use_autoflake }}
-          use_bandit: ${{ inputs.use_bandit }}
-          use_black: ${{ inputs.use_black }}
-          use_flake8: ${{ inputs.use_flake8 }}
-          use_isort: ${{ inputs.use_isort }}
-          use_pylint: ${{ inputs.use_pylint }}
-          use_ruff_formatter: ${{ inputs.use_ruff_formatter }}
-          use_ruff_linter: ${{ inputs.use_ruff_linter }}
+          enable-cache: true
+          version: "0.10.9"
 
-      - name: Create dev requirements file
-        uses: ./.github/actions/python_requirements/create_dev_requirements_file
-        with:
-          install_from: ${{ inputs.install_from }}
-          project_dev_requirements_file: ${{ inputs.project_dev_requirements_file }}
-
-      - name: Create docs requirements file
-        uses: ./.github/actions/python_requirements/create_docs_requirements_file
-        with:
-          install_from: ${{ inputs.install_from }}
-          check_docs_directory: ${{ inputs.check_docs_directory }}
-          django_settings_module: ${{ inputs.django_settings_module }}
-
-      - name: Restore Python virtual environment related to PR event
-        id: restore_python_virtual_environment_pr
-        uses: ./.github/actions/python_requirements/restore_virtualenv/
-        with:
-          requirements_paths: "${{ inputs.requirements_path }} requirements-linters.txt requirements-dev.txt requirements-docs.txt"
-          python_version: ${{ steps.setup_python.outputs.python-version }}
-
-      - name: Restore Python virtual environment related to target branch
-        id: restore_python_virtual_environment_target_branch
-        if: steps.restore_python_virtual_environment_pr.outputs.cache-hit != 'true'
-        uses: ./.github/actions/python_requirements/restore_virtualenv/
-        with:
-          requirements_paths: ${{ inputs.requirements_path }}
-          git_reference: ${{ github.base_ref }}
-          python_version: ${{ steps.setup_python.outputs.python-version }}
-
-      - name: Create Python virtual environment
-        if: >
-         steps.restore_python_virtual_environment_pr.outputs.cache-hit != 'true' && 
-         steps.restore_python_virtual_environment_target_branch.outputs.cache-hit != 'true'
-        uses: ./.github/actions/python_requirements/create_virtualenv
-
-      - name: Restore pip cache related to PR event
-        id: restore_pip_cache_pr
-        if: > 
-          steps.restore_python_virtual_environment_pr.outputs.cache-hit != 'true' && 
-          steps.restore_python_virtual_environment_target_branch.outputs.cache-hit != 'true'
-        uses: ./.github/actions/python_requirements/restore_pip_cache
-
-      - name: Restore pip cache related to target branch
-        id: restore_pip_cache_target_branch
-        if: >
-          steps.restore_python_virtual_environment_pr.outputs.cache-hit != 'true' &&
-          steps.restore_python_virtual_environment_target_branch.outputs.cache-hit != 'true' &&
-          steps.restore_pip_cache_pr.outputs.cache-hit != 'true'
-        uses: ./.github/actions/python_requirements/restore_pip_cache
-        with:
-          git_reference: ${{ github.base_ref }}
-      
-      - name: Install project requirements
-        if: >
-          steps.restore_python_virtual_environment_pr.outputs.cache-hit != 'true' &&
-          steps.restore_python_virtual_environment_target_branch.outputs.cache-hit != 'true'
-        run: pip install -r ${{ inputs.requirements_path }}
+      - name: Install dependencies
+        run: |
+          uv sync --frozen --all-groups
+          echo "${{ github.workspace }}/${{ inputs.install_from }}/.venv/bin" >> $GITHUB_PATH
         shell: bash
         working-directory: ${{ inputs.install_from }}
-
-      - name: Install other requirements
-        if: >
-          steps.restore_python_virtual_environment_pr.outputs.cache-hit != 'true'
-        run: |
-          pip install -r requirements-dev.txt
-          pip install -r requirements-linters.txt
-          pip install -r requirements-docs.txt
-        shell: bash
-        working-directory: ${{ inputs.install_from }}
-
-      - name: Check requirements licenses
-        if: >
-            inputs.check_requirements_licenses && 
-            steps.restore_python_virtual_environment_pr.outputs.cache-hit != 'true'
-        id: license_check_report
-        continue-on-error: true
-        uses: pilosus/action-pip-license-checker@v2
-        with:
-          requirements: ${{ inputs.install_from }}/${{ inputs.requirements_path }}
-          exclude: ${{ inputs.ignore_requirements_licenses_regex }}
-          headers: true
-          fail: 'StrongCopyleft,NetworkCopyleft,Error'
-          fails-only: true
-
-      - name: Print wrong licenses
-        if: steps.license_check_report.outcome == 'failure'
-        run: |
-          echo "License check failed"
-          echo "===================="
-          echo "${{ steps.license_check_report.outputs.report }}"
-          echo "===================="
-          exit 1
-        shell: bash
-
-      - name: Save Python virtual environment related to PR event
-        if: >
-          steps.restore_python_virtual_environment_pr.outputs.cache-hit != 'true'
-        uses: ./.github/actions/python_requirements/save_virtualenv
-        with:
-          requirements_paths: "${{ inputs.requirements_path }} requirements-linters.txt requirements-dev.txt requirements-docs.txt"
-          python_version: ${{ steps.setup_python.outputs.python-version }}
-
-      - name: Save pip cache related to PR event
-        if: >
-          steps.restore_python_virtual_environment_pr.outputs.cache-hit != 'true' &&
-          steps.restore_pip_cache_pr.outputs.cache-hit != 'true'
-        uses: ./.github/actions/python_requirements/save_pip_cache
 
       - name: Run linters
         uses: ./.github/actions/python_linter

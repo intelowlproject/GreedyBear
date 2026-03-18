@@ -3,6 +3,7 @@
 # flake8: noqa
 import logging
 import os
+import tomllib
 from datetime import timedelta
 
 from django.core.management.utils import get_random_secret_key
@@ -53,7 +54,8 @@ SLACK_TOKEN = os.environ.get("SLACK_TOKEN", "")
 DEFAULT_SLACK_CHANNEL = os.environ.get("DEFAULT_SLACK_CHANNEL", "")
 NTFY_URL = os.environ.get("NTFY_URL", "")
 
-VERSION = os.environ.get("VITE_GREEDYBEAR_VERSION", "")
+with open(os.path.join(BASE_DIR, "pyproject.toml"), "rb") as f:
+    VERSION = tomllib.load(f)["project"]["version"]
 
 CSRF_COOKIE_SAMESITE = "Strict"
 CSRF_COOKIE_HTTPONLY = True
