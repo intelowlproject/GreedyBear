@@ -161,6 +161,23 @@ class CowrieSession(models.Model):
         return f"Session {hex(self.session_id)[2:]} from {self.source.name}"
 
 
+class CowrieFileTransfer(models.Model):
+    session = models.ForeignKey(CowrieSession, on_delete=models.CASCADE, related_name="file_transfers")
+    shasum = models.CharField(max_length=64)
+    url = models.CharField(max_length=900, blank=True)
+    outfile = models.CharField(max_length=256, blank=True)
+    timestamp = models.DateTimeField(blank=False)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["shasum"]),
+        ]
+        constraints = [models.UniqueConstraint(fields=["shasum", "session"], name="unique_download_per_session")]
+
+    def __str__(self):
+        return f"{self.shasum[:8]} from session {self.session_id}"
+
+
 class Statistics(models.Model):
     source = models.CharField(max_length=15)
     view = models.CharField(
