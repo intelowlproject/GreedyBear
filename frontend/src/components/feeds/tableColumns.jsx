@@ -36,9 +36,9 @@ const feedsTableColumns = [
     maxWidth: 60,
     Cell: ({ value }) =>
       Array.isArray(value) ? (
-        <ul className="d-flex flex-column text-left" key={value}>
+        <ul className="d-flex flex-column text-left">
           {value?.map((val, index) => (
-            <li className="mb-1 pb-2" key={index} id={val}>
+            <li className="mb-1 pb-2" key={`${val}-${index}`}>
               <div className="d-flex align-items-start">{val}</div>
             </li>
           ))}
