@@ -174,8 +174,8 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
 
             scanner_ip = str(hit["src_ip"])
             download_url = str(hit["url"])
-
-            self.log.info(f"found IP {scanner_ip} downloading from {download_url}")
+            shasum = hit.get("shasum")
+            self.log.info(f"found IP {scanner_ip} downloading from {download_url}" + (f" (SHA256: {shasum})" if shasum else ""))
 
             # Extract and track download URL
             if download_url:
@@ -268,6 +268,22 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
 
             case "cowrie.session.closed":
                 session_record.duration = hit["duration"]
+
+            case "cowrie.session.file_download" | "cowrie.session.file_upload":
+                shasum = hit.get("shasum")
+                if shasum:
+                    url = hit.get("url", "")
+                    outfile = hit.get("outfile", "")
+                    timestamp = hit["timestamp"]
+                    self.log.info(f"found file with shasum {shasum[:8]}... from {ioc.name}")
+
+                    self.session_repo.get_or_create_file_transfer(
+                        session=session_record,
+                        shasum=shasum,
+                        url=url,
+                        outfile=outfile,
+                        timestamp=timestamp,
+                    )
 
         session_record.interaction_count += 1
 
