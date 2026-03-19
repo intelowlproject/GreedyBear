@@ -119,6 +119,23 @@ const feedsTableColumns = [
               <div>ASN: {asn ?? "-"}</div>
               <div>Reputation: {ip_reputation || "-"}</div>
               <div>Country: {attacker_country || "-"}</div>
+              <hr className="my-2" />
+              <div className="text-muted">Sensors</div>
+              {row.original.sensors?.length > 0 ? (
+                row.original.sensors.map((sensor, idx) => (
+                  <div key={idx} className="small">
+                    {sensor.address}
+                    {sensor.label && (
+                      <span className="text-muted italic">
+                        {" "}
+                        ({sensor.label})
+                      </span>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div className="small">-</div>
+              )}
             </PopoverBody>
           </UncontrolledPopover>
         </div>

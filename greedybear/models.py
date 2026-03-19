@@ -26,9 +26,15 @@ class Sensor(models.Model):
         blank=True,
         default="",
     )
+    label = models.CharField(
+        max_length=128,
+        blank=True,
+        default="",
+        help_text="Optional human-readable label to identify this sensor (e.g. 'home-pi', 'cloud-aws-eu').",
+    )
 
     def __str__(self):
-        return self.address
+        return f"{self.address} ({self.label})" if self.label else self.address
 
 
 class GeneralHoneypot(models.Model):
