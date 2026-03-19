@@ -42,6 +42,8 @@ class IOCSerializer(serializers.ModelSerializer):
             "attack_count",
             "interaction_count",
             "login_attempts",
+            "scanner",
+            "payload_request",
             "general_honeypot",
             "tags",
             "sensors",
