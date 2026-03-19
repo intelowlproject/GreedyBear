@@ -125,17 +125,17 @@ class TestIocRepository(CustomTestCase):
 
     def test_add_honeypot_to_ioc_idempotent_case_insensitive(self):
         ioc = IOC.objects.create(name="1.2.3.5", type="ip")
-        honeypot = GeneralHoneypot.objects.get(name="Log4pot")
-        ioc.general_honeypot.add(honeypot)
+        honeypot = Honeypot.objects.get(name="Log4pot")
+        ioc.honeypots.add(honeypot)
 
-        # Fetch through repository so general_honeypot is prefetched; with normalized
+        # Fetch through repository so honeypots is prefetched; with normalized
         # membership check this should not attempt another add query.
         ioc_fetched = self.repo.get_ioc_by_name("1.2.3.5")
         with self.assertNumQueries(0):
             result = self.repo.add_honeypot_to_ioc("Log4Pot", ioc_fetched)
 
-        self.assertEqual(result.general_honeypot.count(), 1)
-        self.assertIn(honeypot, result.general_honeypot.all())
+        self.assertEqual(result.honeypots.count(), 1)
+        self.assertIn(honeypot, result.honeypots.all())
 
     def test_add_honeypot_to_ioc_multiple_honeypots(self):
         ioc = IOC.objects.create(name="1.2.3.4", type="ip")
