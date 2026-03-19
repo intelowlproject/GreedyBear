@@ -1,7 +1,5 @@
 # This file is a part of GreedyBear https://github.com/honeynet/GreedyBear
 # See the file 'LICENSE' for copying permission.
-from collections import defaultdict
-
 from greedybear.consts import SCANNER
 from greedybear.cronjobs.extraction.strategies.base import BaseExtractionStrategy
 from greedybear.cronjobs.extraction.utils import (
@@ -9,11 +7,9 @@ from greedybear.cronjobs.extraction.utils import (
     threatfox_submission,
 )
 from greedybear.cronjobs.repositories import IocRepository, SensorRepository
-from greedybear.models import IOC, Tag
+from greedybear.models import Credential
 
-HERALDING_SOURCE = "heralding"
 HERALDING_HONEYPOT = "Heralding"
-PROTOCOL_TAG_KEY = "protocol"
 
 # Protocols that Heralding emulates for credential capture.
 HERALDING_PROTOCOLS = frozenset(
@@ -43,7 +39,7 @@ class HeraldingExtractionStrategy(BaseExtractionStrategy):
     Heralding emulates multiple protocols (SSH, Telnet, FTP, HTTP, etc.)
     and captures credential brute-force attempts. This strategy:
     - Extracts scanner IPs as IOCs
-    - Tags scanners with the protocols they targeted
+    - Stores credentials with the protocol they targeted
     """
 
     def __init__(
@@ -53,22 +49,21 @@ class HeraldingExtractionStrategy(BaseExtractionStrategy):
         sensor_repo: SensorRepository,
     ):
         super().__init__(honeypot, ioc_repo, sensor_repo)
-        self.protocol_tags_added = 0
+        self.credentials_added = 0
 
     def extract_from_hits(self, hits: list[dict]) -> None:
         """
         Extract IOCs from Heralding honeypot log hits.
 
         Processes scanner IPs, then classifies credential-brute-force
-        attempts by analysing the protocols used and tagging the IOC
-        records accordingly.
+        attempts and stores protocol-aware credentials.
 
         Args:
             hits: List of Elasticsearch hit dictionaries to process.
         """
         self._get_scanners(hits)
         self._classify_credential_attacks(hits)
-        self.log.info(f"added {len(self.ioc_records)} scanners, {self.protocol_tags_added} protocol tags from {self.honeypot}")
+        self.log.info(f"added {len(self.ioc_records)} scanners, {self.credentials_added} credentials from {self.honeypot}")
 
     def _get_scanners(self, hits: list[dict]) -> None:
         """Extract scanner IPs from hits."""
@@ -85,36 +80,39 @@ class HeraldingExtractionStrategy(BaseExtractionStrategy):
 
     def _classify_credential_attacks(self, hits: list[dict]) -> None:
         """
-        Classify credential brute-force attempts by protocol and tag IOCs.
+        Classify credential brute-force attempts by protocol and persist credentials.
 
-        Groups hits by source IP and extracts the set of protocols each
-        attacker targeted. Each protocol is stored as a Tag record
-        (key=PROTOCOL_TAG_KEY, source="heralding") on the corresponding IOC.
+        Extracts username/password pairs from Heralding hits and stores them
+        together with the normalized protocol on the Credential model.
+        Duplicate tuples in the same batch are deduplicated.
 
         Args:
             hits: List of Elasticsearch hit documents.
         """
-        # Seed cache from IOC records loaded by _get_scanners so we avoid
-        # repeated DB lookups for the same scanner IP across many hits.
-        ioc_cache: dict[str, IOC | None] = {ioc.name: ioc for ioc in self.ioc_records}
-
-        # Group protocols per source IP
-        protocols_by_ip: dict[str, set[str]] = defaultdict(set)
+        credentials: set[tuple[str, str, str]] = set()
         for hit in hits:
-            scanner_ip = hit.get("src_ip")
-            if not scanner_ip:
-                continue
             protocol = self._extract_protocol(hit)
-            if protocol:
-                protocols_by_ip[scanner_ip].add(protocol)
+            if not protocol:
+                continue
 
-        for scanner_ip, protocols in protocols_by_ip.items():
-            ioc_record = ioc_cache.get(scanner_ip)
-            if ioc_record is None:
-                ioc_record = self.ioc_repo.get_ioc_by_name(scanner_ip)
-                ioc_cache[scanner_ip] = ioc_record
-            if ioc_record:
-                self._add_protocol_tags(ioc_record, protocols)
+            raw_username = hit.get("username")
+            raw_password = hit.get("password")
+            if not raw_username and not raw_password:
+                continue
+
+            username = str(raw_username or "")
+            password = str(raw_password or "")
+            credentials.add((username, password, protocol))
+
+        for username, password, protocol in sorted(credentials):
+            _, created = Credential.objects.get_or_create(
+                username=username,
+                password=password,
+                protocol=protocol,
+            )
+            if created:
+                self.credentials_added += 1
+                self.log.info(f"stored credential for protocol={protocol}")
 
     def _extract_protocol(self, hit: dict) -> str | None:
         """
@@ -137,25 +135,3 @@ class HeraldingExtractionStrategy(BaseExtractionStrategy):
             if normalised in HERALDING_PROTOCOLS:
                 return normalised
         return None
-
-    def _add_protocol_tags(self, ioc_record: IOC, protocols: set[str]) -> None:
-        """
-        Store detected protocols as Tag records on the IOC.
-
-        Creates one tag per protocol with key="protocol",
-        source="heralding". Skips duplicates if the tag already exists.
-
-        Args:
-            ioc_record: Persisted IOC instance to tag.
-            protocols: Set of protocol name strings to store.
-        """
-        for protocol in sorted(protocols):
-            _, created = Tag.objects.get_or_create(
-                ioc=ioc_record,
-                key=PROTOCOL_TAG_KEY,
-                value=protocol,
-                source=HERALDING_SOURCE,
-            )
-            if created:
-                self.protocol_tags_added += 1
-                self.log.info(f"tagged {ioc_record.name} with protocol={protocol}")

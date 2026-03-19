@@ -129,9 +129,15 @@ class CommandSequence(models.Model):
 class Credential(models.Model):
     username = models.CharField(max_length=256, blank=False)
     password = models.CharField(max_length=256, blank=False)
+    protocol = models.CharField(max_length=32, blank=True, default="")
 
     class Meta:
-        constraints = [models.UniqueConstraint(fields=["username", "password"], name="unique_credential")]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["username", "password", "protocol"],
+                name="unique_credential",
+            )
+        ]
         indexes = [
             models.Index(fields=["username"]),
             models.Index(fields=["password"]),

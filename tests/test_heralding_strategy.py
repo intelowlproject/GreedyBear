@@ -8,8 +8,6 @@ from greedybear.consts import SCANNER
 from greedybear.cronjobs.extraction.strategies.heralding import (
     HERALDING_HONEYPOT,
     HERALDING_PROTOCOLS,
-    HERALDING_SOURCE,
-    PROTOCOL_TAG_KEY,
     HeraldingExtractionStrategy,
 )
 
@@ -28,11 +26,11 @@ class TestHeraldingExtractionStrategy(ExtractionTestCase):
         )
 
     @patch("greedybear.cronjobs.extraction.strategies.heralding.iocs_from_hits")
-    @patch("greedybear.cronjobs.extraction.strategies.heralding.Tag.objects")
+    @patch("greedybear.cronjobs.extraction.strategies.heralding.Credential.objects")
     @patch("greedybear.cronjobs.extraction.strategies.heralding.threatfox_submission")
-    def test_extract_scanner_ips(self, mock_threatfox, mock_tag_objects, mock_iocs_from_hits):
+    def test_extract_scanner_ips(self, mock_threatfox, mock_credential_objects, mock_iocs_from_hits):
         """Scanner IPs are extracted as SCANNER-type IOCs tagged with Heralding."""
-        mock_tag_objects.get_or_create.return_value = (Mock(), True)
+        mock_credential_objects.get_or_create.return_value = (Mock(), True)
         mock_ioc = self._create_mock_ioc("1.2.3.4")
         mock_iocs_from_hits.return_value = [mock_ioc]
         self.strategy.ioc_processor.add_ioc = Mock(return_value=mock_ioc)
@@ -50,10 +48,12 @@ class TestHeraldingExtractionStrategy(ExtractionTestCase):
         mock_threatfox.assert_called_once()
 
     @patch("greedybear.cronjobs.extraction.strategies.heralding.iocs_from_hits")
-    def test_none_ioc_record_skipped(self, mock_iocs_from_hits):
+    @patch("greedybear.cronjobs.extraction.strategies.heralding.Credential.objects")
+    def test_none_ioc_record_skipped(self, mock_credential_objects, mock_iocs_from_hits):
         """IOC records that resolve to None are silently skipped."""
         mock_ioc = self._create_mock_ioc()
         mock_iocs_from_hits.return_value = [mock_ioc]
+        mock_credential_objects.get_or_create.return_value = (Mock(), True)
         self.strategy.ioc_processor.add_ioc = Mock(return_value=None)
 
         hits = [{"src_ip": "1.2.3.4", "dest_port": 22, "@timestamp": "2025-01-01T00:00:00"}]
@@ -62,11 +62,11 @@ class TestHeraldingExtractionStrategy(ExtractionTestCase):
         self.assertEqual(len(self.strategy.ioc_records), 0)
 
     @patch("greedybear.cronjobs.extraction.strategies.heralding.iocs_from_hits")
-    @patch("greedybear.cronjobs.extraction.strategies.heralding.Tag.objects")
+    @patch("greedybear.cronjobs.extraction.strategies.heralding.Credential.objects")
     @patch("greedybear.cronjobs.extraction.strategies.heralding.threatfox_submission")
-    def test_multiple_scanners(self, mock_threatfox, mock_tag_objects, mock_iocs_from_hits):
+    def test_multiple_scanners(self, mock_threatfox, mock_credential_objects, mock_iocs_from_hits):
         """Multiple scanner IPs from the same batch are all processed."""
-        mock_tag_objects.get_or_create.return_value = (Mock(), True)
+        mock_credential_objects.get_or_create.return_value = (Mock(), True)
         ioc1 = self._create_mock_ioc("1.2.3.4")
         ioc2 = self._create_mock_ioc("5.6.7.8")
         mock_iocs_from_hits.return_value = [ioc1, ioc2]
@@ -81,12 +81,12 @@ class TestHeraldingExtractionStrategy(ExtractionTestCase):
         self.assertEqual(len(self.strategy.ioc_records), 2)
 
     @patch("greedybear.cronjobs.extraction.strategies.heralding.iocs_from_hits")
-    @patch("greedybear.cronjobs.extraction.strategies.heralding.Tag.objects")
-    def test_extract_from_hits_calls_both_phases(self, mock_tag_objects, mock_iocs_from_hits):
+    @patch("greedybear.cronjobs.extraction.strategies.heralding.Credential.objects")
+    def test_extract_from_hits_calls_both_phases(self, mock_credential_objects, mock_iocs_from_hits):
         """extract_from_hits runs both scanner extraction and credential classification."""
         mock_ioc = self._create_mock_ioc("1.2.3.4")
         mock_iocs_from_hits.return_value = [mock_ioc]
-        mock_tag_objects.get_or_create.return_value = (Mock(), True)
+        mock_credential_objects.get_or_create.return_value = (Mock(), True)
 
         self.strategy.ioc_processor.add_ioc = Mock(return_value=mock_ioc)
 
@@ -147,7 +147,7 @@ class TestHeraldingProtocolExtraction(ExtractionTestCase):
 
 
 class TestHeraldingCredentialClassification(ExtractionTestCase):
-    """Tests for _classify_credential_attacks and protocol tagging logic."""
+    """Tests for _classify_credential_attacks and credential persistence logic."""
 
     def setUp(self):
         super().setUp()
@@ -158,178 +158,142 @@ class TestHeraldingCredentialClassification(ExtractionTestCase):
         )
 
     @patch("greedybear.cronjobs.extraction.strategies.heralding.iocs_from_hits")
-    @patch("greedybear.cronjobs.extraction.strategies.heralding.Tag.objects")
-    def test_protocol_tagged_on_ioc(self, mock_tag_objects, mock_iocs_from_hits):
-        """A valid protocol generates a Tag on the matching IOC."""
+    @patch("greedybear.cronjobs.extraction.strategies.heralding.Credential.objects")
+    def test_protocol_persisted_on_credential(self, mock_credential_objects, mock_iocs_from_hits):
+        """A valid protocol and credential pair is persisted on Credential."""
         mock_iocs_from_hits.return_value = []
-        mock_ioc_record = self._create_mock_ioc("1.2.3.4")
-        self.mock_ioc_repo.get_ioc_by_name.return_value = mock_ioc_record
-        mock_tag_objects.get_or_create.return_value = (Mock(), True)
+        mock_credential_objects.get_or_create.return_value = (Mock(), True)
 
-        hits = [{"src_ip": "1.2.3.4", "protocol": "ssh"}]
+        hits = [{"src_ip": "1.2.3.4", "protocol": "ssh", "username": "root", "password": "toor"}]
         self.strategy.extract_from_hits(hits)
 
-        mock_tag_objects.get_or_create.assert_called_once_with(
-            ioc=mock_ioc_record,
-            key=PROTOCOL_TAG_KEY,
-            value="ssh",
-            source=HERALDING_SOURCE,
+        mock_credential_objects.get_or_create.assert_called_once_with(
+            username="root",
+            password="toor",
+            protocol="ssh",
         )
 
     @patch("greedybear.cronjobs.extraction.strategies.heralding.iocs_from_hits")
-    @patch("greedybear.cronjobs.extraction.strategies.heralding.Tag.objects")
-    def test_multiple_protocols_all_tagged(self, mock_tag_objects, mock_iocs_from_hits):
-        """An IP that attacks multiple protocols gets one tag per protocol."""
+    @patch("greedybear.cronjobs.extraction.strategies.heralding.Credential.objects")
+    def test_multiple_protocols_all_stored(self, mock_credential_objects, mock_iocs_from_hits):
+        """Credential tuples for multiple protocols are all stored."""
         mock_iocs_from_hits.return_value = []
-        mock_ioc_record = self._create_mock_ioc("1.2.3.4")
-        self.mock_ioc_repo.get_ioc_by_name.return_value = mock_ioc_record
-        mock_tag_objects.get_or_create.return_value = (Mock(), True)
+        mock_credential_objects.get_or_create.return_value = (Mock(), True)
 
         hits = [
-            {"src_ip": "1.2.3.4", "protocol": "ssh"},
-            {"src_ip": "1.2.3.4", "protocol": "ftp"},
-            {"src_ip": "1.2.3.4", "protocol": "telnet"},
+            {"src_ip": "1.2.3.4", "protocol": "ssh", "username": "u1", "password": "p1"},
+            {"src_ip": "1.2.3.4", "protocol": "ftp", "username": "u2", "password": "p2"},
+            {"src_ip": "1.2.3.4", "protocol": "telnet", "username": "u3", "password": "p3"},
         ]
         self.strategy.extract_from_hits(hits)
 
-        tagged_values = {call[1]["value"] for call in mock_tag_objects.get_or_create.call_args_list}
-        self.assertEqual(tagged_values, {"ssh", "ftp", "telnet"})
+        stored_protocols = {call[1]["protocol"] for call in mock_credential_objects.get_or_create.call_args_list}
+        self.assertEqual(stored_protocols, {"ssh", "ftp", "telnet"})
 
     @patch("greedybear.cronjobs.extraction.strategies.heralding.iocs_from_hits")
-    @patch("greedybear.cronjobs.extraction.strategies.heralding.Tag.objects")
-    def test_duplicate_protocol_per_ip_deduplicated(self, mock_tag_objects, mock_iocs_from_hits):
-        """Repeated hits for the same IP+protocol only produce a single tag attempt."""
+    @patch("greedybear.cronjobs.extraction.strategies.heralding.Credential.objects")
+    def test_duplicate_credential_protocol_deduplicated(self, mock_credential_objects, mock_iocs_from_hits):
+        """Repeated hits for same username/password/protocol are deduplicated per batch."""
         mock_iocs_from_hits.return_value = []
-        mock_ioc_record = self._create_mock_ioc("1.2.3.4")
-        self.mock_ioc_repo.get_ioc_by_name.return_value = mock_ioc_record
-        mock_tag_objects.get_or_create.return_value = (Mock(), True)
+        mock_credential_objects.get_or_create.return_value = (Mock(), True)
 
         hits = [
-            {"src_ip": "1.2.3.4", "protocol": "ssh"},
-            {"src_ip": "1.2.3.4", "protocol": "ssh"},
-            {"src_ip": "1.2.3.4", "protocol": "ssh"},
+            {"src_ip": "1.2.3.4", "protocol": "ssh", "username": "root", "password": "toor"},
+            {"src_ip": "1.2.3.4", "protocol": "ssh", "username": "root", "password": "toor"},
+            {"src_ip": "1.2.3.4", "protocol": "ssh", "username": "root", "password": "toor"},
         ]
         self.strategy.extract_from_hits(hits)
 
-        # Only one get_or_create call despite three hits
-        ssh_calls = [c for c in mock_tag_objects.get_or_create.call_args_list if c[1]["value"] == "ssh"]
+        ssh_calls = [c for c in mock_credential_objects.get_or_create.call_args_list if c[1]["protocol"] == "ssh"]
         self.assertEqual(len(ssh_calls), 1)
 
     @patch("greedybear.cronjobs.extraction.strategies.heralding.iocs_from_hits")
-    @patch("greedybear.cronjobs.extraction.strategies.heralding.Tag.objects")
-    def test_missing_src_ip_skipped(self, mock_tag_objects, mock_iocs_from_hits):
-        """Hits without src_ip are silently ignored in classification."""
+    @patch("greedybear.cronjobs.extraction.strategies.heralding.Credential.objects")
+    def test_missing_credentials_skipped(self, mock_credential_objects, mock_iocs_from_hits):
+        """Hits with protocol but no credentials are ignored in classification."""
         mock_iocs_from_hits.return_value = []
-        hits = [{"protocol": "ssh"}]
-        self.strategy.extract_from_hits(hits)
-
-        mock_tag_objects.get_or_create.assert_not_called()
-
-    @patch("greedybear.cronjobs.extraction.strategies.heralding.iocs_from_hits")
-    @patch("greedybear.cronjobs.extraction.strategies.heralding.Tag.objects")
-    def test_unknown_protocol_not_tagged(self, mock_tag_objects, mock_iocs_from_hits):
-        """Hits with an unknown protocol value do not produce tags."""
-        mock_iocs_from_hits.return_value = []
-        mock_ioc_record = self._create_mock_ioc("1.2.3.4")
-        self.mock_ioc_repo.get_ioc_by_name.return_value = mock_ioc_record
-
-        hits = [{"src_ip": "1.2.3.4", "protocol": "bogus_protocol"}]
-        self.strategy.extract_from_hits(hits)
-
-        mock_tag_objects.get_or_create.assert_not_called()
-
-    @patch("greedybear.cronjobs.extraction.strategies.heralding.iocs_from_hits")
-    @patch("greedybear.cronjobs.extraction.strategies.heralding.Tag.objects")
-    def test_unknown_scanner_ip_skipped(self, mock_tag_objects, mock_iocs_from_hits):
-        """Source IPs not in the IOC repo are silently skipped during tagging."""
-        mock_iocs_from_hits.return_value = []
-        self.mock_ioc_repo.get_ioc_by_name.return_value = None
-
-        hits = [{"src_ip": "9.9.9.9", "protocol": "ssh"}]
-        self.strategy.extract_from_hits(hits)
-
-        mock_tag_objects.get_or_create.assert_not_called()
-
-    @patch("greedybear.cronjobs.extraction.strategies.heralding.iocs_from_hits")
-    @patch("greedybear.cronjobs.extraction.strategies.heralding.Tag.objects")
-    def test_new_tag_increments_counter(self, mock_tag_objects, mock_iocs_from_hits):
-        """Creating a new protocol tag increments protocol_tags_added."""
-        mock_iocs_from_hits.return_value = []
-        mock_ioc_record = self._create_mock_ioc("1.2.3.4")
-        self.mock_ioc_repo.get_ioc_by_name.return_value = mock_ioc_record
-        mock_tag_objects.get_or_create.return_value = (Mock(), True)
-
-        hits = [{"src_ip": "1.2.3.4", "protocol": "ftp"}]
-        self.strategy.extract_from_hits(hits)
-
-        self.assertGreater(self.strategy.protocol_tags_added, 0)
-
-    @patch("greedybear.cronjobs.extraction.strategies.heralding.iocs_from_hits")
-    @patch("greedybear.cronjobs.extraction.strategies.heralding.Tag.objects")
-    def test_existing_tag_not_counted(self, mock_tag_objects, mock_iocs_from_hits):
-        """Tags that already exist (get_or_create returns created=False) do not increment counter."""
-        mock_iocs_from_hits.return_value = []
-        mock_ioc_record = self._create_mock_ioc("1.2.3.4")
-        self.mock_ioc_repo.get_ioc_by_name.return_value = mock_ioc_record
-        mock_tag_objects.get_or_create.return_value = (Mock(), False)
-
         hits = [{"src_ip": "1.2.3.4", "protocol": "ssh"}]
         self.strategy.extract_from_hits(hits)
 
-        self.assertEqual(self.strategy.protocol_tags_added, 0)
+        mock_credential_objects.get_or_create.assert_not_called()
 
     @patch("greedybear.cronjobs.extraction.strategies.heralding.iocs_from_hits")
-    @patch("greedybear.cronjobs.extraction.strategies.heralding.Tag.objects")
-    def test_two_ips_each_get_tagged_separately(self, mock_tag_objects, mock_iocs_from_hits):
-        """Different scanner IPs each receive their own protocol tags."""
+    @patch("greedybear.cronjobs.extraction.strategies.heralding.Credential.objects")
+    def test_unknown_protocol_not_stored(self, mock_credential_objects, mock_iocs_from_hits):
+        """Hits with an unknown protocol value do not produce credentials."""
         mock_iocs_from_hits.return_value = []
-        ioc1 = self._create_mock_ioc("1.2.3.4")
-        ioc2 = self._create_mock_ioc("5.6.7.8")
-        self.mock_ioc_repo.get_ioc_by_name.side_effect = lambda name: {
-            "1.2.3.4": ioc1,
-            "5.6.7.8": ioc2,
-        }.get(name)
-        mock_tag_objects.get_or_create.return_value = (Mock(), True)
+
+        hits = [{"src_ip": "1.2.3.4", "protocol": "bogus_protocol", "username": "root", "password": "root"}]
+        self.strategy.extract_from_hits(hits)
+
+        mock_credential_objects.get_or_create.assert_not_called()
+
+    @patch("greedybear.cronjobs.extraction.strategies.heralding.iocs_from_hits")
+    @patch("greedybear.cronjobs.extraction.strategies.heralding.Credential.objects")
+    def test_missing_password_stores_empty_string(self, mock_credential_objects, mock_iocs_from_hits):
+        """Missing password is normalized to empty string for persistence."""
+        mock_iocs_from_hits.return_value = []
+        mock_credential_objects.get_or_create.return_value = (Mock(), True)
+
+        hits = [{"src_ip": "9.9.9.9", "protocol": "ssh", "username": "root"}]
+        self.strategy.extract_from_hits(hits)
+
+        mock_credential_objects.get_or_create.assert_called_once_with(
+            username="root",
+            password="",
+            protocol="ssh",
+        )
+
+    @patch("greedybear.cronjobs.extraction.strategies.heralding.iocs_from_hits")
+    @patch("greedybear.cronjobs.extraction.strategies.heralding.Credential.objects")
+    def test_new_credential_increments_counter(self, mock_credential_objects, mock_iocs_from_hits):
+        """Creating a new credential increments credentials_added."""
+        mock_iocs_from_hits.return_value = []
+        mock_credential_objects.get_or_create.return_value = (Mock(), True)
+
+        hits = [{"src_ip": "1.2.3.4", "protocol": "ftp", "username": "root", "password": "root"}]
+        self.strategy.extract_from_hits(hits)
+
+        self.assertGreater(self.strategy.credentials_added, 0)
+
+    @patch("greedybear.cronjobs.extraction.strategies.heralding.iocs_from_hits")
+    @patch("greedybear.cronjobs.extraction.strategies.heralding.Credential.objects")
+    def test_existing_credential_not_counted(self, mock_credential_objects, mock_iocs_from_hits):
+        """Existing credentials (get_or_create returns created=False) do not increment counter."""
+        mock_iocs_from_hits.return_value = []
+        mock_credential_objects.get_or_create.return_value = (Mock(), False)
+
+        hits = [{"src_ip": "1.2.3.4", "protocol": "ssh", "username": "root", "password": "root"}]
+        self.strategy.extract_from_hits(hits)
+
+        self.assertEqual(self.strategy.credentials_added, 0)
+
+    @patch("greedybear.cronjobs.extraction.strategies.heralding.iocs_from_hits")
+    @patch("greedybear.cronjobs.extraction.strategies.heralding.Credential.objects")
+    def test_two_credentials_same_protocol_both_stored(self, mock_credential_objects, mock_iocs_from_hits):
+        """Different username/password tuples are both stored for the same protocol."""
+        mock_iocs_from_hits.return_value = []
+        mock_credential_objects.get_or_create.return_value = (Mock(), True)
 
         hits = [
-            {"src_ip": "1.2.3.4", "protocol": "ssh"},
-            {"src_ip": "5.6.7.8", "protocol": "ftp"},
+            {"src_ip": "1.2.3.4", "protocol": "ssh", "username": "root", "password": "toor"},
+            {"src_ip": "5.6.7.8", "protocol": "ssh", "username": "admin", "password": "admin"},
         ]
         self.strategy.extract_from_hits(hits)
 
-        calls = mock_tag_objects.get_or_create.call_args_list
-        ioc_args = {call[1]["ioc"]: call[1]["value"] for call in calls}
-        self.assertEqual(ioc_args[ioc1], "ssh")
-        self.assertEqual(ioc_args[ioc2], "ftp")
+        stored_users = {call[1]["username"] for call in mock_credential_objects.get_or_create.call_args_list}
+        self.assertEqual(stored_users, {"root", "admin"})
 
     @patch("greedybear.cronjobs.extraction.strategies.heralding.iocs_from_hits")
-    @patch("greedybear.cronjobs.extraction.strategies.heralding.Tag.objects")
-    def test_scanner_from_ioc_cache_used(self, mock_tag_objects, mock_iocs_from_hits):
-        """IPs already in self.ioc_records use the in-memory cache, not the repo."""
-        mock_ioc = self._create_mock_ioc("1.2.3.4")
-        mock_iocs_from_hits.return_value = [mock_ioc]
-        self.strategy.ioc_processor.add_ioc = Mock(return_value=mock_ioc)
-        mock_tag_objects.get_or_create.return_value = (Mock(), True)
-
-        hits = [{"src_ip": "1.2.3.4", "protocol": "http"}]
-        self.strategy.extract_from_hits(hits)
-
-        # get_ioc_by_name should NOT have been called because the record was in
-        # ioc_records (which seeds the cache in _classify_credential_attacks)
-        self.mock_ioc_repo.get_ioc_by_name.assert_not_called()
-
-    @patch("greedybear.cronjobs.extraction.strategies.heralding.iocs_from_hits")
-    @patch("greedybear.cronjobs.extraction.strategies.heralding.Tag.objects")
-    def test_hits_without_protocol_produce_no_tags(self, mock_tag_objects, mock_iocs_from_hits):
-        """Hits that lack the protocol field are ignored during classification."""
+    @patch("greedybear.cronjobs.extraction.strategies.heralding.Credential.objects")
+    def test_hits_without_protocol_produce_no_credentials(self, mock_credential_objects, mock_iocs_from_hits):
+        """Hits without protocol are ignored during credential classification."""
         mock_iocs_from_hits.return_value = []
-        mock_ioc_record = self._create_mock_ioc("1.2.3.4")
-        self.mock_ioc_repo.get_ioc_by_name.return_value = mock_ioc_record
 
-        hits = [{"src_ip": "1.2.3.4", "dest_port": 22}]
+        hits = [{"src_ip": "1.2.3.4", "dest_port": 22, "username": "root", "password": "root"}]
         self.strategy.extract_from_hits(hits)
 
-        mock_tag_objects.get_or_create.assert_not_called()
+        mock_credential_objects.get_or_create.assert_not_called()
 
 
 class TestHeraldingProtocolSet(ExtractionTestCase):
