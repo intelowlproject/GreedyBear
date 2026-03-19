@@ -44,6 +44,8 @@ class IOCSerializer(serializers.ModelSerializer):
             "login_attempts",
             "scanner",
             "payload_request",
+            "recurrence_probability",
+            "expected_interactions",
             "general_honeypot",
             "tags",
             "sensors",
