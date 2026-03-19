@@ -1,7 +1,7 @@
 # This file is a part of GreedyBear https://github.com/honeynet/GreedyBear
 # See the file 'LICENSE' for copying permission.
 from greedybear.consts import SCANNER
-from greedybear.cronjobs.extraction.strategies.base import BaseExtractionStrategy
+from greedybear.cronjobs.extraction.strategies import BaseExtractionStrategy
 from greedybear.cronjobs.extraction.utils import (
     iocs_from_hits,
     threatfox_submission,

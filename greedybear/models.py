@@ -144,7 +144,8 @@ class Credential(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.username} | {self.password}"
+        protocol_part = f" | {self.protocol}" if self.protocol else ""
+        return f"{self.username} | {self.password}{protocol_part}"
 
 
 class CowrieSession(models.Model):
