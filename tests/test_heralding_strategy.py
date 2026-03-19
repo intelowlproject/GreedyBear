@@ -9,6 +9,7 @@ from greedybear.cronjobs.extraction.strategies.heralding import (
     HERALDING_HONEYPOT,
     HERALDING_PROTOCOLS,
     HeraldingExtractionStrategy,
+    normalize_credential_field,
 )
 
 from . import ExtractionTestCase
@@ -29,7 +30,7 @@ class TestHeraldingExtractionStrategy(ExtractionTestCase):
     @patch("greedybear.cronjobs.extraction.strategies.heralding.Credential.objects")
     @patch("greedybear.cronjobs.extraction.strategies.heralding.threatfox_submission")
     def test_extract_scanner_ips(self, mock_threatfox, mock_credential_objects, mock_iocs_from_hits):
-        """Scanner IPs are extracted as SCANNER-type IOCs tagged with Heralding."""
+        """Scanner IPs are extracted as SCANNER-type IOCs linked to Heralding."""
         mock_credential_objects.get_or_create.return_value = (Mock(), True)
         mock_ioc = self._create_mock_ioc("1.2.3.4")
         mock_iocs_from_hits.return_value = [mock_ioc]
@@ -294,6 +295,50 @@ class TestHeraldingCredentialClassification(ExtractionTestCase):
         self.strategy.extract_from_hits(hits)
 
         mock_credential_objects.get_or_create.assert_not_called()
+
+    @patch("greedybear.cronjobs.extraction.strategies.heralding.iocs_from_hits")
+    @patch("greedybear.cronjobs.extraction.strategies.heralding.Credential.objects")
+    def test_null_byte_credentials_are_normalized(self, mock_credential_objects, mock_iocs_from_hits):
+        """NUL bytes in credentials are replaced before persistence."""
+        mock_iocs_from_hits.return_value = []
+        mock_credential_objects.get_or_create.return_value = (Mock(), True)
+
+        hits = [{"src_ip": "1.2.3.4", "protocol": "ssh", "username": "ro\x00ot", "password": "pa\x00ss"}]
+        self.strategy.extract_from_hits(hits)
+
+        mock_credential_objects.get_or_create.assert_called_once_with(
+            username="ro[NUL]ot",
+            password="pa[NUL]ss",
+            protocol="ssh",
+        )
+
+    @patch("greedybear.cronjobs.extraction.strategies.heralding.iocs_from_hits")
+    @patch("greedybear.cronjobs.extraction.strategies.heralding.Credential.objects")
+    def test_credential_fields_are_truncated_to_model_length(self, mock_credential_objects, mock_iocs_from_hits):
+        """Credential fields longer than model max_length are truncated."""
+        mock_iocs_from_hits.return_value = []
+        mock_credential_objects.get_or_create.return_value = (Mock(), True)
+
+        long_username = "u" * 400
+        long_password = "p" * 500
+        hits = [{"src_ip": "1.2.3.4", "protocol": "ssh", "username": long_username, "password": long_password}]
+        self.strategy.extract_from_hits(hits)
+
+        mock_credential_objects.get_or_create.assert_called_once_with(
+            username="u" * 256,
+            password="p" * 256,
+            protocol="ssh",
+        )
+
+
+class TestHeraldingCredentialNormalization(ExtractionTestCase):
+    """Tests for normalize_credential_field helper."""
+
+    def test_none_becomes_empty_string(self):
+        self.assertEqual(normalize_credential_field(None), "")
+
+    def test_truncates_to_max_length(self):
+        self.assertEqual(normalize_credential_field("x" * 300), "x" * 256)
 
 
 class TestHeraldingProtocolSet(ExtractionTestCase):

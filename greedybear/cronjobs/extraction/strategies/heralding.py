@@ -4,6 +4,7 @@ from greedybear.consts import SCANNER
 from greedybear.cronjobs.extraction.strategies import BaseExtractionStrategy
 from greedybear.cronjobs.extraction.utils import (
     iocs_from_hits,
+    normalize_credential_field,
     threatfox_submission,
 )
 from greedybear.cronjobs.repositories import IocRepository, SensorRepository
@@ -100,8 +101,8 @@ class HeraldingExtractionStrategy(BaseExtractionStrategy):
             if not raw_username and not raw_password:
                 continue
 
-            username = str(raw_username or "")
-            password = str(raw_password or "")
+            username = normalize_credential_field(raw_username)
+            password = normalize_credential_field(raw_password)
             credentials.add((username, password, protocol))
 
         for username, password, protocol in sorted(credentials):
