@@ -49,7 +49,7 @@ runs:
     - name: Lint with stylelint
       run: |
         if [[ ${{ inputs.use_stylelint }} != 'false' ]]; then
-          npm rum lint-scss-config-install
+          npm run lint-scss-config-install
           npm run lint-scss
         else
           echo "Skipping stylelint"

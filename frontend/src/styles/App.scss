@@ -165,7 +165,7 @@ section.fixed-bottom {
   .popover-header {
     background-color: $darker;
     color: $light;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    border-bottom: 1px solid rgb(255 255 255 / 8%);
   }
 
   .popover-arrow::before,

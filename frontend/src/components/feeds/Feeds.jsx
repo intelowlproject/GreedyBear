@@ -191,7 +191,11 @@ export default function Feeds() {
             {/* Form */}
             <Loader
               render={() => (
-                <Formik initialValues={filterValues} enableReinitialize onSubmit={onSubmit}>
+                <Formik
+                  initialValues={filterValues}
+                  enableReinitialize
+                  onSubmit={onSubmit}
+                >
                   {(formik) => (
                     <Form>
                       <FormGroup row>
