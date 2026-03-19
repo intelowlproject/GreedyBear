@@ -5,7 +5,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("greedybear", "0043_autonomoussystem_remove_ioc_asn_and_more"),
+        ("greedybear", "0044_cowriefiletransfer"),
     ]
 
     operations = [

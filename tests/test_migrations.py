@@ -224,8 +224,8 @@ class TestCredentialModelMigration(MigrationTestCase):
 class TestCredentialProtocolMigration(MigrationTestCase):
     """Tests migration adding protocol support to Credential uniqueness."""
 
-    migrate_from = "0043_autonomoussystem_remove_ioc_asn_and_more"
-    migrate_to = "0044_credential_protocol"
+    migrate_from = "0044_cowriefiletransfer"
+    migrate_to = "0045_credential_protocol"
 
     def test_default_protocol_set_and_uniqueness_includes_protocol(self):
         credential_old = self.old_state.apps.get_model(self.app_name, "Credential")
