@@ -104,7 +104,19 @@ class TrainModels(Cronjob):
             self.save_training_data()
             return
 
-        if not isinstance(training_data[0]["feed_type"], list):
+        # Validate training data structure before accessing
+        if not isinstance(training_data, list) or len(training_data) == 0:
+            self.log.warning("training data has invalid format, skip training")
+            self.save_training_data()
+            return
+
+        first_entry = training_data[0]
+        if not isinstance(first_entry, dict) or "feed_type" not in first_entry:
+            self.log.warning("training data missing required fields, skip training")
+            self.save_training_data()
+            return
+
+        if not isinstance(first_entry["feed_type"], list):
             self.log.warning("training data outdated, skip training")
             self.save_training_data()
             return
