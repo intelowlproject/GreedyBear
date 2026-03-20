@@ -162,8 +162,7 @@ class FeedsViewTestCase(CustomTestCase):
 
     def test_200_feeds_pagination_ordering_value_desc(self):
         response = self.client.get(
-            "/api/feeds/?page_size=50&page=1&feed_type=all&attack_type=all&prioritize=recent"
-            "&ordering=-value&include_mass_scanners&include_tor_exit_nodes"
+            "/api/feeds/?page_size=50&page=1&feed_type=all&attack_type=all&prioritize=recent&ordering=-value&include_mass_scanners&include_tor_exit_nodes"
         )
         self.assertEqual(response.status_code, 200)
 
@@ -172,8 +171,7 @@ class FeedsViewTestCase(CustomTestCase):
 
     def test_200_feeds_pagination_ordering_value_asc(self):
         response = self.client.get(
-            "/api/feeds/?page_size=50&page=1&feed_type=all&attack_type=all&prioritize=recent"
-            "&ordering=value&include_mass_scanners&include_tor_exit_nodes"
+            "/api/feeds/?page_size=50&page=1&feed_type=all&attack_type=all&prioritize=recent&ordering=value&include_mass_scanners&include_tor_exit_nodes"
         )
         self.assertEqual(response.status_code, 200)
 
