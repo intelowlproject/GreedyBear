@@ -60,7 +60,7 @@ class ModelsTestCase(CustomTestCase):
         self.assertEqual(self.statistic.view, ViewType.ENRICHMENT_VIEW.value)
         self.assertEqual(self.statistic.request_date, self.current_time)
 
-    def test_general_honeypot_model(self):
+    def test_honeypot_model(self):
         self.assertEqual(self.heralding.name, "Heralding")
         self.assertEqual(self.heralding.active, True)
 

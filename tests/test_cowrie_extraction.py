@@ -132,8 +132,8 @@ class TestCowrieExtractionStrategy(ExtractionTestCase):
 
         self.assertEqual(ioc_arg.name, "evil.com")
         self.assertIn("http://evil.com/malware.exe", ioc_arg.related_urls)
-        # Verify honeypot is set via general_honeypot_name argument
-        self.assertEqual(call_args.kwargs.get("general_honeypot_name"), "Cowrie")
+        # Verify honeypot is set via honeypot_name argument
+        self.assertEqual(call_args.kwargs.get("honeypot_name"), "Cowrie")
 
     def test_extract_payload_in_messages_no_url(self):
         """Test extraction when message has no URL."""
@@ -434,4 +434,4 @@ class TestCowrieExtractionStrategy(ExtractionTestCase):
         # Verify scanner was processed with Cowrie as honeypot
         self.strategy.ioc_processor.add_ioc.assert_called()
         call_args = self.strategy.ioc_processor.add_ioc.call_args
-        self.assertEqual(call_args.kwargs.get("general_honeypot_name"), "Cowrie")
+        self.assertEqual(call_args.kwargs.get("honeypot_name"), "Cowrie")

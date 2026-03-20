@@ -36,7 +36,7 @@ class IocRepository:
             The updated IOC instance.
         """
         normalized_name = self._normalize_name(honeypot_name)
-        honeypot_set = {self._normalize_name(hp.name) for hp in ioc.general_honeypot.all()}
+        honeypot_set = {self._normalize_name(hp.name) for hp in ioc.honeypots.all()}
         if normalized_name not in honeypot_set:
             self.log.debug(f"adding honeypot {honeypot_name} to IoC {ioc}")
             honeypot = self._honeypot_cache.get(normalized_name)
@@ -188,7 +188,7 @@ class IocRepository:
             primary_keys: Set of IOC primary keys to retrieve.
 
         Returns:
-            QuerySet of IOC objects with prefetched general_honeypot relationships
+            QuerySet of IOC objects with prefetched honeypots relationships
             and annotated with value and honeypots fields.
         """
         return (

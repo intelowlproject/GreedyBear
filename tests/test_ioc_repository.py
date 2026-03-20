@@ -461,8 +461,8 @@ class TestIocRepository(CustomTestCase):
                 f"Cache value for '{key}' should be a Honeypot instance, got {type(value)}",
             )
 
-    def test_get_ioc_by_name_prefetches_general_honeypot(self):
-        """Accessing general_honeypot on an IOC fetched via get_ioc_by_name must not trigger extra DB queries."""
+    def test_get_ioc_by_name_prefetches_honeypots(self):
+        """Accessing honeypots on an IOC fetched via get_ioc_by_name must not trigger extra DB queries."""
         ioc = self.repo.get_ioc_by_name("140.246.171.141")
         self.assertIsNotNone(ioc)
         with self.assertNumQueries(0):

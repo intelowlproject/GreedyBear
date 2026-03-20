@@ -21,7 +21,7 @@ class FeedTypeAPITestCase(CustomTestCase):
         self.log4pot_hp = Honeypot.objects.get_or_create(name="Log4pot", defaults={"active": True})[0]
 
     def test_feed_type_derived_from_m2m(self):
-        """Verify feed_type is derived from general_honeypot M2M."""
+        """Verify feed_type is derived from honeypot M2M."""
         response = self.client.get("/api/feeds/all/all/recent.json")
         self.assertEqual(response.status_code, 200)
 

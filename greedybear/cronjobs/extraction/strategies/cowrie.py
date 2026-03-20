@@ -108,7 +108,7 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
         """Extract scanner IPs and sessions."""
         for ioc in iocs_from_hits(hits):
             self.log.info(f"found IP {ioc.name} by honeypot cowrie")
-            ioc_record = self.ioc_processor.add_ioc(ioc, attack_type=SCANNER, general_honeypot_name="Cowrie")
+            ioc_record = self.ioc_processor.add_ioc(ioc, attack_type=SCANNER, honeypot_name="Cowrie")
             if ioc_record:
                 self.ioc_records.append(ioc_record)
                 threatfox_submission(ioc_record, ioc.related_urls, self.log)
@@ -155,7 +155,7 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
             sensor = hit.get("_sensor")
             if sensor:
                 ioc._sensors_to_add = [sensor]
-            self.ioc_processor.add_ioc(ioc, attack_type=PAYLOAD_REQUEST, general_honeypot_name="Cowrie")
+            self.ioc_processor.add_ioc(ioc, attack_type=PAYLOAD_REQUEST, honeypot_name="Cowrie")
             self._add_fks(scanner_ip, payload_hostname)
             self.payloads_in_message += 1
 
@@ -195,7 +195,7 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
                 sensor = hit.get("_sensor")
                 if sensor:
                     ioc._sensors_to_add = [sensor]
-                ioc_record = self.ioc_processor.add_ioc(ioc, attack_type=PAYLOAD_REQUEST, general_honeypot_name="Cowrie")
+                ioc_record = self.ioc_processor.add_ioc(ioc, attack_type=PAYLOAD_REQUEST, honeypot_name="Cowrie")
                 if ioc_record:
                     self.added_url_downloads += 1
                     threatfox_submission(ioc_record, ioc.related_urls, self.log)
