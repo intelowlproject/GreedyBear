@@ -1,6 +1,6 @@
 import React from "react";
 import { Row, Col, Container } from "reactstrap";
-import { FaTwitter } from "react-icons/fa";
+import { FaXTwitter, FaGithub, FaLinkedin } from "react-icons/fa6";
 
 import { ScrollToTopButton, Toaster, useToastr } from "@certego/certego-ui";
 
@@ -25,27 +25,41 @@ function AppFooter() {
           ))}
         </section>
         {/* Footer */}
-        <Container fluid className="border-top mt-2 py-1">
-          <Row
-            md={12}
-            lg={8}
-            className="g-0 d-flex-center flex-column flex-lg-row text-center lead"
-          >
-            <Col className="text-muted small">{VERSION}</Col>
-          </Row>
-          <Row
-            md={12}
-            className="g-0 mt-3 d-flex-center flex-column flex-lg-row text-center"
-          >
-            <Col>
+        <Container fluid className="border-top mt-2 py-3">
+          <Row className="align-items-center">
+            <Col md={12} className="text-center">
+              <span className="text-white px-2 py-1 rounded">
+                Follow us on:
+              </span>
               <a
-                href="https://twitter.com/intel_owl"
+                href="https://x.com/intel_owl"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="ms-md-2 twitter-follow-button"
+                className="ms-3 text-white text-decoration-none"
               >
-                <FaTwitter /> Follow @intel_owl
+                <FaXTwitter size={20} />
               </a>
+              <a
+                href="https://github.com/intelowlproject"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="ms-3 text-white text-decoration-none"
+              >
+                <FaGithub size={20} />
+              </a>
+              <a
+                href="https://www.linkedin.com/company/intelowl/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="ms-3 text-white text-decoration-none"
+              >
+                <FaLinkedin size={20} />
+              </a>
+            </Col>
+          </Row>
+          <Row className="mt-2">
+            <Col className="text-center">
+              <small className="text-muted">{VERSION}</small>
             </Col>
           </Row>
         </Container>

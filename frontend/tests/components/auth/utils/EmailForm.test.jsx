@@ -1,6 +1,6 @@
 import React from "react";
 import "@testing-library/jest-dom";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { BrowserRouter } from "react-router-dom";
 import userEvent from "@testing-library/user-event";
 import EmailForm from "../../../../src/components/auth/utils/EmailForm";
@@ -27,5 +27,51 @@ describe("EmailForm component", () => {
     // user populates the reset password form and submit
     await user.type(emailInputElement, "test@test.com");
     await user.click(submitButtonElement);
+  });
+
+  test("Double-clicking submit while submitting does not trigger duplicate API requests", async () => {
+    const user = userEvent.setup();
+    // a promise to simulate a pending request
+    let resolveApi;
+    const mockApi = vi.fn(
+      () =>
+        new Promise((resolve) => {
+          resolveApi = resolve;
+        }),
+    );
+    const mockOnFormSubmit = vi.fn();
+
+    render(
+      <BrowserRouter>
+        <EmailForm apiCallback={mockApi} onFormSubmit={mockOnFormSubmit} />
+      </BrowserRouter>,
+    );
+
+    const emailInputElement = screen.getByLabelText("Email Address");
+    const submitButtonElement = screen.getByRole("button", { name: /Send/i });
+
+    // Populating the email input and submitting
+    await user.type(emailInputElement, "test@test.com");
+
+    // First submit
+    await user.click(submitButtonElement);
+
+    // Checking the button is disabled while submitting
+    await waitFor(() => {
+      expect(submitButtonElement).toBeDisabled();
+    });
+
+    // Second submit
+    await user.click(submitButtonElement);
+
+    // Only one api call was made?
+    expect(mockApi).toHaveBeenCalledTimes(1);
+
+    resolveApi();
+
+    // Waiting for submission to fully settle by checking the button re-enables
+    await waitFor(() => {
+      expect(submitButtonElement).not.toBeDisabled();
+    });
   });
 });

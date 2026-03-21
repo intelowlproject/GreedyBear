@@ -59,3 +59,30 @@ class EnrichmentViewTestCase(CustomTestCase):
         self.client.logout()
         response = self.client.get("/api/enrichment?query=140.246.171.141")
         self.assertEqual(response.status_code, 401)
+
+    def test_invalid_ip_octet_over_255(self):
+        """IPs with octets > 255 should be rejected (fixes #881)"""
+        response = self.client.get("/api/enrichment?query=999.999.999.999")
+        self.assertEqual(response.status_code, 400)
+
+    def test_invalid_ip_octet_256(self):
+        """IP with octet = 256 should be rejected"""
+        response = self.client.get("/api/enrichment?query=256.1.1.1")
+        self.assertEqual(response.status_code, 400)
+
+    def test_valid_ipv6_address(self):
+        """Valid IPv6 addresses should be accepted"""
+        response = self.client.get("/api/enrichment?query=2001:db8::1")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["found"], False)
+
+    def test_query_with_whitespace(self):
+        """Query with leading/trailing whitespace should be handled"""
+        response = self.client.get("/api/enrichment?query=  192.168.0.1  ")
+        self.assertEqual(response.status_code, 200)
+
+    def test_valid_domain(self):
+        """Valid domain names should be accepted"""
+        response = self.client.get("/api/enrichment?query=example.com")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["found"], False)

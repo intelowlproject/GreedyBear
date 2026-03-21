@@ -66,6 +66,8 @@ def get_features(iocs: list[dict], reference_day: str) -> pd.DataFrame:
     result = []
     for ioc in iocs:
         days_seen_count = len(ioc["days_seen"])
+        if not days_seen_count:
+            continue
         time_diffs = [date_delta(str(a), str(b)) for a, b in zip(ioc["days_seen"], ioc["days_seen"][1:], strict=False)]
         active_timespan = sum(time_diffs) + 1
         result.append(
