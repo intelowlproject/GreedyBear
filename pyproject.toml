@@ -1,2 +1,22 @@
 [tool.ruff]
 extend = ".github/configurations/python_linters/.ruff.toml"
+
+[tool.uv.sources]
+flake8-django = { git = "https://github.com/terencehonles/flake8-django.git", rev = "a6e369e89d275dfd5514f2aa9d091aa36c5ff84b" }
+
+[dependency-groups]
+dev = [
+    "autoflake~=2.3.1",
+    "bandit~=1.8.3",
+    "black~=25.1.0",
+    "coverage>=7.3.2",
+    "django-test-migrations>=1.5.0",
+    "django-watchfiles>=1.4.0",
+    "flake8~=7.1.2",
+    "flake8-django",
+    "isort~=6.0.1",
+    "pre-commit>=4.5.1",
+    "pylint~=3.3.5",
+    "pylint-django~=2.6.1",
+    "ruff~=0.12.7",
+]

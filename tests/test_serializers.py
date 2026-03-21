@@ -6,7 +6,7 @@ from rest_framework.serializers import ValidationError
 from api.serializers import FeedsRequestSerializer, FeedsResponseSerializer, parse_feed_types
 from greedybear.consts import PAYLOAD_REQUEST, SCANNER
 from greedybear.enums import IpReputation
-from greedybear.models import IOC, GeneralHoneypot
+from greedybear.models import IOC, Honeypot
 from tests import CustomTestCase
 
 
@@ -34,9 +34,9 @@ class FeedsRequestSerializersTestCase(CustomTestCase):
     @classmethod
     def setUpTestData(cls):
         super().setUpTestData()
-        cls.adbhoney = GeneralHoneypot.objects.filter(name__iexact="adbhoney").first()
+        cls.adbhoney = Honeypot.objects.filter(name__iexact="adbhoney").first()
         if not cls.adbhoney:
-            cls.adbhoney = GeneralHoneypot.objects.create(name="Adbhoney", active=True)
+            cls.adbhoney = Honeypot.objects.create(name="Adbhoney", active=True)
 
     def test_valid_fields(self):
         choices = {
@@ -213,9 +213,9 @@ class FeedsResponseSerializersTestCase(CustomTestCase):
     @classmethod
     def setUpTestData(cls):
         super().setUpTestData()
-        cls.adbhoney = GeneralHoneypot.objects.filter(name__iexact="adbhoney").first()
+        cls.adbhoney = Honeypot.objects.filter(name__iexact="adbhoney").first()
         if not cls.adbhoney:
-            cls.adbhoney = GeneralHoneypot.objects.create(name="Adbhoney", active=True)
+            cls.adbhoney = Honeypot.objects.create(name="Adbhoney", active=True)
 
     def test_valid_fields(self):
         scanner_choices = [True, False]
