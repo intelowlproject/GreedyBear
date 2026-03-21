@@ -1,6 +1,6 @@
 import React from "react";
-import { render } from "@testing-library/react";
-import { vi, describe, it, expect } from "vitest";
+import { render, screen } from "@testing-library/react";
+import { vi, describe, it, expect, beforeEach } from "vitest";
 
 const { mockAnyChartWidget } = vi.hoisted(() => ({
   mockAnyChartWidget: vi.fn(),
@@ -42,6 +42,10 @@ function captureProps(Component) {
   return captured;
 }
 
+beforeEach(() => {
+  mockAnyChartWidget.mockReset();
+});
+
 describe("Chart URLs", () => {
   it.each([
     [FeedsSourcesChart, "/api/statistics/sources/feeds"],
@@ -57,59 +61,101 @@ describe("Chart URLs", () => {
 
 describe("accessorFnAggregation", () => {
   it.each([
-    [FeedsSourcesChart, "FeedsSourcesChart"],
-    [FeedsDownloadsChart, "FeedsDownloadsChart"],
-    [EnrichmentSourcesChart, "EnrichmentSourcesChart"],
-    [EnrichmentRequestsChart, "EnrichmentRequestsChart"],
-    [FeedsTypesChart, "FeedsTypesChart"],
+    [FeedsSourcesChart],
+    [FeedsDownloadsChart],
+    [EnrichmentSourcesChart],
+    [EnrichmentRequestsChart],
+    [FeedsTypesChart],
   ])("%s uses identity function", (Component) => {
     const props = captureProps(Component);
-    const testData = { foo: 1 };
+    const testData = [{ date: "2024-01-01", foo: 1 }];
     expect(props.accessorFnAggregation(testData)).toBe(testData);
   });
 });
 
 describe("FeedsSourcesChart componentsFn", () => {
-  it("returns one Area with dataKey Sources and correct fill and stroke", () => {
+  it("returns exactly one Area component", () => {
     const { componentsFn } = captureProps(FeedsSourcesChart);
-    const result = componentsFn();
-    expect(result).toHaveLength(1);
-    expect(result[0].props.dataKey).toBe("Sources");
-    expect(result[0].props.fill).toBe("#82ca9d");
-    expect(result[0].props.stroke).toBe("#82ca9d");
+    expect(componentsFn()).toHaveLength(1);
+  });
+
+  it("Area has dataKey Sources", () => {
+    const { componentsFn } = captureProps(FeedsSourcesChart);
+    const [area] = componentsFn();
+    expect(area.props.dataKey).toBe("Sources");
+  });
+
+  it("Area fill and stroke match FEED_COLOR_MAP Sources color", () => {
+    const { componentsFn } = captureProps(FeedsSourcesChart);
+    const [area] = componentsFn();
+    expect(area.props.fill).toBe("#82ca9d");
+    expect(area.props.stroke).toBe("#82ca9d");
+  });
+
+  it("Area type is monotone", () => {
+    const { componentsFn } = captureProps(FeedsSourcesChart);
+    const [area] = componentsFn();
+    expect(area.props.type).toBe("monotone");
   });
 });
 
 describe("FeedsDownloadsChart componentsFn", () => {
-  it("returns one Area with dataKey Downloads and correct fill and stroke", () => {
+  it("returns exactly one Area component", () => {
     const { componentsFn } = captureProps(FeedsDownloadsChart);
-    const result = componentsFn();
-    expect(result).toHaveLength(1);
-    expect(result[0].props.dataKey).toBe("Downloads");
-    expect(result[0].props.fill).toBe("#8884d8");
-    expect(result[0].props.stroke).toBe("#8884d8");
+    expect(componentsFn()).toHaveLength(1);
+  });
+
+  it("Area has dataKey Downloads", () => {
+    const { componentsFn } = captureProps(FeedsDownloadsChart);
+    const [area] = componentsFn();
+    expect(area.props.dataKey).toBe("Downloads");
+  });
+
+  it("Area fill and stroke match FEED_COLOR_MAP Downloads color", () => {
+    const { componentsFn } = captureProps(FeedsDownloadsChart);
+    const [area] = componentsFn();
+    expect(area.props.fill).toBe("#8884d8");
+    expect(area.props.stroke).toBe("#8884d8");
   });
 });
 
 describe("EnrichmentSourcesChart componentsFn", () => {
-  it("returns one Area with dataKey Sources and correct fill and stroke", () => {
+  it("returns exactly one Area component", () => {
     const { componentsFn } = captureProps(EnrichmentSourcesChart);
-    const result = componentsFn();
-    expect(result).toHaveLength(1);
-    expect(result[0].props.dataKey).toBe("Sources");
-    expect(result[0].props.fill).toBe("#82ca9d");
-    expect(result[0].props.stroke).toBe("#82ca9d");
+    expect(componentsFn()).toHaveLength(1);
+  });
+
+  it("Area has dataKey Sources", () => {
+    const { componentsFn } = captureProps(EnrichmentSourcesChart);
+    const [area] = componentsFn();
+    expect(area.props.dataKey).toBe("Sources");
+  });
+
+  it("Area fill and stroke match ENRICHMENT_COLOR_MAP Sources color", () => {
+    const { componentsFn } = captureProps(EnrichmentSourcesChart);
+    const [area] = componentsFn();
+    expect(area.props.fill).toBe("#82ca9d");
+    expect(area.props.stroke).toBe("#82ca9d");
   });
 });
 
 describe("EnrichmentRequestsChart componentsFn", () => {
-  it("returns one Area with dataKey Requests and correct fill and stroke", () => {
+  it("returns exactly one Area component", () => {
     const { componentsFn } = captureProps(EnrichmentRequestsChart);
-    const result = componentsFn();
-    expect(result).toHaveLength(1);
-    expect(result[0].props.dataKey).toBe("Requests");
-    expect(result[0].props.fill).toBe("#8884d8");
-    expect(result[0].props.stroke).toBe("#8884d8");
+    expect(componentsFn()).toHaveLength(1);
+  });
+
+  it("Area has dataKey Requests", () => {
+    const { componentsFn } = captureProps(EnrichmentRequestsChart);
+    const [area] = componentsFn();
+    expect(area.props.dataKey).toBe("Requests");
+  });
+
+  it("Area fill and stroke match ENRICHMENT_COLOR_MAP Requests color", () => {
+    const { componentsFn } = captureProps(EnrichmentRequestsChart);
+    const [area] = componentsFn();
+    expect(area.props.fill).toBe("#8884d8");
+    expect(area.props.stroke).toBe("#8884d8");
   });
 });
 
@@ -124,7 +170,7 @@ describe("FeedsTypesChart componentsFn", () => {
     expect(componentsFn(undefined)).toBeNull();
   });
 
-  it("extracts feed type keys from respData skipping date field", () => {
+  it("returns one Bar per feed type key, skipping date field", () => {
     const { componentsFn } = captureProps(FeedsTypesChart);
     const respData = [
       { date: "2024-01-01", honeypot: 10, cowrie: 5, dionaea: 3 },
@@ -132,6 +178,12 @@ describe("FeedsTypesChart componentsFn", () => {
     ];
     const result = componentsFn(respData);
     expect(result).toHaveLength(3);
+  });
+
+  it("Bar dataKeys match feed type keys from respData", () => {
+    const { componentsFn } = captureProps(FeedsTypesChart);
+    const respData = [{ date: "2024-01-01", honeypot: 10, cowrie: 5, dionaea: 3 }];
+    const result = componentsFn(respData);
     expect(result[0].props.dataKey).toBe("honeypot");
     expect(result[1].props.dataKey).toBe("cowrie");
     expect(result[2].props.dataKey).toBe("dionaea");
@@ -152,5 +204,24 @@ describe("FeedsTypesChart componentsFn", () => {
     const result = componentsFn(respData);
     expect(result[0].props.fill).toBe("#aabbcc");
     expect(result[1].props.fill).toBe("#aabbcc");
+  });
+
+  it("works correctly with single feed type entry", () => {
+    const { componentsFn } = captureProps(FeedsTypesChart);
+    const respData = [{ date: "2024-01-01", rdp: 20 }];
+    const result = componentsFn(respData);
+    expect(result).toHaveLength(1);
+    expect(result[0].props.dataKey).toBe("rdp");
+  });
+
+  it("only reads feed types from first element of respData", () => {
+    const { componentsFn } = captureProps(FeedsTypesChart);
+    const respData = [
+      { date: "2024-01-01", ssh: 5 },
+      { date: "2024-01-02", ssh: 8, telnet: 3 },
+    ];
+    const result = componentsFn(respData);
+    expect(result).toHaveLength(1);
+    expect(result[0].props.dataKey).toBe("ssh");
   });
 });
