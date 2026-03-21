@@ -73,7 +73,7 @@ class HeraldingExtractionStrategy(BaseExtractionStrategy):
             ioc_record = self.ioc_processor.add_ioc(
                 ioc,
                 attack_type=SCANNER,
-                general_honeypot_name=HERALDING_HONEYPOT,
+                honeypot_name=HERALDING_HONEYPOT,
             )
             if ioc_record:
                 self.ioc_records.append(ioc_record)

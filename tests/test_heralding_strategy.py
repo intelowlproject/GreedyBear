@@ -43,7 +43,7 @@ class TestHeraldingExtractionStrategy(ExtractionTestCase):
         self.strategy.ioc_processor.add_ioc.assert_any_call(
             mock_ioc,
             attack_type=SCANNER,
-            general_honeypot_name=HERALDING_HONEYPOT,
+            honeypot_name=HERALDING_HONEYPOT,
         )
         self.assertEqual(len(self.strategy.ioc_records), 1)
         mock_threatfox.assert_called_once()
