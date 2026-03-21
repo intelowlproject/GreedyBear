@@ -169,7 +169,7 @@ class CustomTestCase(TestCase):
             source=cls.ioc,
             commands=cls.command_sequence,
         )
-        credential, _ = Credential.objects.get_or_create(username="root", password="root")
+        credential, _ = Credential.objects.get_or_create(username="root", password="root", protocol="")
         cls.cowrie_session.credentials.add(credential)
         cls.cowrie_session.save()
 
@@ -193,7 +193,7 @@ class CustomTestCase(TestCase):
             source=cls.ioc_2,
             commands=cls.command_sequence_2,
         )
-        credential_2, _ = Credential.objects.get_or_create(username="user", password="user")
+        credential_2, _ = Credential.objects.get_or_create(username="user", password="user", protocol="")
         cls.cowrie_session_2.credentials.add(credential_2)
         cls.cowrie_session_2.save()
 

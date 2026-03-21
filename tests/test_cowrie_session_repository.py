@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from django.db import IntegrityError
 
 from greedybear.cronjobs.repositories import CowrieSessionRepository
-from greedybear.models import IOC, CommandSequence, CowrieFileTransfer, CowrieSession
+from greedybear.models import IOC, CommandSequence, CowrieFileTransfer, CowrieSession, Credential
 
 from . import CustomTestCase
 
@@ -145,6 +145,30 @@ class TestCowrieSessionRepository(CustomTestCase):
             CowrieFileTransfer.objects.filter(session=session, shasum="abc123def456").count(),
             1,
         )
+
+    def test_add_credential_uses_default_protocol_variant(self):
+        session = self.cowrie_session
+
+        self.repo.add_credential(session, username="root", password="root")
+
+        credential = Credential.objects.get(username="root", password="root", protocol="")
+        self.assertTrue(session.credentials.filter(pk=credential.pk).exists())
+
+    def test_add_credential_protocol_none_maps_to_default_protocol(self):
+        session = self.cowrie_session
+
+        self.repo.add_credential(session, username="admin", password="admin", protocol=None)
+
+        self.assertTrue(Credential.objects.filter(username="admin", password="admin", protocol="").exists())
+
+    def test_add_credential_does_not_raise_with_protocol_variants_present(self):
+        session = self.cowrie_session
+        Credential.objects.get_or_create(username="root", password="root", protocol="ssh")
+
+        self.repo.add_credential(session, username="root", password="root")
+
+        default_credential = Credential.objects.get(username="root", password="root", protocol="")
+        self.assertTrue(session.credentials.filter(pk=default_credential.pk).exists())
 
 
 class TestCowrieSessionRepositoryCleanup(CustomTestCase):

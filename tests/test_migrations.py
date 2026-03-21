@@ -1,3 +1,4 @@
+from django.db import IntegrityError
 from django.test import tag
 
 from . import MigrationTestCase
@@ -217,3 +218,29 @@ class TestCredentialModelMigration(MigrationTestCase):
 
         session = CowrieSession.objects.get(session_id=1)
         self.assertEqual(session.credentials.count(), 2)
+
+
+@tag("migration")
+class TestCredentialProtocolMigration(MigrationTestCase):
+    """Tests migration adding protocol support to Credential uniqueness."""
+
+    migrate_from = "0044_cowriefiletransfer"
+    migrate_to = "0045_credential_protocol"
+
+    def test_default_protocol_set_and_uniqueness_includes_protocol(self):
+        credential_old = self.old_state.apps.get_model(self.app_name, "Credential")
+
+        legacy = credential_old.objects.create(username="root", password="root")
+
+        new_state = self.apply_tested_migration()
+        Credential = new_state.apps.get_model(self.app_name, "Credential")
+
+        migrated = Credential.objects.get(pk=legacy.pk)
+        self.assertEqual(migrated.protocol, "")
+
+        with self.assertRaises(IntegrityError):
+            Credential.objects.create(username="root", password="root", protocol="")
+
+        Credential.objects.create(username="root", password="root", protocol="ssh")
+        Credential.objects.create(username="root", password="root", protocol="ftp")
+        self.assertEqual(Credential.objects.filter(username="root", password="root").count(), 3)

@@ -155,7 +155,13 @@ class CowrieSessionRepository:
         deleted_count, _ = CowrieSession.objects.filter(start_time__lte=cutoff_date, commands__isnull=True).delete()
         return deleted_count
 
-    def add_credential(self, session: CowrieSession, username: str, password: str) -> None:
+    def add_credential(
+        self,
+        session: CowrieSession,
+        username: str,
+        password: str,
+        protocol: str | None = None,
+    ) -> None:
         """
         Get or create a Credential and associate it with the session.
 
@@ -163,8 +169,14 @@ class CowrieSessionRepository:
             session: The CowrieSession instance to associate the credential with.
             username: The credential username.
             password: The credential password.
+            protocol: Optional protocol associated with the credential.
         """
         from greedybear.models import Credential
 
-        credential, _ = Credential.objects.get_or_create(username=username, password=password)
+        normalized_protocol = protocol or ""
+        credential, _ = Credential.objects.get_or_create(
+            username=username,
+            password=password,
+            protocol=normalized_protocol,
+        )
         session.credentials.add(credential)

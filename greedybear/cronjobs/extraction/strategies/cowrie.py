@@ -10,6 +10,7 @@ from greedybear.cronjobs.extraction.strategies import BaseExtractionStrategy
 from greedybear.cronjobs.extraction.utils import (
     get_ioc_type,
     iocs_from_hits,
+    normalize_credential_field,
     parse_timestamp,
     threatfox_submission,
 )
@@ -51,20 +52,6 @@ def normalize_command(message: str) -> str:
     """
     # Truncate to 1024 chars to match CommandSequence.commands field max_length
     return message.removeprefix("CMD: ").replace("\x00", "[NUL]")[:1024]
-
-
-def normalize_credential_field(field: str) -> str:
-    """
-    Normalize credential fields by replacing null characters and truncating.
-
-    Args:
-        field: Credential field string
-
-    Returns:
-        Normalized credential field, truncated to 256 characters.
-    """
-    # Truncate to 256 chars to match Credential model field max_length
-    return field.replace("\x00", "[NUL]")[:256]
 
 
 class CowrieExtractionStrategy(BaseExtractionStrategy):
