@@ -7,6 +7,7 @@ export const FEEDS_STATISTICS_DOWNLOADS_URI = `${API_BASE_URI}/statistics/downlo
 export const FEEDS_STATISTICS_TYPES_URI = `${API_BASE_URI}/statistics/feeds_types`;
 export const ENRICHMENT_STATISTICS_SOURCES_URI = `${API_BASE_URI}/statistics/sources/enrichment`;
 export const ENRICHMENT_STATISTICS_REQUESTS_URI = `${API_BASE_URI}/statistics/requests/enrichment`;
+export const IOC_ATTACKER_COUNTRIES_URI = `${API_BASE_URI}/statistics/countries`;
 
 // user
 export const USERACCESS_URI = `${API_BASE_URI}/me/access`;

@@ -18,6 +18,7 @@ from stix2 import Bundle, ExternalReference, Indicator
 
 from api.serializers import FeedsRequestSerializer, parse_feed_types
 from greedybear.consts import CACHE_KEY_GREEDYBEAR_NEWS, CACHE_TIMEOUT_SECONDS, RSS_FEED_URL
+from greedybear.enums import IpReputation
 from greedybear.models import IOC, GeneralHoneypot, Statistics
 from greedybear.utils import is_ip_address, is_valid_domain
 
@@ -108,9 +109,9 @@ class FeedRequestParams:
         if not query_params:
             query_params = {}
         if "include_mass_scanners" not in query_params:
-            self.exclude_reputation.append("mass scanner")
+            self.exclude_reputation.append(IpReputation.MASS_SCANNER)
         if "include_tor_exit_nodes" not in query_params:
-            self.exclude_reputation.append("tor exit node")
+            self.exclude_reputation.append(IpReputation.TOR_EXIT_NODE)
 
     def set_prioritization(self, prioritize: str):
         match prioritize:
@@ -193,7 +194,7 @@ def get_queryset(request, feed_params, valid_feed_types, is_aggregated=False, se
 
     # Advanced filters
     if feed_params.asn:
-        query_dict["asn"] = feed_params.asn
+        query_dict["autonomous_system__asn"] = feed_params.asn
     if feed_params.min_score is not None:
         query_dict["recurrence_probability__gte"] = feed_params.min_score
     if feed_params.port:
@@ -311,13 +312,13 @@ def feeds_response(request=None, iocs=None, feed_params=None, valid_feed_types=N
                 "scanner",
                 "payload_request",
                 "ip_reputation",
-                "asn",
                 "login_attempts",
                 "recurrence_probability",
                 "expected_interactions",
                 "honeypots",  # used to build feed_type; removed from response
                 "destination_ports",  # used to calculate destination_port_count
                 "attacker_country",
+                "autonomous_system",
                 "tags",
             )
 
@@ -350,12 +351,13 @@ def feeds_response(request=None, iocs=None, feed_params=None, valid_feed_types=N
                     "last_seen": ioc["last_seen"].strftime("%Y-%m-%d"),
                     "feed_type": ioc_feed_type,
                     "destination_port_count": len(ioc.get("destination_ports", [])),
+                    "asn": ioc.get("autonomous_system", ""),
                     "tags": ioc.pop("tags_json", []),
                 }
 
                 if not verbose:
                     data_.pop("destination_ports", None)
-
+                data_.pop("autonomous_system", None)
                 data_.pop("honeypots", None)
                 data_.pop("id", None)
 
@@ -455,7 +457,7 @@ def asn_aggregated_queryset(iocs_qs, request, feed_params):
     """
     asn_filter = request.query_params.get("asn")
     if asn_filter:
-        iocs_qs = iocs_qs.filter(asn=asn_filter)
+        iocs_qs = iocs_qs.filter(autonomous_system__asn=asn_filter)
 
     # default ordering is overridden here because of serializer default(-last-seen) behaviour
     ordering = feed_params.ordering
@@ -463,8 +465,11 @@ def asn_aggregated_queryset(iocs_qs, request, feed_params):
         ordering = "-ioc_count"
 
     numeric_agg = (
-        iocs_qs.exclude(asn__isnull=True)
-        .values("asn")
+        iocs_qs.exclude(autonomous_system__isnull=True)
+        .values(
+            asn=F("autonomous_system__asn"),
+            as_name=F("autonomous_system__name"),
+        )
         .annotate(
             ioc_count=Count("id"),
             total_attack_count=Sum("attack_count"),
@@ -479,9 +484,9 @@ def asn_aggregated_queryset(iocs_qs, request, feed_params):
     )
 
     honeypot_agg = (
-        iocs_qs.exclude(asn__isnull=True)
+        iocs_qs.exclude(autonomous_system__isnull=True)
         .filter(general_honeypot__active=True)
-        .values("asn")
+        .values(asn=F("autonomous_system__asn"))
         .annotate(
             honeypots=ArrayAgg(
                 "general_honeypot__name",

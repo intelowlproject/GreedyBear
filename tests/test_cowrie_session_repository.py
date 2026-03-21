@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from django.db import IntegrityError
 
 from greedybear.cronjobs.repositories import CowrieSessionRepository
-from greedybear.models import IOC, CommandSequence, CowrieSession
+from greedybear.models import IOC, CommandSequence, CowrieFileTransfer, CowrieSession, Credential
 
 from . import CustomTestCase
 
@@ -101,6 +101,74 @@ class TestCowrieSessionRepository(CustomTestCase):
                 commands=["different", "commands"],
                 commands_hash=existing.commands_hash,
             )
+
+    def test_get_or_create_file_transfer_creates_new(self):
+        session = self.cowrie_session
+
+        transfer = self.repo.get_or_create_file_transfer(
+            session=session,
+            shasum="abc123def456",
+            url="http://malware.com/bad.exe",
+            outfile="/data/cowrie/downloads/bad.exe",
+            timestamp="2023-01-01T10:00:04",
+        )
+
+        self.assertIsNotNone(transfer.pk)
+        self.assertEqual(transfer.session, session)
+        self.assertEqual(transfer.shasum, "abc123def456")
+        self.assertEqual(transfer.url, "http://malware.com/bad.exe")
+        self.assertEqual(transfer.outfile, "/data/cowrie/downloads/bad.exe")
+        self.assertEqual(transfer.timestamp, "2023-01-01T10:00:04")
+
+    def test_get_or_create_file_transfer_updates_timestamp(self):
+        session = self.cowrie_session
+
+        existing = CowrieFileTransfer.objects.create(
+            session=session,
+            shasum="abc123def456",
+            url="http://malware.com/bad.exe",
+            outfile="/data/cowrie/downloads/bad.exe",
+            timestamp="2023-01-01T10:00:04",
+        )
+
+        transfer = self.repo.get_or_create_file_transfer(
+            session=session,
+            shasum="abc123def456",
+            url="http://malware.com/ignored.exe",
+            outfile="/data/cowrie/downloads/ignored.exe",
+            timestamp="2023-01-02T10:00:04",
+        )
+
+        self.assertEqual(transfer.pk, existing.pk)
+        self.assertEqual(transfer.timestamp, "2023-01-02T10:00:04")
+        self.assertEqual(
+            CowrieFileTransfer.objects.filter(session=session, shasum="abc123def456").count(),
+            1,
+        )
+
+    def test_add_credential_uses_default_protocol_variant(self):
+        session = self.cowrie_session
+
+        self.repo.add_credential(session, username="root", password="root")
+
+        credential = Credential.objects.get(username="root", password="root", protocol="")
+        self.assertTrue(session.credentials.filter(pk=credential.pk).exists())
+
+    def test_add_credential_protocol_none_maps_to_default_protocol(self):
+        session = self.cowrie_session
+
+        self.repo.add_credential(session, username="admin", password="admin", protocol=None)
+
+        self.assertTrue(Credential.objects.filter(username="admin", password="admin", protocol="").exists())
+
+    def test_add_credential_does_not_raise_with_protocol_variants_present(self):
+        session = self.cowrie_session
+        Credential.objects.get_or_create(username="root", password="root", protocol="ssh")
+
+        self.repo.add_credential(session, username="root", password="root")
+
+        default_credential = Credential.objects.get(username="root", password="root", protocol="")
+        self.assertTrue(session.credentials.filter(pk=default_credential.pk).exists())
 
 
 class TestCowrieSessionRepositoryCleanup(CustomTestCase):
