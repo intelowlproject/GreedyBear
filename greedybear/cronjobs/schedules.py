@@ -108,6 +108,11 @@ def setup_schedules():
             "func": "greedybear.tasks.extract_spamhaus_drop",
             "cron": _external_weekly_cron("extract_spamhaus_drop"),
         },
+        {
+            "name": "materialize_trending_attackers",
+            "func": "greedybear.tasks.materialize_trending_attackers",
+            "cron": f"*/{extraction_interval} * * * *",
+        },
     ]
 
     # create or update schedules

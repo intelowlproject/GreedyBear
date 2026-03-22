@@ -105,3 +105,9 @@ def extract_spamhaus_drop():
     from greedybear.cronjobs.spamhaus_drop import SpamhausDropCron
 
     SpamhausDropCron().execute()
+
+
+def materialize_trending_attackers():
+    from greedybear.cronjobs.trending import TrendingAttackersCron
+
+    TrendingAttackersCron().execute()
