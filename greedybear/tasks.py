@@ -99,3 +99,9 @@ def enrich_abuseipdb():
     from greedybear.cronjobs.abuseipdb_feed import AbuseIPDBCron
 
     AbuseIPDBCron().execute()
+
+
+def materialize_trending_attackers():
+    from greedybear.cronjobs.trending import TrendingAttackersCron
+
+    TrendingAttackersCron().execute()
