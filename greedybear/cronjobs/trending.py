@@ -1,6 +1,8 @@
 from collections import Counter
+from collections.abc import Iterable, Mapping
 from datetime import timedelta
 from ipaddress import AddressValueError, ip_address
+from typing import Any
 
 from django.conf import settings
 from django.db import IntegrityError, transaction
@@ -18,7 +20,7 @@ def _bucket_start(timestamp: str):
     return parsed.replace(minute=0, second=0, microsecond=0)
 
 
-def update_activity_buckets_from_hits(hits: list[dict]) -> int:
+def update_activity_buckets_from_hits(hits: Iterable[Mapping[str, Any]]) -> int:
     counters = Counter()
     for hit in hits:
         attacker_ip = hit.get("src_ip")
@@ -91,9 +93,10 @@ class TrendingAttackersCron(Cronjob):
         for window_minutes in windows:
             for feed_type in normalized_feed_types:
                 snapshots = self._compute_snapshots(now, window_minutes, feed_type, per_feed_limit)
-                TrendingAttackerSnapshot.objects.filter(window_minutes=window_minutes, feed_type=feed_type).delete()
-                if snapshots:
-                    TrendingAttackerSnapshot.objects.bulk_create(snapshots)
+                with transaction.atomic():
+                    TrendingAttackerSnapshot.objects.filter(window_minutes=window_minutes, feed_type=feed_type).delete()
+                    if snapshots:
+                        TrendingAttackerSnapshot.objects.bulk_create(snapshots)
 
         cutoff = now - timedelta(hours=retention_hours)
         AttackerActivityBucket.objects.filter(bucket_start__lt=cutoff).delete()
