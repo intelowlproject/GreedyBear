@@ -19,7 +19,7 @@ from stix2 import Bundle, ExternalReference, Indicator
 from api.serializers import FeedsRequestSerializer, parse_feed_types
 from greedybear.consts import CACHE_KEY_GREEDYBEAR_NEWS, CACHE_TIMEOUT_SECONDS, RSS_FEED_URL
 from greedybear.enums import IpReputation
-from greedybear.models import IOC, GeneralHoneypot, Statistics
+from greedybear.models import IOC, AutonomousSystem, GeneralHoneypot, Statistics
 from greedybear.utils import is_ip_address, is_valid_domain
 
 logger = logging.getLogger(__name__)
@@ -446,43 +446,97 @@ def feeds_response(request=None, iocs=None, feed_params=None, valid_feed_types=N
 
 def asn_aggregated_queryset(iocs_qs, request, feed_params):
     """
-    Perform DB-level aggregation grouped by ASN.
+    Retrieve pre-computed ASN aggregation data, enriched with honeypot names.
+
+    Reads the pre-calculated aggregate fields from AutonomousSystem (refreshed
+    by the extraction cronjob) instead of performing expensive GROUP BY queries
+    on every API request.
 
     Args
         iocs_qs (QuerySet): Filtered IOC queryset from get_queryset;
         request (Request): The API request object;
         feed_params (FeedRequestParams): Validated parameter object
 
-    Returns: A values-grouped queryset with annotated  metrics and honeypot arrays.
+    Returns: A list of dicts with aggregated metrics and honeypot arrays per ASN.
     """
+
     asn_filter = request.query_params.get("asn")
     if asn_filter:
         iocs_qs = iocs_qs.filter(autonomous_system__asn=asn_filter)
 
     # default ordering is overridden here because of serializer default(-last-seen) behaviour
     ordering = feed_params.ordering
-    if not ordering or ordering.strip() in {"", "-last_seen", "last_seen"}:
+    ordering_param_present = "ordering" in request.query_params
+    # Normalize ordering and apply default if needed.
+    if (not ordering or ordering.strip() in {"", "-last_seen", "last_seen"}) and not ordering_param_present:
         ordering = "-ioc_count"
+    else:
+        ordering = ordering.strip()
 
-    numeric_agg = (
-        iocs_qs.exclude(autonomous_system__isnull=True)
-        .values(
-            asn=F("autonomous_system__asn"),
-            as_name=F("autonomous_system__name"),
-        )
-        .annotate(
-            ioc_count=Count("id"),
-            total_attack_count=Sum("attack_count"),
-            total_interaction_count=Sum("interaction_count"),
-            total_login_attempts=Sum("login_attempts"),
-            expected_ioc_count=Sum("recurrence_probability"),
-            expected_interactions=Sum("expected_interactions"),
-            first_seen=Min("first_seen"),
-            last_seen=Max("last_seen"),
-        )
-        .order_by(ordering)
+    numeric_agg = None
+    has_non_default_filters = (
+        feed_params.feed_type != "all"
+        or feed_params.attack_type != "all"
+        or feed_params.min_days_seen != "1"
+        or feed_params.include_reputation
+        or bool(feed_params.exclude_reputation)
+        or feed_params.min_score is not None
+        or feed_params.port is not None
+        or feed_params.start_date is not None
+        or feed_params.end_date is not None
     )
 
+    use_dynamic_aggregation = has_non_default_filters or iocs_qs.query.has_filters()
+    if use_dynamic_aggregation:
+        # Dynamic aggregation for filtered queries
+        numeric_agg = (
+            iocs_qs.exclude(autonomous_system__isnull=True)
+            .values(
+                asn=F("autonomous_system__asn"),
+                as_name=F("autonomous_system__name"),
+            )
+            .annotate(
+                ioc_count=Count("id"),
+                total_attack_count=Sum("attack_count"),
+                total_interaction_count=Sum("interaction_count"),
+                total_login_attempts=Sum("login_attempts"),
+                expected_ioc_count=Sum("recurrence_probability"),
+                expected_interactions=Sum("expected_interactions"),
+                first_seen=Min("first_seen"),
+                last_seen=Max("last_seen"),
+            )
+        )
+        # Map API-facing 'as_name' ordering to the underlying 'as_name' alias
+        if ordering in {"name", "-name"}:
+            prefix = "-" if ordering.startswith("-") else ""
+            ordering = f"{prefix}as_name"
+
+        numeric_agg = numeric_agg.order_by(ordering)
+    else:
+        # O(1) Pre-computed lookup for general, non-filtered queries (using max_age limits)
+        asns_in_iocs = iocs_qs.exclude(autonomous_system__isnull=True).values_list("autonomous_system__asn", flat=True).distinct()
+        as_qs = AutonomousSystem.objects.filter(asn__in=asns_in_iocs)
+
+        # Map API-facing 'as_name' ordering to the underlying 'name' model field
+        if ordering in {"as_name", "-as_name"}:
+            prefix = "-" if ordering.startswith("-") else ""
+            ordering = f"{prefix}name"
+
+        numeric_agg = as_qs.order_by(ordering).values(
+            "asn",
+            as_name=F("name"),
+            ioc_count=F("ioc_count"),
+            total_attack_count=F("total_attack_count"),
+            total_interaction_count=F("total_interaction_count"),
+            total_login_attempts=F("total_login_attempts"),
+            expected_ioc_count=F("expected_ioc_count"),
+            expected_interactions=F("expected_interactions"),
+            first_seen=F("first_seen"),
+            last_seen=F("last_seen"),
+        )
+
+    # Honeypot names still require a lightweight aggregation because
+    # they depend on the active flag which can change independently.
     honeypot_agg = (
         iocs_qs.exclude(autonomous_system__isnull=True)
         .filter(general_honeypot__active=True)
@@ -497,12 +551,22 @@ def asn_aggregated_queryset(iocs_qs, request, feed_params):
 
     hp_lookup = {row["asn"]: row["honeypots"] or [] for row in honeypot_agg}
 
-    # merging numeric aggregate with honeypot names for each asn
     result = []
     for row in numeric_agg:
         asn = row["asn"]
-        row_dict = dict(row)
-        row_dict["honeypots"] = sorted(hp_lookup.get(asn, []))
+        row_dict = {
+            "asn": asn,
+            "as_name": row["as_name"],
+            "ioc_count": row["ioc_count"],
+            "total_attack_count": row["total_attack_count"],
+            "total_interaction_count": row["total_interaction_count"],
+            "total_login_attempts": row["total_login_attempts"],
+            "expected_ioc_count": row["expected_ioc_count"],
+            "expected_interactions": row["expected_interactions"],
+            "first_seen": row["first_seen"],
+            "last_seen": row["last_seen"],
+            "honeypots": sorted(hp_lookup.get(asn, [])),
+        }
         result.append(row_dict)
 
     return result

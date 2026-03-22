@@ -3,6 +3,7 @@ from collections import defaultdict
 
 from greedybear.cronjobs.extraction.strategies.factory import ExtractionStrategyFactory
 from greedybear.cronjobs.repositories import (
+    ASRepository,
     ElasticRepository,
     IocRepository,
     SensorRepository,
@@ -103,5 +104,9 @@ class ExtractionPipeline:
             if ioc_records:
                 UpdateScores().score_only(ioc_records)
             ioc_record_count += len(ioc_records)
+
+        # 5. Refresh pre-computed ASN aggregates
+        self.log.info("Refreshing ASN aggregate fields")
+        ASRepository(preload_cache=False).refresh_aggregates()
 
         return ioc_record_count
