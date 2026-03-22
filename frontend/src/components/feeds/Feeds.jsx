@@ -134,10 +134,16 @@ export default function Feeds() {
       });
   });
 
+  const sanitizeCell = (value) => {
+    const str = String(value);
+    return /^[=+\-@]/.test(str) ? `'${str}` : str;
+  };
+
   const handleExportCSV = React.useCallback(async () => {
     try {
       const response = await axios.get(url);
-      const iocs = response.data?.results?.iocs || [];
+      const iocs =
+        response.data?.iocs || response.data?.results?.iocs || [];
       const headers = [
         "Last Seen",
         "First Seen",
@@ -161,7 +167,10 @@ export default function Feeds() {
       const csvContent = [headers, ...rows]
         .map((row) =>
           row
-            .map((cell) => `"${String(cell).replace(/"/g, '""')}"`)
+            .map(
+              (cell) =>
+                `"${sanitizeCell(cell).replace(/"/g, '""')}"`,
+            )
             .join(","),
         )
         .join("\n");
@@ -169,8 +178,10 @@ export default function Feeds() {
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
       link.download = "feeds_export.csv";
+      document.body.appendChild(link);
       link.click();
-      URL.revokeObjectURL(link.href);
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(link.href), 100);
     } catch (err) {
       console.error("CSV export failed:", err);
     }
