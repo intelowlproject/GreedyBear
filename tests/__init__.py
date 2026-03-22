@@ -52,7 +52,7 @@ class CustomTestCase(TestCase):
             login_attempts=1,
             recurrence_probability=0.1,
             expected_interactions=11.1,
-            attacker_country="China",
+            attacker_country="Germany",
         )
 
         cls.ioc_2 = IOC.objects.create(
@@ -94,7 +94,7 @@ class CustomTestCase(TestCase):
             login_attempts=1,
             recurrence_probability=0.1,
             expected_interactions=11.1,
-            attacker_country="United States",
+            attacker_country="China",
         )
 
         cls.ioc_domain = IOC.objects.create(
@@ -117,6 +117,27 @@ class CustomTestCase(TestCase):
             expected_interactions=5.5,
         )
 
+        cls.ioc_4 = IOC.objects.create(
+            name="200.200.200.200",
+            type=IocType.IP.value,
+            first_seen=cls.current_time,
+            last_seen=cls.current_time,
+            days_seen=[cls.current_time],
+            number_of_days_seen=1,
+            attack_count=1,
+            interaction_count=1,
+            scanner=True,
+            payload_request=False,
+            related_urls=[],
+            ip_reputation="",
+            autonomous_system=cls.as_obj,
+            destination_ports=[],
+            login_attempts=0,
+            recurrence_probability=0.1,
+            expected_interactions=11.1,
+            attacker_country="United States",
+        )
+
         cls.ioc.general_honeypot.add(cls.heralding)  # FEEDS
         cls.ioc.general_honeypot.add(cls.ciscoasa)  # FEEDS
         cls.ioc.general_honeypot.add(cls.cowrie_hp)  # Cowrie honeypot
@@ -132,6 +153,9 @@ class CustomTestCase(TestCase):
         cls.ioc_domain.general_honeypot.add(cls.heralding)  # FEEDS
         cls.ioc_domain.general_honeypot.add(cls.log4pot_hp)  # Log4pot honeypot
         cls.ioc_domain.save()
+        cls.ioc_4.general_honeypot.add(cls.cowrie_hp)
+        cls.ioc_4.general_honeypot.add(cls.heralding)
+        cls.ioc_4.save()
 
         # IOC with an inactive-only honeypot
         cls.ioc_inactive_country = IOC.objects.create(

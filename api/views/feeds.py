@@ -127,6 +127,7 @@ def feeds_advanced(request):
         format (str): Response format type. Besides `json`, `txt` and `csv` are supported but the response will only contain IOC values (e.g. IP addresses) without further information. (default: `json`)
         tag_key (str, optional): Filter IOCs by tag key, e.g. `malware` or `confidence_of_abuse`. Only IOCs with at least one matching tag are returned.
         tag_value (str, optional): Filter IOCs by tag value (case-insensitive substring match), e.g. `mirai`. Can be used alone or combined with `tag_key`.
+        country (str, optional): Filter IOCs by attacker country name (case-insensitive, e.g. `Germany`, `United States`).
 
     Returns:
         Response: The HTTP response with formatted IOC data.
