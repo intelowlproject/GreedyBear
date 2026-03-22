@@ -111,7 +111,7 @@ def setup_schedules():
         {
             "name": "materialize_trending_attackers",
             "func": "greedybear.tasks.materialize_trending_attackers",
-            "cron": f"*/{extraction_interval} * * * *",
+            "cron": "0 * * * *",
         },
     ]
 
