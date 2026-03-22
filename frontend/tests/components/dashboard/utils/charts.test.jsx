@@ -182,7 +182,9 @@ describe("FeedsTypesChart componentsFn", () => {
 
   it("Bar dataKeys match feed type keys from respData", () => {
     const { componentsFn } = captureProps(FeedsTypesChart);
-    const respData = [{ date: "2024-01-01", honeypot: 10, cowrie: 5, dionaea: 3 }];
+    const respData = [
+      { date: "2024-01-01", honeypot: 10, cowrie: 5, dionaea: 3 },
+    ];
     const result = componentsFn(respData);
     expect(result[0].props.dataKey).toBe("honeypot");
     expect(result[1].props.dataKey).toBe("cowrie");
