@@ -35,6 +35,7 @@ ALLOWED_UNAUTHENTICATED_QUERY_PARAMS = [
     "feed_type",
     "attack_type",
     "ioc_type",
+    "ordering",
     "include_mass_scanners",
     "include_tor_exit_nodes",
     "prioritize",
