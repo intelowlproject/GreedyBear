@@ -89,6 +89,11 @@ def setup_schedules():
             "func": "greedybear.tasks.enrich_abuseipdb",
             "cron": "7 1 * * 0",
         },
+        {
+            "name": "materialize_trending_attackers",
+            "func": "greedybear.tasks.materialize_trending_attackers",
+            "cron": f"*/{extraction_interval} * * * *",
+        },
     ]
 
     # create or update schedules
