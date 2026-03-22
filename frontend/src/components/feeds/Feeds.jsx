@@ -1,7 +1,9 @@
 import React from "react";
+import axios from "axios";
 import { Container, Button, Col, Label, FormGroup, Row } from "reactstrap";
 import { VscJson } from "react-icons/vsc";
 import { TbLicense } from "react-icons/tb";
+import { FiDownload } from "react-icons/fi";
 import { useNavigate, useLocation } from "react-router-dom";
 import { FEEDS_BASE_URI, GENERAL_HONEYPOT_URI } from "../../constants/api";
 import {
@@ -131,6 +133,59 @@ export default function Feeds() {
         value: honeypot.toLowerCase(),
       });
   });
+
+  const sanitizeCell = (value) => {
+    const str = String(value);
+    return /^[=+\-@]/.test(str) ? `'${str}` : str;
+  };
+
+  const handleExportCSV = React.useCallback(async () => {
+    try {
+      const response = await axios.get(url);
+      const iocs =
+        response.data?.iocs || response.data?.results?.iocs || [];
+      const headers = [
+        "Last Seen",
+        "First Seen",
+        "Value",
+        "Feed Type",
+        "Scanner",
+        "Payload Request",
+        "Attack Count",
+      ];
+      const rows = iocs.map((ioc) => [
+        ioc.last_seen ?? "",
+        ioc.first_seen ?? "",
+        ioc.value ?? "",
+        Array.isArray(ioc.feed_type)
+          ? ioc.feed_type.join("|")
+          : (ioc.feed_type ?? ""),
+        ioc.scanner ? "true" : "false",
+        ioc.payload_request ? "true" : "false",
+        ioc.attack_count ?? "",
+      ]);
+      const csvContent = [headers, ...rows]
+        .map((row) =>
+          row
+            .map(
+              (cell) =>
+                `"${sanitizeCell(cell).replace(/"/g, '""')}"`,
+            )
+            .join(","),
+        )
+        .join("\n");
+      const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+      const link = document.createElement("a");
+      link.href = URL.createObjectURL(blob);
+      link.download = "feeds_export.csv";
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(link.href), 100);
+    } catch (err) {
+      console.error("CSV export failed:", err);
+    }
+  }, [url]);
 
   // reset the prioritize dropdown to "recent"
   const handleSortChange = React.useCallback(() => {
@@ -275,7 +330,7 @@ export default function Feeds() {
           <Col
             sm={12}
             md={2}
-            className="d-flex justify-content-end align-items-end"
+            className="d-flex justify-content-end align-items-end gap-2"
           >
             <Button
               className="mb-3"
@@ -286,6 +341,15 @@ export default function Feeds() {
             >
               <VscJson />
               &nbsp;Raw data
+            </Button>
+            <Button
+              className="mb-3"
+              color="success"
+              outline
+              onClick={handleExportCSV}
+            >
+              <FiDownload />
+              &nbsp;Export CSV
             </Button>
           </Col>
         </Row>
