@@ -69,38 +69,30 @@ class AbuseIPDBCron(Cronjob):
             self.log.info(f"Retrieved {len(blocklist_data)} IPs from AbuseIPDB blocklist")
 
             # Parse feed into a dict keyed by IP
-            feed_by_ip = self._parse_feed(blocklist_data)
-            self.log.info(f"Parsed {len(feed_by_ip)} valid IPs from AbuseIPDB feed")
+            score_by_ip = self._parse_feed(blocklist_data)
+            self.log.info(f"Parsed {len(score_by_ip)} valid IPs from AbuseIPDB feed")
 
-            if not feed_by_ip:
+            if not score_by_ip:
                 # No valid IPs found — clear stale tags and return
                 self.tag_repo.replace_tags_for_source(SOURCE_NAME, [])
                 return
 
             # Join against IOC table: find IOCs whose name matches feed IPs
-            matching_iocs = IOC.objects.filter(name__in=feed_by_ip.keys()).values_list("id", "name")
+            matching_iocs = IOC.objects.filter(name__in=score_by_ip.keys()).values_list("id", "name")
 
             # Build tag entries for matching IOCs
             tag_entries = []
             matched_count = 0
             for ioc_id, ioc_name in matching_iocs:
                 matched_count += 1
-                enrichment = feed_by_ip[ioc_name]
+                score = score_by_ip[ioc_name]
 
-                if enrichment.get("abuse_confidence_score") is not None:
+                if score is not None:
                     tag_entries.append(
                         {
                             "ioc_id": ioc_id,
                             "key": "confidence_of_abuse",
-                            "value": f"{enrichment['abuse_confidence_score']}%",
-                        }
-                    )
-                if enrichment.get("country_code"):
-                    tag_entries.append(
-                        {
-                            "ioc_id": ioc_id,
-                            "key": "country_code",
-                            "value": enrichment["country_code"],
+                            "value": f"{score}%",
                         }
                     )
 
@@ -112,7 +104,7 @@ class AbuseIPDBCron(Cronjob):
             self.log.error(f"Failed to fetch AbuseIPDB blocklist: {e}")
             raise
 
-    def _parse_feed(self, blocklist_data: list) -> dict[str, dict]:
+    def _parse_feed(self, blocklist_data: list) -> dict[str, int]:
         """
         Parse AbuseIPDB blocklist data into a dict keyed by validated IP address.
 
@@ -120,9 +112,9 @@ class AbuseIPDBCron(Cronjob):
             blocklist_data: Raw blocklist data from AbuseIPDB API.
 
         Returns:
-            Dict mapping IP address -> enrichment dict.
+            Dict mapping IP address -> abuse confidence score.
         """
-        feed_by_ip: dict[str, dict] = {}
+        score_by_ip: dict[str, int] = {}
 
         for entry in blocklist_data:
             ip_addr = entry.get("ipAddress")
@@ -133,9 +125,6 @@ class AbuseIPDBCron(Cronjob):
             if not is_valid:
                 continue
 
-            feed_by_ip[validated_ip] = {
-                "abuse_confidence_score": entry.get("abuseConfidenceScore"),
-                "country_code": entry.get("countryCode", ""),
-            }
+            score_by_ip[validated_ip] = entry.get("abuseConfidenceScore")
 
-        return feed_by_ip
+        return score_by_ip

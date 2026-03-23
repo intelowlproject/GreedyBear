@@ -164,6 +164,7 @@ class ASNFeedsOrderingSerializer(FeedsRequestSerializer):
     ALLOWED_ORDERING_FIELDS = frozenset(
         {
             "asn",
+            "as_name",
             "ioc_count",
             "total_attack_count",
             "total_interaction_count",

@@ -15,6 +15,7 @@ vi.mock(
     const EnrichmentSourcesChart = () => <div />;
     const EnrichmentRequestsChart = () => <div />;
     const FeedsTypesChart = () => <div />;
+    const AttackOriginCountriesChart = () => <div />;
 
     return {
       ...originalChartModule,
@@ -23,9 +24,14 @@ vi.mock(
       EnrichmentSourcesChart,
       EnrichmentRequestsChart,
       FeedsTypesChart,
+      AttackOriginCountriesChart,
     };
   },
 );
+
+vi.mock("../../../src/components/dashboard/AttackOriginMap", () => ({
+  default: () => <div />,
+}));
 
 describe("Dashboard component", () => {
   test("Dashboard", () => {

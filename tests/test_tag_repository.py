@@ -85,6 +85,37 @@ class TestTagRepository(CustomTestCase):
         self.assertEqual(Tag.objects.filter(source="threatfox").count(), 0)
         self.assertEqual(Tag.objects.filter(source="abuseipdb").count(), 1)
 
+    def test_add_tags_creates_tags(self):
+        """Should create new tags without removing existing ones."""
+        tag_entries = [
+            {"ioc_id": self.ioc.id, "key": "ptr_record", "value": "scanner.shodan.io"},
+            {"ioc_id": self.ioc_2.id, "key": "ptr_record", "value": "probe.censys.io"},
+        ]
+
+        count = self.repo.add_tags("rdns", tag_entries)
+
+        self.assertEqual(count, 2)
+        self.assertEqual(Tag.objects.filter(source="rdns").count(), 2)
+
+    def test_add_tags_preserves_existing_tags(self):
+        """Should not delete existing tags from the same source."""
+        Tag.objects.create(ioc=self.ioc, key="ptr_record", value="old.example.com", source="rdns")
+
+        tag_entries = [
+            {"ioc_id": self.ioc_2.id, "key": "ptr_record", "value": "new.example.com"},
+        ]
+
+        self.repo.add_tags("rdns", tag_entries)
+
+        self.assertEqual(Tag.objects.filter(source="rdns").count(), 2)
+
+    def test_add_tags_with_empty_list_returns_zero(self):
+        """Should return 0 and create nothing when given an empty list."""
+        count = self.repo.add_tags("rdns", [])
+
+        self.assertEqual(count, 0)
+        self.assertEqual(Tag.objects.filter(source="rdns").count(), 0)
+
     def test_tags_deleted_when_ioc_deleted(self):
         """Tags should be cascade deleted when their IOC is deleted."""
         Tag.objects.create(ioc=self.ioc, key="malware", value="Mirai", source="threatfox")

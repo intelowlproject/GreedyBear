@@ -83,6 +83,12 @@ def get_tor_exit_nodes():
     TorExitNodesCron().execute()
 
 
+def check_reverse_dns():
+    from greedybear.cronjobs.reverse_dns import ReverseDNSCron
+
+    ReverseDNSCron().execute()
+
+
 def enrich_threatfox():
     from greedybear.cronjobs.threatfox_feed import ThreatFoxCron
 

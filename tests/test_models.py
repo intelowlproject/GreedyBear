@@ -1,4 +1,7 @@
-from greedybear.models import IocType, Statistics, Tag, ViewType
+from django.db import IntegrityError
+
+from greedybear.enums import IpReputation
+from greedybear.models import Credential, IocType, Statistics, Tag, ViewType
 
 from . import CustomTestCase
 
@@ -20,13 +23,13 @@ class ModelsTestCase(CustomTestCase):
         self.assertEqual(self.ioc.payload_request, True)
         self.assertEqual(self.ioc.related_urls, [])
         self.assertEqual(self.ioc.ip_reputation, "")
-        self.assertEqual(self.ioc.asn, "12345")
+        self.assertEqual(self.ioc.autonomous_system.asn, "12345")
         self.assertEqual(self.ioc.destination_ports, [22, 23, 24])
         self.assertEqual(self.ioc.login_attempts, 1)
         self.assertEqual(self.ioc.recurrence_probability, 0.1)
         self.assertEqual(self.ioc.expected_interactions, 11.1)
 
-        self.assertEqual(self.ioc_2.ip_reputation, "mass scanner")
+        self.assertEqual(self.ioc_2.ip_reputation, IpReputation.MASS_SCANNER)
 
         self.assertIn(self.heralding, self.ioc.general_honeypot.all())
         self.assertIn(self.ciscoasa, self.ioc.general_honeypot.all())
@@ -43,7 +46,7 @@ class ModelsTestCase(CustomTestCase):
         self.assertEqual(self.cowrie_session.start_time, self.current_time)
         self.assertEqual(self.cowrie_session.duration, 1.234)
         self.assertEqual(self.cowrie_session.login_attempt, True)
-        self.assertEqual(self.cowrie_session.credentials, ["root | root"])
+        self.assertEqual(str(self.cowrie_session.credentials.first()), "root | root")
         self.assertEqual(self.cowrie_session.command_execution, True)
         self.assertEqual(self.cowrie_session.interaction_count, 5)
         self.assertEqual(self.cowrie_session.source.name, "140.246.171.141")
@@ -88,3 +91,16 @@ class ModelsTestCase(CustomTestCase):
         temp_ioc.delete()
 
         self.assertEqual(Tag.objects.filter(ioc_id=temp_ioc.id).count(), 0)
+
+    def test_credential_unique_constraint_with_default_protocol(self):
+        Credential.objects.create(username="dup_user", password="dup_pass", protocol="")
+
+        with self.assertRaises(IntegrityError):
+            Credential.objects.create(username="dup_user", password="dup_pass", protocol="")
+
+    def test_credential_unique_constraint_allows_same_pair_across_protocols(self):
+        Credential.objects.create(username="proto_user", password="proto_pass", protocol="")
+        Credential.objects.create(username="proto_user", password="proto_pass", protocol="ssh")
+        Credential.objects.create(username="proto_user", password="proto_pass", protocol="ftp")
+
+        self.assertEqual(Credential.objects.filter(username="proto_user", password="proto_pass").count(), 3)
