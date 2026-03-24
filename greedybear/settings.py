@@ -58,10 +58,10 @@ VERSION = os.environ.get("VITE_GREEDYBEAR_VERSION", "")
 CSRF_COOKIE_SAMESITE = "Strict"
 CSRF_COOKIE_HTTPONLY = True
 
-ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "*").split(",")
 
 # certego_saas
-HOST_URI = "http://localhost"
+HOST_URI = os.environ.get("HOST_URI", "http://localhost")
 HOST_NAME = "GreedyBear"
 
 # Application definition

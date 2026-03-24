@@ -43,6 +43,12 @@ STAGE="production"
 DEBUG=False
 MOCK_CONNECTIONS=False
 
+# Comma-separated list of allowed hostnames (e.g., greedybear.example.com,localhost)
+ALLOWED_HOSTS=*
+
+# The base URI used for email links (password reset, verification, etc.)
+HOST_URI=http://localhost
+
 # True for public deployment, False for internal deployment
 PUBLIC_DEPLOYMENT=False
 
