@@ -58,7 +58,15 @@ VERSION = os.environ.get("VITE_GREEDYBEAR_VERSION", "")
 CSRF_COOKIE_SAMESITE = "Strict"
 CSRF_COOKIE_HTTPONLY = True
 
-ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "*").split(",")
+raw_allowed_hosts = os.environ.get("ALLOWED_HOSTS")
+if raw_allowed_hosts:
+    ALLOWED_HOSTS = [
+        host.strip().strip("'\"")
+        for host in raw_allowed_hosts.split(",")
+        if host and host.strip().strip("'\"")
+    ]
+else:
+    ALLOWED_HOSTS = ["*"]
 
 # certego_saas
 HOST_URI = os.environ.get("HOST_URI", "http://localhost").rstrip("/")
