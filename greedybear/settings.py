@@ -61,7 +61,7 @@ CSRF_COOKIE_HTTPONLY = True
 ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "*").split(",")
 
 # certego_saas
-HOST_URI = os.environ.get("HOST_URI", "http://localhost")
+HOST_URI = os.environ.get("HOST_URI", "http://localhost").rstrip("/")
 HOST_NAME = "GreedyBear"
 
 # Application definition
