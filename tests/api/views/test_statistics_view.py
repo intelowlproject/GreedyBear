@@ -50,3 +50,18 @@ class StatisticsViewTestCase(CustomTestCase):
         self.assertEqual(response.json()[0]["Log4pot"], 3)
         self.assertEqual(response.json()[0]["Cowrie"], 3)
         self.assertEqual(response.json()[0]["Tanner"], 0)
+
+    def test_200_countries(self):
+        response = self.client.get("/api/statistics/countries")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIsInstance(data, list)
+        countries = [item["country"] for item in data]
+        counts = {item["country"]: item["count"] for item in data}
+        self.assertIn("Germany", countries)
+        self.assertIn("China", countries)
+        self.assertNotIn("Russia", countries)
+        self.assertEqual(counts["Germany"], 1)
+        self.assertEqual(counts["China"], 2)
+        count_values = [item["count"] for item in data]
+        self.assertEqual(count_values, sorted(count_values, reverse=True))

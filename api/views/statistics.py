@@ -96,6 +96,28 @@ class StatisticsViewSet(viewsets.ViewSet):
             annotations[hp.name] = Count("name", distinct=True, filter=Q(general_honeypot__name__iexact=hp.name))
         return self.__aggregation_response_static_ioc(annotations)
 
+    @action(detail=False, methods=["GET"], url_path="countries")
+    def countries(self, request, pk=None):
+        """
+        Return a list of attacker countries with IOC counts,
+        ordered by count descending. Excludes IOCs with only
+        inactive honeypots and entries with no country set.
+        """
+        from django.db.models import Count
+
+        qs = (
+            IOC.objects.filter(
+                general_honeypot__active=True,
+                attacker_country__isnull=False,
+            )
+            .exclude(attacker_country="")
+            .values("attacker_country")
+            .annotate(count=Count("id", distinct=True))
+            .order_by("-count")
+        )
+        data = [{"country": row["attacker_country"], "count": row["count"]} for row in qs]
+        return Response(data)
+
     def __aggregation_response_static_statistics(self, annotations: dict) -> Response:
         """
         Helper method to generate statistics response based on annotations.
