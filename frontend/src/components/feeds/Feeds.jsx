@@ -135,16 +135,13 @@ export default function Feeds() {
 
   // reset the prioritize dropdown to "recent"
   const handleSortChange = React.useCallback(() => {
-    setFilterValues((prev) => {
-      const updated = { ...prev, prioritize: "recent" };
-      setUrl(
-        `${FEEDS_BASE_URI}/${updated.feeds_type}/${updated.attack_type}/recent.json?ioc_type=${updated.ioc_type}`,
-      );
-      return updated;
-    });
+    const updated = { ...filterValues, prioritize: "recent" };
+    setFilterValues(updated);
+    setUrl(
+      `${FEEDS_BASE_URI}/${updated.feeds_type}/${updated.attack_type}/recent.json?ioc_type=${updated.ioc_type}`,
+    );
     setTableKey((prev) => prev + 1);
-  }, [setUrl]);
-
+  }, [setUrl, filterValues]);
   // callbacks
   const onSubmit = React.useCallback(
     (values) => {
