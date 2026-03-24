@@ -78,6 +78,29 @@ class StatisticsViewSet(viewsets.ViewSet):
         return self.__aggregation_response_static_statistics(annotations)
 
     @action(detail=False, methods=["get"])
+    def countries(self, request):
+        """
+        Retrieve the top attacker countries by IOC count for the selected time range.
+
+        Args:
+            request: The incoming request object.
+
+        Returns:
+            Response: A JSON list of {country, count} objects ordered by count descending.
+        """
+        delta, _ = self.__parse_range(self.request)
+        qs = (
+            IOC.objects.filter(last_seen__gte=delta)
+            .exclude(attacker_country="")
+            .filter(general_honeypot__active=True)
+            .values("attacker_country")
+            .annotate(count=Count("id", distinct=True))
+            .order_by("-count")
+        )
+        data = [{"country": item["attacker_country"], "count": item["count"]} for item in qs]
+        return Response(data)
+
+    @action(detail=False, methods=["get"])
     def feeds_types(self, request):
         """
         Retrieve statistics for different types of feeds using GeneralHoneypot M2M relationship.
@@ -95,28 +118,6 @@ class StatisticsViewSet(viewsets.ViewSet):
             # Use M2M relationship instead of boolean fields
             annotations[hp.name] = Count("name", distinct=True, filter=Q(general_honeypot__name__iexact=hp.name))
         return self.__aggregation_response_static_ioc(annotations)
-
-    @action(detail=False, methods=["GET"], url_path="countries")
-    def countries(self, request, pk=None):
-        """
-        Return a list of attacker countries with IOC counts,
-        ordered by count descending. Excludes IOCs with only
-        inactive honeypots and entries with no country set.
-        """
-        from django.db.models import Count
-
-        qs = (
-            IOC.objects.filter(
-                general_honeypot__active=True,
-                attacker_country__isnull=False,
-            )
-            .exclude(attacker_country="")
-            .values("attacker_country")
-            .annotate(count=Count("id", distinct=True))
-            .order_by("-count")
-        )
-        data = [{"country": row["attacker_country"], "count": row["count"]} for row in qs]
-        return Response(data)
 
     def __aggregation_response_static_statistics(self, annotations: dict) -> Response:
         """

@@ -50,6 +50,38 @@ class TagRepository:
             self.log.info(f"Created {len(tags_to_create)} tags from source '{source}'")
             return len(tags_to_create)
 
+    def add_tags(self, source: str, tag_entries: list[dict]) -> int:
+        """
+        Incrementally add tags for a source without removing existing ones.
+
+        Unlike replace_tags_for_source, this only creates new tags and
+        leaves previously stored tags intact. Suitable for sources that
+        build up results over many runs (e.g., reverse DNS lookups).
+
+        Args:
+            source: Source name (e.g., "rdns").
+            tag_entries: List of dicts with keys: ioc_id, key, value.
+
+        Returns:
+            Number of tags created.
+        """
+        if not tag_entries:
+            return 0
+
+        tags_to_create = [
+            Tag(
+                ioc_id=entry["ioc_id"],
+                key=entry["key"],
+                value=entry["value"],
+                source=source,
+            )
+            for entry in tag_entries
+        ]
+
+        Tag.objects.bulk_create(tags_to_create, batch_size=1000, ignore_conflicts=True)
+        self.log.info(f"Added {len(tags_to_create)} tags from source '{source}'")
+        return len(tags_to_create)
+
     def get_tags_by_ioc(self, ioc):
         """
         Get all tags for a specific IOC.

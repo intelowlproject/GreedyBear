@@ -1,5 +1,5 @@
 services:
-  uwsgi:
+  app:
     image: intelowlproject/greedybear:stag
 
   nginx:

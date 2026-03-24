@@ -174,13 +174,13 @@ class WhatsMyIPTestCase(CustomTestCase):
         self.assertEqual(WhatsMyIPDomain.objects.count(), 0)
 
     @patch("greedybear.cronjobs.whatsmyip.requests.get")
-    def test_execute_sets_success_false_on_http_error(self, mock_get):
-        """Test that base class execute() marks task as failed on HTTP error."""
+    def test_execute_raises_on_http_error(self, mock_get):
+        """Test that base class execute() propagates HTTP errors"""
         mock_response = MagicMock()
         mock_response.raise_for_status.side_effect = requests.exceptions.HTTPError("500 Server Error")
         mock_get.return_value = mock_response
 
         cron = whatsmyip.WhatsMyIPCron()
-        cron.execute()
 
-        self.assertFalse(cron.success)
+        with self.assertRaises(requests.exceptions.HTTPError):
+            cron.execute()

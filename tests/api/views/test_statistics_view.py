@@ -58,10 +58,13 @@ class StatisticsViewTestCase(CustomTestCase):
         self.assertIsInstance(data, list)
         countries = [item["country"] for item in data]
         counts = {item["country"]: item["count"] for item in data}
-        self.assertIn("Germany", countries)
+        # China appears on ioc + ioc_2 (both active), United States on ioc_3 (active)
+        # Russia is only on ioc_inactive_country (ddospot, inactive); must be excluded
         self.assertIn("China", countries)
+        self.assertIn("United States", countries)
         self.assertNotIn("Russia", countries)
-        self.assertEqual(counts["Germany"], 1)
         self.assertEqual(counts["China"], 2)
+        self.assertEqual(counts["United States"], 1)
+        # Results must be ordered descending by count
         count_values = [item["count"] for item in data]
         self.assertEqual(count_values, sorted(count_values, reverse=True))

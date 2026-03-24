@@ -15,27 +15,26 @@ services:
       start_period: 10s
       start_interval: 1s
 
-  uwsgi:
+  app:
     image: intelowlproject/greedybear:prod
-    container_name: greedybear_uwsgi
+    container_name: greedybear_app
     restart: unless-stopped
+    stop_grace_period: 30s
     volumes:
-      - ../configuration/uwsgi/greedybear.ini:/etc/uwsgi/sites/greedybear.ini
+      - ../configuration/gunicorn/config.py:/etc/gunicorn/config.py
       - generic_logs:/var/log/greedybear
       - static_content:/opt/deploy/greedybear/static
+      - gunicorn_sockets:/run/gunicorn
     entrypoint:
-      - ./docker/entrypoint_uwsgi.sh
-    command: ["uwsgi", "--ini", "/etc/uwsgi/sites/greedybear.ini", "--stats", "127.0.0.1:1717", "--stats-http"]
-    expose:
-      - "8001"
-      - "1717"
+      - ./docker/entrypoint_gunicorn.sh
+    command: ["gunicorn", "greedybear.wsgi:application", "-c", "/etc/gunicorn/config.py"]
     env_file:
       - env_file
     depends_on:
       postgres:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:1717 || exit 1"]
+      test: ["CMD-SHELL", "test -S /run/gunicorn/main.sock && kill -0 $(cat /run/gunicorn/gunicorn.pid)"]
       interval: 10s
       timeout: 2s
       retries: 30
@@ -52,18 +51,20 @@ services:
       - ../configuration/nginx/locations.conf:/etc/nginx/locations.conf
       - nginx_logs:/var/log/nginx
       - static_content:/var/www/static
+      - gunicorn_sockets:/run/gunicorn
     ports:
       - "80:80"
-    depends_on:                                                                                                                                                                             
-      uwsgi:                  
+    depends_on:
+      app:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost/hc || exit 1"]
+      test: ["CMD-SHELL", "curl -f http://localhost/api/ || exit 1"]
       interval: 10s
       timeout: 2s
       retries: 3
       start_period: 10s
       start_interval: 1s
+
 
   qcluster:
     image: intelowlproject/greedybear:prod
@@ -79,7 +80,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      uwsgi:
+      app:
         condition: service_healthy
     user: "2000:82"
     healthcheck:
@@ -91,3 +92,4 @@ volumes:
   generic_logs:
   static_content:
   mlmodels:
+  gunicorn_sockets:
