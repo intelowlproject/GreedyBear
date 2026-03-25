@@ -8,8 +8,18 @@ class ASRepository:
 
     def __init__(self):
         self.log = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
-        self._cache = {as_obj.asn: as_obj for as_obj in AutonomousSystem.objects.all()}
-        self.log.info(f"Preloaded {len(self._cache)} ASs into cache")
+
+    @property
+    def cache(self) -> dict[int, AutonomousSystem]:
+        """
+        Lazy-loaded cache of AS objects by ASN.
+        Fetched on first access to avoid DB queries during __init__.
+        """
+        if not hasattr(self, "_cache"):
+            self.log.debug("Preloading ASs into cache from database")
+            self._cache = {as_obj.asn: as_obj for as_obj in AutonomousSystem.objects.all()}
+            self.log.info(f"Preloaded {len(self._cache)} ASs into cache")
+        return self._cache
 
     def get_or_create(self, asn: int, name: str) -> AutonomousSystem:
         """
@@ -24,8 +34,13 @@ class ASRepository:
         Returns:
             AutonomousSystem instance
         """
-        if asn in self._cache:
-            return self._cache[asn]
+        if asn in self.cache:
+            as_obj = self.cache[asn]
+            if not as_obj.name and name:
+                as_obj.name = name
+                as_obj.save(update_fields=["name"])
+                self.log.info(f"Updated AS {asn} name to '{name}'")
+            return as_obj
 
         as_obj, created = AutonomousSystem.objects.get_or_create(asn=asn, defaults={"name": name or ""})
 
@@ -36,5 +51,5 @@ class ASRepository:
             as_obj.save(update_fields=["name"])
             self.log.info(f"Updated AS {asn} name to '{name}'")
 
-        self._cache[asn] = as_obj
+        self.cache[asn] = as_obj
         return as_obj

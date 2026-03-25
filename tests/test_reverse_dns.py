@@ -133,26 +133,26 @@ class TestReverseDNSCron(CustomTestCase):
 
     def test_updates_reputation_on_scanner_match(self):
         """Matching PTR should trigger a reputation update to 'mass scanner'."""
-        self.mock_ioc_repo.update_ioc_reputation.return_value = True
+        self.mock_ioc_repo.bulk_update_ioc_reputation.return_value = 1
 
         with patch.object(self.cron, "_resolve_batch", side_effect=self._mock_resolve("probe.censys.io")):
             self.cron.run()
 
-        self.mock_ioc_repo.update_ioc_reputation.assert_called_with(self.candidate_ioc.name, IpReputation.MASS_SCANNER)
+        self.mock_ioc_repo.bulk_update_ioc_reputation.assert_called_with([self.candidate_ioc.name], IpReputation.MASS_SCANNER)
 
     def test_no_reputation_update_on_non_scanner_ptr(self):
         """Non-scanner PTR records should not cause reputation updates."""
         with patch.object(self.cron, "_resolve_batch", side_effect=self._mock_resolve("mail.google.com")):
             self.cron.run()
 
-        self.mock_ioc_repo.update_ioc_reputation.assert_not_called()
+        self.mock_ioc_repo.bulk_update_ioc_reputation.assert_not_called()
 
     def test_no_reputation_update_on_empty_ptr(self):
         """Empty PTR results should not cause reputation updates."""
         with patch.object(self.cron, "_resolve_batch", side_effect=self._mock_resolve("")):
             self.cron.run()
 
-        self.mock_ioc_repo.update_ioc_reputation.assert_not_called()
+        self.mock_ioc_repo.bulk_update_ioc_reputation.assert_not_called()
 
     def test_candidates_ordered_by_persistence(self):
         """Most persistent IPs should be checked first."""
@@ -350,28 +350,3 @@ class TestReverseDNSCronMatchesScannerDomain(CustomTestCase):
         for domain in MASS_SCANNER_DOMAINS:
             self.assertTrue(ReverseDNSCron._matches_scanner_domain(domain), f"{domain} should match")
             self.assertTrue(ReverseDNSCron._matches_scanner_domain(f"probe.{domain}"), f"probe.{domain} should match")
-
-
-class TestReverseDNSCronUpdateIoc(CustomTestCase):
-    """Tests for _update_ioc method."""
-
-    def setUp(self):
-        self.mock_ioc_repo = Mock()
-        self.cron = ReverseDNSCron(tag_repo=Mock(), ioc_repo=self.mock_ioc_repo)
-        self.cron.log = Mock()
-
-    def test_update_ioc_success(self):
-        self.mock_ioc_repo.update_ioc_reputation.return_value = True
-
-        self.cron._update_ioc("1.2.3.4")
-
-        self.mock_ioc_repo.update_ioc_reputation.assert_called_once_with("1.2.3.4", IpReputation.MASS_SCANNER)
-        self.cron.log.info.assert_called_once()
-
-    def test_update_ioc_not_found(self):
-        self.mock_ioc_repo.update_ioc_reputation.return_value = False
-
-        self.cron._update_ioc("9.9.9.9")
-
-        self.mock_ioc_repo.update_ioc_reputation.assert_called_once_with("9.9.9.9", IpReputation.MASS_SCANNER)
-        self.cron.log.info.assert_not_called()

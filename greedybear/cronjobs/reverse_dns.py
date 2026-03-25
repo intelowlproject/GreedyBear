@@ -69,7 +69,7 @@ class ReverseDNSCron(Cronjob):
         # Only tag IPs that have actual PTR records — IPs without PTR
         # are left untagged so they can be rechecked on future runs.
         tag_entries = []
-        total_matched = 0
+        matched_ips = []
 
         for ip, ptr in ptr_results.items():
             if not ptr:
@@ -78,11 +78,16 @@ class ReverseDNSCron(Cronjob):
             tag_entries.append({"ioc_id": ip_to_id[ip], "key": "ptr_record", "value": ptr})
 
             if self._matches_scanner_domain(ptr):
-                self._update_ioc(ip)
-                total_matched += 1
+                matched_ips.append(ip)
+
+        if matched_ips:
+            updated_count = self.ioc_repo.bulk_update_ioc_reputation(
+                matched_ips, IpReputation.MASS_SCANNER.value if hasattr(IpReputation.MASS_SCANNER, "value") else IpReputation.MASS_SCANNER
+            )
+            self.log.info(f"Marked {updated_count} IPs as mass scanners via rDNS")
 
         created_count = self.tag_repo.add_tags(SOURCE_NAME, tag_entries)
-        self.log.info(f"Reverse DNS check completed. Checked {len(ptr_results)} IPs, created {created_count} tags, {total_matched} matched mass scanners")
+        self.log.info(f"Reverse DNS check completed. Checked {len(ptr_results)} IPs, created {created_count} tags, {len(matched_ips)} matched mass scanners")
 
     def _get_candidates(self):
         """
@@ -177,14 +182,3 @@ class ReverseDNSCron(Cronjob):
             if hostname_lower == domain or hostname_lower.endswith("." + domain):
                 return True
         return False
-
-    def _update_ioc(self, ip_address: str):
-        """
-        Update the IP reputation of an existing IOC to mark it as a mass scanner.
-
-        Args:
-            ip_address: IP address to update.
-        """
-        updated = self.ioc_repo.update_ioc_reputation(ip_address, IpReputation.MASS_SCANNER)
-        if updated:
-            self.log.info(f"Marked {ip_address} as {IpReputation.MASS_SCANNER} via rDNS")

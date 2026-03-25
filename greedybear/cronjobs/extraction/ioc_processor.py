@@ -25,7 +25,17 @@ class IocProcessor:
         self.log = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
         self.ioc_repo = ioc_repo
         self.sensor_repo = sensor_repo
-        self._whatsmyip_domains = set(WhatsMyIPDomain.objects.values_list("domain", flat=True))
+
+    @property
+    def whatsmyip_domains(self) -> set[str]:
+        """
+        Lazy-loaded set of known "what's my IP" domains.
+        Fetched on first access to avoid DB queries during __init__.
+        """
+        if not hasattr(self, "_whatsmyip_domains"):
+            self.log.debug("Loading WhatsMyIP domains from database")
+            self._whatsmyip_domains = set(WhatsMyIPDomain.objects.values_list("domain", flat=True))
+        return self._whatsmyip_domains
 
     def add_ioc(
         self,
@@ -53,7 +63,7 @@ class IocProcessor:
             self.log.debug(f"not saved {ioc} because it is a sensor")
             return None
 
-        if ioc.type == IocType.DOMAIN and is_whatsmyip_domain(ioc.name, self._whatsmyip_domains):
+        if ioc.type == IocType.DOMAIN and is_whatsmyip_domain(ioc.name, self.whatsmyip_domains):
             self.log.debug(f"not saved {ioc} because it is a whats-my-ip domain")
             return None
 
@@ -64,8 +74,7 @@ class IocProcessor:
             # Add sensors to newly saved IOC from temporary attribute.
             # (See greedybear/cronjobs/extraction/utils.py for why we use this)
             if hasattr(ioc, "_sensors_to_add") and ioc._sensors_to_add:
-                for sensor in ioc._sensors_to_add:
-                    ioc_record.sensors.add(sensor)
+                ioc_record.sensors.add(*ioc._sensors_to_add)
         else:  # Update - sensors handled inside _merge_iocs
             self.log.debug(f"{ioc} is already known - updating record")
             ioc_record = self._merge_iocs(ioc_record, ioc)
@@ -115,8 +124,7 @@ class IocProcessor:
         # Add sensors from new IOC (existing is already saved, so ManyToMany works).
         # We retrieve sensors from the temporary attribute of the input IOC object.
         if hasattr(new, "_sensors_to_add") and new._sensors_to_add:
-            for sensor in new._sensors_to_add:
-                existing.sensors.add(sensor)
+            existing.sensors.add(*new._sensors_to_add)
 
         return existing
 
