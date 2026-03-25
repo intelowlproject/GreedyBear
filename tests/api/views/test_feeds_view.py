@@ -159,3 +159,21 @@ class FeedsViewTestCase(CustomTestCase):
     def test_400_feeds_pagination(self):
         response = self.client.get("/api/feeds/?page_size=10&page=1&feed_type=all&attack_type=test&age=recent")
         self.assertEqual(response.status_code, 400)
+
+    def test_200_feeds_pagination_ordering_value_desc(self):
+        response = self.client.get(
+            "/api/feeds/?page_size=50&page=1&feed_type=all&attack_type=all&prioritize=recent&ordering=-value&include_mass_scanners&include_tor_exit_nodes"
+        )
+        self.assertEqual(response.status_code, 200)
+
+        values = [ioc["value"] for ioc in response.json()["results"]["iocs"]]
+        self.assertEqual(values, sorted(values, reverse=True))
+
+    def test_200_feeds_pagination_ordering_value_asc(self):
+        response = self.client.get(
+            "/api/feeds/?page_size=50&page=1&feed_type=all&attack_type=all&prioritize=recent&ordering=value&include_mass_scanners&include_tor_exit_nodes"
+        )
+        self.assertEqual(response.status_code, 200)
+
+        values = [ioc["value"] for ioc in response.json()["results"]["iocs"]]
+        self.assertEqual(values, sorted(values))

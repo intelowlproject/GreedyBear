@@ -47,12 +47,13 @@ def command_sequence_view(request):
     observable = request.query_params.get("query")
     include_similar = request.query_params.get("include_similar") is not None
     logger.info(f"Command Sequence view requested by {request.user} for {observable}")
-    source_ip = str(request.META["REMOTE_ADDR"])
-    request_source = Statistics(source=source_ip, view=ViewType.COMMAND_SEQUENCE_VIEW.value)
-    request_source.save()
 
     if not observable:
         return HttpResponseBadRequest("Missing required 'query' parameter")
+
+    source_ip = str(request.META["REMOTE_ADDR"])
+    request_source = Statistics(source=source_ip, view=ViewType.COMMAND_SEQUENCE_VIEW.value)
+    request_source.save()
 
     if is_ip_address(observable):
         sessions = CowrieSession.objects.filter(source__name=observable, start_time__isnull=False, commands__isnull=False)
