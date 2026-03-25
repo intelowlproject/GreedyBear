@@ -492,10 +492,10 @@ checkout_git_ref() {
 
     local target_ref="main"
     if [ "$ENV_MODE" = "dev" ]; then
-        target_ref="develop"
+        target_ref="main"
     elif [ "$USE_VERSION" = true ]; then
         if [ "$GREEDYBEAR_VERSION" = "stag" ]; then
-            target_ref="develop"
+            target_ref="main"
         else
             target_ref="$GREEDYBEAR_VERSION"
         fi
