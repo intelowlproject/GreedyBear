@@ -1,5 +1,5 @@
 import React from "react";
-import { render, screen } from "@testing-library/react";
+import { render } from "@testing-library/react";
 import { vi, describe, it, expect, beforeEach } from "vitest";
 
 const { mockAnyChartWidget } = vi.hoisted(() => ({
@@ -11,7 +11,7 @@ vi.mock("@certego/certego-ui", () => ({
   getRandomColorsArray: () => Array(30).fill("#aabbcc"),
 }));
 
-vi.mock("../../../../constants/api", () => ({
+vi.mock("../../../../src/constants/api", () => ({
   FEEDS_STATISTICS_SOURCES_URI: "/api/statistics/sources/feeds",
   FEEDS_STATISTICS_DOWNLOADS_URI: "/api/statistics/downloads/feeds",
   FEEDS_STATISTICS_TYPES_URI: "/api/statistics/feeds_types",
@@ -19,7 +19,7 @@ vi.mock("../../../../constants/api", () => ({
   ENRICHMENT_STATISTICS_REQUESTS_URI: "/api/statistics/requests/enrichment",
 }));
 
-vi.mock("../../../../constants", () => ({
+vi.mock("../../../../src/constants", () => ({
   FEED_COLOR_MAP: { Sources: "#82ca9d", Downloads: "#8884d8" },
   ENRICHMENT_COLOR_MAP: { Sources: "#82ca9d", Requests: "#8884d8" },
 }));
