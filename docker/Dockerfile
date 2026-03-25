@@ -29,7 +29,7 @@ WORKDIR $PYTHONPATH
 #  - libgomp1 is required for model training
 #  - curl is used for healthcheck
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    libgomp1 curl \
+    libgomp1 curl gosu \
     && rm -rf /var/lib/apt/lists/*
 
 # Install python packages
