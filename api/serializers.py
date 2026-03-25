@@ -203,7 +203,7 @@ class ASNFeedsOrderingSerializer(FeedsRequestSerializer):
 class TrendingAttackersRequestSerializer(serializers.Serializer):
     feed_type = serializers.CharField(default="all")
     window_minutes = serializers.IntegerField(min_value=60, default=24 * 60)
-    limit = serializers.IntegerField(min_value=1, max_value=1000, default=100)
+    limit = serializers.IntegerField(min_value=1, max_value=1000, default=10)
 
     def validate_feed_type(self, feed_type):
         logger.debug(f"TrendingAttackersRequestSerializer - validation feed_type: '{feed_type}'")
