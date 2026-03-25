@@ -8,7 +8,12 @@ import {
   NavbarToggler,
 } from "reactstrap";
 import { NavLink as RRNavLink } from "react-router-dom";
-import { MdHome, MdOutlineFeed, MdDashboard, MdTrendingUp } from "react-icons/md";
+import {
+  MdHome,
+  MdOutlineFeed,
+  MdDashboard,
+  MdTrendingUp,
+} from "react-icons/md";
 import { RiBookReadFill } from "react-icons/ri";
 
 // lib
