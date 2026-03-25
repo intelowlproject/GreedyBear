@@ -52,6 +52,10 @@ class FeedsTrendingViewTestCase(CustomTestCase):
         self.assertEqual(attackers["3.3.3.3"]["previous_rank"], 1)
         self.assertEqual(attackers["3.3.3.3"]["rank_delta"], -1)
 
+    def test_200_trending_anonymous_access(self):
+        response = APIClient().get("/api/feeds/trending/?window_minutes=60&limit=10&feed_type=all")
+        self.assertEqual(response.status_code, 200)
+
     @override_settings(TRENDING_PRECOMPUTE_WINDOWS_MINUTES=[24 * 60])
     def test_200_trending_uses_precomputed_snapshot(self):
         TrendingAttackerSnapshot.objects.create(

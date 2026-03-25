@@ -262,9 +262,9 @@ def feeds_asn(request):
 
 
 @api_view([GET])
-@authentication_classes([CookieTokenAuthentication])
-@permission_classes([IsAuthenticated])
-@throttle_classes([FeedsAdvancedThrottle])
+@authentication_classes([])
+@permission_classes([])
+@throttle_classes([])
 def feeds_trending(request):
     """
     Retrieve trending attackers by comparing a custom rolling time window
@@ -273,7 +273,7 @@ def feeds_trending(request):
     Query params:
         feed_type (str): comma-separated honeypot type names or 'all'. Default: 'all'.
         window_minutes (int): Size of each comparison window in minutes. Default: 1440.
-        limit (int): Maximum number of attacker entries to return. Default: 100.
+        limit (int): Maximum number of attacker entries to return. Default: 10.
     """
     logger.info(f"request /api/feeds/trending/ with params: {request.query_params}")
 
