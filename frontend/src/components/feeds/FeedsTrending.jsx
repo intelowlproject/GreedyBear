@@ -30,7 +30,9 @@ export default function FeedsTrending() {
   const [trendingData, setTrendingData] = React.useState(null);
   const [trendingLoading, setTrendingLoading] = React.useState(false);
   const [trendingError, setTrendingError] = React.useState("");
-  const [trendingFilters, setTrendingFilters] = React.useState(DEFAULT_TRENDING_VALUES);
+  const [trendingFilters, setTrendingFilters] = React.useState(
+    DEFAULT_TRENDING_VALUES,
+  );
 
   const [honeypots, Loader] = useAxiosComponentLoader({
     url: `${GENERAL_HONEYPOT_URI}?onlyActive=true`,
@@ -83,7 +85,9 @@ export default function FeedsTrending() {
         <div className="d-flex justify-content-between align-items-end mb-3">
           <h1 className="mb-0">
             Trending attackers&nbsp;
-            <small className="text-muted">{trendingData?.count ?? 0} total</small>
+            <small className="text-muted">
+              {trendingData?.count ?? 0} total
+            </small>
           </h1>
           <Button
             color="primary"
@@ -127,10 +131,13 @@ export default function FeedsTrending() {
                         id="TrendingPage__feed_type"
                         options={honeypotFeedsType}
                         value={
-                          formik.values.feed_type && formik.values.feed_type !== "all"
+                          formik.values.feed_type &&
+                          formik.values.feed_type !== "all"
                             ? formik.values.feed_type
                                 .split(",")
-                                .map((v) => honeypotFeedsType.find((o) => o.value === v))
+                                .map((v) =>
+                                  honeypotFeedsType.find((o) => o.value === v),
+                                )
                                 .filter(Boolean)
                             : []
                         }
@@ -164,7 +171,10 @@ export default function FeedsTrending() {
                     </Col>
 
                     <Col sm={12} md={2}>
-                      <Label className="form-control-label" htmlFor="TrendingPage__limit">
+                      <Label
+                        className="form-control-label"
+                        htmlFor="TrendingPage__limit"
+                      >
                         Limit:
                       </Label>
                       <Input
@@ -179,10 +189,15 @@ export default function FeedsTrending() {
                     </Col>
 
                     <Col sm={12} md="auto" className="d-flex gap-2">
-                      <Button color="primary" type="submit" disabled={trendingLoading}>
+                      <Button
+                        color="primary"
+                        type="submit"
+                        disabled={trendingLoading}
+                      >
                         {trendingLoading ? (
                           <>
-                            <Spinner size="sm" />&nbsp;Loading...
+                            <Spinner size="sm" />
+                            &nbsp;Loading...
                           </>
                         ) : (
                           "Apply"
@@ -195,7 +210,9 @@ export default function FeedsTrending() {
                         title="Reset filters"
                         aria-label="Reset filters"
                         onClick={async () => {
-                          await formik.resetForm({ values: DEFAULT_TRENDING_VALUES });
+                          await formik.resetForm({
+                            values: DEFAULT_TRENDING_VALUES,
+                          });
                           setTrendingFilters(DEFAULT_TRENDING_VALUES);
                           await fetchTrending(DEFAULT_TRENDING_VALUES);
                         }}
@@ -219,8 +236,9 @@ export default function FeedsTrending() {
         {trendingData ? (
           <>
             <div className="small text-muted mt-3">
-              Data source: {trendingData.data_source} | Current window: {" "}
-              {trendingData.current_window?.start} → {trendingData.current_window?.end}
+              Data source: {trendingData.data_source} | Current window:{" "}
+              {trendingData.current_window?.start} →{" "}
+              {trendingData.current_window?.end}
             </div>
             <Table responsive hover className="mt-2">
               <thead>
