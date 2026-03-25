@@ -21,7 +21,7 @@ mkdir -p /var/log/greedybear/gunicorn
 mkdir -p /run/gunicorn
 
 # Fix log file ownership (manage.py commands above run as root and may create new log files)
-chown -R 2000:82 /var/log/greedybear /run
+chown -R 2000:82 /var/log/greedybear /run/gunicorn
 
 # Obtain the current GreedyBear version number
 . /opt/deploy/greedybear/docker/.version
@@ -33,4 +33,10 @@ echo "DEBUG: $DEBUG"
 echo "DJANGO_TEST_SERVER: $DJANGO_TEST_SERVER"
 echo "------------------------------"
 
-exec gosu www-data "$@"
+if [ "$DJANGO_TEST_SERVER" = "True" ]; then
+    # Dev mode: run as root (needed for hot-reload on volume-mounted source)
+    exec "$@"
+else
+    # Production mode: drop privileges to www-data before starting Gunicorn
+    exec gosu www-data "$@"
+fi
