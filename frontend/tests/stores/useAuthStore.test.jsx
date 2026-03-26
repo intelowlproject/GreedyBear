@@ -240,6 +240,23 @@ describe("useAuthStore", () => {
     });
   });
 
+  describe("reset", () => {
+    test("clears user, isSuperuser and sets isAuthenticated to FALSE", () => {
+      useAuthStore.setState({
+        isAuthenticated: AUTHENTICATION_STATUSES.TRUE,
+        user: { email: "test@test.com" },
+        isSuperuser: true,
+      });
+
+      useAuthStore.getState().reset();
+
+      const state = useAuthStore.getState();
+      expect(state.isAuthenticated).toBe(AUTHENTICATION_STATUSES.FALSE);
+      expect(state.isSuperuser).toBe(false);
+      expect(state.user).toEqual(INITIAL_USER);
+    });
+  });
+
   describe("checkAuthentication", () => {
     test("sets auth TRUE and updates superuser", async () => {
       axios.get.mockResolvedValue({
@@ -257,9 +274,11 @@ describe("useAuthStore", () => {
       expect(useAuthStore.getState().isSuperuser).toBe(true);
     });
 
-    test("sets auth FALSE when auth check fails while currently authenticated", async () => {
+    test("clears all auth data when auth check fails while currently authenticated", async () => {
       useAuthStore.setState({
         isAuthenticated: AUTHENTICATION_STATUSES.TRUE,
+        user: { email: "test@test.com" },
+        isSuperuser: true,
       });
       axios.get.mockRejectedValue(new Error("auth check failed"));
 
@@ -270,9 +289,10 @@ describe("useAuthStore", () => {
       expect(axios.get).toHaveBeenCalledWith(CHECK_AUTHENTICATION_URI, {
         headers: { "Content-Type": "application/json" },
       });
-      expect(useAuthStore.getState().isAuthenticated).toBe(
-        AUTHENTICATION_STATUSES.FALSE,
-      );
+      const state = useAuthStore.getState();
+      expect(state.isAuthenticated).toBe(AUTHENTICATION_STATUSES.FALSE);
+      expect(state.isSuperuser).toBe(false);
+      expect(state.user).toEqual(INITIAL_USER);
     });
 
     test("keeps auth FALSE when auth check fails while already unauthenticated", async () => {
