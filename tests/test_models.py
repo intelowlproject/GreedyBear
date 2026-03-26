@@ -1,5 +1,7 @@
+from django.db import IntegrityError
+
 from greedybear.enums import IpReputation
-from greedybear.models import IocType, Sensor, Statistics, Tag, ViewType
+from greedybear.models import Credential, IocType, Sensor, Statistics, Tag, ViewType
 
 from . import CustomTestCase
 
@@ -98,3 +100,16 @@ class ModelsTestCase(CustomTestCase):
         temp_ioc.delete()
 
         self.assertEqual(Tag.objects.filter(ioc_id=temp_ioc.id).count(), 0)
+
+    def test_credential_unique_constraint_with_default_protocol(self):
+        Credential.objects.create(username="dup_user", password="dup_pass", protocol="")
+
+        with self.assertRaises(IntegrityError):
+            Credential.objects.create(username="dup_user", password="dup_pass", protocol="")
+
+    def test_credential_unique_constraint_allows_same_pair_across_protocols(self):
+        Credential.objects.create(username="proto_user", password="proto_pass", protocol="")
+        Credential.objects.create(username="proto_user", password="proto_pass", protocol="ssh")
+        Credential.objects.create(username="proto_user", password="proto_pass", protocol="ftp")
+
+        self.assertEqual(Credential.objects.filter(username="proto_user", password="proto_pass").count(), 3)
