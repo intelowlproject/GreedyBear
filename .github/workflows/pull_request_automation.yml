@@ -53,6 +53,12 @@ jobs:
      with:
       working_directory: .
 
+      use_black: false
+      use_isort: false
+      use_flake8: false
+      use_pylint: false
+      use_bandit: false
+      use_autoflake: false
       use_ruff_formatter: true
       use_ruff_linter: true
 
