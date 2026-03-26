@@ -12,7 +12,12 @@ import {
 } from "../constants/api";
 import { AUTHENTICATION_STATUSES } from "../constants";
 
-const INITIAL_USER = { full_name: "", first_name: "", last_name: "", email: "" };
+const INITIAL_USER = {
+  full_name: "",
+  first_name: "",
+  last_name: "",
+  email: "",
+};
 
 // hook/ store see: https://github.com/pmndrs/zustand
 const useAuthStore = create((set, get) => ({
