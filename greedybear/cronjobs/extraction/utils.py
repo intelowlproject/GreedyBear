@@ -27,6 +27,21 @@ def parse_timestamp(timestamp: str) -> datetime:
     return datetime.fromisoformat(timestamp).replace(tzinfo=None)
 
 
+def normalize_credential_field(value: object, max_length: int = 256) -> str:
+    """
+    Normalize a credential field from untrusted input.
+
+    Args:
+        value: Raw field value.
+        max_length: Maximum length allowed by the model field.
+
+    Returns:
+        Sanitized credential field string.
+    """
+    text = "" if value is None else str(value)
+    return text.replace("\x00", "[NUL]")[:max_length]
+
+
 def is_whatsmyip_domain(domain: str, whatsmyip_domains: set) -> bool:
     """
     Check if a domain is a known "what's my IP" service.
