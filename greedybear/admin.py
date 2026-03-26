@@ -32,9 +32,10 @@ class TorExitNodeModelAdmin(admin.ModelAdmin):
 
 @admin.register(Sensor)
 class SensorsModelAdmin(admin.ModelAdmin):
-    list_display = ["id", "address"]
-    search_fields = ["address"]
-    search_help_text = ["search for the sensor IP address"]
+    list_display = ["id", "address", "country", "label"]
+    list_editable = ["label"]
+    search_fields = ["address", "label"]
+    search_help_text = ["search for the sensor IP address or label"]
 
 
 @admin.register(Statistics)

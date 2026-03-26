@@ -291,6 +291,75 @@ class TestCowrieExtractionStrategy(ExtractionTestCase):
 
         self.assertEqual(session_record.duration, 10.5)
 
+    def test_process_session_hit_file_download_creates_transfer(self):
+        """Test processing of file download event creates file transfer."""
+        session_record = Mock()
+        session_record.interaction_count = 0
+
+        hit = {
+            "eventid": "cowrie.session.file_download",
+            "timestamp": "2023-01-01T10:00:04",
+            "shasum": "abc123def456",
+            "url": "http://malware.com/bad.exe",
+            "outfile": "/data/cowrie/downloads/bad.exe",
+        }
+        ioc = Mock(name="1.2.3.4")
+
+        self.strategy._process_session_hit(session_record, hit, ioc)
+
+        self.mock_session_repo.get_or_create_file_transfer.assert_called_once_with(
+            session=session_record,
+            shasum="abc123def456",
+            url="http://malware.com/bad.exe",
+            outfile="/data/cowrie/downloads/bad.exe",
+            timestamp="2023-01-01T10:00:04",
+        )
+        self.assertEqual(session_record.interaction_count, 1)
+
+    def test_process_session_hit_file_upload_creates_transfer(self):
+        """Test processing of file upload event creates file transfer."""
+        session_record = Mock()
+        session_record.interaction_count = 0
+
+        hit = {
+            "eventid": "cowrie.session.file_upload",
+            "timestamp": "2023-01-01T10:00:04",
+            "shasum": "deadbeef123456",
+            "filename": "malware.sh",
+            "outfile": "/var/lib/cowrie/downloads/deadbeef123456",
+        }
+        ioc = Mock(name="1.2.3.4")
+
+        self.strategy._process_session_hit(session_record, hit, ioc)
+
+        self.mock_session_repo.get_or_create_file_transfer.assert_called_once_with(
+            session=session_record,
+            shasum="deadbeef123456",
+            url="",  # upload events do not contain URL
+            outfile="/var/lib/cowrie/downloads/deadbeef123456",
+            timestamp="2023-01-01T10:00:04",
+        )
+        self.assertEqual(session_record.interaction_count, 1)
+
+    def test_process_session_hit_file_upload_without_shasum(self):
+        """Test file transfer is skipped when shasum is missing."""
+        session_record = Mock()
+        session_record.interaction_count = 0
+
+        hit = {
+            "eventid": "cowrie.session.file_upload",
+            "timestamp": "2023-01-01T10:00:04",
+            # no shasum
+            "url": "http://attacker.com/upload.bin",
+            "outfile": "/data/cowrie/uploads/upload.bin",
+        }
+        ioc = Mock(name="1.2.3.4")
+
+        self.strategy._process_session_hit(session_record, hit, ioc)
+
+        self.mock_session_repo.get_or_create_file_transfer.assert_not_called()
+        self.assertEqual(session_record.interaction_count, 1)
+
     def test_add_fks_both_exist(self):
         """Test linking IOCs when both exist."""
         scanner_mock = MagicMock()

@@ -10,6 +10,7 @@ from greedybear.cronjobs.extraction.strategies import BaseExtractionStrategy
 from greedybear.cronjobs.extraction.utils import (
     get_ioc_type,
     iocs_from_hits,
+    normalize_credential_field,
     parse_timestamp,
     threatfox_submission,
 )
@@ -51,20 +52,6 @@ def normalize_command(message: str) -> str:
     """
     # Truncate to 1024 chars to match CommandSequence.commands field max_length
     return message.removeprefix("CMD: ").replace("\x00", "[NUL]")[:1024]
-
-
-def normalize_credential_field(field: str) -> str:
-    """
-    Normalize credential fields by replacing null characters and truncating.
-
-    Args:
-        field: Credential field string
-
-    Returns:
-        Normalized credential field, truncated to 256 characters.
-    """
-    # Truncate to 256 chars to match Credential model field max_length
-    return field.replace("\x00", "[NUL]")[:256]
 
 
 class CowrieExtractionStrategy(BaseExtractionStrategy):
@@ -174,8 +161,8 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
 
             scanner_ip = str(hit["src_ip"])
             download_url = str(hit["url"])
-
-            self.log.info(f"found IP {scanner_ip} downloading from {download_url}")
+            shasum = hit.get("shasum")
+            self.log.info(f"found IP {scanner_ip} downloading from {download_url}" + (f" (SHA256: {shasum})" if shasum else ""))
 
             # Extract and track download URL
             if download_url:
@@ -268,6 +255,22 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
 
             case "cowrie.session.closed":
                 session_record.duration = hit["duration"]
+
+            case "cowrie.session.file_download" | "cowrie.session.file_upload":
+                shasum = hit.get("shasum")
+                if shasum:
+                    url = hit.get("url", "")
+                    outfile = hit.get("outfile", "")
+                    timestamp = hit["timestamp"]
+                    self.log.info(f"found file with shasum {shasum[:8]}... from {ioc.name}")
+
+                    self.session_repo.get_or_create_file_transfer(
+                        session=session_record,
+                        shasum=shasum,
+                        url=url,
+                        outfile=outfile,
+                        timestamp=timestamp,
+                    )
 
         session_record.interaction_count += 1
 

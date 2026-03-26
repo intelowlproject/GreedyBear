@@ -1,3 +1,4 @@
+from django.db import IntegrityError
 from django.test import tag
 
 from . import MigrationTestCase
@@ -217,3 +218,46 @@ class TestCredentialModelMigration(MigrationTestCase):
 
         session = CowrieSession.objects.get(session_id=1)
         self.assertEqual(session.credentials.count(), 2)
+
+
+@tag("migration")
+class TestCredentialProtocolMigration(MigrationTestCase):
+    """Tests migration adding protocol support to Credential uniqueness."""
+
+    migrate_from = "0044_cowriefiletransfer"
+    migrate_to = "0045_credential_protocol"
+
+    def test_default_protocol_set_and_uniqueness_includes_protocol(self):
+        credential_old = self.old_state.apps.get_model(self.app_name, "Credential")
+
+        legacy = credential_old.objects.create(username="root", password="root")
+
+        new_state = self.apply_tested_migration()
+        Credential = new_state.apps.get_model(self.app_name, "Credential")
+
+        migrated = Credential.objects.get(pk=legacy.pk)
+        self.assertEqual(migrated.protocol, "")
+
+        with self.assertRaises(IntegrityError):
+            Credential.objects.create(username="root", password="root", protocol="")
+
+        Credential.objects.create(username="root", password="root", protocol="ssh")
+        Credential.objects.create(username="root", password="root", protocol="ftp")
+        self.assertEqual(Credential.objects.filter(username="root", password="root").count(), 3)
+
+
+@tag("migration")
+class TestSensorLabelMigration(MigrationTestCase):
+    """Tests the addition of the label field to the Sensor model."""
+
+    migrate_from = "0045_credential_protocol"
+    migrate_to = "0046_sensor_label"
+
+    def test_existing_sensors_get_empty_label(self):
+        Sensor = self.old_state.apps.get_model(self.app_name, "Sensor")
+        Sensor.objects.create(address="10.0.0.1")
+
+        new_state = self.apply_tested_migration()
+        sensor_new = new_state.apps.get_model(self.app_name, "Sensor")
+        migrated = sensor_new.objects.get(address="10.0.0.1")
+        self.assertEqual(migrated.label, "")

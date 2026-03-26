@@ -95,4 +95,54 @@ describe("Charts Components", () => {
     const bars = screen.getAllByTestId(/^bar-/);
     expect(bars.length).toBeGreaterThan(0);
   });
+
+  test("FeedsTypesChart returns null for empty data", () => {
+    vi.mocked(AnyChartWidget).mockImplementationOnce(({ componentsFn }) => (
+      <div>{componentsFn([])}</div>
+    ));
+    const { container } = render(<FeedsTypesChart />);
+    expect(container.firstChild.children.length).toBe(0);
+  });
+
+  test("FeedsTypesChart returns null for undefined data", () => {
+    vi.mocked(AnyChartWidget).mockImplementationOnce(({ componentsFn }) => (
+      <div>{componentsFn(undefined)}</div>
+    ));
+    const { container } = render(<FeedsTypesChart />);
+    expect(container.firstChild.children.length).toBe(0);
+  });
+
+  test("FeedsSourcesChart Area has correct dataKey", () => {
+    render(<FeedsSourcesChart />);
+    expect(screen.getByTestId("area-Sources")).toBeInTheDocument();
+  });
+
+  test("FeedsDownloadsChart Area has correct dataKey", () => {
+    render(<FeedsDownloadsChart />);
+    expect(screen.getByTestId("area-Downloads")).toBeInTheDocument();
+  });
+
+  test("EnrichmentSourcesChart Area has correct dataKey", () => {
+    render(<EnrichmentSourcesChart />);
+    expect(screen.getByTestId("area-Sources")).toBeInTheDocument();
+  });
+
+  test("EnrichmentRequestsChart Area has correct dataKey", () => {
+    render(<EnrichmentRequestsChart />);
+    expect(screen.getByTestId("area-Requests")).toBeInTheDocument();
+  });
+
+  test("FeedsTypesChart only reads feed types from first element of respData", () => {
+    vi.mocked(AnyChartWidget).mockImplementationOnce(({ componentsFn }) => {
+      const respData = [
+        { date: "2024-01-01", ssh: 5 },
+        { date: "2024-01-02", ssh: 8, telnet: 3 },
+      ];
+      return <div data-testid="chart-widget">{componentsFn(respData)}</div>;
+    });
+    render(<FeedsTypesChart />);
+    const bars = screen.getAllByTestId(/^bar-/);
+    expect(bars).toHaveLength(1);
+    expect(screen.getByTestId("bar-ssh")).toBeInTheDocument();
+  });
 });
