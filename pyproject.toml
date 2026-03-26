@@ -4,30 +4,30 @@ version = "3.3.0"
 requires-python = "==3.13.*"
 dependencies = [
     # Django core
-    "Django==5.2.12",
-    "djangorestframework==3.16.1",
-    "django-rest-email-auth==5.0.0",
-    "django-ses==4.7.2",
-    "django-q2==1.9.0",
-    "croniter==6.0.0",
-    "certego-saas==0.7.11",
+    "Django~=5.2",
+    "djangorestframework~=3.16",
+    "django-rest-email-auth~=5.0",
+    "django-ses~=4.7",
+    "django-q2~=1.9",
+    "croniter~=6.0",
+    "certego-saas~=0.7",
     # Server Gateway Interface
-    "gunicorn==25.1.0",
+    "gunicorn~=25.1",
     # Data stores
-    "elasticsearch==9.3.0",
-    "psycopg2-binary==2.9.11",
+    "elasticsearch~=9.3",
+    "psycopg2-binary~=2.9",
     # ML / data science
-    "scikit-learn==1.8.0",
-    "pandas==3.0.1",
-    "numpy==2.4.3",
-    "joblib==1.5.3",
-    "datasketch==1.9.0",
+    "scikit-learn~=1.8",
+    "pandas~=3.0",
+    "numpy~=2.4",
+    "joblib~=1.5",
+    "datasketch~=1.9",
     # File Format Support
-    "feedparser==6.0.12",
-    "stix2==3.0.2",
+    "feedparser~=6.0",
+    "stix2~=3.0",
     # Utilities
-    "requests==2.32.5",
-    "slack-sdk==3.40.1",
+    "requests~=2.33",
+    "slack-sdk~=3.40",
 ]
 
 [dependency-groups]

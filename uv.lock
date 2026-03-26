@@ -82,7 +82,7 @@ wheels = [
 
 [[package]]
 name = "certego-saas"
-version = "0.7.11"
+version = "0.7.12"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "django" },
@@ -102,9 +102,9 @@ dependencies = [
     { name = "slack-sdk" },
     { name = "stripe" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/7f/9e/eefdab908519c9075f3151a50fab8ecea7597029b89ead8c1abc878341af/certego_saas-0.7.11.tar.gz", hash = "sha256:2c527468688c4b6fe630e743b49db73f508dbc818f10a62a88c13be3e94aeb41", size = 62924, upload-time = "2024-08-06T10:48:17.008Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b1/45/bc73e8264d29dc07aed7bc02a568f485f32c6c0cf2b7c6134e86c062518d/certego_saas-0.7.12.tar.gz", hash = "sha256:66d9e02325832cd752c234f13db11670cad149f0420f44e32166afb832ffbba4", size = 63360, upload-time = "2026-03-25T12:04:49.267Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/67/a5/afdd63f0b5ed0999f713870b66eb2e872c769a7243f08e285ccf293bac14/certego_saas-0.7.11-py3-none-any.whl", hash = "sha256:e02464a82116bb25ff1c94b7c5b14911e25e7742f00ea54758e3a93b6883476e", size = 92065, upload-time = "2024-08-06T10:48:15.794Z" },
+    { url = "https://files.pythonhosted.org/packages/81/3c/b72ffa274677fd48c7e130e0bc022c1f6f4a173790038336088ddf22c27a/certego_saas-0.7.12-py3-none-any.whl", hash = "sha256:7336372f1a2c5f7e01d98886e7d2285843728b88a4fa5e59899fbbde3f46e17f", size = 92162, upload-time = "2026-03-25T12:04:47.96Z" },
 ]
 
 [[package]]
@@ -149,15 +149,14 @@ sdist = { url = "https://files.pythonhosted.org/packages/42/02/088c18e25b23bf995
 
 [[package]]
 name = "croniter"
-version = "6.0.0"
+version = "6.2.2"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "python-dateutil" },
-    { name = "pytz" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/ad/2f/44d1ae153a0e27be56be43465e5cb39b9650c781e001e7864389deb25090/croniter-6.0.0.tar.gz", hash = "sha256:37c504b313956114a983ece2c2b07790b1f1094fe9d81cc94739214748255577", size = 64481, upload-time = "2024-12-17T17:17:47.32Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/df/de/5832661ed55107b8a09af3f0a2e71e0957226a59eb1dcf0a445cce6daf20/croniter-6.2.2.tar.gz", hash = "sha256:ba60832a5ec8e12e51b8691c3309a113d1cf6526bdf1a48150ce8ec7a532d0ab", size = 113762, upload-time = "2026-03-15T08:43:48.112Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/07/4b/290b4c3efd6417a8b0c284896de19b1d5855e6dbdb97d2a35e68fa42de85/croniter-6.0.0-py2.py3-none-any.whl", hash = "sha256:2f878c3856f17896979b2a4379ba1f09c83e374931ea15cc835c5dd2eee9b368", size = 25468, upload-time = "2024-12-17T17:17:45.359Z" },
+    { url = "https://files.pythonhosted.org/packages/d0/39/783980e78cb92c2d7bdb1fc7dbc86e94ccc6d58224d76a7f1f51b6c51e30/croniter-6.2.2-py3-none-any.whl", hash = "sha256:a5d17b1060974d36251ea4faf388233eca8acf0d09cbd92d35f4c4ac8f279960", size = 45422, upload-time = "2026-03-15T08:43:46.626Z" },
 ]
 
 [[package]]
@@ -338,14 +337,14 @@ wheels = [
 
 [[package]]
 name = "djangorestframework"
-version = "3.16.1"
+version = "3.17.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "django" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/8a/95/5376fe618646fde6899b3cdc85fd959716bb67542e273a76a80d9f326f27/djangorestframework-3.16.1.tar.gz", hash = "sha256:166809528b1aced0a17dc66c24492af18049f2c9420dbd0be29422029cfc3ff7", size = 1089735, upload-time = "2025-08-06T17:50:53.251Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ca/d7/c016e69fac19ff8afdc89db9d31d9ae43ae031e4d1993b20aca179b8301a/djangorestframework-3.17.1.tar.gz", hash = "sha256:a6def5f447fe78ff853bff1d47a3c59bf38f5434b031780b351b0c73a62db1a5", size = 905742, upload-time = "2026-03-24T16:58:33.705Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b0/ce/bf8b9d3f415be4ac5588545b5fcdbbb841977db1c1d923f7568eeabe1689/djangorestframework-3.16.1-py3-none-any.whl", hash = "sha256:33a59f47fb9c85ede792cbf88bde71893bcda0667bc573f784649521f1102cec", size = 1080442, upload-time = "2025-08-06T17:50:50.667Z" },
+    { url = "https://files.pythonhosted.org/packages/5a/e1/2c516bdc83652b1a60c6119366ac2c0607b479ed05cd6093f916ca8928f8/djangorestframework-3.17.1-py3-none-any.whl", hash = "sha256:c3c74dd3e83a5a3efc37b3c18d92bd6f86a6791c7b7d4dff62bb068500e76457", size = 898844, upload-time = "2026-03-24T16:58:31.845Z" },
 ]
 
 [[package]]
@@ -487,25 +486,25 @@ lint = [
 
 [package.metadata]
 requires-dist = [
-    { name = "certego-saas", specifier = "==0.7.11" },
-    { name = "croniter", specifier = "==6.0.0" },
-    { name = "datasketch", specifier = "==1.9.0" },
-    { name = "django", specifier = "==5.2.12" },
-    { name = "django-q2", specifier = "==1.9.0" },
-    { name = "django-rest-email-auth", specifier = "==5.0.0" },
-    { name = "django-ses", specifier = "==4.7.2" },
-    { name = "djangorestframework", specifier = "==3.16.1" },
-    { name = "elasticsearch", specifier = "==9.3.0" },
-    { name = "feedparser", specifier = "==6.0.12" },
-    { name = "gunicorn", specifier = "==25.1.0" },
-    { name = "joblib", specifier = "==1.5.3" },
-    { name = "numpy", specifier = "==2.4.3" },
-    { name = "pandas", specifier = "==3.0.1" },
-    { name = "psycopg2-binary", specifier = "==2.9.11" },
-    { name = "requests", specifier = "==2.32.5" },
-    { name = "scikit-learn", specifier = "==1.8.0" },
-    { name = "slack-sdk", specifier = "==3.40.1" },
-    { name = "stix2", specifier = "==3.0.2" },
+    { name = "certego-saas", specifier = "~=0.7" },
+    { name = "croniter", specifier = "~=6.0" },
+    { name = "datasketch", specifier = "~=1.9" },
+    { name = "django", specifier = "~=5.2" },
+    { name = "django-q2", specifier = "~=1.9" },
+    { name = "django-rest-email-auth", specifier = "~=5.0" },
+    { name = "django-ses", specifier = "~=4.7" },
+    { name = "djangorestframework", specifier = "~=3.16" },
+    { name = "elasticsearch", specifier = "~=9.3" },
+    { name = "feedparser", specifier = "~=6.0" },
+    { name = "gunicorn", specifier = "~=25.1" },
+    { name = "joblib", specifier = "~=1.5" },
+    { name = "numpy", specifier = "~=2.4" },
+    { name = "pandas", specifier = "~=3.0" },
+    { name = "psycopg2-binary", specifier = "~=2.9" },
+    { name = "requests", specifier = "~=2.33" },
+    { name = "scikit-learn", specifier = "~=1.8" },
+    { name = "slack-sdk", specifier = "~=3.40" },
+    { name = "stix2", specifier = "~=3.0" },
 ]
 
 [package.metadata.requires-dev]
@@ -518,14 +517,14 @@ lint = [{ name = "ruff", specifier = "~=0.12.7" }]
 
 [[package]]
 name = "gunicorn"
-version = "25.1.0"
+version = "25.2.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "packaging" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/66/13/ef67f59f6a7896fdc2c1d62b5665c5219d6b0a9a1784938eb9a28e55e128/gunicorn-25.1.0.tar.gz", hash = "sha256:1426611d959fa77e7de89f8c0f32eed6aa03ee735f98c01efba3e281b1c47616", size = 594377, upload-time = "2026-02-13T11:09:58.989Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/dd/13/dd3f8e40ea3ee907a6cbf3d1f1f81afcc3ecd0087d313baabfe95372f15c/gunicorn-25.2.0.tar.gz", hash = "sha256:10bd7adb36d44945d97d0a1fdf9a0fb086ae9c7b39e56b4dece8555a6bf4a09c", size = 632709, upload-time = "2026-03-24T22:49:54.433Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/da/73/4ad5b1f6a2e21cf1e85afdaad2b7b1a933985e2f5d679147a1953aaa192c/gunicorn-25.1.0-py3-none-any.whl", hash = "sha256:d0b1236ccf27f72cfe14bce7caadf467186f19e865094ca84221424e839b8b8b", size = 197067, upload-time = "2026-02-13T11:09:57.146Z" },
+    { url = "https://files.pythonhosted.org/packages/11/53/fb024445837e02cd5cf989cf349bfac6f3f433c05184ea5d49c8ade751c6/gunicorn-25.2.0-py3-none-any.whl", hash = "sha256:88f5b444d0055bf298435384af7294f325e2273fd37ba9f9ff7b98e0a1e5dfdc", size = 211659, upload-time = "2026-03-24T22:49:52.528Z" },
 ]
 
 [[package]]
@@ -780,7 +779,7 @@ wheels = [
 
 [[package]]
 name = "requests"
-version = "2.32.5"
+version = "2.33.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "certifi" },
@@ -788,9 +787,9 @@ dependencies = [
     { name = "idna" },
     { name = "urllib3" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/c9/74/b3ff8e6c8446842c3f5c837e9c3dfcfe2018ea6ecef224c710c85ef728f4/requests-2.32.5.tar.gz", hash = "sha256:dbba0bac56e100853db0ea71b82b4dfd5fe2bf6d3754a8893c3af500cec7d7cf", size = 134517, upload-time = "2025-08-18T20:46:02.573Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/34/64/8860370b167a9721e8956ae116825caff829224fbca0ca6e7bf8ddef8430/requests-2.33.0.tar.gz", hash = "sha256:c7ebc5e8b0f21837386ad0e1c8fe8b829fa5f544d8df3b2253bff14ef29d7652", size = 134232, upload-time = "2026-03-25T15:10:41.586Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/1e/db/4254e3eabe8020b458f1a747140d32277ec7a271daf1d235b70dc0b4e6e3/requests-2.32.5-py3-none-any.whl", hash = "sha256:2462f94637a34fd532264295e186976db0f5d453d1cdd31473c85a6a161affb6", size = 64738, upload-time = "2025-08-18T20:46:00.542Z" },
+    { url = "https://files.pythonhosted.org/packages/56/5d/c814546c2333ceea4ba42262d8c4d55763003e767fa169adc693bd524478/requests-2.33.0-py3-none-any.whl", hash = "sha256:3324635456fa185245e24865e810cecec7b4caf933d7eb133dcde67d48cee69b", size = 65017, upload-time = "2026-03-25T15:10:40.382Z" },
 ]
 
 [[package]]
@@ -977,11 +976,11 @@ wheels = [
 
 [[package]]
 name = "slack-sdk"
-version = "3.40.1"
+version = "3.41.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/3a/18/784859b33a3f9c8cdaa1eda4115eb9fe72a0a37304718887d12991eeb2fd/slack_sdk-3.40.1.tar.gz", hash = "sha256:a215333bc251bc90abf5f5110899497bf61a3b5184b6d9ee35d73ebf09ec3fd0", size = 250379, upload-time = "2026-02-18T22:11:01.819Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/22/35/fc009118a13187dd9731657c60138e5a7c2dea88681a7f04dc406af5da7d/slack_sdk-3.41.0.tar.gz", hash = "sha256:eb61eb12a65bebeca9cb5d36b3f799e836ed2be21b456d15df2627cfe34076ca", size = 250568, upload-time = "2026-03-12T16:10:11.381Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6e/e1/bb81f93c9f403e3b573c429dd4838ec9b44e4ef35f3b0759eb49557ab6e3/slack_sdk-3.40.1-py2.py3-none-any.whl", hash = "sha256:cd8902252979aa248092b0d77f3a9ea3cc605bc5d53663ad728e892e26e14a65", size = 313687, upload-time = "2026-02-18T22:11:00.027Z" },
+    { url = "https://files.pythonhosted.org/packages/a1/df/2e4be347ff98281b505cc0ccf141408cdd25eb5ca9f3830deb361b2472d3/slack_sdk-3.41.0-py2.py3-none-any.whl", hash = "sha256:bb18dcdfff1413ec448e759cf807ec3324090993d8ab9111c74081623b692a89", size = 313885, upload-time = "2026-03-12T16:10:09.811Z" },
 ]
 
 [[package]]
