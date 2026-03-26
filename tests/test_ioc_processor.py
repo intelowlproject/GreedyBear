@@ -78,24 +78,24 @@ class TestAddIoc(ExtractionTestCase):
         self.assertFalse(result.scanner)
         self.assertTrue(result.payload_request)
 
-    def test_adds_general_honeypot_when_provided(self):
+    def test_adds_honeypot_when_provided(self):
         self.mock_sensor_repo.cache = {}
         self.mock_ioc_repo.get_ioc_by_name.return_value = None
         ioc = self._create_mock_ioc()
         self.mock_ioc_repo.save.return_value = ioc
         self.mock_ioc_repo.add_honeypot_to_ioc.return_value = ioc
 
-        self.processor.add_ioc(ioc, attack_type=SCANNER, general_honeypot_name="TestHoneypot")
+        self.processor.add_ioc(ioc, attack_type=SCANNER, honeypot_name="TestHoneypot")
 
         self.mock_ioc_repo.add_honeypot_to_ioc.assert_called_once_with("TestHoneypot", ioc)
 
-    def test_skips_general_honeypot_when_not_provided(self):
+    def test_skips_honeypot_when_not_provided(self):
         self.mock_sensor_repo.cache = {}
         self.mock_ioc_repo.get_ioc_by_name.return_value = None
         ioc = self._create_mock_ioc()
         self.mock_ioc_repo.save.return_value = ioc
 
-        self.processor.add_ioc(ioc, attack_type=SCANNER, general_honeypot_name=None)
+        self.processor.add_ioc(ioc, attack_type=SCANNER, honeypot_name=None)
 
         self.mock_ioc_repo.add_honeypot_to_ioc.assert_not_called()
 

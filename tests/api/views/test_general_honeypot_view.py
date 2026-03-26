@@ -1,13 +1,13 @@
-from greedybear.models import GeneralHoneypot
+from greedybear.models import Honeypot
 from tests import CustomTestCase
 
 
-class GeneralHoneypotViewTestCase(CustomTestCase):
+class HoneypotViewTestCase(CustomTestCase):
     def test_200_all_general_honeypots(self):
-        initial_count = GeneralHoneypot.objects.count()
+        initial_count = Honeypot.objects.count()
         # add a general honeypot not active
-        GeneralHoneypot(name="Adbhoney", active=False).save()
-        self.assertEqual(GeneralHoneypot.objects.count(), initial_count + 1)
+        Honeypot(name="Adbhoney", active=False).save()
+        self.assertEqual(Honeypot.objects.count(), initial_count + 1)
 
         response = self.client.get("/api/general_honeypot")
         self.assertEqual(response.status_code, 200)
