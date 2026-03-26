@@ -5,7 +5,7 @@ FROM python:3.13-slim-trixie AS uv
 COPY --from=ghcr.io/astral-sh/uv:0.11.1 /uv /bin/uv
 COPY pyproject.toml .  
 
-RUN echo "VITE_GREEDYBEAR_VERSION=\"$(uv version)\"" > .env.local
+RUN echo "VITE_GREEDYBEAR_VERSION=\"$(uv version --short)\"" > .env.local
 
 
 ## ------------------------------- Frontend Build Stage ------------------------------ ## 

@@ -24,7 +24,7 @@ mkdir -p /run/gunicorn
 chown -R 2000:82 /var/log/greedybear /run/gunicorn
 
 # Obtain the current GreedyBear version number
-GREEDYBEAR_VERSION=$(uv version)
+GREEDYBEAR_VERSION=$(uv version --short)
 
 echo "------------------------------"
 echo "GreedyBear $GREEDYBEAR_VERSION"
