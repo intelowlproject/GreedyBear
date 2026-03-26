@@ -1,7 +1,7 @@
 from django.db import IntegrityError
 
 from greedybear.enums import IpReputation
-from greedybear.models import Credential, IocType, Statistics, Tag, ViewType
+from greedybear.models import Credential, IocType, Sensor, Statistics, Tag, ViewType
 
 from . import CustomTestCase
 
@@ -12,7 +12,7 @@ class ModelsTestCase(CustomTestCase):
         self.assertEqual(self.ioc.type, IocType.IP.value)
         self.assertEqual(self.ioc.first_seen, self.current_time)
         self.assertEqual(self.ioc.last_seen, self.current_time)
-        self.assertEqual(self.ioc.days_seen, [self.current_time])
+        self.assertEqual(self.ioc.days_seen, [self.current_time.date()])
         self.assertEqual(self.ioc.number_of_days_seen, 1)
         self.assertEqual(self.ioc.attack_count, 1)
         self.assertEqual(self.ioc.interaction_count, 1)
@@ -51,6 +51,15 @@ class ModelsTestCase(CustomTestCase):
         self.assertEqual(self.cowrie_session.interaction_count, 5)
         self.assertEqual(self.cowrie_session.source.name, "140.246.171.141")
         self.assertEqual(self.cowrie_session.commands.commands, self.cmd_seq)
+
+    def test_sensor_model(self):
+        sensor_no_label = Sensor.objects.create(address="10.0.0.1")
+        self.assertEqual(sensor_no_label.label, "")
+        self.assertEqual(str(sensor_no_label), "10.0.0.1")
+
+        sensor_with_label = Sensor.objects.create(address="10.0.0.2", label="home-pi")
+        self.assertEqual(sensor_with_label.label, "home-pi")
+        self.assertEqual(str(sensor_with_label), "10.0.0.2 (home-pi)")
 
     def test_statistics_model(self):
         self.statistic = Statistics.objects.create(

@@ -6,7 +6,7 @@ from django.core.exceptions import FieldDoesNotExist
 from rest_framework import serializers
 
 from greedybear.consts import REGEX_DOMAIN
-from greedybear.models import IOC, GeneralHoneypot, Tag
+from greedybear.models import IOC, GeneralHoneypot, Sensor, Tag
 from greedybear.utils import is_ip_address
 
 logger = logging.getLogger(__name__)
@@ -26,9 +26,16 @@ class TagSerializer(serializers.ModelSerializer):
         fields = ["key", "value", "source"]
 
 
+class SensorSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Sensor
+        fields = ["address", "label"]
+
+
 class IOCSerializer(serializers.ModelSerializer):
     general_honeypot = GeneralHoneypotSerializer(many=True, read_only=True)
     tags = TagSerializer(many=True, read_only=True)
+    sensors = SensorSerializer(many=True, read_only=True)
 
     class Meta:
         model = IOC
@@ -56,7 +63,7 @@ class EnrichmentSerializer(serializers.Serializer):
             raise serializers.ValidationError("Observable is not a valid IP address or domain")
 
         try:
-            required_object = IOC.objects.prefetch_related("tags").get(name=observable)
+            required_object = IOC.objects.prefetch_related("tags", "sensors").get(name=observable)
             data["found"] = True
             data["ioc"] = required_object
         except IOC.DoesNotExist:

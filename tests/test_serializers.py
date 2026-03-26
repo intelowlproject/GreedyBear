@@ -3,10 +3,15 @@ from itertools import product
 
 from rest_framework.serializers import ValidationError
 
-from api.serializers import FeedsRequestSerializer, FeedsResponseSerializer, parse_feed_types
+from api.serializers import (
+    FeedsRequestSerializer,
+    FeedsResponseSerializer,
+    IOCSerializer,
+    parse_feed_types,
+)
 from greedybear.consts import PAYLOAD_REQUEST, SCANNER
 from greedybear.enums import IpReputation
-from greedybear.models import IOC, GeneralHoneypot
+from greedybear.models import IOC, GeneralHoneypot, Sensor
 from tests import CustomTestCase
 
 
@@ -289,3 +294,23 @@ class FeedsResponseSerializersTestCase(CustomTestCase):
             self.assertIn("login_attempts", serializer.errors)
             self.assertIn("recurrence_probability", serializer.errors)
             self.assertIn("expected_interactions", serializer.errors)
+
+
+class IOCSerializerTestCase(CustomTestCase):
+    def test_ioc_serializer_with_sensors(self):
+        s1 = Sensor.objects.create(address="10.0.0.1", label="home-pi")
+        s2 = Sensor.objects.create(address="10.0.0.2")
+
+        self.ioc.sensors.add(s1, s2)
+
+        serializer = IOCSerializer(self.ioc)
+        data = serializer.data
+
+        self.assertIn("sensors", data)
+        self.assertEqual(len(data["sensors"]), 2)
+
+        sensors_data = sorted(data["sensors"], key=lambda x: x["address"])
+        self.assertEqual(sensors_data[0]["address"], "10.0.0.1")
+        self.assertEqual(sensors_data[0]["label"], "home-pi")
+        self.assertEqual(sensors_data[1]["address"], "10.0.0.2")
+        self.assertEqual(sensors_data[1]["label"], "")

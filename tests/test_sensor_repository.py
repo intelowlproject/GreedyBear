@@ -59,6 +59,11 @@ class TestSensorRepository(CustomTestCase):
             self.assertIsNotNone(result)
             self.assertIsInstance(result, Sensor)
 
+    def test_get_or_create_sensor_has_empty_label(self):
+        """get_or_create_sensor should create a sensor with an empty label."""
+        result = self.repo.get_or_create_sensor("192.168.1.10")
+        self.assertEqual(result.label, "")
+
     def test_update_country_sets_country(self):
         """update_country sets the Sensor's country if different."""
         sensor = Sensor.objects.create(address="1.2.3.4", country="")
