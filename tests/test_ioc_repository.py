@@ -109,7 +109,7 @@ class TestIocRepository(CustomTestCase):
         """Honeypot created after repo init is not in cache; association is skipped and error is logged."""
         ioc = IOC.objects.create(name="1.2.3.4", type="ip")
         # Force cache initialization before creating the new honeypot
-        _ = self.repo.honeypot_cache
+        _ = self.repo._honeypot_cache
         GeneralHoneypot.objects.create(name="NewPot", active=True)
         with self.assertLogs("greedybear.cronjobs.repositories.ioc", level="ERROR") as cm:
             result = self.repo.add_honeypot_to_ioc("NewPot", ioc)
@@ -152,7 +152,7 @@ class TestIocRepository(CustomTestCase):
     def test_existing_honeypots(self):
         expected_honeypots = ["Cowrie", "Log4pot", "Heralding", "Ciscoasa", "Ddospot"]
         for hp_name in expected_honeypots:
-            self.assertIn(self.repo._normalize_name(hp_name), self.repo.honeypot_cache)
+            self.assertIn(self.repo._normalize_name(hp_name), self.repo._honeypot_cache)
 
     def test_is_ready_for_extraction_creates_and_enables(self):
         result = self.repo.is_ready_for_extraction("FooPot")
@@ -214,10 +214,10 @@ class TestIocRepository(CustomTestCase):
         self.assertEqual(GeneralHoneypot.objects.count(), initial_count + 1)
 
     def test_create_new_honeypot_creates_and_updates_cache(self):
-        self.repo.honeypot_cache.clear()
+        self.repo._honeypot_cache.clear()
         hp = self.repo.create_honeypot("UniqueNewPot123")
         self.assertEqual(hp.name, "UniqueNewPot123")
-        self.assertIn("uniquenewpot123", self.repo.honeypot_cache)
+        self.assertIn("uniquenewpot123", self.repo._honeypot_cache)
         self.assertTrue(hp.active)
 
         db_hp = GeneralHoneypot.objects.get(name="UniqueNewPot123")
@@ -452,11 +452,11 @@ class TestIocRepository(CustomTestCase):
     def test_honeypot_cache_stores_generalhoneypot_objects(self):
         """honeypot_cache must store GeneralHoneypot instances, not booleans."""
         self.assertGreater(
-            len(self.repo.honeypot_cache),
+            len(self.repo._honeypot_cache),
             0,
             "Cache must be non-empty for this test to be meaningful",
         )
-        for key, value in self.repo.honeypot_cache.items():
+        for key, value in self.repo._honeypot_cache.items():
             self.assertIsInstance(
                 value,
                 GeneralHoneypot,
@@ -487,7 +487,7 @@ class TestIocRepository(CustomTestCase):
         # honeypot lookup uses in-memory cache (0 queries), only the M2M INSERT fires
         IOC.objects.create(name="6.6.6.6", type="ip")
         ioc2_fetched = self.repo.get_ioc_by_name("6.6.6.6")
-        _ = self.repo.honeypot_cache  # Force cache load to isolate M2M INSERT queries
+        _ = self.repo._honeypot_cache  # Force cache load to isolate M2M INSERT queries
         with self.assertNumQueries(1):  # only M2M INSERT
             result2 = self.repo.add_honeypot_to_ioc("Cowrie", ioc2_fetched)
         self.assertIn(cowrie_hp, result2.general_honeypot.all())
@@ -495,7 +495,7 @@ class TestIocRepository(CustomTestCase):
     def test_create_honeypot_stores_object_in_cache(self):
         """create_honeypot must store the GeneralHoneypot object in cache, not a boolean."""
         hp = self.repo.create_honeypot("CacheTestPot")
-        cached = self.repo.honeypot_cache.get("cachetestpot")
+        cached = self.repo._honeypot_cache.get("cachetestpot")
         self.assertIsInstance(cached, GeneralHoneypot)
         self.assertEqual(cached.pk, hp.pk)
 
@@ -662,3 +662,39 @@ class TestIocRepositoryCleanup(CustomTestCase):
     def test_update_ioc_reputation_returns_false_for_missing(self):
         result = self.repo.update_ioc_reputation("9.9.9.9", IpReputation.MASS_SCANNER)
         self.assertFalse(result)
+
+    def test_bulk_update_ioc_reputation_returns_zero_for_empty_list(self):
+        result = self.repo.bulk_update_ioc_reputation([], IpReputation.MASS_SCANNER.value)
+        self.assertEqual(result, 0)
+
+    def test_bulk_update_ioc_reputation_updates_multiple_iocs(self):
+        IOC.objects.create(name="10.0.0.1", type="ip", ip_reputation="")
+        IOC.objects.create(name="10.0.0.2", type="ip", ip_reputation="")
+
+        result = self.repo.bulk_update_ioc_reputation(["10.0.0.1", "10.0.0.2"], IpReputation.MASS_SCANNER.value)
+
+        self.assertEqual(result, 2)
+        self.assertEqual(IOC.objects.get(name="10.0.0.1").ip_reputation, IpReputation.MASS_SCANNER.value)
+        self.assertEqual(IOC.objects.get(name="10.0.0.2").ip_reputation, IpReputation.MASS_SCANNER.value)
+
+    def test_bulk_update_ioc_reputation_ignores_nonexistent_ips(self):
+        IOC.objects.create(name="10.0.0.3", type="ip", ip_reputation="")
+
+        result = self.repo.bulk_update_ioc_reputation(["10.0.0.3", "254.254.254.254"], IpReputation.MASS_SCANNER.value)
+
+        self.assertEqual(result, 1)
+        self.assertEqual(IOC.objects.get(name="10.0.0.3").ip_reputation, IpReputation.MASS_SCANNER.value)
+
+    def test_bulk_update_ioc_reputation_does_not_affect_other_iocs(self):
+        IOC.objects.create(name="10.0.0.4", type="ip", ip_reputation="")
+        IOC.objects.create(name="10.0.0.5", type="ip", ip_reputation="")
+
+        self.repo.bulk_update_ioc_reputation(["10.0.0.4"], IpReputation.MASS_SCANNER.value)
+
+        self.assertEqual(IOC.objects.get(name="10.0.0.4").ip_reputation, IpReputation.MASS_SCANNER.value)
+        self.assertEqual(IOC.objects.get(name="10.0.0.5").ip_reputation, "")
+
+    def test_bulk_update_ioc_reputation_returns_zero_when_none_match(self):
+        # Non-empty list but IPs don't exist in DB
+        result = self.repo.bulk_update_ioc_reputation(["8.8.8.8", "8.8.4.4"], IpReputation.MASS_SCANNER.value)
+        self.assertEqual(result, 0)

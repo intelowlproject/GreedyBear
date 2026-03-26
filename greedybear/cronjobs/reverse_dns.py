@@ -81,9 +81,7 @@ class ReverseDNSCron(Cronjob):
                 matched_ips.append(ip)
 
         if matched_ips:
-            updated_count = self.ioc_repo.bulk_update_ioc_reputation(
-                matched_ips, IpReputation.MASS_SCANNER.value if hasattr(IpReputation.MASS_SCANNER, "value") else IpReputation.MASS_SCANNER
-            )
+            updated_count = self.ioc_repo.bulk_update_ioc_reputation(matched_ips, IpReputation.MASS_SCANNER.value)
             self.log.info(f"Marked {updated_count} IPs as mass scanners via rDNS")
 
         created_count = self.tag_repo.add_tags(SOURCE_NAME, tag_entries)

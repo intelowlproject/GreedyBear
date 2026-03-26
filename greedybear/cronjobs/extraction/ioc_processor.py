@@ -25,17 +25,7 @@ class IocProcessor:
         self.log = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
         self.ioc_repo = ioc_repo
         self.sensor_repo = sensor_repo
-
-    @property
-    def whatsmyip_domains(self) -> set[str]:
-        """
-        Lazy-loaded set of known "what's my IP" domains.
-        Fetched on first access to avoid DB queries during __init__.
-        """
-        if not hasattr(self, "_whatsmyip_domains"):
-            self.log.debug("Loading WhatsMyIP domains from database")
-            self._whatsmyip_domains = set(WhatsMyIPDomain.objects.values_list("domain", flat=True))
-        return self._whatsmyip_domains
+        self._whatsmyip_domains = set(WhatsMyIPDomain.objects.values_list("domain", flat=True))
 
     def add_ioc(
         self,
@@ -63,7 +53,7 @@ class IocProcessor:
             self.log.debug(f"not saved {ioc} because it is a sensor")
             return None
 
-        if ioc.type == IocType.DOMAIN and is_whatsmyip_domain(ioc.name, self.whatsmyip_domains):
+        if ioc.type == IocType.DOMAIN and is_whatsmyip_domain(ioc.name, self._whatsmyip_domains):
             self.log.debug(f"not saved {ioc} because it is a whats-my-ip domain")
             return None
 

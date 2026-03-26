@@ -13,19 +13,10 @@ class SensorRepository:
     """
 
     def __init__(self):
-        """Initialize the repository."""
+        """Initialize the repository and populate the cache from the database."""
         self.log = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
-
-    @property
-    def cache(self) -> dict[str, Sensor]:
-        """
-        Lazy-loaded cache of sensor objects by address.
-        Fetched on first access to avoid DB queries during __init__.
-        """
-        if not hasattr(self, "_cache"):
-            self.log.debug("Populating sensor cache from database")
-            self._cache = {s.address: s for s in Sensor.objects.all()}
-        return self._cache
+        self.cache: dict[str, Sensor] = {}
+        self._fill_cache()
 
     def get_or_create_sensor(self, ip: str) -> Sensor | None:
         """
@@ -51,6 +42,11 @@ class SensorRepository:
         if created:
             self.log.info(f"added sensor {ip} to the database")
         return sensor
+
+    def _fill_cache(self) -> None:
+        """Load sensor objects from the database into the cache."""
+        self.log.debug("populating sensor cache")
+        self.cache = {s.address: s for s in Sensor.objects.all()}
 
     def update_country(self, sensor: Sensor, country: str) -> None:
         """

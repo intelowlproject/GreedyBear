@@ -16,19 +16,9 @@ class IocRepository:
     """
 
     def __init__(self):
-        """Initialize the repository."""
+        """Initialize the repository and populate the honeypot cache from the database."""
         self.log = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
-
-    @property
-    def honeypot_cache(self) -> dict[str, GeneralHoneypot]:
-        """
-        Lazy-loaded cache of honeypot names to instances.
-        Fetched on first access to avoid DB queries during __init__.
-        """
-        if not hasattr(self, "_honeypot_cache"):
-            self.log.debug("Populating honeypot cache from database")
-            self._honeypot_cache = {self._normalize_name(hp.name): hp for hp in GeneralHoneypot.objects.all()}
-        return self._honeypot_cache
+        self._honeypot_cache = {self._normalize_name(hp.name): hp for hp in GeneralHoneypot.objects.all()}
 
     def _normalize_name(self, name: str) -> str:
         """Normalize honeypot names for consistent cache and DB usage."""
@@ -54,7 +44,7 @@ class IocRepository:
 
         if normalized_name not in honeypot_set:
             self.log.debug(f"adding honeypot {honeypot_name} to IoC {ioc}")
-            honeypot = self.honeypot_cache.get(normalized_name)
+            honeypot = self._honeypot_cache.get(normalized_name)
             if honeypot is not None:
                 ioc.general_honeypot.add(honeypot)
                 honeypot_set.add(normalized_name)
@@ -93,7 +83,7 @@ class IocRepository:
             if honeypot is None:
                 raise e
 
-        self.honeypot_cache[normalized] = honeypot
+        self._honeypot_cache[normalized] = honeypot
         return honeypot
 
     def get_active_honeypots(self) -> list[GeneralHoneypot]:
@@ -153,7 +143,7 @@ class IocRepository:
             True if the honeypot is enabled, False otherwise.
         """
         normalized = self._normalize_name(honeypot_name)
-        hp = self.honeypot_cache.get(normalized)
+        hp = self._honeypot_cache.get(normalized)
         return hp.active if hp is not None else False
 
     def is_ready_for_extraction(self, honeypot_name: str) -> bool:
@@ -168,7 +158,7 @@ class IocRepository:
             True if the honeypot exists and is enabled, False otherwise.
         """
         normalized = self._normalize_name(honeypot_name)
-        if normalized not in self.honeypot_cache:
+        if normalized not in self._honeypot_cache:
             self.create_honeypot(honeypot_name)
         return self.is_enabled(honeypot_name)
 
