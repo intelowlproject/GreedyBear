@@ -1,7 +1,7 @@
 import React from "react";
 import PropTypes from "prop-types";
 import { Navigate } from "react-router-dom";
-import useSearchParam from "react-use/esm/useSearchParam";
+import { useSearchParam } from "react-use";
 
 import { useAuthStore } from "../stores";
 import { AUTHENTICATION_STATUSES } from "../constants";

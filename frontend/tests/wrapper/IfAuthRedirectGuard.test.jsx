@@ -11,8 +11,8 @@ vi.mock("../../src/stores", () => ({
 }));
 
 const mockUseSearchParam = vi.fn();
-vi.mock("react-use/esm/useSearchParam", () => ({
-  default: () => mockUseSearchParam(),
+vi.mock("react-use", () => ({
+  useSearchParam: () => mockUseSearchParam(),
 }));
 
 describe("IfAuthRedirectGuard", () => {
