@@ -360,8 +360,9 @@ class FeedsEnhancementsTestCase(CustomTestCase):
         response = self.client.get("/api/feeds/advanced/?country=germany")
         self.assertEqual(response.status_code, 200)
         iocs = response.json()["iocs"]
-        values = [i["value"] for i in iocs]
-        self.assertIn(self.ioc.name, values)
+        self.assertEqual(len(iocs), 1)
+        self.assertEqual(iocs[0]["value"], self.ioc.name)
+        self.assertEqual(iocs[0]["attacker_country"], "Germany")
 
     def test_filter_by_country_no_results(self):
         """Filter by a country with no matching IOCs returns empty list."""
