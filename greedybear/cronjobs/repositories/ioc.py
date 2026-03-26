@@ -36,14 +36,24 @@ class IocRepository:
             The updated IOC instance.
         """
         normalized_name = self._normalize_name(honeypot_name)
-        honeypot_set = {self._normalize_name(hp.name) for hp in ioc.general_honeypot.all()}
+
+        if hasattr(ioc, "_seen_honeypots"):
+            honeypot_set = set(ioc._seen_honeypots)
+        else:
+            honeypot_set = {self._normalize_name(hp.name) for hp in ioc.general_honeypot.all()}
+
         if normalized_name not in honeypot_set:
             self.log.debug(f"adding honeypot {honeypot_name} to IoC {ioc}")
             honeypot = self._honeypot_cache.get(normalized_name)
             if honeypot is not None:
                 ioc.general_honeypot.add(honeypot)
+                honeypot_set.add(normalized_name)
             else:
                 self.log.error(f"Honeypot '{honeypot_name}' not found in cache; skipping association for IOC {ioc}")
+
+        # Cache the current honeypot names explicitly on the IOC
+        # to avoid N+1 queries when looking up `ioc.general_honeypot.all()` downstream
+        ioc._seen_honeypots = list(honeypot_set)
         return ioc
 
     def create_honeypot(self, honeypot_name: str) -> GeneralHoneypot:
@@ -271,3 +281,18 @@ class IocRepository:
             return True
         except IOC.DoesNotExist:
             return False
+
+    def bulk_update_ioc_reputation(self, ip_addresses: list[str], reputation: str) -> int:
+        """
+        Bulk update the IP reputation for a list of IOCs.
+
+        Args:
+            ip_addresses: List of IP addresses to update.
+            reputation: New reputation value.
+
+        Returns:
+            Number of IOC records updated.
+        """
+        if not ip_addresses:
+            return 0
+        return IOC.objects.filter(name__in=ip_addresses).update(ip_reputation=reputation)
