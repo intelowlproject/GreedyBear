@@ -11,7 +11,7 @@ vi.mock("../../src/stores", () => ({
 }));
 
 const mockUseSearchParam = vi.fn();
-vi.mock("react-use/lib/useSearchParam", () => ({
+vi.mock("react-use/esm/useSearchParam", () => ({
   default: () => mockUseSearchParam(),
 }));
 
