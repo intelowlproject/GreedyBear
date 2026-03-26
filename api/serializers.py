@@ -63,7 +63,7 @@ class EnrichmentSerializer(serializers.Serializer):
             raise serializers.ValidationError("Observable is not a valid IP address or domain")
 
         try:
-            required_object = IOC.objects.prefetch_related("tags").get(name=observable)
+            required_object = IOC.objects.prefetch_related("tags", "sensors").get(name=observable)
             data["found"] = True
             data["ioc"] = required_object
         except IOC.DoesNotExist:
