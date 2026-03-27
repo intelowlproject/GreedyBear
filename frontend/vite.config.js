@@ -35,6 +35,20 @@ export default defineConfig({
 
     build: {
         outDir: 'build',
-        sourcemap: false
+        sourcemap: false,
+        chunkSizeWarningLimit: 1024,
+        rollupOptions: {
+            output: {
+                // Split large dependencies into separate chunks for better caching and smaller initial load
+                codeSplitting: {
+                    groups: [
+                        { name: 'recharts', test: /\/recharts/ },
+                        { name: 'vendor', test: /\/react(-dom|-router-dom)?\// },
+                        { name: 'certego', test: /\/@certego\/certego-ui/ },
+                        { name: 'reactstrap', test: /\/reactstrap/ },
+                    ],
+                },
+            },
+        },
     }
 });

@@ -54,6 +54,10 @@ describe("Registration component", () => {
     await user.type(confirmPasswordInputElement, "GreedyBearPassword");
     await user.type(companyNameInputElement, "companyname");
     await user.type(companyRoleInputElement, "companyrole");
+
+    await waitFor(() => {
+      expect(submitButtonElement).not.toBeDisabled();
+    });
     await user.click(submitButtonElement);
 
     await waitFor(() => {
@@ -91,6 +95,84 @@ describe("Registration component", () => {
 
     await waitFor(() => {
       expect(checkBoxElement).toBeChecked();
+    });
+  });
+
+  test("Double-clicking Register while submitting does not trigger duplicate requests", async () => {
+    const user = userEvent.setup();
+
+    // Clear the storage to prevent state pollution from previous calls
+    localStorage.clear();
+    vi.resetModules();
+
+    // Then reimporting to get a fresh state
+    const { default: Register } =
+      await import("../../../src/components/auth/Register");
+
+    render(
+      <BrowserRouter>
+        <Register />
+      </BrowserRouter>,
+    );
+
+    const firstNameInputElement = screen.getByLabelText("First Name");
+    const lastNameInputElement = screen.getByLabelText("Last Name");
+    const emailInputElement = screen.getByLabelText("Email");
+    const usernameInputElement = screen.getByLabelText("Username");
+    const passwordInputElement = screen.getByLabelText("Password");
+    const confirmPasswordInputElement =
+      screen.getByLabelText("Confirm Password");
+    const companyNameInputElement = screen.getByLabelText(
+      "Company/ Organization",
+    );
+    const companyRoleInputElement = screen.getByLabelText("Role");
+    const submitButtonElement = screen.getByRole("button", {
+      name: /Register/i,
+    });
+
+    // Populating the form
+    await user.type(firstNameInputElement, "firstname");
+    await user.type(lastNameInputElement, "lastname");
+    await user.type(emailInputElement, "test@test.com");
+    await user.type(usernameInputElement, "test_user");
+    await user.type(passwordInputElement, "GreedyBearPassword");
+    await user.type(confirmPasswordInputElement, "GreedyBearPassword");
+    await user.type(companyNameInputElement, "companyname");
+    await user.type(companyRoleInputElement, "companyrole");
+
+    await waitFor(() => {
+      expect(submitButtonElement).not.toBeDisabled();
+    });
+
+    // setting up the mock and clearing previous calls
+    axios.post.mockClear();
+    let resolvePost;
+    axios.post.mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolvePost = resolve;
+        }),
+    );
+
+    // First submit
+    await user.click(submitButtonElement);
+
+    // Testing that the button is disabled
+    await waitFor(() => {
+      expect(submitButtonElement).toBeDisabled();
+    });
+
+    // Second Submit
+    await user.click(submitButtonElement);
+
+    // Only one call was made?
+    expect(axios.post).toHaveBeenCalledTimes(1);
+
+    resolvePost({ data: {} });
+
+    // Waiting for submission to fully settle by checking the button re-enables
+    await waitFor(() => {
+      expect(submitButtonElement).not.toBeDisabled();
     });
   });
 });

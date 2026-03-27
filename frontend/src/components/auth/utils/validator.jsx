@@ -76,3 +76,11 @@ export function EmailValidator(email) {
   }
   return errors;
 }
+
+export function OldNewPasswordValidator(oldPassword, newPassword) {
+  const errors = {};
+  if (oldPassword && newPassword && oldPassword === newPassword) {
+    errors.new_password = "New password must be different from old password";
+  }
+  return errors;
+}

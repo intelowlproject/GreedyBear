@@ -1,123 +1,108 @@
 import React from "react";
-import { Bar, Area } from "recharts";
+import {
+  Bar,
+  Area,
+  BarChart,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
+} from "recharts";
+import axios from "axios";
 
-import { AnyChartWidget, getRandomColorsArray } from "@certego/certego-ui";
+import {
+  AnyChartWidget,
+  getRandomColorsArray,
+  useTimePickerStore,
+} from "@certego/certego-ui";
 import {
   FEEDS_STATISTICS_SOURCES_URI,
   FEEDS_STATISTICS_DOWNLOADS_URI,
   FEEDS_STATISTICS_TYPES_URI,
   ENRICHMENT_STATISTICS_SOURCES_URI,
   ENRICHMENT_STATISTICS_REQUESTS_URI,
+  IOC_ATTACKER_COUNTRIES_URI,
 } from "../../../constants/api";
 
 import { FEED_COLOR_MAP, ENRICHMENT_COLOR_MAP } from "../../../constants";
 
+const COUNTRY_BAR_COLOR = "#e05252";
+
 // constants
 const colors = getRandomColorsArray(30, true);
 
-export const FeedsSourcesChart = React.memo(() => {
-  console.debug("FeedsSourcesChart rendered!");
+/**
+ * Creates an area chart component to avoid duplicating chart setup code.
+ *
+ * @param {string} name - Display name for the generated chart component.
+ * @param {string} url - API endpoint used to fetch chart data.
+ * @param {Object} colorMap - Map of data keys to color values.
+ * @param {number} start - Start index for slicing the color map.
+ * @param {number} end - End index for slicing the color map.
+ */
+export const createAreaChart = (name, url, colorMap, start, end) => {
+  const Component = React.memo(() => {
+    console.debug(`${name} rendered!`);
 
-  const chartProps = React.useMemo(
-    () => ({
-      url: FEEDS_STATISTICS_SOURCES_URI,
-      accessorFnAggregation: (d) => d,
-      componentsFn: () =>
-        Object.entries(FEED_COLOR_MAP)
-          .slice(0, 1)
-          .map(([dkey, color]) => (
-            <Area
-              type="monotone"
-              key={dkey}
-              dataKey={dkey}
-              fill={color}
-              stroke={color}
-            />
-          )),
-    }),
-    [],
-  );
+    const chartProps = React.useMemo(
+      () => ({
+        url,
+        accessorFnAggregation: (d) => d,
+        componentsFn: () =>
+          Object.entries(colorMap)
+            .slice(start, end)
+            .map(([key, color]) => (
+              <Area
+                key={key}
+                type="monotone"
+                dataKey={key}
+                fill={color}
+                stroke={color}
+              />
+            )),
+      }),
+      [url, colorMap, start, end],
+    );
 
-  return <AnyChartWidget {...chartProps} />;
-});
+    return <AnyChartWidget {...chartProps} />;
+  });
 
-export const FeedsDownloadsChart = React.memo(() => {
-  console.debug("FeedsDownloadsChart rendered!");
+  Component.displayName = name;
 
-  const chartProps = React.useMemo(
-    () => ({
-      url: FEEDS_STATISTICS_DOWNLOADS_URI,
-      accessorFnAggregation: (d) => d,
-      componentsFn: () =>
-        Object.entries(FEED_COLOR_MAP)
-          .slice(1, 2)
-          .map(([dkey, color]) => (
-            <Area
-              type="monotone"
-              key={dkey}
-              dataKey={dkey}
-              fill={color}
-              stroke={color}
-            />
-          )),
-    }),
-    [],
-  );
+  return Component;
+};
 
-  return <AnyChartWidget {...chartProps} />;
-});
+export const FeedsSourcesChart = createAreaChart(
+  "FeedsSourcesChart",
+  FEEDS_STATISTICS_SOURCES_URI,
+  FEED_COLOR_MAP,
+  0,
+  1,
+);
 
-export const EnrichmentSourcesChart = React.memo(() => {
-  console.debug("EnrichmentSourcesChart rendered!");
+export const FeedsDownloadsChart = createAreaChart(
+  "FeedsDownloadsChart",
+  FEEDS_STATISTICS_DOWNLOADS_URI,
+  FEED_COLOR_MAP,
+  1,
+  2,
+);
 
-  const chartProps = React.useMemo(
-    () => ({
-      url: ENRICHMENT_STATISTICS_SOURCES_URI,
-      accessorFnAggregation: (d) => d,
-      componentsFn: () =>
-        Object.entries(ENRICHMENT_COLOR_MAP)
-          .slice(0, 1)
-          .map(([dkey, color]) => (
-            <Area
-              type="monotone"
-              key={dkey}
-              dataKey={dkey}
-              fill={color}
-              stroke={color}
-            />
-          )),
-    }),
-    [],
-  );
-
-  return <AnyChartWidget {...chartProps} />;
-});
-
-export const EnrichmentRequestsChart = React.memo(() => {
-  console.debug("EnrichmentRequestsChart rendered!");
-
-  const chartProps = React.useMemo(
-    () => ({
-      url: ENRICHMENT_STATISTICS_REQUESTS_URI,
-      accessorFnAggregation: (d) => d,
-      componentsFn: () =>
-        Object.entries(ENRICHMENT_COLOR_MAP)
-          .slice(1, 2)
-          .map(([dkey, color]) => (
-            <Area
-              type="monotone"
-              key={dkey}
-              dataKey={dkey}
-              fill={color}
-              stroke={color}
-            />
-          )),
-    }),
-    [],
-  );
-
-  return <AnyChartWidget {...chartProps} />;
-});
+export const EnrichmentSourcesChart = createAreaChart(
+  "EnrichmentSourcesChart",
+  ENRICHMENT_STATISTICS_SOURCES_URI,
+  ENRICHMENT_COLOR_MAP,
+  0,
+  1,
+);
+export const EnrichmentRequestsChart = createAreaChart(
+  "EnrichmentRequestsChart",
+  ENRICHMENT_STATISTICS_REQUESTS_URI,
+  ENRICHMENT_COLOR_MAP,
+  1,
+  2,
+);
 
 export const FeedsTypesChart = React.memo(() => {
   console.debug("FeedsTypesChart rendered!");
@@ -148,4 +133,94 @@ export const FeedsTypesChart = React.memo(() => {
   );
 
   return <AnyChartWidget {...chartProps} />;
+});
+
+export const AttackOriginCountriesChart = React.memo(() => {
+  console.debug("AttackOriginCountriesChart rendered!");
+
+  const { range } = useTimePickerStore();
+  const [data, setData] = React.useState([]);
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState(null);
+
+  React.useEffect(() => {
+    setLoading(true);
+    setError(null);
+    axios
+      .get(IOC_ATTACKER_COUNTRIES_URI, { params: { range } })
+      .then((resp) => setData(resp.data))
+      .catch((err) => {
+        console.error("AttackOriginCountriesChart error:", err);
+        setError("Failed to load country data.");
+      })
+      .finally(() => setLoading(false));
+  }, [range]);
+
+  if (loading) {
+    return (
+      <div className="d-flex justify-content-center align-items-center py-4 text-muted">
+        Loading...
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="d-flex justify-content-center align-items-center py-4 text-muted">
+        {error}
+      </div>
+    );
+  }
+
+  if (!data || data.length === 0) {
+    return (
+      <div className="d-flex justify-content-center align-items-center py-4 text-muted">
+        No country data available for the selected time range.
+      </div>
+    );
+  }
+
+  const chartData = data.slice(0, 15);
+
+  return (
+    <ResponsiveContainer
+      width="100%"
+      height={Math.max(180, chartData.length * 28)}
+    >
+      <BarChart
+        layout="vertical"
+        data={chartData}
+        margin={{ top: 4, right: 48, left: 8, bottom: 4 }}
+      >
+        <XAxis
+          type="number"
+          tick={{ fontSize: 11 }}
+          tickLine={false}
+          axisLine={false}
+        />
+        <YAxis
+          type="category"
+          dataKey="country"
+          width={140}
+          interval={0}
+          tick={{ fontSize: 12 }}
+          tickLine={false}
+          axisLine={false}
+        />
+        <Tooltip
+          cursor={{ fill: "rgba(255,255,255,0.06)" }}
+          formatter={(value) => [value.toLocaleString(), "IOCs"]}
+        />
+        <Bar dataKey="count" radius={[0, 3, 3, 0]} maxBarSize={20}>
+          {chartData.map((entry, index) => (
+            <Cell
+              key={`cell-${index}`}
+              fill={COUNTRY_BAR_COLOR}
+              fillOpacity={1.0 - 0.45 * (index / (chartData.length - 1 || 1))}
+            />
+          ))}
+        </Bar>
+      </BarChart>
+    </ResponsiveContainer>
+  );
 });

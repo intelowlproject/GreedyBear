@@ -272,3 +272,60 @@ class TestTrainModelsSaveOnFailure(CustomTestCase):
 
         # The critical assertion: save_training_data must be called despite the crash
         job.save_training_data.assert_called_once()
+
+
+class TestFeatureImportanceLogging(CustomTestCase):
+    """Test that RFModel logs feature importances after training."""
+
+    IMPORTANCE_SAMPLE_DATA = pd.DataFrame(
+        {
+            "interactions_on_eval_day": [0, 1, 2, 0, 3, 1, 0, 2, 1, 3],
+            "feature1": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+            "feature2": [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0],
+            "feature3": [122, 12, 0, 14, 87, 34, 56, 78, 90, 11],
+            "honeypots": [
+                "cowrie,dionaea",
+                "dionaea,glutton",
+                "cowrie",
+                "glutton",
+                "cowrie,dionaea,glutton",
+                "cowrie",
+                "dionaea",
+                "glutton",
+                "cowrie,dionaea",
+                "dionaea,glutton",
+            ],
+        }
+    )
+
+    class MockRFModel(RFModel, Classifier):
+        def __init__(self):
+            super().__init__("Mock RF Model", "mock_score")
+
+        @property
+        def features(self):
+            return FEATURES
+
+        @property
+        def untrained_model(self):
+            mock = Mock()
+            mock.feature_names_in_ = FEATURES
+            mock.feature_importances_ = np.array([0.5, 0.3, 0.15, 0.02, 0.02, 0.01])
+            mock.fit.return_value = mock
+
+            a = np.zeros((10, 2))
+            a[:, 1] = [0.9, 0.8, 0.3, 0.2, 0.1, 0.7, 0.6, 0.4, 0.5, 0.3]
+            mock.predict_proba.return_value = a
+
+            return mock
+
+    def test_feature_importances_logged(self):
+        model = self.MockRFModel()
+        model.log = Mock()
+        model.save = Mock()
+
+        model.train(self.IMPORTANCE_SAMPLE_DATA)
+
+        logged_messages = [call.args[0] for call in model.log.info.call_args_list]
+
+        self.assertTrue(any("Feature importances for" in msg for msg in logged_messages))

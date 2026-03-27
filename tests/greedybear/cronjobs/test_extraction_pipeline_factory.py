@@ -72,3 +72,37 @@ class TestExtractionStrategyFactory(ExtractionTestCase):
 
         self.assertEqual(strategy.ioc_repo, mock_ioc_repo)
         self.assertEqual(strategy.sensor_repo, mock_sensor_repo)
+
+    def test_factory_creates_tanner_strategy_for_tanner(self):
+        """Factory should return TannerExtractionStrategy for 'Tanner' honeypot."""
+        from greedybear.cronjobs.extraction.strategies import TannerExtractionStrategy
+        from greedybear.cronjobs.extraction.strategies.factory import ExtractionStrategyFactory
+
+        factory = ExtractionStrategyFactory(MagicMock(), MagicMock())
+        strategy = factory.get_strategy("Tanner")
+
+        self.assertIsInstance(strategy, TannerExtractionStrategy)
+        self.assertEqual(strategy.honeypot, "Tanner")
+
+    def test_factory_tanner_case_sensitive(self):
+        """Factory 'tanner' (lowercase) should NOT return TannerExtractionStrategy."""
+        from greedybear.cronjobs.extraction.strategies import GenericExtractionStrategy
+        from greedybear.cronjobs.extraction.strategies.factory import ExtractionStrategyFactory
+
+        factory = ExtractionStrategyFactory(MagicMock(), MagicMock())
+        strategy = factory.get_strategy("tanner")
+
+        self.assertIsInstance(strategy, GenericExtractionStrategy)
+
+    def test_factory_passes_repositories_to_tanner(self):
+        """Factory should pass repositories to TannerExtractionStrategy."""
+        from greedybear.cronjobs.extraction.strategies.factory import ExtractionStrategyFactory
+
+        mock_ioc_repo = MagicMock()
+        mock_sensor_repo = MagicMock()
+
+        factory = ExtractionStrategyFactory(mock_ioc_repo, mock_sensor_repo)
+        strategy = factory.get_strategy("Tanner")
+
+        self.assertEqual(strategy.ioc_repo, mock_ioc_repo)
+        self.assertEqual(strategy.sensor_repo, mock_sensor_repo)

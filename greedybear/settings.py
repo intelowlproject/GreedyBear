@@ -1,8 +1,8 @@
 # This file is a part of GreedyBear https://github.com/honeynet/GreedyBear
 # See the file 'LICENSE' for copying permission.
-# flake8: noqa
 import logging
 import os
+import tomllib
 from datetime import timedelta
 
 from django.core.management.utils import get_random_secret_key
@@ -53,12 +53,20 @@ SLACK_TOKEN = os.environ.get("SLACK_TOKEN", "")
 DEFAULT_SLACK_CHANNEL = os.environ.get("DEFAULT_SLACK_CHANNEL", "")
 NTFY_URL = os.environ.get("NTFY_URL", "")
 
-VERSION = os.environ.get("VITE_GREEDYBEAR_VERSION", "")
+with open(os.path.join(BASE_DIR, "pyproject.toml"), "rb") as f:
+    VERSION = tomllib.load(f)["project"]["version"]
 
 CSRF_COOKIE_SAMESITE = "Strict"
 CSRF_COOKIE_HTTPONLY = True
 
-ALLOWED_HOSTS = ["*"]
+# Read DJANGO_ALLOWED_HOSTS from env (comma-separated).
+# Falls back to ["*"] for backward compatibility.
+# For security checks, see greedybear/checks.py.
+_allowed_hosts_env = os.environ.get("DJANGO_ALLOWED_HOSTS", "")
+if _allowed_hosts_env:
+    ALLOWED_HOSTS = [h.strip() for h in _allowed_hosts_env.split(",") if h.strip()]
+else:
+    ALLOWED_HOSTS = ["*"]
 
 # certego_saas
 HOST_URI = "http://localhost"
@@ -91,6 +99,9 @@ INSTALLED_APPS = [
     "rest_email_auth",
 ]
 
+if os.environ.get("DJANGO_TEST_SERVER", "False") == "True":
+    INSTALLED_APPS.append("django_watchfiles")
+
 # required by the certego-saas, but GreedyBear doesn't use the recaptcha, for this reason is filled with a placeholder
 DRF_RECAPTCHA_SECRET_KEY = "not-active"
 
@@ -103,6 +114,15 @@ REST_FRAMEWORK = {
     # Pagination
     "DEFAULT_PAGINATION_CLASS": "certego_saas.ext.pagination.CustomPageNumberPagination",
     "PAGE_SIZE": 10,
+    # Throttling
+    "DEFAULT_THROTTLE_RATES": {
+        "feeds": os.environ.get("FEEDS_THROTTLE_RATE", "30/minute"),
+        "feeds_advanced": os.environ.get("FEEDS_ADVANCED_THROTTLE_RATE", "100/minute"),
+        "feeds_shared": os.environ.get("FEEDS_SHARED_THROTTLE_RATE", "10/minute"),
+    },
+    # Disable DRF's format suffix negotiation via ?format= query param,
+    # since feeds endpoints handle the format parameter internally.
+    "URL_FORMAT_OVERRIDE": None,
 }
 
 # Django-Rest-Durin
@@ -446,6 +466,7 @@ COWRIE_SESSION_RETENTION = int(os.environ.get("COWRIE_SESSION_RETENTION", "365")
 COMMAND_SEQUENCE_RETENTION = int(os.environ.get("COMMAND_SEQUENCE_RETENTION", "365"))
 
 THREATFOX_API_KEY = os.environ.get("THREATFOX_API_KEY", "")
+ABUSEIPDB_API_KEY = os.environ.get("ABUSEIPDB_API_KEY", "")
 
 # Optional feed license URL to include in API responses
 # If not set, no license information will be included in feeds

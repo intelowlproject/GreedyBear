@@ -13,9 +13,11 @@ import {
   EnrichmentSourcesChart,
   EnrichmentRequestsChart,
   FeedsTypesChart,
+  AttackOriginCountriesChart,
 } from "./utils/charts";
 
 import EnrichmentLookup from "./EnrichmentLookup";
+import AttackOriginMap from "./AttackOriginMap";
 
 const feedsChartList = [
   ["FeedsSourcesChart", "Feeds: Sources", FeedsSourcesChart],
@@ -117,6 +119,32 @@ function Dashboard() {
             />
           </Col>
         ))}
+      </Row>
+      <Row className="mt-4 d-flex flex-wrap flex-lg-nowrap">
+        <Col md={12} lg={8}>
+          <SmallInfoCard
+            id="AttackOriginMap"
+            header="Attack Origins: World Map"
+            body={
+              <div className="pt-2">
+                <AttackOriginMap />
+              </div>
+            }
+            style={{ height: "100%" }}
+          />
+        </Col>
+        <Col md={12} lg={4} className="mt-3 mt-lg-0">
+          <SmallInfoCard
+            id="AttackOriginCountriesChart"
+            header="Attack Origins: Top Countries"
+            body={
+              <div className="pt-2">
+                <AttackOriginCountriesChart />
+              </div>
+            }
+            style={{ height: "100%" }}
+          />
+        </Col>
       </Row>
     </Container>
   );
