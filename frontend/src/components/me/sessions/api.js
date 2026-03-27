@@ -41,4 +41,15 @@ async function deleteTokenById(id, clientName) {
   }
 }
 
-export { createNewToken, deleteToken, deleteTokenById };
+async function deleteOtherSessions() {
+  try {
+    const resp = await axios.delete(`${SESSIONS_BASE_URI}/others`);
+    addToast("Revoked all other sessions.", null, "success", true, 6000);
+    return resp;
+  } catch (e) {
+    addToast("Failed!", e.parsedMsg.toString(), "danger", true);
+    return Promise.reject(e);
+  }
+}
+
+export { createNewToken, deleteToken, deleteTokenById, deleteOtherSessions };
