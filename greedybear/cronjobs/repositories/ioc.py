@@ -278,6 +278,7 @@ class IocRepository:
             ioc = IOC.objects.get(name=ip_address)
             ioc.ip_reputation = reputation
             ioc.save()
+            self.log.info(f"Updated IOC {ip_address} reputation to '{reputation}'")
             return True
         except IOC.DoesNotExist:
             return False
