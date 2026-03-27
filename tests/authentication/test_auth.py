@@ -17,6 +17,7 @@ resend_verificaton_uri = reverse("auth_resend-verification")
 request_pwd_reset_uri = reverse("auth_request-password-reset")
 reset_pwd_uri = reverse("auth_reset-password")
 change_password_uri = reverse("auth_change-password")
+revoke_other_sessions_uri = reverse("auth_revoke-others")
 
 
 @tag("api", "user")
@@ -457,4 +458,42 @@ class ChangePasswordTestCase(CustomOAuthTestCase):
         }
 
         response = self.client.post(change_password_uri, body)
+        self.assertIn(response.status_code, [401, 403])
+
+
+@tag("api", "user")
+class RevokeOtherSessionsTestCase(CustomOAuthTestCase):
+    def tearDown(self):
+        self.client.credentials()
+        AuthToken.objects.all().delete()
+        Client.objects.all().delete()
+
+    def test_revoke_other_sessions_204(self):
+        current_token = AuthToken.objects.create(
+            user=self.user,
+            client=Client.objects.create(name="test_revoke_others_current"),
+        )
+        AuthToken.objects.create(
+            user=self.user,
+            client=Client.objects.create(name="test_revoke_others_other_1"),
+        )
+        AuthToken.objects.create(
+            user=self.user,
+            client=Client.objects.create(name="test_revoke_others_other_2"),
+        )
+        self.assertEqual(AuthToken.objects.filter(user=self.user).count(), 3)
+
+        self.client.credentials(HTTP_AUTHORIZATION=f"Token {current_token.token}")
+        response = self.client.delete(revoke_other_sessions_uri)
+
+        self.assertEqual(response.status_code, 204, msg=response)
+        remaining_tokens = AuthToken.objects.filter(user=self.user)
+        self.assertEqual(remaining_tokens.count(), 1)
+        self.assertTrue(remaining_tokens.filter(pk=current_token.pk).exists())
+
+    def test_revoke_other_sessions_unauthenticated_401(self):
+        self.client.credentials()
+
+        response = self.client.delete(revoke_other_sessions_uri)
+
         self.assertIn(response.status_code, [401, 403])
