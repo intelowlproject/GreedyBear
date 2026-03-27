@@ -169,10 +169,10 @@ class CowrieSession(models.Model):
         indexes = [
             models.Index(fields=["source"]),
         ]
-    def __str__(self):
-    if self.session_id is None:
-        return "New Session (unsaved)"
-    return f"Session {hex(self.session_id)[2:]} from {self.source.name}"
+        def __str__(self):
+            if self.session_id is None:
+                return "New Session (unsaved)"
+            return f"Session {hex(self.session_id)[2:]} from {self.source.name}"
 
 
 class CowrieFileTransfer(models.Model):
