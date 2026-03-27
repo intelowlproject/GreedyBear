@@ -177,5 +177,18 @@ class ChangePasswordView(APIView):
         return Response({"message": "Password changed successfully"})
 
 
+class RevokeOtherSessionsView(APIView):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [CookieTokenAuthentication]
+
+    @staticmethod
+    def delete(request: Request) -> Response:
+        if request.auth:
+            AuthToken.objects.filter(user=request.user).exclude(pk=request.auth.pk).delete()
+        else:
+            AuthToken.objects.filter(user=request.user).delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
 TokenSessionsViewSet = durin_views.TokenSessionsViewSet
 APIAccessTokenView = durin_views.APIAccessTokenView
