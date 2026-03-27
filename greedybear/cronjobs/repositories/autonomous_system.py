@@ -25,9 +25,11 @@ class ASRepository:
             AutonomousSystem instance
         """
         if asn in self._cache:
-            return self._cache[asn]
-
-        as_obj, created = AutonomousSystem.objects.get_or_create(asn=asn, defaults={"name": name or ""})
+            as_obj = self._cache[asn]
+            created = False
+        else:
+            as_obj, created = AutonomousSystem.objects.get_or_create(asn=asn, defaults={"name": name or ""})
+            self._cache[asn] = as_obj
 
         if created:
             self.log.info(f"Created new AS {asn} with name '{name}'")
@@ -36,5 +38,4 @@ class ASRepository:
             as_obj.save(update_fields=["name"])
             self.log.info(f"Updated AS {asn} name to '{name}'")
 
-        self._cache[asn] = as_obj
         return as_obj
