@@ -30,7 +30,6 @@ class CustomTestCase(TestCase):
 
         cls.current_time = datetime.now()
 
-        # Create honeypots for Cowrie and Log4pot (replacing boolean fields)
         cls.cowrie_hp = GeneralHoneypot.objects.get_or_create(name="Cowrie", defaults={"active": True})[0]
         cls.log4pot_hp = GeneralHoneypot.objects.get_or_create(name="Log4pot", defaults={"active": True})[0]
 
@@ -52,7 +51,7 @@ class CustomTestCase(TestCase):
             login_attempts=1,
             recurrence_probability=0.1,
             expected_interactions=11.1,
-            attacker_country="China",
+            attacker_country="Germany",
         )
 
         cls.ioc_2 = IOC.objects.create(
@@ -94,7 +93,7 @@ class CustomTestCase(TestCase):
             login_attempts=1,
             recurrence_probability=0.1,
             expected_interactions=11.1,
-            attacker_country="United States",
+            attacker_country="China",
         )
 
         cls.ioc_domain = IOC.objects.create(
@@ -117,23 +116,23 @@ class CustomTestCase(TestCase):
             expected_interactions=5.5,
         )
 
-        cls.ioc.general_honeypot.add(cls.heralding)  # FEEDS
-        cls.ioc.general_honeypot.add(cls.ciscoasa)  # FEEDS
-        cls.ioc.general_honeypot.add(cls.cowrie_hp)  # Cowrie honeypot
-        cls.ioc.general_honeypot.add(cls.log4pot_hp)  # Log4pot honeypot
+        cls.ioc.general_honeypot.add(cls.heralding)
+        cls.ioc.general_honeypot.add(cls.ciscoasa)
+        cls.ioc.general_honeypot.add(cls.cowrie_hp)
+        cls.ioc.general_honeypot.add(cls.log4pot_hp)
         cls.ioc.save()
-        cls.ioc_2.general_honeypot.add(cls.heralding)  # FEEDS
-        cls.ioc_2.general_honeypot.add(cls.ciscoasa)  # FEEDS
-        cls.ioc_2.general_honeypot.add(cls.cowrie_hp)  # Cowrie honeypot
-        cls.ioc_2.general_honeypot.add(cls.log4pot_hp)  # Log4pot honeypot
+        cls.ioc_2.general_honeypot.add(cls.heralding)
+        cls.ioc_2.general_honeypot.add(cls.ciscoasa)
+        cls.ioc_2.general_honeypot.add(cls.cowrie_hp)
+        cls.ioc_2.general_honeypot.add(cls.log4pot_hp)
         cls.ioc_2.save()
-        cls.ioc_3.general_honeypot.add(cls.cowrie_hp)  # Cowrie honeypot
+        cls.ioc_3.general_honeypot.add(cls.cowrie_hp)
         cls.ioc_3.save()
-        cls.ioc_domain.general_honeypot.add(cls.heralding)  # FEEDS
-        cls.ioc_domain.general_honeypot.add(cls.log4pot_hp)  # Log4pot honeypot
+        cls.ioc_domain.general_honeypot.add(cls.heralding)
+        cls.ioc_domain.general_honeypot.add(cls.log4pot_hp)
         cls.ioc_domain.save()
 
-        # IOC with an inactive-only honeypot
+        # IOC with an inactive-only honeypot — used for country stats exclusion test
         cls.ioc_inactive_country = IOC.objects.create(
             name="1.2.3.7",
             type=IocType.IP.value,
@@ -211,7 +210,7 @@ class ExtractionTestCase(CustomTestCase):
     def setUp(self):
         self.mock_ioc_repo = Mock()
         self.mock_sensor_repo = Mock()
-        self.mock_sensor_repo.cache = {}  # Initialize cache as empty dict for sensor filtering
+        self.mock_sensor_repo.cache = {}
         self.mock_session_repo = Mock()
 
     def _create_mock_ioc(
@@ -276,10 +275,6 @@ class MockElasticHit:
 
 
 class MigrationTestCase(TransactionTestCase):
-    """
-    Reusable base class for migration tests.
-    """
-
     app_name = "greedybear"
     migrate_from = None
     migrate_to = None
@@ -298,22 +293,9 @@ class MigrationTestCase(TransactionTestCase):
 
 
 class E2ETestCase(ExtractionTestCase):
-    """Base test case for E2E pipeline tests with real strategies.
-
-    This base class provides helpers for creating pipelines with mocked
-    repositories but REAL strategies, enabling true integration testing.
-    """
+    """Base test case for E2E pipeline tests with real strategies."""
 
     def _create_pipeline_with_real_factory(self):
-        """
-        Create a pipeline with mocked repositories but REAL factory/strategies.
-
-        This approach tests the actual integration:
-        Pipeline → real Factory → real Strategy → IOC extraction
-
-        Returns:
-            ExtractionPipeline: Pipeline with mocked repos, real strategies.
-        """
         from unittest.mock import patch
 
         with (
