@@ -54,6 +54,10 @@ describe("Registration component", () => {
     await user.type(confirmPasswordInputElement, "GreedyBearPassword");
     await user.type(companyNameInputElement, "companyname");
     await user.type(companyRoleInputElement, "companyrole");
+
+    await waitFor(() => {
+      expect(submitButtonElement).not.toBeDisabled();
+    });
     await user.click(submitButtonElement);
 
     await waitFor(() => {
@@ -135,6 +139,10 @@ describe("Registration component", () => {
     await user.type(confirmPasswordInputElement, "GreedyBearPassword");
     await user.type(companyNameInputElement, "companyname");
     await user.type(companyRoleInputElement, "companyrole");
+
+    await waitFor(() => {
+      expect(submitButtonElement).not.toBeDisabled();
+    });
 
     // setting up the mock and clearing previous calls
     axios.post.mockClear();
