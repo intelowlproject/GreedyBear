@@ -103,13 +103,12 @@ describe("EmailForm component", () => {
     // 1. Verify the API was actually called
     expect(mockApiFailure).toHaveBeenCalledTimes(1);
 
-    await waitFor(() => {
-      expect(mockOnFormSubmit).not.toHaveBeenCalled();
-    });
-
-    // 3. Verify the spinner stops and the button re-enables so the user can try again
+    // 2. Verify the spinner stops and the button re-enables so the user can try again
     await waitFor(() => {
       expect(submitButtonElement).not.toBeDisabled();
     });
+
+    // 3. Verify onFormSubmit was not called after the failed request
+    expect(mockOnFormSubmit).not.toHaveBeenCalled();
   });
 });
