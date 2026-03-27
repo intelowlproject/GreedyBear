@@ -24,11 +24,10 @@ mkdir -p /run/gunicorn
 chown -R 2000:82 /var/log/greedybear /run/gunicorn
 
 # Obtain the current GreedyBear version number
-. /opt/deploy/greedybear/docker/.version
-export VITE_GREEDYBEAR_VERSION
+GREEDYBEAR_VERSION=$(uv version --short)
 
 echo "------------------------------"
-echo "GreedyBear $VITE_GREEDYBEAR_VERSION"
+echo "GreedyBear $GREEDYBEAR_VERSION"
 echo "DEBUG: $DEBUG"
 echo "DJANGO_TEST_SERVER: $DJANGO_TEST_SERVER"
 echo "------------------------------"
