@@ -171,6 +171,8 @@ class CowrieSession(models.Model):
         ]
 
     def __str__(self):
+        if self.session_id is None:
+            return "New Session (unsaved)"
         return f"Session {hex(self.session_id)[2:]} from {self.source.name}"
 
 
