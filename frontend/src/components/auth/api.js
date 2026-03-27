@@ -41,6 +41,8 @@ export async function resendVerificationMail(body) {
   }
 }
 
+// In frontend/src/components/auth/api.js
+
 export async function requestPasswordReset(body) {
   try {
     const resp = await axios.post(
@@ -51,7 +53,7 @@ export async function requestPasswordReset(body) {
     return resp;
   } catch (err) {
     addToast("Failed to send email!", err.parsedMsg, "danger", true);
-    return null;
+    return Promise.reject(err);
   }
 }
 
