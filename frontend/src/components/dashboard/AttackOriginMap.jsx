@@ -106,9 +106,7 @@ export default function AttackOriginMap() {
         className="d-flex justify-content-center align-items-center text-muted"
         style={{ minHeight: 200 }}
       >
-        {typeof error === "string"
-          ? error
-          : (error?.message ?? "An unexpected error occurred")}
+        {typeof error === "string" ? error : error.message}
       </div>
     );
   }

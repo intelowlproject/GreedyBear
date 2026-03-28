@@ -2,6 +2,7 @@ import axios from "axios";
 import { create } from "zustand";
 import { IOC_ATTACKER_COUNTRIES_URI } from "../constants/api";
 
+// Normalise country names from T-Pot geoip to match Natural Earth names used by world-atlas@2. (https://github.com/topojson/world-atlas)
 const NAME_FIXES = {
   "United States": "United States of America",
   "Czech Republic": "Czechia",
@@ -38,8 +39,6 @@ const useAttackerCountriesStore = create((set, get) => ({
   fetchData: async (range) => {
     const rangeStr = JSON.stringify(range);
     if (get().lastRange === rangeStr && !get().error) return;
-
-    if (get().loading && get().lastRange === rangeStr) return;
 
     if (get().currentController) {
       get().currentController.abort();
