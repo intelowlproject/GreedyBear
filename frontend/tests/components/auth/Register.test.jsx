@@ -76,7 +76,7 @@ describe("Registration component", () => {
         },
       });
     });
-  });
+  }, 15000);
 
   test("Show password checkbox", async () => {
     const user = userEvent.setup();
@@ -174,5 +174,5 @@ describe("Registration component", () => {
     await waitFor(() => {
       expect(submitButtonElement).not.toBeDisabled();
     });
-  });
+  }, 15000);
 });

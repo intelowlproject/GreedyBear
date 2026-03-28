@@ -79,7 +79,7 @@ const useAttackerCountriesStore = create((set, get) => ({
         set({
           rawData,
           countryDataMap,
-          maxCount: maxCount || 1,
+          maxCount,
           loading: false,
           currentController: null,
         });
