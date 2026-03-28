@@ -5,37 +5,10 @@ import {
   Geography,
   ZoomableGroup,
 } from "react-simple-maps";
-import axios from "axios";
 import { useTimePickerStore } from "@certego/certego-ui";
-import { IOC_ATTACKER_COUNTRIES_URI } from "../../constants/api";
+import useAttackerCountriesStore from "../../stores/useAttackerCountriesStore";
 const WORLD_ATLAS_GEO_URL = `${import.meta.env.BASE_URL}countries-110m.json`;
 
-// Normalise country names from T-Pot geoip to match Natural Earth names used by world-atlas@2. (https://github.com/topojson/world-atlas)
-const NAME_FIXES = {
-  "United States": "United States of America",
-  "Czech Republic": "Czechia",
-  "Ivory Coast": "Côte d'Ivoire",
-  "Democratic Republic of the Congo": "Dem. Rep. Congo",
-  "Republic of the Congo": "Congo",
-  "Bosnia and Herzegovina": "Bosnia and Herz.",
-  "Central African Republic": "Central African Rep.",
-  "Dominican Republic": "Dominican Rep.",
-  "Equatorial Guinea": "Eq. Guinea",
-  "South Sudan": "S. Sudan",
-  "North Macedonia": "Macedonia",
-  Eswatini: "eSwatini",
-  "State of Palestine": "Palestine",
-  "Western Sahara": "W. Sahara",
-  "Solomon Islands": "Solomon Is.",
-  "Falkland Islands": "Falkland Is.",
-  "French Southern Territories": "Fr. S. Antarctic Lands",
-};
-
-function normalise(name) {
-  return NAME_FIXES[name] ?? name;
-}
-
-// Interpolate between two hex colours by t ∈ [0, 1]
 function lerpColor(a, b, t) {
   const ah = parseInt(a.replace("#", ""), 16);
   const bh = parseInt(b.replace("#", ""), 16);
@@ -58,10 +31,13 @@ const COLOR_HIGH = "#bd0026";
 
 export default function AttackOriginMap() {
   const { range } = useTimePickerStore();
-  const [countryData, setCountryData] = React.useState({});
-  const [maxCount, setMaxCount] = React.useState(1);
-  const [loading, setLoading] = React.useState(true);
-  const [error, setError] = React.useState(null);
+  const {
+    countryDataMap: countryData,
+    maxCount,
+    loading,
+    error,
+    fetchData,
+  } = useAttackerCountriesStore();
 
   // tooltip state
   const [tooltip, setTooltip] = React.useState({
@@ -73,32 +49,13 @@ export default function AttackOriginMap() {
   });
 
   React.useEffect(() => {
-    setLoading(true);
-    setError(null);
-    axios
-      .get(IOC_ATTACKER_COUNTRIES_URI, { params: { range } })
-      .then((resp) => {
-        const map = {};
-        let max = 0;
-        resp.data.forEach(({ country, count }) => {
-          const key = normalise(country);
-          map[key] = count;
-          if (count > max) max = count;
-        });
-        setCountryData(map);
-        setMaxCount(max);
-      })
-      .catch((err) => {
-        console.error("AttackOriginMap error:", err);
-        setError("Failed to load map data.");
-      })
-      .finally(() => setLoading(false));
-  }, [range]);
+    fetchData(range);
+  }, [range, fetchData]);
 
   const getColor = React.useCallback(
     (geoName) => {
       const count = countryData[geoName];
-      if (!count) return COLOR_EMPTY;
+      if (maxCount <= 0 || !count) return COLOR_EMPTY;
       const t = Math.sqrt(count / maxCount); // sqrt scale so small values are still visible
       // 3-stop: low (yellow) → mid (orange) → high (red)
       if (t < 0.5) return lerpColor(COLOR_LOW, COLOR_MID, t * 2);
@@ -149,7 +106,9 @@ export default function AttackOriginMap() {
         className="d-flex justify-content-center align-items-center text-muted"
         style={{ minHeight: 200 }}
       >
-        {error}
+        {typeof error === "string"
+          ? error
+          : (error?.message ?? "An unexpected error occurred")}
       </div>
     );
   }
