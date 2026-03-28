@@ -11,6 +11,7 @@ from durin import views as durin_views
 from durin.models import AuthToken
 from rest_framework import status
 from rest_framework.decorators import (
+    action,
     api_view,
     authentication_classes,
     permission_classes,
@@ -177,12 +178,15 @@ class ChangePasswordView(APIView):
         return Response({"message": "Password changed successfully"})
 
 
-class RevokeOtherSessionsView(APIView):
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [CookieTokenAuthentication]
-
-    @staticmethod
-    def delete(request: Request) -> Response:
+class TokenSessionsViewSet(durin_views.TokenSessionsViewSet):
+    @action(
+        detail=False,
+        methods=["delete"],
+        url_path="others",
+        authentication_classes=[CookieTokenAuthentication],
+        permission_classes=[IsAuthenticated],
+    )
+    def revoke_others(self, request: Request) -> Response:
         if request.auth:
             AuthToken.objects.filter(user=request.user).exclude(pk=request.auth.pk).delete()
         else:
@@ -190,5 +194,4 @@ class RevokeOtherSessionsView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
-TokenSessionsViewSet = durin_views.TokenSessionsViewSet
 APIAccessTokenView = durin_views.APIAccessTokenView

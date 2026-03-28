@@ -17,7 +17,7 @@ resend_verificaton_uri = reverse("auth_resend-verification")
 request_pwd_reset_uri = reverse("auth_request-password-reset")
 reset_pwd_uri = reverse("auth_reset-password")
 change_password_uri = reverse("auth_change-password")
-revoke_other_sessions_uri = reverse("auth_revoke-others")
+revoke_other_sessions_uri = reverse("auth_tokensessions-revoke-others")
 
 
 @tag("api", "user")

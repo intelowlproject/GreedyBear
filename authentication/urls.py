@@ -13,7 +13,6 @@ from .views import (
     PasswordResetView,
     RegistrationView,
     ResendVerificationView,
-    RevokeOtherSessionsView,
     TokenSessionsViewSet,
     check_authentication,
     check_configuration,
@@ -51,7 +50,6 @@ urlpatterns = [
     # auth
     path("", include("certego_saas.apps.auth.urls")),
     path("apiaccess", APIAccessTokenView.as_view(), name="auth_apiaccess"),
-    path("sessions/others", RevokeOtherSessionsView.as_view(), name="auth_revoke-others"),
     path("authentication", check_authentication),
     path("", include(router.urls)),
 ]
