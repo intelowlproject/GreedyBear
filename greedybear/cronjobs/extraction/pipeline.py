@@ -104,4 +104,16 @@ class ExtractionPipeline:
                 UpdateScores().score_only(ioc_records)
             ioc_record_count += len(ioc_records)
 
+        # 5. Invalidate API caches
+        # Use the shared DB-backed cache so the version bump is visible to
+        # gunicorn API workers (LocMemCache is per-process).
+        self.log.info("Invalidating feeds ASN cache")
+        from django.core.cache import caches
+
+        shared_cache = caches["django-q"]
+        try:
+            shared_cache.incr("asn_feeds_version")
+        except ValueError:
+            shared_cache.set("asn_feeds_version", 2)
+
         return ioc_record_count

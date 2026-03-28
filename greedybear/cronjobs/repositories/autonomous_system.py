@@ -6,10 +6,12 @@ from greedybear.models import AutonomousSystem
 class ASRepository:
     """Repository to handle AutonomousSystem objects with caching."""
 
-    def __init__(self):
+    def __init__(self, preload_cache: bool = True):
         self.log = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
-        self._cache = {as_obj.asn: as_obj for as_obj in AutonomousSystem.objects.all()}
-        self.log.info(f"Preloaded {len(self._cache)} ASs into cache")
+        self._cache = {}
+        if preload_cache:
+            self._cache = {as_obj.asn: as_obj for as_obj in AutonomousSystem.objects.all()}
+            self.log.info(f"Preloaded {len(self._cache)} ASs into cache")
 
     def get_or_create(self, asn: int, name: str) -> AutonomousSystem:
         """
