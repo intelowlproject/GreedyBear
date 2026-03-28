@@ -131,6 +131,20 @@ describe("SessionsList", () => {
     expect(refetchMock).toHaveBeenCalledTimes(1);
   });
 
+  test("revoke single session is cancelled when confirmation is rejected", async () => {
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+    confirm.mockResolvedValue(false);
+
+    render(<SessionsList />);
+
+    await user.click(screen.getByTestId("sessionslist-2__revoke-btn"));
+
+    expect(confirm).toHaveBeenCalled();
+    expect(deleteTokenById).not.toHaveBeenCalled();
+    vi.advanceTimersByTime(500);
+    expect(refetchMock).not.toHaveBeenCalled();
+  });
+
   test("revoke single session passes id and client name then triggers delayed refetch", async () => {
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     confirm.mockResolvedValue(true);

@@ -12,7 +12,12 @@ async function createNewToken() {
     addToast("Generated new API key for you!", null, "success", true);
     return resp;
   } catch (e) {
-    addToast("Failed!", e.parsedMsg.toString(), "danger", true);
+    addToast(
+      "Failed!",
+      e?.parsedMsg?.toString?.() || e?.message || "Unknown error",
+      "danger",
+      true,
+    );
     return Promise.reject(e);
   }
 }
@@ -23,7 +28,12 @@ async function deleteToken() {
     addToast("API key was deleted!", null, "success", true);
     return resp;
   } catch (e) {
-    addToast("Failed!", e.parsedMsg.toString(), "danger", true);
+    addToast(
+      "Failed!",
+      e?.parsedMsg?.toString?.() || e?.message || "Unknown error",
+      "danger",
+      true,
+    );
     return Promise.reject(e);
   }
 }
@@ -36,7 +46,12 @@ async function deleteTokenById(id, clientName) {
     addToast(`Revoked Session (${clientName}).`, null, "success", true, 6000);
     return resp;
   } catch (e) {
-    addToast("Failed!", e.parsedMsg.toString(), "danger", true);
+    addToast(
+      "Failed!",
+      e?.parsedMsg?.toString?.() || e?.message || "Unknown error",
+      "danger",
+      true,
+    );
     return Promise.reject(e);
   }
 }
@@ -47,7 +62,12 @@ async function deleteOtherSessions() {
     addToast("Revoked all other sessions.", null, "success", true, 6000);
     return resp;
   } catch (e) {
-    addToast("Failed!", e.parsedMsg.toString(), "danger", true);
+    addToast(
+      "Failed!",
+      e?.parsedMsg?.toString?.() || e?.message || "Unknown error",
+      "danger",
+      true,
+    );
     return Promise.reject(e);
   }
 }
