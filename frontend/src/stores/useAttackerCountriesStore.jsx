@@ -75,23 +75,27 @@ const useAttackerCountriesStore = create((set, get) => ({
         }
       });
 
-      set({
-        rawData,
-        countryDataMap,
-        maxCount: maxCount || 1,
-        loading: false,
-        currentController: null,
-      });
+      if (get().currentController === controller) {
+        set({
+          rawData,
+          countryDataMap,
+          maxCount: maxCount || 1,
+          loading: false,
+          currentController: null,
+        });
+      }
     } catch (err) {
       if (axios.isCancel(err)) {
         return;
       }
       console.error("useAttackerCountriesStore error:", err);
-      set({
-        error: "Failed to load attacker countries data.",
-        loading: false,
-        currentController: null,
-      });
+      if (get().currentController === controller) {
+        set({
+          error: "Failed to load attacker countries data.",
+          loading: false,
+          currentController: null,
+        });
+      }
     }
   },
 }));
