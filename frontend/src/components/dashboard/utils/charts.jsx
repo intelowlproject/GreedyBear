@@ -160,7 +160,7 @@ export const AttackOriginCountriesChart = React.memo(() => {
   if (error) {
     return (
       <div className="d-flex justify-content-center align-items-center py-4 text-muted">
-        {typeof error === "string" ? error : error.message}
+        {error}
       </div>
     );
   }
