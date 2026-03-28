@@ -1,6 +1,8 @@
 import logging
 from collections import defaultdict
 
+from django.core.cache import caches
+
 from greedybear.cronjobs.extraction.strategies.factory import ExtractionStrategyFactory
 from greedybear.cronjobs.repositories import (
     ElasticRepository,
@@ -103,5 +105,16 @@ class ExtractionPipeline:
             if ioc_records:
                 UpdateScores().score_only(ioc_records)
             ioc_record_count += len(ioc_records)
+
+        # 5. Invalidate API caches only if any IOC records were processed
+        if ioc_record_count > 0:
+            # Use the shared DB-backed cache so the version bump is visible to
+            # gunicorn API workers (LocMemCache is per-process).
+            self.log.info("Invalidating feeds ASN cache")
+            shared_cache = caches["django-q"]
+            try:
+                shared_cache.incr("asn_feeds_version")
+            except ValueError:
+                shared_cache.set("asn_feeds_version", 2, timeout=None)
 
         return ioc_record_count
