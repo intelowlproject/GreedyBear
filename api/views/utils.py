@@ -1,6 +1,7 @@
 # This file is a part of GreedyBear https://github.com/honeynet/GreedyBear
 # See the file 'LICENSE' for copying permission.
 import csv
+import hashlib
 import logging
 from datetime import datetime, timedelta
 
@@ -446,23 +447,47 @@ def feeds_response(request=None, iocs=None, feed_params=None, valid_feed_types=N
 
 def asn_aggregated_queryset(iocs_qs, request, feed_params):
     """
-    Perform DB-level aggregation grouped by ASN.
+    Retrieve ASN aggregation data. Caches the heavy aggregation query
+    since the data only updates during the extraction cronjob.
 
     Args
         iocs_qs (QuerySet): Filtered IOC queryset from get_queryset;
         request (Request): The API request object;
         feed_params (FeedRequestParams): Validated parameter object
 
-    Returns: A values-grouped queryset with annotated  metrics and honeypot arrays.
+    Returns: A list of dicts with aggregated metrics and honeypot arrays per ASN.
     """
+
+    # Build reliable cache key from query params
+    sorted_params = sorted(request.query_params.items())
+    params_string = "&".join(f"{k}={v}" for k, v in sorted_params)
+    param_hash = hashlib.sha256(params_string.encode("utf-8")).hexdigest()
+
+    # Read version from the shared DB-backed cache so that the extraction
+    # pipeline (running in a separate Django-Q worker process) can invalidate
+    # caches visible to the gunicorn API workers.
+    from django.core.cache import caches
+
+    shared_cache = caches["django-q"]
+    version = shared_cache.get("asn_feeds_version", 1)
+    cache_key = f"asn_feeds_v{version}_{param_hash}"
+
+    cached_result = cache.get(cache_key)
+    if cached_result is not None:
+        return cached_result
+
     asn_filter = request.query_params.get("asn")
     if asn_filter:
         iocs_qs = iocs_qs.filter(autonomous_system__asn=asn_filter)
 
     # default ordering is overridden here because of serializer default(-last-seen) behaviour
     ordering = feed_params.ordering
-    if not ordering or ordering.strip() in {"", "-last_seen", "last_seen"}:
+    ordering_param_present = "ordering" in request.query_params
+    # Normalize ordering and apply default if needed.
+    if (not ordering or ordering.strip() in {"", "-last_seen", "last_seen"}) and not ordering_param_present:
         ordering = "-ioc_count"
+    else:
+        ordering = ordering.strip()
 
     numeric_agg = (
         iocs_qs.exclude(autonomous_system__isnull=True)
@@ -480,9 +505,16 @@ def asn_aggregated_queryset(iocs_qs, request, feed_params):
             first_seen=Min("first_seen"),
             last_seen=Max("last_seen"),
         )
-        .order_by(ordering)
     )
+    # Map API-facing 'as_name' ordering to the underlying 'as_name' alias
+    if ordering in {"name", "-name"}:
+        prefix = "-" if ordering.startswith("-") else ""
+        ordering = f"{prefix}as_name"
 
+    numeric_agg = numeric_agg.order_by(ordering)
+
+    # Honeypot names still require a lightweight aggregation because
+    # they depend on the active flag which can change independently.
     honeypot_agg = (
         iocs_qs.exclude(autonomous_system__isnull=True)
         .filter(general_honeypot__active=True)
@@ -497,13 +529,26 @@ def asn_aggregated_queryset(iocs_qs, request, feed_params):
 
     hp_lookup = {row["asn"]: row["honeypots"] or [] for row in honeypot_agg}
 
-    # merging numeric aggregate with honeypot names for each asn
     result = []
     for row in numeric_agg:
         asn = row["asn"]
-        row_dict = dict(row)
-        row_dict["honeypots"] = sorted(hp_lookup.get(asn, []))
+        row_dict = {
+            "asn": asn,
+            "as_name": row["as_name"],
+            "ioc_count": row["ioc_count"],
+            "total_attack_count": row["total_attack_count"],
+            "total_interaction_count": row["total_interaction_count"],
+            "total_login_attempts": row["total_login_attempts"],
+            "expected_ioc_count": row["expected_ioc_count"],
+            "expected_interactions": row["expected_interactions"],
+            "first_seen": row["first_seen"],
+            "last_seen": row["last_seen"],
+            "honeypots": sorted(hp_lookup.get(asn, [])),
+        }
         result.append(row_dict)
+
+    # Set cache with a 24-hour timeout (will be invalidated explicitly by extraction pipeline if needed)
+    cache.set(cache_key, result, timeout=86400)
 
     return result
 
