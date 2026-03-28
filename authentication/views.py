@@ -39,6 +39,13 @@ logger = logging.getLogger(__name__)
 User: AUTH_USER_MODEL = get_user_model()
 
 
+def revoke_other_tokens(user, current_token=None):
+    if current_token:
+        AuthToken.objects.filter(user=user).exclude(pk=current_token.pk).delete()
+    else:
+        AuthToken.objects.filter(user=user).delete()
+
+
 class PasswordResetRequestView(rest_email_auth.views.PasswordResetRequestView):
     authentication_classes: list = []
     permission_classes: list = []
@@ -169,10 +176,7 @@ class ChangePasswordView(APIView):
         user.set_password(new_password)
         user.save()
 
-        if request.auth:
-            AuthToken.objects.filter(user=user).exclude(pk=request.auth.pk).delete()
-        else:
-            AuthToken.objects.filter(user=user).delete()
+        revoke_other_tokens(user=user, current_token=request.auth)
 
         # Return a success response
         return Response({"message": "Password changed successfully"})
@@ -187,10 +191,7 @@ class TokenSessionsViewSet(durin_views.TokenSessionsViewSet):
         permission_classes=[IsAuthenticated],
     )
     def revoke_others(self, request: Request) -> Response:
-        if request.auth:
-            AuthToken.objects.filter(user=request.user).exclude(pk=request.auth.pk).delete()
-        else:
-            AuthToken.objects.filter(user=request.user).delete()
+        revoke_other_tokens(user=request.user, current_token=request.auth)
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 
