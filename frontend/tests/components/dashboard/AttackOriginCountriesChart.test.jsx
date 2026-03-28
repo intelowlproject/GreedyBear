@@ -4,6 +4,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import axios from "axios";
 import { AttackOriginCountriesChart } from "../../../src/components/dashboard/utils/charts";
 import { IOC_ATTACKER_COUNTRIES_URI } from "../../../src/constants/api";
+import useAttackerCountriesStore from "../../../src/stores/useAttackerCountriesStore";
 
 vi.mock("axios");
 
@@ -43,6 +44,15 @@ const SIXTEEN_COUNTRIES = Array.from({ length: 16 }, (_, i) => ({
 
 describe("AttackOriginCountriesChart", () => {
   beforeEach(() => {
+    useAttackerCountriesStore.setState({
+      rawData: [],
+      countryDataMap: {},
+      maxCount: 0,
+      loading: false,
+      error: null,
+      lastRange: null,
+      currentController: null,
+    });
     vi.clearAllMocks();
   });
 
@@ -57,7 +67,7 @@ describe("AttackOriginCountriesChart", () => {
     render(<AttackOriginCountriesChart />);
     await waitFor(() =>
       expect(
-        screen.getByText("Failed to load country data."),
+        screen.getByText("Failed to load attacker countries data."),
       ).toBeInTheDocument(),
     );
   });
@@ -78,9 +88,12 @@ describe("AttackOriginCountriesChart", () => {
     axios.get.mockResolvedValue({ data: [] });
     render(<AttackOriginCountriesChart />);
     await waitFor(() =>
-      expect(axios.get).toHaveBeenCalledWith(IOC_ATTACKER_COUNTRIES_URI, {
-        params: { range: "7d" },
-      }),
+      expect(axios.get).toHaveBeenCalledWith(
+        IOC_ATTACKER_COUNTRIES_URI,
+        expect.objectContaining({
+          params: { range: "7d" },
+        }),
+      ),
     );
   });
 

@@ -9,7 +9,6 @@ import {
   ResponsiveContainer,
   Cell,
 } from "recharts";
-import axios from "axios";
 
 import {
   AnyChartWidget,
@@ -22,8 +21,8 @@ import {
   FEEDS_STATISTICS_TYPES_URI,
   ENRICHMENT_STATISTICS_SOURCES_URI,
   ENRICHMENT_STATISTICS_REQUESTS_URI,
-  IOC_ATTACKER_COUNTRIES_URI,
 } from "../../../constants/api";
+import useAttackerCountriesStore from "../../../stores/useAttackerCountriesStore";
 
 import { FEED_COLOR_MAP, ENRICHMENT_COLOR_MAP } from "../../../constants";
 
@@ -139,22 +138,16 @@ export const AttackOriginCountriesChart = React.memo(() => {
   console.debug("AttackOriginCountriesChart rendered!");
 
   const { range } = useTimePickerStore();
-  const [data, setData] = React.useState([]);
-  const [loading, setLoading] = React.useState(true);
-  const [error, setError] = React.useState(null);
+  const {
+    rawData: data,
+    loading,
+    error,
+    fetchData,
+  } = useAttackerCountriesStore();
 
   React.useEffect(() => {
-    setLoading(true);
-    setError(null);
-    axios
-      .get(IOC_ATTACKER_COUNTRIES_URI, { params: { range } })
-      .then((resp) => setData(resp.data))
-      .catch((err) => {
-        console.error("AttackOriginCountriesChart error:", err);
-        setError("Failed to load country data.");
-      })
-      .finally(() => setLoading(false));
-  }, [range]);
+    fetchData(range);
+  }, [range, fetchData]);
 
   if (loading) {
     return (
