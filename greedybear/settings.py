@@ -467,9 +467,7 @@ COMMAND_SEQUENCE_RETENTION = int(os.environ.get("COMMAND_SEQUENCE_RETENTION", "3
 
 TRENDING_MAX_WINDOW_MINUTES = int(os.environ.get("TRENDING_MAX_WINDOW_MINUTES", str(60 * 24 * 30)))
 TRENDING_PRECOMPUTE_WINDOWS_MINUTES = [
-    int(value.strip())
-    for value in os.environ.get("TRENDING_PRECOMPUTE_WINDOWS_MINUTES", f"{24 * 60},{7 * 24 * 60}").split(",")
-    if value.strip()
+    int(value.strip()) for value in os.environ.get("TRENDING_PRECOMPUTE_WINDOWS_MINUTES", f"{24 * 60},{7 * 24 * 60}").split(",") if value.strip()
 ]
 TRENDING_PRECOMPUTE_LIMIT = int(os.environ.get("TRENDING_PRECOMPUTE_LIMIT", "500"))
 TRENDING_BUCKET_RETENTION_HOURS = int(os.environ.get("TRENDING_BUCKET_RETENTION_HOURS", str(24 * 31)))
