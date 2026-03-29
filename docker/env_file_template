@@ -83,7 +83,19 @@ ABUSEIPDB_API_KEY =
 
 # Rate limiting for feeds endpoints (format: number/period, e.g. 30/minute)
 FEEDS_THROTTLE_RATE=30/minute
+FEEDS_TRENDING_THROTTLE_RATE=30/minute
 FEEDS_ADVANCED_THROTTLE_RATE=100/minute
+FEEDS_SHARED_THROTTLE_RATE=10/minute
+
+# Trending attackers settings
+# Max API window in minutes (must be >= 60 and multiple of 60)
+TRENDING_MAX_WINDOW_MINUTES=22320
+# Comma-separated windows to precompute in minutes (each must be >= 60 and multiple of 60)
+TRENDING_PRECOMPUTE_WINDOWS_MINUTES=1440,10080
+# Max rows materialized per feed/window
+TRENDING_PRECOMPUTE_LIMIT=500
+# Bucket retention in hours (must be >= 1)
+TRENDING_BUCKET_RETENTION_HOURS=744
 
 # Optional feed license URL to include in API responses
 # If not set, no license information will be included in feeds

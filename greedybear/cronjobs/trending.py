@@ -59,16 +59,37 @@ def update_activity_buckets_from_hits(hits: Iterable[Mapping[str, Any]]) -> int:
 
 
 class TrendingAttackersCron(Cronjob):
+    @staticmethod
+    def _positive_int_setting(name: str, value) -> int:
+        try:
+            parsed_value = int(value)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"{name} must be a positive integer, got {value!r}") from exc
+
+        if parsed_value < 1:
+            raise ValueError(f"{name} must be >= 1, got {parsed_value}")
+
+        return parsed_value
+
     def run(self):
         now = timezone.now().replace(minute=0, second=0, microsecond=0)
         windows = getattr(settings, "TRENDING_PRECOMPUTE_WINDOWS_MINUTES", [24 * 60, 7 * 24 * 60])
-        per_feed_limit = getattr(settings, "TRENDING_PRECOMPUTE_LIMIT", 500)
-        retention_hours = getattr(settings, "TRENDING_BUCKET_RETENTION_HOURS", 24 * 31)
+        if not windows:
+            raise ValueError("TRENDING_PRECOMPUTE_WINDOWS_MINUTES must contain at least one value")
+        validated_windows = []
+        for window_minutes in windows:
+            parsed_window = self._positive_int_setting("TRENDING_PRECOMPUTE_WINDOWS_MINUTES entries", window_minutes)
+            if parsed_window % 60:
+                raise ValueError(f"TRENDING_PRECOMPUTE_WINDOWS_MINUTES entries must be multiples of 60, got {parsed_window}")
+            validated_windows.append(parsed_window)
+
+        per_feed_limit = self._positive_int_setting("TRENDING_PRECOMPUTE_LIMIT", getattr(settings, "TRENDING_PRECOMPUTE_LIMIT", 500))
+        retention_hours = self._positive_int_setting("TRENDING_BUCKET_RETENTION_HOURS", getattr(settings, "TRENDING_BUCKET_RETENTION_HOURS", 24 * 31))
 
         feed_types = ["all"] + list(GeneralHoneypot.objects.filter(active=True).values_list("name", flat=True))
         normalized_feed_types = [feed_type.lower() for feed_type in feed_types]
 
-        for window_minutes in windows:
+        for window_minutes in validated_windows:
             for feed_type in normalized_feed_types:
                 snapshots = self._compute_snapshots(now, window_minutes, feed_type, per_feed_limit)
                 with transaction.atomic():

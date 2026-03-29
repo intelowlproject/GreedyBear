@@ -106,6 +106,14 @@ def _get_precomputed_attackers(window_minutes: int, feed_type: str, limit: int) 
     )[:limit]
 
 
+def _has_fresh_precomputed_snapshot(window_minutes: int, feed_type: str, current_window_end) -> bool:
+    return TrendingAttackerSnapshot.objects.filter(
+        window_minutes=window_minutes,
+        feed_type=feed_type,
+        computed_at__gte=current_window_end,
+    ).exists()
+
+
 @api_view([GET])
 @throttle_classes([FeedsThrottle])
 def feeds(request, feed_type, attack_type, prioritize, format_):
@@ -296,7 +304,7 @@ def feeds_trending(request):
     precomputed_limit = int(getattr(settings, "TRENDING_PRECOMPUTE_LIMIT", 500))
     use_precomputed = len(feed_types) == 1 and window_minutes in precomputed_windows and limit <= precomputed_limit
 
-    if use_precomputed:
+    if use_precomputed and _has_fresh_precomputed_snapshot(window_minutes, feed_types[0], current_window_end):
         attackers = _get_precomputed_attackers(window_minutes, feed_types[0], limit)
         return Response(
             _build_trending_response(
