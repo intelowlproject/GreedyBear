@@ -30,7 +30,7 @@ def update_activity_buckets_from_hits(hits: Iterable[Mapping[str, Any]]) -> int:
             continue
         try:
             ip_address(attacker_ip)
-        except AddressValueError:
+        except (AddressValueError, ValueError):
             continue
         key = (attacker_ip, str(feed_type).lower(), _bucket_start(timestamp))
         counters[key] += 1
