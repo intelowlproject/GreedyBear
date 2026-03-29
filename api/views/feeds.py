@@ -22,7 +22,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from api.serializers import ASNFeedsOrderingSerializer, TrendingAttackersRequestSerializer, parse_feed_types
-from api.throttles import FeedsAdvancedThrottle, FeedsThrottle, SharedFeedRateThrottle
+from api.throttles import FeedsAdvancedThrottle, FeedsThrottle, FeedsTrendingThrottle, SharedFeedRateThrottle
 from api.views.utils import (
     FeedRequestParams,
     asn_aggregated_queryset,
@@ -264,7 +264,7 @@ def feeds_asn(request):
 @api_view([GET])
 @authentication_classes([])
 @permission_classes([])
-@throttle_classes([FeedsThrottle])
+@throttle_classes([FeedsTrendingThrottle])
 def feeds_trending(request):
     """
     Retrieve trending attackers by comparing two hour-aligned windows
