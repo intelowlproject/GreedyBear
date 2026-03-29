@@ -2,10 +2,14 @@
 # See the file 'LICENSE' for copying permission.
 import hashlib
 import logging
+from collections import Counter
+from datetime import timedelta
 
 from certego_saas.apps.auth.backend import CookieTokenAuthentication
 from certego_saas.ext.pagination import CustomPageNumberPagination
+from django.conf import settings
 from django.core import signing
+from django.db.models import Sum
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import (
@@ -17,8 +21,8 @@ from rest_framework.decorators import (
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from api.serializers import ASNFeedsOrderingSerializer
-from api.throttles import FeedsAdvancedThrottle, FeedsThrottle, SharedFeedRateThrottle
+from api.serializers import ASNFeedsOrderingSerializer, TrendingAttackersRequestSerializer, parse_feed_types
+from api.throttles import FeedsAdvancedThrottle, FeedsThrottle, FeedsTrendingThrottle, SharedFeedRateThrottle
 from api.views.utils import (
     FeedRequestParams,
     asn_aggregated_queryset,
@@ -27,7 +31,8 @@ from api.views.utils import (
     get_valid_feed_types,
 )
 from greedybear.consts import GET
-from greedybear.models import ShareToken
+from greedybear.models import AttackerActivityBucket, ShareToken, TrendingAttackerSnapshot
+from greedybear.trending_utils import attacker_sort_tuple, build_ranked_attackers
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +45,73 @@ ALLOWED_UNAUTHENTICATED_QUERY_PARAMS = [
     "include_tor_exit_nodes",
     "prioritize",
 ]
+
+
+def _count_attackers_in_window(window_start, window_end, feed_types: list[str]) -> Counter:
+    queryset = AttackerActivityBucket.objects.filter(bucket_start__gte=window_start, bucket_start__lt=window_end)
+    if "all" not in feed_types:
+        queryset = queryset.filter(feed_type__in=feed_types)
+
+    return Counter(dict(queryset.values("attacker_ip").annotate(total=Sum("interaction_count")).values_list("attacker_ip", "total")))
+
+
+def _build_trending_response(
+    window_minutes: int,
+    feed_types: list[str],
+    current_window_start,
+    current_window_end,
+    previous_window_start,
+    previous_window_end,
+    attackers: list[dict],
+    data_source: str,
+):
+    return {
+        "window_minutes": window_minutes,
+        "feed_type": feed_types,
+        "current_window": {
+            "start": current_window_start,
+            "end": current_window_end,
+        },
+        "previous_window": {
+            "start": previous_window_start,
+            "end": previous_window_end,
+        },
+        "count": len(attackers),
+        "data_source": data_source,
+        "attackers": attackers,
+    }
+
+
+def _get_precomputed_attackers(window_minutes: int, feed_type: str, limit: int) -> list[dict]:
+    snapshot_rows = list(
+        TrendingAttackerSnapshot.objects.filter(window_minutes=window_minutes, feed_type=feed_type).values(
+            "attacker_ip",
+            "current_interactions",
+            "previous_interactions",
+            "interaction_delta",
+            "growth_score",
+            "current_rank",
+            "previous_rank",
+            "rank_delta",
+        )
+    )
+    return sorted(
+        snapshot_rows,
+        key=lambda row: attacker_sort_tuple(
+            row["attacker_ip"],
+            row["current_rank"],
+            row["current_interactions"],
+            row["previous_interactions"],
+        ),
+    )[:limit]
+
+
+def _has_fresh_precomputed_snapshot(window_minutes: int, feed_type: str, current_window_end) -> bool:
+    return TrendingAttackerSnapshot.objects.filter(
+        window_minutes=window_minutes,
+        feed_type=feed_type,
+        computed_at__gte=current_window_end,
+    ).exists()
 
 
 @api_view([GET])
@@ -195,6 +267,73 @@ def feeds_asn(request):
     asn_aggregates = asn_aggregated_queryset(iocs_qs, request, feed_params)
     data = list(asn_aggregates)
     return Response(data)
+
+
+@api_view([GET])
+@authentication_classes([])
+@permission_classes([])
+@throttle_classes([FeedsTrendingThrottle])
+def feeds_trending(request):
+    """
+    Retrieve trending attackers by comparing two hour-aligned windows
+    of equal duration: the current completed window and the immediately
+    preceding window.
+
+    Query params:
+        feed_type (str): comma-separated honeypot type names or 'all'. Default: 'all'.
+        window_minutes (int): Size of each comparison window in minutes. Default: 1440.
+        limit (int): Maximum number of attacker entries to return. Default: 10.
+    """
+    logger.info(f"request /api/feeds/trending/ with params: {request.query_params}")
+
+    valid_feed_types = get_valid_feed_types()
+    serializer = TrendingAttackersRequestSerializer(data=request.query_params, context={"valid_feed_types": valid_feed_types})
+    serializer.is_valid(raise_exception=True)
+    validated = serializer.validated_data
+
+    feed_types = parse_feed_types(validated["feed_type"])
+    window_minutes = int(validated["window_minutes"])
+    limit = int(validated["limit"])
+
+    current_window_end = timezone.now().replace(minute=0, second=0, microsecond=0)
+    current_window_start = current_window_end - timedelta(minutes=window_minutes)
+    previous_window_end = current_window_start
+    previous_window_start = previous_window_end - timedelta(minutes=window_minutes)
+
+    precomputed_windows = set(getattr(settings, "TRENDING_PRECOMPUTE_WINDOWS_MINUTES", []))
+    precomputed_limit = int(getattr(settings, "TRENDING_PRECOMPUTE_LIMIT", 500))
+    use_precomputed = len(feed_types) == 1 and window_minutes in precomputed_windows and limit <= precomputed_limit
+
+    if use_precomputed and _has_fresh_precomputed_snapshot(window_minutes, feed_types[0], current_window_end):
+        attackers = _get_precomputed_attackers(window_minutes, feed_types[0], limit)
+        return Response(
+            _build_trending_response(
+                window_minutes,
+                feed_types,
+                current_window_start,
+                current_window_end,
+                previous_window_start,
+                previous_window_end,
+                attackers,
+                "precomputed",
+            )
+        )
+
+    current_counts = _count_attackers_in_window(current_window_start, current_window_end, feed_types)
+    previous_counts = _count_attackers_in_window(previous_window_start, previous_window_end, feed_types)
+    attackers = build_ranked_attackers(current_counts, previous_counts, limit)
+    return Response(
+        _build_trending_response(
+            window_minutes,
+            feed_types,
+            current_window_start,
+            current_window_end,
+            previous_window_start,
+            previous_window_end,
+            attackers,
+            "aggregated",
+        )
+    )
 
 
 @api_view([GET])

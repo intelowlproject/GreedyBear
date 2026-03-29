@@ -8,7 +8,12 @@ import {
   NavbarToggler,
 } from "reactstrap";
 import { NavLink as RRNavLink } from "react-router-dom";
-import { MdHome, MdOutlineFeed, MdDashboard } from "react-icons/md";
+import {
+  MdHome,
+  MdOutlineFeed,
+  MdDashboard,
+  MdTrendingUp,
+} from "react-icons/md";
 import { RiBookReadFill } from "react-icons/ri";
 
 // lib
@@ -95,6 +100,12 @@ function AppHeader() {
               <NavLink className="d-flex-start-center" end to="/feeds">
                 <MdOutlineFeed />
                 <span className="ms-1">Feeds</span>
+              </NavLink>
+            </NavItem>
+            <NavItem>
+              <NavLink className="d-flex-start-center" end to="/feeds/trending">
+                <MdTrendingUp />
+                <span className="ms-1">Trending</span>
               </NavLink>
             </NavItem>
           </Nav>

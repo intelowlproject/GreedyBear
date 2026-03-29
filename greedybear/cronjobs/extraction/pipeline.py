@@ -8,6 +8,7 @@ from greedybear.cronjobs.repositories import (
     SensorRepository,
 )
 from greedybear.cronjobs.scoring.scoring_jobs import UpdateScores
+from greedybear.cronjobs.trending import update_activity_buckets_from_hits
 from greedybear.settings import (
     EXTRACTION_INTERVAL,
     INITIAL_EXTRACTION_TIMESPAN,
@@ -62,6 +63,15 @@ class ExtractionPipeline:
         for chunk in self.elastic_repo.search(self._minutes_back_to_lookup):
             ioc_records = []
             hits_by_honeypot = defaultdict(list)
+
+            try:
+                update_activity_buckets_from_hits(chunk)
+            except Exception as exc:
+                self.log.error(
+                    "Failed to update activity buckets from hits for current chunk: %s",
+                    exc,
+                    exc_info=True,
+                )
 
             # 2. Group by honeypot
             self.log.info("Grouping hits by honeypot type")

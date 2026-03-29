@@ -117,6 +117,7 @@ REST_FRAMEWORK = {
     # Throttling
     "DEFAULT_THROTTLE_RATES": {
         "feeds": os.environ.get("FEEDS_THROTTLE_RATE", "30/minute"),
+        "feeds_trending": os.environ.get("FEEDS_TRENDING_THROTTLE_RATE", "30/minute"),
         "feeds_advanced": os.environ.get("FEEDS_ADVANCED_THROTTLE_RATE", "100/minute"),
         "feeds_shared": os.environ.get("FEEDS_SHARED_THROTTLE_RATE", "10/minute"),
     },
@@ -464,6 +465,48 @@ CLUSTER_COWRIE_COMMAND_SEQUENCES = os.environ.get("CLUSTER_COWRIE_COMMAND_SEQUEN
 IOC_RETENTION = int(os.environ.get("IOC_RETENTION", "3650"))
 COWRIE_SESSION_RETENTION = int(os.environ.get("COWRIE_SESSION_RETENTION", "365"))
 COMMAND_SEQUENCE_RETENTION = int(os.environ.get("COMMAND_SEQUENCE_RETENTION", "365"))
+
+TRENDING_MAX_WINDOW_MINUTES = int(os.environ.get("TRENDING_MAX_WINDOW_MINUTES", str((24 * 31 * 60) // 2)))
+if TRENDING_MAX_WINDOW_MINUTES < 60:
+    raise ValueError(f"TRENDING_MAX_WINDOW_MINUTES must be >= 60, got {TRENDING_MAX_WINDOW_MINUTES}")
+if TRENDING_MAX_WINDOW_MINUTES % 60:
+    raise ValueError(f"TRENDING_MAX_WINDOW_MINUTES must be a multiple of 60, got {TRENDING_MAX_WINDOW_MINUTES}")
+
+_raw_trending_windows = [
+    value.strip() for value in os.environ.get("TRENDING_PRECOMPUTE_WINDOWS_MINUTES", f"{24 * 60},{7 * 24 * 60}").split(",") if value.strip()
+]
+if not _raw_trending_windows:
+    raise ValueError("TRENDING_PRECOMPUTE_WINDOWS_MINUTES must contain at least one value")
+
+TRENDING_PRECOMPUTE_WINDOWS_MINUTES = sorted({int(value) for value in _raw_trending_windows})
+for _window in TRENDING_PRECOMPUTE_WINDOWS_MINUTES:
+    if _window < 60:
+        raise ValueError(f"TRENDING_PRECOMPUTE_WINDOWS_MINUTES entries must be >= 60, got {_window}")
+    if _window % 60:
+        raise ValueError(f"TRENDING_PRECOMPUTE_WINDOWS_MINUTES entries must be multiples of 60, got {_window}")
+
+TRENDING_PRECOMPUTE_LIMIT = int(os.environ.get("TRENDING_PRECOMPUTE_LIMIT", "500"))
+if TRENDING_PRECOMPUTE_LIMIT < 1:
+    raise ValueError(f"TRENDING_PRECOMPUTE_LIMIT must be >= 1, got {TRENDING_PRECOMPUTE_LIMIT}")
+
+TRENDING_BUCKET_RETENTION_HOURS = int(os.environ.get("TRENDING_BUCKET_RETENTION_HOURS", str(24 * 31)))
+if TRENDING_BUCKET_RETENTION_HOURS < 1:
+    raise ValueError(f"TRENDING_BUCKET_RETENTION_HOURS must be >= 1, got {TRENDING_BUCKET_RETENTION_HOURS}")
+
+_trending_max_allowed_window_minutes = max(60, (TRENDING_BUCKET_RETENTION_HOURS * 60) // 2)
+if TRENDING_MAX_WINDOW_MINUTES > _trending_max_allowed_window_minutes:
+    raise ValueError(
+        "TRENDING_MAX_WINDOW_MINUTES cannot exceed half of retention horizon "
+        f"({_trending_max_allowed_window_minutes} minutes based on TRENDING_BUCKET_RETENTION_HOURS), "
+        f"got {TRENDING_MAX_WINDOW_MINUTES}"
+    )
+for _window in TRENDING_PRECOMPUTE_WINDOWS_MINUTES:
+    if _window > _trending_max_allowed_window_minutes:
+        raise ValueError(
+            "TRENDING_PRECOMPUTE_WINDOWS_MINUTES entries cannot exceed half of retention horizon "
+            f"({_trending_max_allowed_window_minutes} minutes based on TRENDING_BUCKET_RETENTION_HOURS), "
+            f"got {_window}"
+        )
 
 THREATFOX_API_KEY = os.environ.get("THREATFOX_API_KEY", "")
 ABUSEIPDB_API_KEY = os.environ.get("ABUSEIPDB_API_KEY", "")
