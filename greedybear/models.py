@@ -181,3 +181,45 @@ class WhatsMyIPDomain(models.Model):
 
     def __str__(self):
         return self.domain
+
+
+class Payload(models.Model):
+    """Stores metadata about captured malicious payloads from honeypots."""
+
+    sha256 = models.CharField(max_length=64, unique=True, db_index=True)
+    sha1 = models.CharField(max_length=40, blank=True, default="")
+    md5 = models.CharField(max_length=32, blank=True, default="")
+    file_size = models.BigIntegerField(blank=False)
+    file_type = models.CharField(max_length=128, blank=True, default="")
+    file_name = models.CharField(max_length=512, blank=True, default="")
+
+    first_seen = models.DateTimeField(blank=False, default=datetime.now)
+    last_seen = models.DateTimeField(blank=False, default=datetime.now)
+    times_seen = models.IntegerField(blank=False, default=1)
+
+    is_quarantined = models.BooleanField(blank=False, default=True)
+    storage_path = models.CharField(max_length=512, blank=True, default="")
+
+    # Relations
+    general_honeypot = models.ForeignKey(
+        GeneralHoneypot,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="payloads",
+    )
+    related_iocs = models.ManyToManyField(
+        IOC,
+        blank=True,
+        related_name="payloads",
+    )
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["sha256"]),
+            models.Index(fields=["first_seen"]),
+            models.Index(fields=["last_seen"]),
+        ]
+
+    def __str__(self):
+        return f"{self.sha256[:16]}... ({self.file_type or 'unknown type'})"
