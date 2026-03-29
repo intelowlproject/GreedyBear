@@ -5,4 +5,5 @@ from api.views.feeds import *
 from api.views.general_honeypot import *
 from api.views.health import *
 from api.views.news import *
+from api.views.payload import *
 from api.views.statistics import *

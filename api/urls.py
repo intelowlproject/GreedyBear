@@ -15,6 +15,10 @@ from api.views import (
     general_honeypot_list,
     health_view,
     news_view,
+    payload_detail,
+    payload_download,
+    payload_list,
+    payload_stats,
 )
 
 # Routers provide an easy way of automatically determining the URL conf.
@@ -33,6 +37,11 @@ urlpatterns = [
     path("general_honeypot", general_honeypot_list),
     path("news/", news_view),
     path("health/", health_view),
+    # Payload endpoints
+    path("payloads/", payload_list),
+    path("payloads/stats/", payload_stats),
+    path("payloads/<str:sha256>/", payload_detail),
+    path("payloads/<str:sha256>/download/", payload_download),
     # router viewsets
     path("", include(router.urls)),
     # certego_saas:
