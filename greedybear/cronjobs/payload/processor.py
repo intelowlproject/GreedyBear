@@ -7,10 +7,18 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
+# Try to import python-magic for better file type detection
+try:
+    import magic
+
+    MAGIC_AVAILABLE = True
+except ImportError:
+    MAGIC_AVAILABLE = False
+
 # Default chunk size for reading files (64 KB)
 DEFAULT_CHUNK_SIZE = 64 * 1024
 
-# Magic bytes for common file types (fallback when mimetypes fails)
+# Magic bytes for common file types (fallback when python-magic is unavailable)
 MAGIC_BYTES = {
     b"\x7fELF": "application/x-executable",
     b"MZ": "application/x-dosexec",
@@ -127,9 +135,10 @@ class PayloadProcessor:
         """
         Detect the MIME type of a file.
 
-        First attempts detection using the mimetypes module based on
-        file extension. Falls back to magic byte detection for
-        better accuracy with binary files.
+        Detection priority:
+        1. python-magic library (most accurate, uses libmagic)
+        2. Extension-based detection via mimetypes module
+        3. Manual magic byte detection (fallback)
 
         Args:
             file_path: Path to the file.
@@ -137,21 +146,54 @@ class PayloadProcessor:
         Returns:
             MIME type string, or "application/octet-stream" if unknown.
         """
-        # Try extension-based detection first
+        # Try python-magic first (most accurate)
+        if MAGIC_AVAILABLE:
+            try:
+                mime_type = self._detect_by_python_magic(file_path)
+                if mime_type and mime_type != "application/octet-stream":
+                    return mime_type
+            except Exception as e:
+                self.log.debug(f"python-magic detection failed for {file_path}: {e}")
+
+        # Try extension-based detection
         mime_type, _ = mimetypes.guess_type(str(file_path))
         if mime_type:
             return mime_type
 
-        # Fall back to magic byte detection
+        # Fall back to manual magic byte detection
         try:
             return self._detect_by_magic_bytes(file_path)
         except (OSError, PermissionError) as e:
             self.log.warning(f"Cannot read magic bytes from {file_path}: {e}")
             return "application/octet-stream"
 
+    def _detect_by_python_magic(self, file_path: Path) -> str:
+        """
+        Detect file type using python-magic library.
+
+        Uses libmagic for accurate file type detection based on
+        file contents rather than extension.
+
+        Args:
+            file_path: Path to the file.
+
+        Returns:
+            Detected MIME type.
+
+        Raises:
+            Exception: If python-magic fails to detect the file type.
+        """
+        if not MAGIC_AVAILABLE:
+            raise RuntimeError("python-magic is not installed")
+
+        mime = magic.Magic(mime=True)
+        return mime.from_file(str(file_path))
+
     def _detect_by_magic_bytes(self, file_path: Path) -> str:
         """
-        Detect file type using magic bytes.
+        Detect file type using manual magic bytes inspection.
+
+        Fallback method when python-magic is unavailable.
 
         Args:
             file_path: Path to the file.
@@ -162,8 +204,8 @@ class PayloadProcessor:
         with open(file_path, "rb") as f:
             header = f.read(16)
 
-        for magic, mime_type in MAGIC_BYTES.items():
-            if header.startswith(magic):
+        for magic_bytes, mime_type in MAGIC_BYTES.items():
+            if header.startswith(magic_bytes):
                 return mime_type
 
         return "application/octet-stream"

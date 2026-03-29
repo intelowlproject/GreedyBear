@@ -24,3 +24,5 @@ numpy==2.4.2
 datasketch==1.9.0
 
 feedparser==6.0.12
+
+python-magic==0.4.27

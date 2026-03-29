@@ -6,6 +6,7 @@ import re
 
 from certego_saas.apps.auth.backend import CookieTokenAuthentication
 from certego_saas.ext.pagination import CustomPageNumberPagination
+from certego_saas.ext.throttling import UserRateThrottle
 from django.conf import settings
 from django.http import FileResponse, Http404
 from rest_framework import status
@@ -13,12 +14,41 @@ from rest_framework.decorators import (
     api_view,
     authentication_classes,
     permission_classes,
+    throttle_classes,
 )
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from greedybear.consts import GET
 from greedybear.models import Payload, Statistics, ViewType
+
+
+class PayloadListRateThrottle(UserRateThrottle):
+    """Rate limit for payload list endpoint."""
+
+    rate = "100/hour"
+    scope = "payload_list"
+
+
+class PayloadDetailRateThrottle(UserRateThrottle):
+    """Rate limit for payload detail endpoint."""
+
+    rate = "200/hour"
+    scope = "payload_detail"
+
+
+class PayloadDownloadRateThrottle(UserRateThrottle):
+    """Strict rate limit for payload downloads."""
+
+    rate = "20/hour"
+    scope = "payload_download"
+
+
+class PayloadStatsRateThrottle(UserRateThrottle):
+    """Rate limit for payload stats endpoint."""
+
+    rate = "60/hour"
+    scope = "payload_stats"
 
 logger = logging.getLogger(__name__)
 
@@ -94,6 +124,7 @@ def _serialize_payload(payload: Payload, include_iocs: bool = False) -> dict:
 @api_view([GET])
 @authentication_classes([CookieTokenAuthentication])
 @permission_classes([IsAuthenticated])
+@throttle_classes([PayloadListRateThrottle])
 def payload_list(request):
     """
     List payloads with optional filtering and pagination.
@@ -171,6 +202,7 @@ def payload_list(request):
 @api_view([GET])
 @authentication_classes([CookieTokenAuthentication])
 @permission_classes([IsAuthenticated])
+@throttle_classes([PayloadDetailRateThrottle])
 def payload_detail(request, sha256: str):
     """
     Retrieve detailed information about a specific payload.
@@ -210,6 +242,7 @@ def payload_detail(request, sha256: str):
 @api_view([GET])
 @authentication_classes([CookieTokenAuthentication])
 @permission_classes([IsAuthenticated])
+@throttle_classes([PayloadDownloadRateThrottle])
 def payload_download(request, sha256: str):
     """
     Securely download a payload file.
@@ -306,6 +339,7 @@ def payload_download(request, sha256: str):
 @api_view([GET])
 @authentication_classes([CookieTokenAuthentication])
 @permission_classes([IsAuthenticated])
+@throttle_classes([PayloadStatsRateThrottle])
 def payload_stats(request):
     """
     Retrieve aggregated statistics about payloads.
