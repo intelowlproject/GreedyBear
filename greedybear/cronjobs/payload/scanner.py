@@ -47,18 +47,27 @@ class PayloadScanner:
 
     Recursively scans specified directories for files, filtering out
     ignored directories and optionally filtering by last scan time.
+    Symlinks are not followed to prevent infinite loops and security issues.
     """
 
-    def __init__(self, ignored_dirs: frozenset[str] | None = None):
+    def __init__(
+        self,
+        ignored_dirs: frozenset[str] | None = None,
+        follow_symlinks: bool = False,
+    ):
         """
         Initialize the PayloadScanner.
 
         Args:
             ignored_dirs: Set of directory names to ignore during scanning.
                           Defaults to IGNORED_DIRECTORIES if not provided.
+            follow_symlinks: Whether to follow symbolic links. Defaults to False
+                             for security reasons (prevents infinite loops and
+                             symlink attacks).
         """
         self.log = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
         self.ignored_dirs = ignored_dirs if ignored_dirs is not None else IGNORED_DIRECTORIES
+        self.follow_symlinks = follow_symlinks
 
     def _should_ignore_directory(self, dir_name: str) -> bool:
         """
