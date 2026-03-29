@@ -53,6 +53,34 @@ class FeedsThrottleTestCase(CustomTestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
 
+    @patch("api.throttles.FeedsTrendingThrottle.get_rate", return_value="1/minute")
+    def test_feeds_trending_throttled(self, mock_rate):
+        """Verify feeds_trending returns 429 after exceeding the trending rate limit."""
+        client = APIClient()
+        response = client.get("/api/feeds/trending/?window_minutes=60&limit=10&feed_type=all")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        response = client.get("/api/feeds/trending/?window_minutes=60&limit=10&feed_type=all")
+        self.assertEqual(response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
+
+    @patch("api.throttles.FeedsThrottle.get_rate", return_value="1/minute")
+    @patch("api.throttles.FeedsTrendingThrottle.get_rate", return_value="1/minute")
+    def test_feeds_trending_uses_dedicated_scope(self, mock_trending_rate, mock_feeds_rate):
+        """Verify feeds and feeds_trending counters are isolated via different throttle scopes."""
+        client = APIClient()
+
+        trending_response = client.get("/api/feeds/trending/?window_minutes=60&limit=10&feed_type=all")
+        self.assertEqual(trending_response.status_code, status.HTTP_200_OK)
+
+        feeds_response = client.get("/api/feeds/")
+        self.assertEqual(feeds_response.status_code, status.HTTP_200_OK)
+
+        trending_response = client.get("/api/feeds/trending/?window_minutes=60&limit=10&feed_type=all")
+        self.assertEqual(trending_response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
+
+        feeds_response = client.get("/api/feeds/")
+        self.assertEqual(feeds_response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
+
     def test_feeds_advanced_within_limit(self):
         """Verify feeds_advanced succeeds when within the rate limit."""
         response = self.client.get("/api/feeds/advanced/")
@@ -86,3 +114,8 @@ class FeedsThrottleTestCase(CustomTestCase):
         client = APIClient()
         response = client.get("/api/feeds/asn/")
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_feeds_trending_within_limit(self):
+        """Verify feeds_trending succeeds when within the default rate limit."""
+        response = self.client.get("/api/feeds/trending/?window_minutes=60&limit=10&feed_type=all")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
