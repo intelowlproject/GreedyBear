@@ -467,10 +467,15 @@ COMMAND_SEQUENCE_RETENTION = int(os.environ.get("COMMAND_SEQUENCE_RETENTION", "3
 
 TRENDING_MAX_WINDOW_MINUTES = int(os.environ.get("TRENDING_MAX_WINDOW_MINUTES", str(60 * 24 * 30)))
 TRENDING_PRECOMPUTE_WINDOWS_MINUTES = [
-    int(value) for value in os.environ.get("TRENDING_PRECOMPUTE_WINDOWS_MINUTES", f"{24 * 60},{7 * 24 * 60}").split(",") if value
+    int(value.strip())
+    for value in os.environ.get("TRENDING_PRECOMPUTE_WINDOWS_MINUTES", f"{24 * 60},{7 * 24 * 60}").split(",")
+    if value.strip()
 ]
 TRENDING_PRECOMPUTE_LIMIT = int(os.environ.get("TRENDING_PRECOMPUTE_LIMIT", "500"))
 TRENDING_BUCKET_RETENTION_HOURS = int(os.environ.get("TRENDING_BUCKET_RETENTION_HOURS", str(24 * 31)))
+_trending_max_allowed_window_minutes = max(60, (TRENDING_BUCKET_RETENTION_HOURS * 60) // 2)
+if TRENDING_MAX_WINDOW_MINUTES > _trending_max_allowed_window_minutes:
+    TRENDING_MAX_WINDOW_MINUTES = _trending_max_allowed_window_minutes
 
 THREATFOX_API_KEY = os.environ.get("THREATFOX_API_KEY", "")
 ABUSEIPDB_API_KEY = os.environ.get("ABUSEIPDB_API_KEY", "")

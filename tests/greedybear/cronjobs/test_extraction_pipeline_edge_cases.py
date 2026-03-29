@@ -60,6 +60,35 @@ class TestEdgeCases(E2ETestCase):
         # Scoring should be called with successful IOCs
         mock_scores.return_value.score_only.assert_called_once()
 
+    @patch("greedybear.cronjobs.extraction.pipeline.update_activity_buckets_from_hits", side_effect=Exception("Boom"))
+    @patch("greedybear.cronjobs.extraction.pipeline.UpdateScores")
+    @patch("greedybear.cronjobs.extraction.pipeline.ExtractionStrategyFactory")
+    def test_activity_bucket_update_failure_does_not_abort_extraction(self, mock_factory, mock_scores, _mock_update_activity):
+        pipeline = self._create_pipeline_with_real_factory()
+        pipeline.log = MagicMock()
+
+        hits = [
+            MockElasticHit({"src_ip": "2.2.2.2", "type": "SuccessHoneypot"}),
+        ]
+        pipeline.elastic_repo.search.return_value = [hits]
+        pipeline.ioc_repo.is_empty.return_value = False
+        pipeline.ioc_repo.is_ready_for_extraction.return_value = True
+
+        mock_success = MagicMock()
+        mock_success.ioc_records = [self._create_mock_ioc("2.2.2.2")]
+        mock_factory.return_value.get_strategy.return_value = mock_success
+
+        result = pipeline.execute()
+
+        self.assertEqual(result, 1)
+        mock_success.extract_from_hits.assert_called_once()
+        mock_scores.return_value.score_only.assert_called_once()
+        pipeline.log.error.assert_any_call(
+            "Failed to update activity buckets from hits for current chunk: %s",
+            _mock_update_activity.side_effect,
+            exc_info=True,
+        )
+
 
 class TestLargeBatches(E2ETestCase):
     """Tests for large batch processing using REAL strategies."""

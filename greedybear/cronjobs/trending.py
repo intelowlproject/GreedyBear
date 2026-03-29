@@ -5,8 +5,8 @@ from ipaddress import AddressValueError, ip_address
 from typing import Any
 
 from django.conf import settings
-from django.db import IntegrityError, transaction
-from django.db.models import F, Sum
+from django.db import connection, transaction
+from django.db.models import Sum
 from django.utils import timezone
 
 from greedybear.cronjobs.base import Cronjob
@@ -35,47 +35,25 @@ def update_activity_buckets_from_hits(hits: Iterable[Mapping[str, Any]]) -> int:
         key = (attacker_ip, str(feed_type).lower(), _bucket_start(timestamp))
         counters[key] += 1
 
-    created = []
-    with transaction.atomic():
-        for (attacker_ip, feed_type, bucket_start), interaction_count in counters.items():
-            updated = AttackerActivityBucket.objects.filter(
-                attacker_ip=attacker_ip,
-                feed_type=feed_type,
-                bucket_start=bucket_start,
-            ).update(interaction_count=F("interaction_count") + interaction_count)
-            if not updated:
-                created.append(
-                    AttackerActivityBucket(
-                        attacker_ip=attacker_ip,
-                        feed_type=feed_type,
-                        bucket_start=bucket_start,
-                        interaction_count=interaction_count,
-                    )
-                )
-        if created:
-            try:
-                AttackerActivityBucket.objects.bulk_create(created)
-            except IntegrityError:
-                for row in created:
-                    updated = AttackerActivityBucket.objects.filter(
-                        attacker_ip=row.attacker_ip,
-                        feed_type=row.feed_type,
-                        bucket_start=row.bucket_start,
-                    ).update(interaction_count=F("interaction_count") + row.interaction_count)
-                    if not updated:
-                        try:
-                            AttackerActivityBucket.objects.create(
-                                attacker_ip=row.attacker_ip,
-                                feed_type=row.feed_type,
-                                bucket_start=row.bucket_start,
-                                interaction_count=row.interaction_count,
-                            )
-                        except IntegrityError:
-                            AttackerActivityBucket.objects.filter(
-                                attacker_ip=row.attacker_ip,
-                                feed_type=row.feed_type,
-                                bucket_start=row.bucket_start,
-                            ).update(interaction_count=F("interaction_count") + row.interaction_count)
+    if not counters:
+        return 0
+
+    table_name = AttackerActivityBucket._meta.db_table
+    quoted_table_name = connection.ops.quote_name(table_name)
+    values_sql = ",".join(["(%s, %s, %s, %s)"] * len(counters))
+    params = []
+    for (attacker_ip, feed_type, bucket_start), interaction_count in counters.items():
+        params.extend([attacker_ip, feed_type, bucket_start, interaction_count])
+
+    query = f"""
+        INSERT INTO {quoted_table_name} (attacker_ip, feed_type, bucket_start, interaction_count)
+        VALUES {values_sql}
+        ON CONFLICT (attacker_ip, feed_type, bucket_start)
+        DO UPDATE
+        SET interaction_count = {quoted_table_name}.interaction_count + EXCLUDED.interaction_count
+    """
+    with connection.cursor() as cursor:
+        cursor.execute(query, params)
 
     return len(counters)
 
