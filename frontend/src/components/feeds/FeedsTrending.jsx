@@ -6,7 +6,6 @@ import {
   Col,
   Label,
   FormGroup,
-  Row,
   Input,
   Table,
   Alert,
@@ -209,12 +208,12 @@ export default function FeedsTrending() {
                         disabled={trendingLoading}
                         title="Reset filters"
                         aria-label="Reset filters"
-                        onClick={async () => {
-                          await formik.resetForm({
+                        onClick={() => {
+                          formik.resetForm({
                             values: DEFAULT_TRENDING_VALUES,
                           });
                           setTrendingFilters(DEFAULT_TRENDING_VALUES);
-                          await fetchTrending(DEFAULT_TRENDING_VALUES);
+                          fetchTrending(DEFAULT_TRENDING_VALUES);
                         }}
                       >
                         <MdFilterAltOff />
