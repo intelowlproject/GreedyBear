@@ -264,7 +264,7 @@ def feeds_asn(request):
 @api_view([GET])
 @authentication_classes([])
 @permission_classes([])
-@throttle_classes([])
+@throttle_classes([FeedsThrottle])
 def feeds_trending(request):
     """
     Retrieve trending attackers by comparing a custom rolling time window
