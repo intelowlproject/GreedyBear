@@ -66,6 +66,7 @@ class ProcessedPayload:
         file_type: MIME type or detected file type.
         file_name: Original filename.
         modified_time: Last modification time.
+        honeypot: Name of the source honeypot (e.g., 'dionaea', 'cowrie').
     """
 
     path: Path
@@ -76,6 +77,7 @@ class ProcessedPayload:
     file_type: str
     file_name: str
     modified_time: datetime
+    honeypot: str = ""
 
 
 class PayloadProcessor:
@@ -242,7 +244,11 @@ class PayloadProcessor:
         """
         return datetime.fromtimestamp(file_path.stat().st_mtime)
 
-    def process(self, file_path: Path | str) -> ProcessedPayload:
+    def process(
+        self,
+        file_path: Path | str,
+        honeypot: str = "",
+    ) -> ProcessedPayload:
         """
         Fully process a payload file.
 
@@ -251,6 +257,7 @@ class PayloadProcessor:
 
         Args:
             file_path: Path to the file to process.
+            honeypot: Name of the source honeypot for attribution.
 
         Returns:
             ProcessedPayload containing all extracted metadata and hashes.
@@ -262,7 +269,7 @@ class PayloadProcessor:
         """
         file_path = Path(file_path)
 
-        self.log.debug(f"Processing payload: {file_path}")
+        self.log.debug(f"Processing payload: {file_path} (honeypot: {honeypot or 'unknown'})")
 
         # Compute hashes (single pass through the file)
         hashes = self.compute_hashes(file_path)
@@ -284,6 +291,7 @@ class PayloadProcessor:
             file_type=file_type,
             file_name=file_path.name,
             modified_time=modified_time,
+            honeypot=honeypot,
         )
 
         self.log.debug(f"Processed payload: {hashes.sha256[:16]}... ({file_type})")

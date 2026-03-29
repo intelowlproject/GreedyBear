@@ -321,19 +321,29 @@ def payload_download(request, sha256: str):
         if sanitized:
             safe_filename = f"{sha256_lower[:8]}_{sanitized}"
 
-    # Return file with security headers
-    response = FileResponse(
-        open(file_path, "rb"),
-        content_type="application/octet-stream",
-        as_attachment=True,
-        filename=safe_filename,
-    )
+    # Open file with context manager - FileResponse will close it when done
+    # Using a file handle that FileResponse takes ownership of
+    file_handle = open(file_path, "rb")
+    try:
+        response = FileResponse(
+            file_handle,
+            content_type="application/octet-stream",
+            as_attachment=True,
+            filename=safe_filename,
+        )
+        # FileResponse now owns the file handle and will close it
+        # Set file_to_stream to ensure proper cleanup
+        response.file_to_stream = file_handle
 
-    # Add security headers to prevent browser execution
-    response["X-Content-Type-Options"] = "nosniff"
-    response["Content-Security-Policy"] = "default-src 'none'"
+        # Add security headers to prevent browser execution
+        response["X-Content-Type-Options"] = "nosniff"
+        response["Content-Security-Policy"] = "default-src 'none'"
 
-    return response
+        return response
+    except Exception:
+        # Ensure file handle is closed if FileResponse creation fails
+        file_handle.close()
+        raise
 
 
 @api_view([GET])

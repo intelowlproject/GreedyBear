@@ -141,7 +141,10 @@ class PayloadExtractionPipeline:
             Returns (None, False) if processing failed.
         """
         try:
-            processed = self.processor.process(scanned_file.path)
+            processed = self.processor.process(
+                scanned_file.path,
+                honeypot=scanned_file.honeypot,
+            )
 
             if self._is_duplicate(processed.sha256):
                 return processed, True
@@ -155,7 +158,7 @@ class PayloadExtractionPipeline:
 
     def execute(
         self,
-        directories: list[str | Path],
+        directories: list[str | Path] | dict[str, str | Path],
         last_scan_time: datetime | None = None,
     ) -> ExtractionResult:
         """
@@ -166,7 +169,11 @@ class PayloadExtractionPipeline:
         deduplicates based on SHA256.
 
         Args:
-            directories: List of directory paths to scan for payloads.
+            directories: Either a list of directory paths to scan, or a dict
+                         mapping honeypot names to directory paths for source
+                         attribution.
+                         Example: {"dionaea": "/data/dionaea/binaries",
+                                   "cowrie": "/data/cowrie/downloads"}
             last_scan_time: Optional datetime to filter files.
                             Only files modified after this time are processed.
 
@@ -175,7 +182,8 @@ class PayloadExtractionPipeline:
         """
         result = ExtractionResult()
 
-        self.log.info(f"Starting payload extraction from {len(directories)} directories")
+        dir_count = len(directories) if isinstance(directories, (list, dict)) else 1
+        self.log.info(f"Starting payload extraction from {dir_count} directories")
 
         if last_scan_time:
             self.log.info(f"Filtering files modified after {last_scan_time}")

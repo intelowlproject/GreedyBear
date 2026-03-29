@@ -32,11 +32,13 @@ class ScannedFile:
         path: Absolute path to the file.
         size: File size in bytes.
         modified_time: Last modification time as datetime.
+        honeypot: Name of the source honeypot (e.g., 'dionaea', 'cowrie').
     """
 
     path: Path
     size: int
     modified_time: datetime
+    honeypot: str = ""
 
 
 class PayloadScanner:
@@ -83,12 +85,17 @@ class PayloadScanner:
         stat_result = file_path.stat()
         return datetime.fromtimestamp(stat_result.st_mtime)
 
-    def _create_scanned_file(self, file_path: Path) -> ScannedFile:
+    def _create_scanned_file(
+        self,
+        file_path: Path,
+        honeypot: str = "",
+    ) -> ScannedFile:
         """
         Create a ScannedFile instance from a file path.
 
         Args:
             file_path: Path to the file.
+            honeypot: Name of the source honeypot.
 
         Returns:
             ScannedFile instance with file metadata.
@@ -98,12 +105,14 @@ class PayloadScanner:
             path=file_path,
             size=stat_result.st_size,
             modified_time=datetime.fromtimestamp(stat_result.st_mtime),
+            honeypot=honeypot,
         )
 
     def scan_directory(
         self,
         directory: str | Path,
         last_scan_time: datetime | None = None,
+        honeypot: str = "",
     ) -> Iterator[ScannedFile]:
         """
         Recursively scan a directory for payload files.
@@ -112,6 +121,7 @@ class PayloadScanner:
             directory: Path to the directory to scan.
             last_scan_time: Optional datetime to filter files.
                             Only files modified after this time are returned.
+            honeypot: Name of the source honeypot for attribution.
 
         Yields:
             ScannedFile instances for each discovered file.
@@ -130,7 +140,7 @@ class PayloadScanner:
             self.log.warning(f"Path is not a directory: {directory}")
             return
 
-        self.log.info(f"Scanning directory: {directory}")
+        self.log.info(f"Scanning directory: {directory} (honeypot: {honeypot or 'unknown'})")
         file_count = 0
 
         for root, dirs, files in os.walk(directory_path):
@@ -141,7 +151,7 @@ class PayloadScanner:
                 file_path = Path(root) / file_name
 
                 try:
-                    scanned_file = self._create_scanned_file(file_path)
+                    scanned_file = self._create_scanned_file(file_path, honeypot)
 
                     # Filter by last scan time if provided
                     if last_scan_time is not None:
@@ -159,22 +169,29 @@ class PayloadScanner:
 
     def scan_directories(
         self,
-        directories: list[str | Path],
+        directories: list[str | Path] | dict[str, str | Path],
         last_scan_time: datetime | None = None,
     ) -> Iterator[ScannedFile]:
         """
         Scan multiple directories for payload files.
 
         Args:
-            directories: List of directory paths to scan.
+            directories: Either a list of directory paths to scan, or a dict
+                         mapping honeypot names to directory paths.
+                         Example: {"dionaea": "/data/dionaea/binaries",
+                                   "cowrie": "/data/cowrie/downloads"}
             last_scan_time: Optional datetime to filter files.
                             Only files modified after this time are returned.
 
         Yields:
             ScannedFile instances for each discovered file across all directories.
         """
-        for directory in directories:
-            yield from self.scan_directory(directory, last_scan_time)
+        if isinstance(directories, dict):
+            for honeypot, directory in directories.items():
+                yield from self.scan_directory(directory, last_scan_time, honeypot)
+        else:
+            for directory in directories:
+                yield from self.scan_directory(directory, last_scan_time)
 
     def count_files(
         self,
