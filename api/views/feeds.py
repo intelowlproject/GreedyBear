@@ -267,8 +267,9 @@ def feeds_asn(request):
 @throttle_classes([FeedsThrottle])
 def feeds_trending(request):
     """
-    Retrieve trending attackers by comparing a custom rolling time window
-    against the immediately preceding window of equal duration.
+    Retrieve trending attackers by comparing two hour-aligned windows
+    of equal duration: the current completed window and the immediately
+    preceding window.
 
     Query params:
         feed_type (str): comma-separated honeypot type names or 'all'. Default: 'all'.
@@ -292,7 +293,8 @@ def feeds_trending(request):
     previous_window_start = previous_window_end - timedelta(minutes=window_minutes)
 
     precomputed_windows = set(getattr(settings, "TRENDING_PRECOMPUTE_WINDOWS_MINUTES", []))
-    use_precomputed = len(feed_types) == 1 and window_minutes in precomputed_windows
+    precomputed_limit = int(getattr(settings, "TRENDING_PRECOMPUTE_LIMIT", 500))
+    use_precomputed = len(feed_types) == 1 and window_minutes in precomputed_windows and limit <= precomputed_limit
 
     if use_precomputed:
         attackers = _get_precomputed_attackers(window_minutes, feed_types[0], limit)
