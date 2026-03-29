@@ -26,11 +26,10 @@ class FeedsTrendingViewTestCase(CustomTestCase):
         )
 
         with self.settings(TRENDING_PRECOMPUTE_WINDOWS_MINUTES=[24 * 60, 7 * 24 * 60]):
-            with self.subTest("aggregated endpoint"):
-                from unittest.mock import patch
+            from unittest.mock import patch
 
-                with patch("api.views.feeds.timezone.now", return_value=now):
-                    response = self.client.get("/api/feeds/trending/?window_minutes=180&limit=10&feed_type=cowrie")
+            with patch("api.views.feeds.timezone.now", return_value=now):
+                response = self.client.get("/api/feeds/trending/?window_minutes=180&limit=10&feed_type=cowrie")
         self.assertEqual(response.status_code, 200)
 
         payload = response.json()
