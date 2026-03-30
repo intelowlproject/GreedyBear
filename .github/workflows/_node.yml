@@ -127,13 +127,13 @@ jobs:
         run: |
 
           if [[ '${{ inputs.use_eslint }}' != 'false' ]]; then
-            pnpm add -D eslint
+            pnpm add -D eslint@8
           fi
           if [[ '${{ inputs.use_prettier }}' != 'false' ]]; then
-            pnpm add -D prettier
+            pnpm add -D prettier@3
           fi
           if [[ '${{ inputs.use_stylelint }}' != 'false' ]]; then
-            pnpm add -D stylelint
+            pnpm add -D stylelint@16
           fi
         working-directory: ${{ inputs.working_directory }}
 
