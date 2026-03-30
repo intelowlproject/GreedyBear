@@ -6,7 +6,8 @@
   "packageManager": "pnpm@10.32.1",
   "pnpm": {
     "overrides": {
-      "d3-color": "^3.1.0"
+      "d3-color": "^3.1.0",
+      "@babel/runtime": "^7.23.2"
     }
   },
   "config": {
