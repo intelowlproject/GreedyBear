@@ -45,6 +45,22 @@ class ASRepositoryTestCase(CustomTestCase):
         as_obj = self.repo.get_or_create(asn_number, "intelowl/@GB")
         self.assertEqual(as_obj.name, "intelowl/@GB")
 
+    def test_preloaded_asn_updates_missing_name(self):
+        """An ASN preloaded into the cache with an empty name should still be updated."""
+        asn_number = 64510
+        AutonomousSystem.objects.create(asn=asn_number, name="")
+
+        # Re-initialize the repo so the DB object is preloaded into the cache
+        self.repo = ASRepository()
+        self.assertIn(asn_number, self.repo._cache)
+
+        as_obj = self.repo.get_or_create(asn_number, "CacheUpdateTest")
+        self.assertEqual(as_obj.name, "CacheUpdateTest")
+
+        # Verify it was updated in the database
+        db_obj = AutonomousSystem.objects.get(asn=asn_number)
+        self.assertEqual(db_obj.name, "CacheUpdateTest")
+
     def test_logging_on_create_and_update(self):
         """Ensure the logger logs info messages when creating or updating ASNs."""
         asn_number = 64504
