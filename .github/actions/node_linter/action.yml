@@ -28,7 +28,7 @@ runs:
     - name: Lint with prettier
       run: |
         if [[ ${{ inputs.use_prettier }} != 'false' ]]; then
-          npm run formatter
+          pnpm run formatter
         else
           echo "Skipping prettier"
         fi
@@ -38,8 +38,8 @@ runs:
     - name: Lint with eslint
       run: |
         if [[ ${{ inputs.use_eslint }} != 'false' ]]; then
-          npm run lint-config-install
-          npm run lint
+          pnpm run lint-config-install
+          pnpm run lint
         else
           echo "Skipping eslint"
         fi
@@ -49,8 +49,8 @@ runs:
     - name: Lint with stylelint
       run: |
         if [[ ${{ inputs.use_stylelint }} != 'false' ]]; then
-          npm rum lint-scss-config-install
-          npm run lint-scss
+          pnpm run lint-scss-config-install
+          pnpm run lint-scss
         else
           echo "Skipping stylelint"
         fi

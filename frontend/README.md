@@ -44,16 +44,16 @@ you need to use `CRA dev server` on your host machine to serve pages when doing 
 
 - If you have not `node-js` installed, you have to do that. Follow the guide [here](https://www.digitalocean.com/community/tutorials/how-to-install-node-js-on-ubuntu-20-04). We tested this with NodeJS >=16.6
 
-- Install npm packages locally
+- Install pnpm packages locally
 
 ```bash
-cd ./frontend && npm install
+cd ./frontend && pnpm install
 ```
 
 - Start CRA dev server:
 
 ```bash
-npm start
+pnpm start
 ```
 
 - Now you can access the auto-reloading frontend on `http://localhost:3001`. It acts as proxy for API requests to original app web server.

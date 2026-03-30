@@ -103,25 +103,42 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node_version }}
-          cache: 'npm'
-          cache-dependency-path: ${{ inputs.working_directory }}/package-lock.json
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+          run_install: false
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: |
+          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Setup pnpm cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
 
       - name: Add dependencies
         run: |
 
           if [[ '${{ inputs.use_eslint }}' != 'false' ]]; then
-            npm i -D --package-lock-only eslint
+            pnpm add -D eslint
           fi
           if [[ '${{ inputs.use_prettier }}' != 'false' ]]; then
-            npm i -D --package-lock-only prettier
+            pnpm add -D prettier
           fi
           if [[ '${{ inputs.use_stylelint }}' != 'false' ]]; then
-            npm i -D --package-lock-only stylelint
+            pnpm add -D stylelint
           fi
         working-directory: ${{ inputs.working_directory }}
 
       - name: Install packages
-        run: npm ci
+        run: pnpm install --frozen-lockfile
         working-directory: ${{ inputs.working_directory }}
 
       - name: Run linters
@@ -167,9 +184,9 @@ jobs:
         id: vitest-tests
         run: |
           if [[ '${{ inputs.use_coverage }}' != 'false' ]]; then
-            CMD="npm run test-coverage"
+            CMD="pnpm run test-coverage"
           else
-            CMD="npm test"
+            CMD="pnpm test"
           fi
           echo "Running command: ${CMD}"
           if [[ '${{ inputs.use_coverage }}' != 'false' ]] && [[ '${{ inputs.upload_coverage }}' != 'false' ]]; then

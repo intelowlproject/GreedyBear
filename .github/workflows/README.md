@@ -38,9 +38,9 @@ It is composed of nine steps:
 1. **Check out latest commit for current branch** - This step checks out the latest commit for the current branch of the repository. To do so, it uses GitHub's [**checkout**](https://github.com/actions/checkout) action with no parameters.
 2. **Set up Node.js** - This step sets Node.js up downloading binaries and project's dependencies. This is done using the GitHub's [**setup-node**](https://github.com/actions/setup-node) action which also allows to cache and restore the project dependencies. It's used with the following parameters:
    1. **node-version** - Node.js version to use - It is set according to *node_version* input variable.
-   2. **cache** - Which package manager used to install and cache packages - It is set to `npm`.
-   3. **cache-dependency-path** - Path to the dependency file: `package-lock.json`, `yarn.lock` etc. It is set to `<working_directory>/package-lock.json`, where *working_directory* is the input variable.
-3. **Add dependencies** - This step adds additional dependencies to the `package-lock.json` file. Specifically, these packages are added to the **devDependencies** part of the aforementioned file. Which packages will be added is chosen accordingly to input variables:
+   2. **cache** - Which package manager used to install and cache packages - It is set to `pnpm`.
+   3. **cache-dependency-path** - Path to the dependency file: `pnpm-lock.yaml`, `yarn.lock` etc. It is set to `<working_directory>/pnpm-lock.yaml`, where *working_directory* is the input variable.
+3. **Add dependencies** - This step adds additional dependencies to the `pnpm-lock.yaml` file. Specifically, these packages are added to the **devDependencies** part of the aforementioned file. Which packages will be added is chosen accordingly to input variables:
    1. *use_jest*
    2. *use_react*
    3. *use_eslint*
@@ -59,7 +59,7 @@ It is composed of nine steps:
 
 * **node_versions** - Required - An array of Node.js versions to use.
 * **working_directory** - Required - Path to the `package.json` file
-* **check_packages_licenses** - Optional - Whether to check npm packages licenses or not. By default it is set to true.
+* **check_packages_licenses** - Optional - Whether to check pnpm packages licenses or not. By default it is set to true.
 * **use_jest** - Optional - Whether to use Jest test suite or not. By default it is set to false.
 * **use_react** - Optional - Whether react is used by the project or not. By default it is set to false.
 * **use_eslint** - Optional - Whether to use ESlint linter or not. By default it is set to true

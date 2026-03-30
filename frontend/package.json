@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "packageManager": "pnpm@10.32.1",
   "config": {
     "eslint": ".github/configurations/node_linters/eslint/.eslintrc.json",
     "stylelint": ".github/configurations/node_linters/stylelint/.stylelintrc.json",
@@ -33,14 +34,14 @@
     "preview": "vite preview",
     "test": "vitest",
     "test-coverage": "vitest run --coverage",
-    "lint-config-install": "cd ../.github/configurations/node_linters/eslint && npm i",
+    "lint-config-install": "cd ../.github/configurations/node_linters/eslint && pnpm i",
     "lint": "eslint 'src/**/*.{js,jsx}' 'tests/**/*.{js,jsx}'",
-    "lint-fix": "npm run lint -- --fix",
-    "lint-scss-config-install": "cd ../.github/configurations/node_linters/stylelint && npm i",
+    "lint-fix": "pnpm run lint -- --fix",
+    "lint-scss-config-install": "cd ../.github/configurations/node_linters/stylelint && pnpm i",
     "lint-scss": "stylelint --config ../.github/configurations/node_linters/stylelint/.stylelintrc.json 'src/styles/**/*.{css,scss}'",
-    "lint-scss-fix": "npm run lint-scss -- --fix",
+    "lint-scss-fix": "pnpm run lint-scss -- --fix",
     "formatter": "prettier 'src/**/*.{js,jsx}' 'tests/**/*.{js,jsx}' 'src/styles/*.{css,scss}' --check",
-    "formatter-fix": "npm run formatter -- --write"
+    "formatter-fix": "pnpm run formatter -- --write"
   },
   "overrides": {
     "d3-color": "^3.1.0"

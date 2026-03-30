@@ -15,13 +15,13 @@ FROM node:lts-alpine3.22 AS frontend-build
 WORKDIR /app
 
 # install dependencies first for layer caching
-COPY frontend/package.json frontend/package-lock.json ./
-RUN npm ci
+COPY frontend/package.json frontend/pnpm-lock.yaml ./
+RUN npm install -g pnpm@10.32.1 && pnpm install --frozen-lockfile
 
 # copy source code and build
 COPY frontend/ .
 COPY --from=uv /.env.local .
-RUN VITE_BASE_URL=/static/reactapp/ npm run build
+RUN VITE_BASE_URL=/static/reactapp/ pnpm run build
 
 
 ## ------------------------------- Production Stage ------------------------------ ##
