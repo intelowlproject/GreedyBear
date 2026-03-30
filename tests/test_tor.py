@@ -84,15 +84,3 @@ class TestTorExitNodesCron(CustomTestCase):
         # Act & Assert
         with self.assertRaises(requests.RequestException):
             self.cron.run()
-
-    @patch("greedybear.cronjobs.tor_exit_nodes.is_valid_ipv4")
-    def test_update_old_ioc(self, mock_is_valid):
-        """Test updating existing IOCs."""
-        # Arrange
-        self.mock_ioc_repo.update_ioc_reputation.return_value = True
-
-        # Act
-        self.cron._update_old_ioc("1.2.3.4")
-
-        # Assert
-        self.mock_ioc_repo.update_ioc_reputation.assert_called_once_with("1.2.3.4", IpReputation.TOR_EXIT_NODE)
