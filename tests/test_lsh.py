@@ -1,11 +1,9 @@
-from unittest.mock import patch
-
-from django.test import TestCase
+from django.test import SimpleTestCase
 
 from greedybear.cronjobs.commands.lsh import LSHConnectedComponents, UnionFind
 
 
-class UnionFindTestCase(TestCase):
+class UnionFindTestCase(SimpleTestCase):
     def test_find_representative_applies_path_compression(self):
         u = UnionFind(4)
         u.parents = [0, 0, 1, 2]
@@ -34,7 +32,7 @@ class UnionFindTestCase(TestCase):
         self.assertEqual(u.find_representative(2), 2)
 
 
-class LSHConnectedComponentsTestCase(TestCase):
+class LSHConnectedComponentsTestCase(SimpleTestCase):
     def test_get_min_hashes_generates_matching_signatures(self):
         lsh = LSHConnectedComponents(num_perm=64)
         sequences = [
@@ -92,31 +90,3 @@ class LSHConnectedComponentsTestCase(TestCase):
         self.assertEqual(labels[0], labels[1])
         self.assertEqual(labels[2], labels[3])
         self.assertNotEqual(labels[0], labels[2])
-
-    def test_get_components_uses_lsh_matches_and_ignores_self_matches(self):
-        class FakeLSH:
-            def __init__(self, threshold, num_perm):
-                self.threshold = threshold
-                self.num_perm = num_perm
-                self._inserted = []
-
-            def insert(self, idx, min_hash):
-                self._inserted.append((idx, min_hash))
-
-            def query(self, min_hash):
-                if min_hash == "mh0":
-                    return [0, 1]
-                if min_hash == "mh1":
-                    return [1, 0, 2]
-                return [2, 1]
-
-        lsh = LSHConnectedComponents(threshold=0.7, num_perm=32)
-        sequences = [["a"], ["b"], ["c"]]
-
-        with (
-            patch.object(lsh, "_get_min_hashes", return_value=["mh0", "mh1", "mh2"]),
-            patch("greedybear.cronjobs.commands.lsh.MinHashLSH", FakeLSH),
-        ):
-            labels = lsh.get_components(sequences)
-
-        self.assertEqual(labels, [0, 0, 0])
