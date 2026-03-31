@@ -1,5 +1,6 @@
-from unittest import TestCase
 from unittest.mock import patch
+
+from django.test import TestCase
 
 from greedybear.cronjobs.commands.lsh import LSHConnectedComponents, UnionFind
 
@@ -22,6 +23,15 @@ class UnionFindTestCase(TestCase):
 
         self.assertEqual(u.find_representative(0), u.find_representative(1))
         self.assertNotEqual(u.find_representative(0), u.find_representative(2))
+
+    def test_union_same_element(self):
+        u = UnionFind(3)
+
+        u.union(1, 1)
+
+        self.assertEqual(u.find_representative(1), 1)
+        self.assertEqual(u.find_representative(0), 0)
+        self.assertEqual(u.find_representative(2), 2)
 
 
 class LSHConnectedComponentsTestCase(TestCase):
@@ -53,6 +63,20 @@ class LSHConnectedComponentsTestCase(TestCase):
     def test_get_components_returns_empty_for_empty_input(self):
         labels = LSHConnectedComponents().get_components([])
         self.assertEqual(labels, [])
+
+    def test_get_components_single_element_input(self):
+        sequences = [["a", "b", "c"]]
+        labels = LSHConnectedComponents().get_components(sequences)
+        self.assertEqual(labels, [0])
+
+    def test_get_components_all_identical_sequences(self):
+        sequences = [
+            ["same", "sequence"],
+            ["same", "sequence"],
+            ["same", "sequence"],
+        ]
+        labels = LSHConnectedComponents().get_components(sequences)
+        self.assertEqual(labels, [0, 0, 0])
 
     def test_get_components_groups_similar_sequences(self):
         sequences = [
