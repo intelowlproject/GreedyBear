@@ -18,7 +18,7 @@ dependencies = [
     "psycopg2-binary==2.9.11",
     # ML / data science
     "scikit-learn==1.8.0",
-    "pandas==3.0.1",
+    "pandas==3.0.2",
     "numpy==2.4.3",
     "joblib==1.5.3",
     "datasketch==1.9.0",
