@@ -12,11 +12,25 @@ import {
 } from "../constants/api";
 import { AUTHENTICATION_STATUSES } from "../constants";
 
+const INITIAL_USER = {
+  full_name: "",
+  first_name: "",
+  last_name: "",
+  email: "",
+};
+
 // hook/ store see: https://github.com/pmndrs/zustand
 const useAuthStore = create((set, get) => ({
-  user: { full_name: "", first_name: "", last_name: "", email: "" },
+  user: INITIAL_USER,
   isSuperuser: false,
   isAuthenticated: AUTHENTICATION_STATUSES.FALSE,
+  reset: () => {
+    set({
+      isAuthenticated: AUTHENTICATION_STATUSES.FALSE,
+      user: INITIAL_USER,
+      isSuperuser: false,
+    });
+  },
   checkAuthentication: async () => {
     try {
       const resp = await axios.get(CHECK_AUTHENTICATION_URI, {
@@ -31,8 +45,8 @@ const useAuthStore = create((set, get) => ({
         set({ isAuthenticated: AUTHENTICATION_STATUSES.TRUE });
       }
     } catch (err) {
-      if (get().isAuthenticated === AUTHENTICATION_STATUSES.TRUE) {
-        set({ isAuthenticated: AUTHENTICATION_STATUSES.FALSE });
+      if (get().isAuthenticated !== AUTHENTICATION_STATUSES.FALSE) {
+        get().reset();
       }
     }
   },
@@ -73,7 +87,7 @@ const useAuthStore = create((set, get) => ({
     logoutUser: async () => {
       set({ isAuthenticated: AUTHENTICATION_STATUSES.PENDING });
       const onLogoutCb = () => {
-        set({ isAuthenticated: AUTHENTICATION_STATUSES.FALSE });
+        get().reset();
         addToast("Logged out!", null, "info");
       };
       return axios

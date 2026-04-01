@@ -6,10 +6,13 @@ from certego_saas.apps.user.models import User
 from django.test import TestCase, TransactionTestCase
 from django_test_migrations.migrator import Migrator
 
+from greedybear.enums import IpReputation
 from greedybear.models import (
     IOC,
+    AutonomousSystem,
     CommandSequence,
     CowrieSession,
+    Credential,
     GeneralHoneypot,
     IocType,
 )
@@ -20,6 +23,7 @@ class CustomTestCase(TestCase):
     def setUpTestData(cls):
         super().setUpTestData()
 
+        cls.as_obj, _ = AutonomousSystem.objects.get_or_create(asn="12345", defaults={"name": "greedybear"})
         cls.heralding = GeneralHoneypot.objects.get_or_create(name="Heralding", defaults={"active": True})[0]
         cls.ciscoasa = GeneralHoneypot.objects.get_or_create(name="Ciscoasa", defaults={"active": True})[0]
         cls.ddospot = GeneralHoneypot.objects.get_or_create(name="Ddospot", defaults={"active": False})[0]
@@ -35,7 +39,7 @@ class CustomTestCase(TestCase):
             type=IocType.IP.value,
             first_seen=cls.current_time,
             last_seen=cls.current_time,
-            days_seen=[cls.current_time],
+            days_seen=[cls.current_time.date()],
             number_of_days_seen=1,
             attack_count=1,
             interaction_count=1,
@@ -43,11 +47,12 @@ class CustomTestCase(TestCase):
             payload_request=True,
             related_urls=[],
             ip_reputation="",
-            asn="12345",
+            autonomous_system=cls.as_obj,
             destination_ports=[22, 23, 24],
             login_attempts=1,
             recurrence_probability=0.1,
             expected_interactions=11.1,
+            attacker_country="China",
         )
 
         cls.ioc_2 = IOC.objects.create(
@@ -55,19 +60,20 @@ class CustomTestCase(TestCase):
             type=IocType.IP.value,
             first_seen=cls.current_time,
             last_seen=cls.current_time,
-            days_seen=[cls.current_time],
+            days_seen=[cls.current_time.date()],
             number_of_days_seen=1,
             attack_count=1,
             interaction_count=1,
             scanner=True,
             payload_request=True,
             related_urls=[],
-            ip_reputation="mass scanner",
-            asn="12345",
+            ip_reputation=IpReputation.MASS_SCANNER,
+            autonomous_system=cls.as_obj,
             destination_ports=[22, 23, 24],
             login_attempts=1,
             recurrence_probability=0.1,
             expected_interactions=11.1,
+            attacker_country="China",
         )
 
         cls.ioc_3 = IOC.objects.create(
@@ -75,19 +81,20 @@ class CustomTestCase(TestCase):
             type=IocType.IP.value,
             first_seen=cls.current_time,
             last_seen=cls.current_time,
-            days_seen=[cls.current_time],
+            days_seen=[cls.current_time.date()],
             number_of_days_seen=1,
             attack_count=1,
             interaction_count=1,
             scanner=True,
             payload_request=True,
             related_urls=[],
-            ip_reputation="tor exit node",
-            asn="12345",
+            ip_reputation=IpReputation.TOR_EXIT_NODE,
+            autonomous_system=cls.as_obj,
             destination_ports=[22, 23, 24],
             login_attempts=1,
             recurrence_probability=0.1,
             expected_interactions=11.1,
+            attacker_country="United States",
         )
 
         cls.ioc_domain = IOC.objects.create(
@@ -95,7 +102,7 @@ class CustomTestCase(TestCase):
             type=IocType.DOMAIN.value,
             first_seen=cls.current_time,
             last_seen=cls.current_time,
-            days_seen=[cls.current_time],
+            days_seen=[cls.current_time.date()],
             number_of_days_seen=1,
             attack_count=1,
             interaction_count=1,
@@ -103,7 +110,7 @@ class CustomTestCase(TestCase):
             payload_request=True,
             related_urls=[],
             ip_reputation="",
-            asn=None,
+            autonomous_system=None,
             destination_ports=[],
             login_attempts=0,
             recurrence_probability=0.2,
@@ -126,6 +133,21 @@ class CustomTestCase(TestCase):
         cls.ioc_domain.general_honeypot.add(cls.log4pot_hp)  # Log4pot honeypot
         cls.ioc_domain.save()
 
+        # IOC with an inactive-only honeypot
+        cls.ioc_inactive_country = IOC.objects.create(
+            name="1.2.3.7",
+            type=IocType.IP.value,
+            first_seen=cls.current_time,
+            last_seen=cls.current_time,
+            days_seen=[cls.current_time],
+            number_of_days_seen=1,
+            attack_count=1,
+            interaction_count=1,
+            attacker_country="Russia",
+        )
+        cls.ioc_inactive_country.general_honeypot.add(cls.ddospot)
+        cls.ioc_inactive_country.save()
+
         cls.cmd_seq = ["cd foo", "ls -la"]
         cls.hash = sha256("\n".join(cls.cmd_seq).encode()).hexdigest()
         cls.command_sequence = CommandSequence.objects.create(
@@ -142,12 +164,13 @@ class CustomTestCase(TestCase):
             start_time=cls.current_time,
             duration=1.234,
             login_attempt=True,
-            credentials=["root | root"],
             command_execution=True,
             interaction_count=5,
             source=cls.ioc,
             commands=cls.command_sequence,
         )
+        credential, _ = Credential.objects.get_or_create(username="root", password="root", protocol="")
+        cls.cowrie_session.credentials.add(credential)
         cls.cowrie_session.save()
 
         cls.cmd_seq_2 = ["cd bar", "ls -la"]
@@ -165,12 +188,13 @@ class CustomTestCase(TestCase):
             start_time=cls.current_time,
             duration=2.234,
             login_attempt=True,
-            credentials=["user | user"],
             command_execution=True,
             interaction_count=5,
             source=cls.ioc_2,
             commands=cls.command_sequence_2,
         )
+        credential_2, _ = Credential.objects.get_or_create(username="user", password="user", protocol="")
+        cls.cowrie_session_2.credentials.add(credential_2)
         cls.cowrie_session_2.save()
 
         try:
@@ -200,9 +224,11 @@ class ExtractionTestCase(CustomTestCase):
         destination_ports=None,
         login_attempts=0,
         days_seen=None,
+        first_seen=None,
         last_seen=None,
         ip_reputation="",
         asn=1234,
+        firehol_categories=None,
     ):
         mock = Mock(spec=IOC)
         mock.name = name
@@ -215,10 +241,18 @@ class ExtractionTestCase(CustomTestCase):
         mock.destination_ports = destination_ports if destination_ports is not None else []
         mock.days_seen = days_seen if days_seen is not None else []
         mock.login_attempts = login_attempts
+        mock.first_seen = first_seen if first_seen is not None else datetime.now()
         mock.last_seen = last_seen if last_seen is not None else datetime.now()
         mock.ip_reputation = ip_reputation
-        mock.asn = asn
+        mock.firehol_categories = firehol_categories if firehol_categories is not None else []
         mock.number_of_days_seen = len(mock.days_seen)
+
+        if asn is not None:
+            mock.autonomous_system = Mock()
+            mock.autonomous_system.asn = asn
+        else:
+            mock.autonomous_system = None
+
         return mock
 
 

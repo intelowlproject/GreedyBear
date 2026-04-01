@@ -50,3 +50,21 @@ class StatisticsViewTestCase(CustomTestCase):
         self.assertEqual(response.json()[0]["Log4pot"], 3)
         self.assertEqual(response.json()[0]["Cowrie"], 3)
         self.assertEqual(response.json()[0]["Tanner"], 0)
+
+    def test_200_countries(self):
+        response = self.client.get("/api/statistics/countries")
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertIsInstance(data, list)
+        countries = [item["country"] for item in data]
+        counts = {item["country"]: item["count"] for item in data}
+        # China appears on ioc + ioc_2 (both active), United States on ioc_3 (active)
+        # Russia is only on ioc_inactive_country (ddospot, inactive); must be excluded
+        self.assertIn("China", countries)
+        self.assertIn("United States", countries)
+        self.assertNotIn("Russia", countries)
+        self.assertEqual(counts["China"], 2)
+        self.assertEqual(counts["United States"], 1)
+        # Results must be ordered descending by count
+        count_values = [item["count"] for item in data]
+        self.assertEqual(count_values, sorted(count_values, reverse=True))

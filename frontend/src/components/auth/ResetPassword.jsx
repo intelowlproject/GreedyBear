@@ -2,13 +2,17 @@ import React from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { FormGroup, Label, Col, Input, Button, Spinner } from "reactstrap";
 import { Form, Formik } from "formik";
-import useTitle from "react-use/lib/useTitle";
+import { useTitle } from "react-use";
 
 import { ContentSection } from "@certego/certego-ui";
 
 import { UUID_REGEX } from "../../constants/index";
 import { resetPassword } from "./api";
 import { PasswordValidator, ComparePassword } from "./utils/validator";
+import {
+  usePasswordVisibility,
+  ShowPasswordToggle,
+} from "../common/ShowPasswordToggle";
 
 // constants
 const reMatcher = new RegExp(UUID_REGEX);
@@ -50,7 +54,8 @@ export default function ResetPassword() {
   // page title
   useTitle("GreedyBear | Reset Password", { restoreOnUnmount: true });
 
-  const [passwordShown, setPasswordShown] = React.useState(false);
+  const { passwordShown, toggleVisibility, inputType } =
+    usePasswordVisibility();
 
   // react router's history
   const navigate = useNavigate();
@@ -107,7 +112,7 @@ export default function ResetPassword() {
                     <Input
                       id="ResetPassword__password"
                       name="password"
-                      type={passwordShown ? "text" : "password"}
+                      type={inputType}
                       className="form-control"
                       placeholder="Create a strong password..."
                       autoComplete="new-password"
@@ -134,7 +139,7 @@ export default function ResetPassword() {
                     <Input
                       id="ResetPassword__confirmPassword"
                       name="confirmPassword"
-                      type={passwordShown ? "text" : "password"}
+                      type={inputType}
                       className="form-control"
                       placeholder="Re-enter password"
                       autoComplete="new-password"
@@ -151,20 +156,16 @@ export default function ResetPassword() {
                     )}
                   </Col>
                 </FormGroup>
-                <FormGroup check>
-                  <Input
-                    id="ResetPassword__showPassword"
-                    type="checkbox"
-                    defaultChecked={passwordShown}
-                    onChange={() => setPasswordShown(!passwordShown)}
-                  />
-                  <Label check>Show password</Label>
-                </FormGroup>
+                <ShowPasswordToggle
+                  id="ResetPassword__showPassword"
+                  passwordShown={passwordShown}
+                  onChange={toggleVisibility}
+                />
                 {/* Submit */}
                 <FormGroup className="mt-3 d-flex">
                   <Button
                     type="submit"
-                    disabled={!(formik.isValid || formik.isSubmitting)}
+                    disabled={!formik.isValid || formik.isSubmitting}
                     color="primary"
                     outline
                     className="mx-auto"

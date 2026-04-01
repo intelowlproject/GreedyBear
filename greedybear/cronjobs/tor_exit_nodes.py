@@ -6,6 +6,7 @@ from greedybear.cronjobs.base import Cronjob
 from greedybear.cronjobs.extraction.utils import is_valid_ipv4
 from greedybear.cronjobs.repositories import IocRepository
 from greedybear.cronjobs.repositories.tor import TorRepository
+from greedybear.enums import IpReputation
 
 
 class TorExitNodesCron(Cronjob):
@@ -40,16 +41,10 @@ class TorExitNodesCron(Cronjob):
                 tor_node, created = self.tor_repo.get_or_create(ip_address)
                 if created:
                     self.log.info(f"Added new Tor exit node {ip_address}")
-                    self._update_old_ioc(ip_address)
+                    self.ioc_repo.update_ioc_reputation(ip_address, IpReputation.TOR_EXIT_NODE)
 
             self.log.info("Completed download of Tor exit node list")
 
         except requests.RequestException as e:
             self.log.error(f"Failed to fetch Tor exit nodes: {e}")
             raise
-
-    def _update_old_ioc(self, ip_address: str):
-        """Update the IP reputation of an existing IOC to mark it as a Tor exit node."""
-        updated = self.ioc_repo.update_ioc_reputation(ip_address, "tor exit node")
-        if updated:
-            self.log.debug(f"Updated IOC {ip_address} reputation to 'tor exit node'")

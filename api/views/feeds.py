@@ -1,18 +1,24 @@
 # This file is a part of GreedyBear https://github.com/honeynet/GreedyBear
 # See the file 'LICENSE' for copying permission.
+import hashlib
 import logging
 
 from certego_saas.apps.auth.backend import CookieTokenAuthentication
 from certego_saas.ext.pagination import CustomPageNumberPagination
+from django.core import signing
+from django.utils import timezone
+from rest_framework import status
 from rest_framework.decorators import (
     api_view,
     authentication_classes,
     permission_classes,
+    throttle_classes,
 )
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from api.serializers import ASNFeedsOrderingSerializer
+from api.throttles import FeedsAdvancedThrottle, FeedsThrottle, SharedFeedRateThrottle
 from api.views.utils import (
     FeedRequestParams,
     asn_aggregated_queryset,
@@ -21,11 +27,23 @@ from api.views.utils import (
     get_valid_feed_types,
 )
 from greedybear.consts import GET
+from greedybear.models import ShareToken
 
 logger = logging.getLogger(__name__)
 
+ALLOWED_UNAUTHENTICATED_QUERY_PARAMS = [
+    "feed_type",
+    "attack_type",
+    "ioc_type",
+    "ordering",
+    "include_mass_scanners",
+    "include_tor_exit_nodes",
+    "prioritize",
+]
+
 
 @api_view([GET])
+@throttle_classes([FeedsThrottle])
 def feeds(request, feed_type, attack_type, prioritize, format_):
     """
     Handle requests for IOC feeds with specific parameters and format the response accordingly.
@@ -44,18 +62,21 @@ def feeds(request, feed_type, attack_type, prioritize, format_):
     """
     logger.info(f"request /api/feeds with params: feed type: {feed_type}, attack_type: {attack_type}, prioritization: {prioritize}, format: {format_}")
 
-    feed_params_data = request.query_params.dict()
-    feed_params_data.update({"feed_type": feed_type, "attack_type": attack_type, "format_": format_})
+    filtered_query_params = {key: request.query_params.get(key) for key in ALLOWED_UNAUTHENTICATED_QUERY_PARAMS if key in request.query_params}
+
+    feed_params_data = filtered_query_params.copy()
+    feed_params_data.update({"feed_type": feed_type, "attack_type": attack_type, "format": format_})
     feed_params = FeedRequestParams(feed_params_data)
-    feed_params.apply_default_filters(request.query_params)
+    feed_params.apply_default_filters(filtered_query_params)
     feed_params.set_prioritization(prioritize)
 
     valid_feed_types = get_valid_feed_types()
     iocs_queryset = get_queryset(request, feed_params, valid_feed_types)
-    return feeds_response(iocs_queryset, feed_params, valid_feed_types)
+    return feeds_response(request, iocs_queryset, feed_params, valid_feed_types)
 
 
 @api_view([GET])
+@throttle_classes([FeedsThrottle])
 def feeds_pagination(request):
     """
     Handle requests for paginated IOC feeds based on query parameters.
@@ -69,22 +90,25 @@ def feeds_pagination(request):
 
     logger.info(f"request /api/feeds with params: {request.query_params}")
 
-    feed_params = FeedRequestParams(request.query_params)
+    filtered_query_params = {key: request.query_params.get(key) for key in ALLOWED_UNAUTHENTICATED_QUERY_PARAMS if key in request.query_params}
+
+    feed_params = FeedRequestParams(filtered_query_params)
     feed_params.format = "json"
-    feed_params.apply_default_filters(request.query_params)
-    feed_params.set_prioritization(request.query_params.get("prioritize"))
+    feed_params.apply_default_filters(filtered_query_params)
+    feed_params.set_prioritization(filtered_query_params.get("prioritize"))
 
     valid_feed_types = get_valid_feed_types()
     iocs_queryset = get_queryset(request, feed_params, valid_feed_types)
     paginator = CustomPageNumberPagination()
     iocs = paginator.paginate_queryset(iocs_queryset, request)
-    resp_data = feeds_response(iocs, feed_params, valid_feed_types, dict_only=True)
+    resp_data = feeds_response(request, iocs, feed_params, valid_feed_types, dict_only=True)
     return paginator.get_paginated_response(resp_data)
 
 
 @api_view([GET])
 @authentication_classes([CookieTokenAuthentication])
 @permission_classes([IsAuthenticated])
+@throttle_classes([FeedsAdvancedThrottle])
 def feeds_advanced(request):
     """
     Handle requests for IOC feeds based on query parameters and format the response accordingly.
@@ -101,29 +125,39 @@ def feeds_advanced(request):
         ordering (str): Field to order results by, with optional `-` prefix for descending. (default: `-last_seen`)
         verbose (bool): `true` to include IOC properties that contain a lot of data, e.g. the list of days it was seen. (default: `false`)
         paginate (bool): `true` to paginate results. This forces the json format. (default: `false`)
-        format (str): Response format type. Besides `json`, `txt` and `csv` are supported but the response will only contain IOC values (e.g. IP adresses) without further information. (default: `json`)
+        format (str): Response format type. Besides `json`, `txt` and `csv` are supported but the response will only contain IOC values (e.g. IP addresses) without further information. (default: `json`)
+        tag_key (str, optional): Filter IOCs by tag key, e.g. `malware` or `confidence_of_abuse`. Only IOCs with at least one matching tag are returned.
+        tag_value (str, optional): Filter IOCs by tag value (case-insensitive substring match), e.g. `mirai`. Can be used alone or combined with `tag_key`.
 
     Returns:
         Response: The HTTP response with formatted IOC data.
     """
     logger.info(f"request /api/feeds/advanced/ with params: {request.query_params}")
     feed_params = FeedRequestParams(request.query_params)
-    valid_feed_types = get_valid_feed_types()
-    iocs_queryset = get_queryset(request, feed_params, valid_feed_types)
     verbose = feed_params.verbose == "true"
     paginate = feed_params.paginate == "true"
     if paginate:
         feed_params.format = "json"
+    valid_feed_types = get_valid_feed_types()
+    iocs_queryset = get_queryset(
+        request,
+        feed_params,
+        valid_feed_types,
+        tag_key=request.query_params.get("tag_key", "").strip(),
+        tag_value=request.query_params.get("tag_value", "").strip(),
+    )
+    if paginate:
         paginator = CustomPageNumberPagination()
         iocs = paginator.paginate_queryset(iocs_queryset, request)
-        resp_data = feeds_response(iocs, feed_params, valid_feed_types, dict_only=True, verbose=verbose)
+        resp_data = feeds_response(request, iocs, feed_params, valid_feed_types, dict_only=True, verbose=verbose)
         return paginator.get_paginated_response(resp_data)
-    return feeds_response(iocs_queryset, feed_params, valid_feed_types, verbose=verbose)
+    return feeds_response(request, iocs_queryset, feed_params, valid_feed_types, verbose=verbose)
 
 
 @api_view(["GET"])
 @authentication_classes([CookieTokenAuthentication])
 @permission_classes([IsAuthenticated])
+@throttle_classes([FeedsAdvancedThrottle])
 def feeds_asn(request):
     """
     Retrieve aggregated IOC feed data grouped by ASN (Autonomous System Number).
@@ -161,3 +195,120 @@ def feeds_asn(request):
     asn_aggregates = asn_aggregated_queryset(iocs_qs, request, feed_params)
     data = list(asn_aggregates)
     return Response(data)
+
+
+@api_view([GET])
+@authentication_classes([CookieTokenAuthentication])
+@permission_classes([IsAuthenticated])
+def feeds_share(request):
+    """
+    Generate a shareable link for the current feed configuration.
+
+    Args:
+        request: The incoming request object.
+        feed_type (str): Type of feed to retrieve.
+        attack_type (str): Type of attack to filter.
+        max_age (int): Maximum number of days since last occurrence.
+        min_days_seen (int): Minimum number of days on which an IOC must have been seen.
+        include_reputation (str): `;`-separated list of reputation values to include.
+        exclude_reputation (str): `;`-separated list of reputation values to exclude.
+        ordering (str): Field to order results by.
+        verbose (bool): `true` to include IOC properties that contain a lot of data.
+        asn (int): Filter by ASN.
+        min_score (float): Filter by minimum recurrence_probability (0-1).
+        port (int): Filter by destination port.
+        start_date (str): Filter by start date (YYYY-MM-DD).
+        end_date (str): Filter by end date (YYYY-MM-DD).
+
+    Returns:
+        Response: A JSON object containing the signed shareable URL.
+    """
+    logger.info(f"request /api/feeds/share with params: {request.query_params}")
+    feed_params = FeedRequestParams(request.query_params)
+    data = vars(feed_params)
+    # Remove internal or non-serializable objects if any
+    data.pop("feed_type_sorting", None)
+
+    # Generate signed token and persist a ShareToken record
+    token = signing.dumps(data, salt="greedybear-feeds")
+    token_hash = hashlib.sha256(token.encode()).hexdigest()
+    ShareToken.objects.get_or_create(token_hash=token_hash, defaults={"user": request.user})
+
+    host = request.build_absolute_uri("/")
+    share_url = f"{host}api/feeds/consume/{token}"
+    revoke_url = f"{host}api/feeds/revoke/{token}"
+    return Response({"url": share_url, "revoke_url": revoke_url})
+
+
+@api_view([GET])
+@authentication_classes([])
+@permission_classes([])
+@throttle_classes([SharedFeedRateThrottle])
+def feeds_consume(request, token):
+    """
+    Consume a shared feed using a signed token.
+    This endpoint is publicly accessible but strictly rate-limited.
+
+    Args:
+        request: The incoming request object.
+        token (str): The signed token containing feed configuration.
+
+    Returns:
+        Response: The HTTP response with formatted IOC data in JSON/CSV/TXT/STIX2.1.
+    """
+    logger.info("request /api/feeds/consume with token")
+    token_hash = hashlib.sha256(token.encode()).hexdigest()
+    if ShareToken.objects.filter(token_hash=token_hash, revoked=True).exists():
+        return Response({"error": "Token has been revoked"}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        data = signing.loads(token, salt="greedybear-feeds", max_age=86400 * 30)  # 30 days validity
+    except signing.BadSignature:
+        return Response({"error": "Invalid or expired token"}, status=status.HTTP_400_BAD_REQUEST)
+
+    # Reconstruct params
+    feed_params = FeedRequestParams(data)
+
+    valid_feed_types = get_valid_feed_types()
+    iocs_queryset = get_queryset(request, feed_params, valid_feed_types)
+    return feeds_response(request, iocs_queryset, feed_params, valid_feed_types)
+
+
+@api_view([GET])
+@authentication_classes([CookieTokenAuthentication])
+@permission_classes([IsAuthenticated])
+def feeds_revoke(request, token):
+    """
+    Revoke a previously generated shareable feed token.
+
+    Once revoked, any attempt to consume the feed via that token will return a 400 error.
+    This is intentionally a GET endpoint so the revoke link can be opened directly in a browser.
+    Only the user who created the token (or staff) can revoke it.
+
+    Args:
+        request: The incoming request object.
+        token (str): The raw signed token to revoke.
+
+    Returns:
+        Response: 200 on successful revocation, 400/403 if invalid, expired, or not authorized.
+    """
+    logger.info("request /api/feeds/revoke")
+    try:
+        signing.loads(token, salt="greedybear-feeds", max_age=86400 * 30)
+    except signing.BadSignature:
+        return Response({"error": "Invalid or expired token"}, status=status.HTTP_400_BAD_REQUEST)
+
+    token_hash = hashlib.sha256(token.encode()).hexdigest()
+    try:
+        share_token = ShareToken.objects.get(token_hash=token_hash)
+    except ShareToken.DoesNotExist:
+        return Response({"error": "Token not found. Only the creator can revoke a token."}, status=status.HTTP_403_FORBIDDEN)
+
+    if share_token.user != request.user and not request.user.is_staff:
+        return Response({"error": "You do not have permission to revoke this token."}, status=status.HTTP_403_FORBIDDEN)
+
+    if share_token.revoked:
+        return Response({"detail": "Token was already revoked."}, status=status.HTTP_200_OK)
+    share_token.revoked = True
+    share_token.revoked_at = timezone.now()
+    share_token.save(update_fields=["revoked", "revoked_at"])
+    return Response({"detail": "Token revoked successfully."}, status=status.HTTP_200_OK)

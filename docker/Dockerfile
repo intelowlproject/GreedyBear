@@ -1,66 +1,79 @@
-# Stage 1: Frontend 
+## ------------------------------- UV Stage ------------------------------ ## 
+
+FROM python:3.13-slim-trixie AS uv
+
+COPY --from=ghcr.io/astral-sh/uv:0.11.1 /uv /bin/uv
+COPY pyproject.toml .  
+
+RUN echo "VITE_GREEDYBEAR_VERSION=\"$(uv version --short)\"" > .env.local
+
+
+## ------------------------------- Frontend Build Stage ------------------------------ ## 
+
 FROM node:lts-alpine3.22 AS frontend-build
 
-WORKDIR /
+WORKDIR /app
+
 # install dependencies first for layer caching
 COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci
 
 # copy source code and build
 COPY frontend/ .
-COPY docker/.version .env.local
+COPY --from=uv /.env.local .
 RUN VITE_BASE_URL=/static/reactapp/ npm run build
 
-# Stage 2: Backend
-FROM python:3.13-slim-trixie
 
+## ------------------------------- Production Stage ------------------------------ ##
+
+FROM uv AS production
+
+ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONUNBUFFERED=1
 ENV DJANGO_SETTINGS_MODULE=greedybear.settings
-ENV PYTHONPATH=/opt/deploy/greedybear
+ENV APP_ROOT=/opt/deploy/greedybear
 ENV LOG_PATH=/var/log/greedybear
+ENV UV_PROJECT_ENVIRONMENT=/usr/local
 
-ARG WATCHMAN=false
+WORKDIR $APP_ROOT
 
-RUN mkdir -p ${LOG_PATH}/django ${LOG_PATH}/uwsgi \
-    && apt-get update \
-    && apt-get install -y --no-install-recommends \
-       # Build dependencies (removed after pip install)
-       gcc python3-dev \
-       # Runtime dependencies:
-       # libexpat1 is required by uWSGI/Python,
-       # libgomp1 is required for model training, netcat-openbsd for healthcheck
-       libexpat1 libgomp1 netcat-openbsd \
-    && pip3 install --no-cache-dir --upgrade pip
+# Install runtime dependencies
+#  - libgomp1 is required for model training
+#  - curl is used for healthcheck
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgomp1 curl gosu \
+    && rm -rf /var/lib/apt/lists/*
 
-COPY requirements/project-requirements.txt $PYTHONPATH/project-requirements.txt
-COPY requirements/dev-requirements.txt $PYTHONPATH/dev-requirements.txt
-WORKDIR $PYTHONPATH
-RUN pip3 install --no-cache-dir -r $PYTHONPATH/project-requirements.txt
+# Install python packages
+COPY pyproject.toml uv.lock ./
+RUN uv sync --no-dev --locked
 
-# Conditionally install dev requirements (coverage, etc.)
-ARG INSTALL_DEV=false
-RUN if [ "$INSTALL_DEV" = "true" ]; then \
-      pip3 install --no-cache-dir -r $PYTHONPATH/dev-requirements.txt; \
-    fi
-
-COPY . $PYTHONPATH
-COPY --from=frontend-build /build /var/www/reactapp
+# Copy files
+COPY . $APP_ROOT
+COPY --from=frontend-build /app/build /var/www/reactapp
 
 # separation is required to avoid to re-execute os installation in case of change of python requirements
-RUN touch ${LOG_PATH}/django/api.log ${LOG_PATH}/django/api_errors.log \
+RUN mkdir -p ${LOG_PATH}/django ${LOG_PATH}/gunicorn \
+    && touch ${LOG_PATH}/django/api.log ${LOG_PATH}/django/api_errors.log \
     && touch ${LOG_PATH}/django/greedybear.log ${LOG_PATH}/django/greedybear_errors.log \
     && touch ${LOG_PATH}/django/django_q.log ${LOG_PATH}/django/django_q_errors.log \
-    && touch ${LOG_PATH}/django/django_errors.log ${LOG_PATH}/django/elasticsearch.log\
+    && touch ${LOG_PATH}/django/django_errors.log ${LOG_PATH}/django/elasticsearch.log \
     && touch ${LOG_PATH}/django/authentication.log ${LOG_PATH}/django/authentication_errors.log \
-    && mkdir -p ${PYTHONPATH}/mlmodels \
+    && mkdir -p ${APP_ROOT}/mlmodels \
     && usermod -u 2000 www-data \
-    && chown -R www-data:www-data ${LOG_PATH} /opt/deploy/ ${PYTHONPATH}/mlmodels/ \
-    && rm -rf docs/ frontend/ tests/ .github/ docker/hooks/ \
-    && /bin/bash ./docker/watchman_install.sh \
-    && apt-get purge -y gcc python3-dev \
-    && apt-get autoremove -y \
-    && rm -rf /var/lib/apt/lists/* # remove the apt package index cache
+    && chown -R www-data:www-data ${LOG_PATH} /opt/deploy/ ${APP_ROOT}/mlmodels/ \
+    && rm -rf frontend/
 
-# start period is high to allow data migration for 1.4.0
-HEALTHCHECK --interval=10s --timeout=2s --start-period=500s --retries=3 CMD nc -z localhost 8001 || exit 1
 
+## ------------------------------- Development Stage ------------------------------ ##
+
+FROM production AS development
+
+# Install dev dependencies
+RUN uv sync --group dev --locked
+
+
+## ------------------------------- Default Stage ------------------------------ ##
+
+# Ensure the default build target is production
+FROM production

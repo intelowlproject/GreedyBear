@@ -10,6 +10,7 @@ from greedybear.models import (
     IOC,
     CommandSequence,
     CowrieSession,
+    Credential,
     FireHolList,
     GeneralHoneypot,
     MassScanner,
@@ -31,9 +32,10 @@ class TorExitNodeModelAdmin(admin.ModelAdmin):
 
 @admin.register(Sensor)
 class SensorsModelAdmin(admin.ModelAdmin):
-    list_display = ["id", "address"]
-    search_fields = ["address"]
-    search_help_text = ["search for the sensor IP address"]
+    list_display = ["id", "address", "country", "label"]
+    list_editable = ["label"]
+    search_fields = ["address", "label"]
+    search_help_text = ["search for the sensor IP address or label"]
 
 
 @admin.register(Statistics)
@@ -73,7 +75,7 @@ class SessionInline(admin.TabularInline):
         "source",
         "start_time",
         "duration",
-        "credentials",
+        "credential_list",
         "interaction_count",
         "commands",
     ]
@@ -81,6 +83,9 @@ class SessionInline(admin.TabularInline):
     show_change_link = True
     extra = 0
     ordering = ["-start_time"]
+
+    def credential_list(self, session):
+        return ", ".join([str(c) for c in session.credentials.all()])
 
 
 @admin.register(CowrieSession)
@@ -90,7 +95,7 @@ class CowrieSessionModelAdmin(admin.ModelAdmin):
         "start_time",
         "duration",
         "login_attempt",
-        "credentials",
+        "credential_list",
         "command_execution",
         "interaction_count",
         "source",
@@ -99,6 +104,16 @@ class CowrieSessionModelAdmin(admin.ModelAdmin):
     search_help_text = ["search for the IP address source"]
     raw_id_fields = ["source", "commands"]
     list_filter = ["login_attempt", "command_execution"]
+
+    def credential_list(self, session):
+        return ", ".join([str(c) for c in session.credentials.all()])
+
+
+@admin.register(Credential)
+class CredentialModelAdmin(admin.ModelAdmin):
+    list_display = ["username", "password"]
+    search_fields = ["username", "password"]
+    search_help_text = ["search for username or password"]
 
 
 @admin.register(CommandSequence)
@@ -127,7 +142,7 @@ class IOCModelAdmin(admin.ModelAdmin):
         "sensor_list",
         "ip_reputation",
         "firehol_categories",
-        "asn",
+        "autonomous_system_display",
         "destination_ports",
         "login_attempts",
     ]
@@ -136,7 +151,7 @@ class IOCModelAdmin(admin.ModelAdmin):
         "scanner",
         "payload_request",
         "ip_reputation",
-        "asn",
+        "autonomous_system",
     ]
     search_fields = ["name", "related_ioc__name"]
     search_help_text = ["search for the IP address source"]
@@ -150,9 +165,22 @@ class IOCModelAdmin(admin.ModelAdmin):
     def sensor_list(self, ioc):
         return ", ".join([str(sensor.address) for sensor in ioc.sensors.all()])
 
+    def autonomous_system_display(self, ioc):
+        """
+        Shows ASN and AS name neatly in list_display.
+        """
+        if ioc.autonomous_system:
+            asn = ioc.autonomous_system.asn
+            name = ioc.autonomous_system.name
+            return f"{asn} ({name})" if name else str(asn)
+        return "-"
+
+    autonomous_system_display.short_description = "Autonomous System"
+    autonomous_system_display.admin_order_field = "autonomous_system__asn"
+
     def get_queryset(self, request):
-        """Override to prefetch related sensors and honeypots, avoiding N+1 queries."""
-        return super().get_queryset(request).prefetch_related("sensors", "general_honeypot")
+        """Override to optimize queries and avoid N+1 problems."""
+        return super().get_queryset(request).select_related("autonomous_system").prefetch_related("sensors", "general_honeypot")
 
 
 @admin.register(GeneralHoneypot)

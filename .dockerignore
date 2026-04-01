@@ -3,6 +3,7 @@
 .vscode
 .lgtm.yml
 __pycache__
+.venv/
 venv/
 **/build
 .env
@@ -16,3 +17,5 @@ frontend/build
 docker-compose*
 .pre-commit-config.yaml
 .ipython/
+.github/
+tests/

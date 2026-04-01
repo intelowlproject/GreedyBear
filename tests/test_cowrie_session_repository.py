@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from django.db import IntegrityError
 
 from greedybear.cronjobs.repositories import CowrieSessionRepository
-from greedybear.models import IOC, CommandSequence, CowrieSession
+from greedybear.models import IOC, CommandSequence, CowrieFileTransfer, CowrieSession, Credential
 
 from . import CustomTestCase
 
@@ -102,6 +102,74 @@ class TestCowrieSessionRepository(CustomTestCase):
                 commands_hash=existing.commands_hash,
             )
 
+    def test_get_or_create_file_transfer_creates_new(self):
+        session = self.cowrie_session
+
+        transfer = self.repo.get_or_create_file_transfer(
+            session=session,
+            shasum="abc123def456",
+            url="http://malware.com/bad.exe",
+            outfile="/data/cowrie/downloads/bad.exe",
+            timestamp="2023-01-01T10:00:04",
+        )
+
+        self.assertIsNotNone(transfer.pk)
+        self.assertEqual(transfer.session, session)
+        self.assertEqual(transfer.shasum, "abc123def456")
+        self.assertEqual(transfer.url, "http://malware.com/bad.exe")
+        self.assertEqual(transfer.outfile, "/data/cowrie/downloads/bad.exe")
+        self.assertEqual(transfer.timestamp, "2023-01-01T10:00:04")
+
+    def test_get_or_create_file_transfer_updates_timestamp(self):
+        session = self.cowrie_session
+
+        existing = CowrieFileTransfer.objects.create(
+            session=session,
+            shasum="abc123def456",
+            url="http://malware.com/bad.exe",
+            outfile="/data/cowrie/downloads/bad.exe",
+            timestamp="2023-01-01T10:00:04",
+        )
+
+        transfer = self.repo.get_or_create_file_transfer(
+            session=session,
+            shasum="abc123def456",
+            url="http://malware.com/ignored.exe",
+            outfile="/data/cowrie/downloads/ignored.exe",
+            timestamp="2023-01-02T10:00:04",
+        )
+
+        self.assertEqual(transfer.pk, existing.pk)
+        self.assertEqual(transfer.timestamp, "2023-01-02T10:00:04")
+        self.assertEqual(
+            CowrieFileTransfer.objects.filter(session=session, shasum="abc123def456").count(),
+            1,
+        )
+
+    def test_add_credential_uses_default_protocol_variant(self):
+        session = self.cowrie_session
+
+        self.repo.add_credential(session, username="root", password="root")
+
+        credential = Credential.objects.get(username="root", password="root", protocol="")
+        self.assertTrue(session.credentials.filter(pk=credential.pk).exists())
+
+    def test_add_credential_protocol_none_maps_to_default_protocol(self):
+        session = self.cowrie_session
+
+        self.repo.add_credential(session, username="admin", password="admin", protocol=None)
+
+        self.assertTrue(Credential.objects.filter(username="admin", password="admin", protocol="").exists())
+
+    def test_add_credential_does_not_raise_with_protocol_variants_present(self):
+        session = self.cowrie_session
+        Credential.objects.get_or_create(username="root", password="root", protocol="ssh")
+
+        self.repo.add_credential(session, username="root", password="root")
+
+        default_credential = Credential.objects.get(username="root", password="root", protocol="")
+        self.assertTrue(session.credentials.filter(pk=default_credential.pk).exists())
+
 
 class TestCowrieSessionRepositoryCleanup(CustomTestCase):
     """Tests for cleanup-related methods in CowrieSessionRepository."""
@@ -173,3 +241,58 @@ class TestCowrieSessionRepositoryCleanup(CustomTestCase):
         self.assertEqual(deleted_count, 1)
         self.assertFalse(CowrieSession.objects.filter(session_id=777).exists())
         self.assertTrue(CowrieSession.objects.filter(session_id=888).exists())
+
+
+class CredentialReuseTestCase(CustomTestCase):
+    def setUp(self):
+        self.repo = CowrieSessionRepository()
+        # counter for generating unique session_ids
+        self._session_counter = 1000
+
+    def create_cowrie_session(self, source_ip: str, session_id=None):
+        """Helper to create a CowrieSession with a unique session_id."""
+        source_ioc, _ = IOC.objects.get_or_create(name=source_ip, defaults={"type": "ip"})
+        if session_id is None:
+            session_id = self._session_counter
+            self._session_counter += 1
+        session = CowrieSession.objects.create(
+            session_id=session_id,
+            source=source_ioc,
+        )
+        return session
+
+    def test_same_ip_not_counted_twice(self):
+        session = self.create_cowrie_session(source_ip="1.2.3.4", session_id=111)
+
+        self.repo.add_credential(session, "admin", "123")
+        self.repo.add_credential(session, "admin", "123")
+
+        credential = Credential.objects.get(username="admin", password="123")
+        self.assertEqual(credential.sources.count(), 1)
+
+    def test_different_ips_counted(self):
+        session1 = self.create_cowrie_session(source_ip="1.2.3.4", session_id=111)
+        session2 = self.create_cowrie_session(source_ip="5.6.7.8", session_id=222)
+
+        self.repo.add_credential(session1, "admin", "123")
+        self.repo.add_credential(session2, "admin", "123")
+
+        credential = Credential.objects.get(username="admin", password="123")
+        self.assertEqual(credential.sources.count(), 2)
+
+    def test_same_source_ip_different_sessions_not_counted_twice(self):
+        """
+        Same credential added from two different sessions
+        but the same source IP should only be linked once.
+        """
+        # two DIFFERENT sessions, but SAME source IP
+        session1 = self.create_cowrie_session(source_ip="1.2.3.4", session_id=333)
+        session2 = self.create_cowrie_session(source_ip="1.2.3.4", session_id=444)
+
+        self.repo.add_credential(session1, "admin", "123")
+        self.repo.add_credential(session2, "admin", "123")
+
+        credential = Credential.objects.get(username="admin", password="123")
+
+        # despite two different sessions, same IP = count only 1
+        self.assertEqual(credential.sources.count(), 1)

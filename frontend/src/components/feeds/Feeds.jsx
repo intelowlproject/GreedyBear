@@ -2,7 +2,8 @@ import React from "react";
 import { Container, Button, Col, Label, FormGroup, Row } from "reactstrap";
 import { VscJson } from "react-icons/vsc";
 import { TbLicense } from "react-icons/tb";
-import { useNavigate, useLocation } from "react-router-dom";
+import { MdFilterAltOff } from "react-icons/md";
+import { useLocation, useSearchParams } from "react-router-dom";
 import { FEEDS_BASE_URI, GENERAL_HONEYPOT_URI } from "../../constants/api";
 import {
   ContentSection,
@@ -10,13 +11,12 @@ import {
   useAxiosComponentLoader,
   useDataTable,
 } from "@certego/certego-ui";
+import { MultiSelectDropdown } from "./MultiSelectDropdown";
 import { Form, Formik } from "formik";
 import { feedsTableColumns } from "./tableColumns";
 import { FEEDS_LICENSE } from "../../constants";
 
 // constants
-const feedTypeChoices = [{ label: "All", value: "all" }];
-
 const attackTypeChoices = [
   { label: "All", value: "all" },
   { label: "Scanner", value: "scanner" },
@@ -36,12 +36,12 @@ const prioritizationChoices = [
   { label: "Most expected hits", value: "most_expected_hits" },
 ];
 
-const initialValues = {
+const DEFAULT_VALUES = Object.freeze({
   feeds_type: "all",
   attack_type: "all",
   ioc_type: "all",
   prioritize: "recent",
-};
+});
 
 const toPassTableProps = {
   columns: feedsTableColumns,
@@ -55,8 +55,6 @@ const toPassTableProps = {
 
 // prioritizations where backend overrides "ordering" query param.
 const OVERRIDING_PRIORITIZATIONS = ["likely_to_recur", "most_expected_hits"];
-
-let honeypotFeedsType = [];
 
 // extracted child component so useDataTable hooks are owned here.
 // changing the `key` on this component forces a full unmount/remount.
@@ -100,20 +98,51 @@ function FeedsTable({ tableParams, onDataLoad, onSortChange }) {
 
 export default function Feeds() {
   console.debug("Feeds rendered!");
+  console.debug("Feeds-DEFAULT_VALUES", DEFAULT_VALUES);
 
-  console.debug("Feeds-initialValues", initialValues);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const formikRef = React.useRef(null);
 
-  const navigate = useNavigate();
+  const initialSearchParams = React.useRef(searchParams);
 
-  const [url, setUrl] = React.useState(
-    `${FEEDS_BASE_URI}/${initialValues.feeds_type}/${initialValues.attack_type}/${initialValues.prioritize}.json`,
+  const initialValues = React.useMemo(
+    () => ({
+      feeds_type:
+        initialSearchParams.current.get("feed_type") ||
+        DEFAULT_VALUES.feeds_type,
+      attack_type:
+        initialSearchParams.current.get("attack_type") ||
+        DEFAULT_VALUES.attack_type,
+      ioc_type:
+        initialSearchParams.current.get("ioc_type") || DEFAULT_VALUES.ioc_type,
+      prioritize:
+        initialSearchParams.current.get("prioritize") ||
+        DEFAULT_VALUES.prioritize,
+    }),
+    [],
   );
-
-  // Counter used to force remount FeedsTable
-  const [tableKey, setTableKey] = React.useState(0);
+  const [feedsState, setFeedsState] = React.useState(() => {
+    const values = initialValues;
+    return {
+      url: `${FEEDS_BASE_URI}/${values.feeds_type}/${values.attack_type}/${values.prioritize}.json?ioc_type=${values.ioc_type}`,
+      tableParams: {
+        feed_type: values.feeds_type,
+        attack_type: values.attack_type,
+        ioc_type: values.ioc_type,
+        prioritize: values.prioritize,
+      },
+      tableKey: 0,
+    };
+  });
 
   // feedsData is lifted from FeedsTable so we can show the count in the header
   const [feedsData, setFeedsData] = React.useState(null);
+
+  const isDefault =
+    feedsState.tableParams.feed_type === DEFAULT_VALUES.feeds_type &&
+    feedsState.tableParams.attack_type === DEFAULT_VALUES.attack_type &&
+    feedsState.tableParams.ioc_type === DEFAULT_VALUES.ioc_type &&
+    feedsState.tableParams.prioritize === DEFAULT_VALUES.prioritize;
 
   // API to extract general honeypot
   const [honeypots, Loader] = useAxiosComponentLoader({
@@ -122,47 +151,62 @@ export default function Feeds() {
   });
   console.debug("Feeds-honeypots:", honeypots);
 
-  honeypots.forEach((honeypot) => {
-    //check if honeypot.label exist in honeypotFeedsType array or not (index === -1)
-    const index = honeypotFeedsType.findIndex((x) => x.label === honeypot);
-    if (index === -1)
-      honeypotFeedsType.push({
+  const honeypotFeedsType = React.useMemo(
+    () =>
+      honeypots.map((honeypot) => ({
         label: honeypot,
         value: honeypot.toLowerCase(),
-      });
-  });
+      })),
+    [honeypots],
+  );
 
-  // reset the prioritize dropdown to "recent"
-  const handleSortChange = React.useCallback(() => {
-    initialValues.prioritize = "recent";
-    setUrl(
-      `${FEEDS_BASE_URI}/${initialValues.feeds_type}/${initialValues.attack_type}/recent.json?ioc_type=${initialValues.ioc_type}`,
-    );
-    setTableKey((prev) => prev + 1);
-  }, [setUrl]);
+  // Update URL query params to reflect current filter state
+  // Uses replace: true so filter changes don't pollute browser history
+  const updateSearchParams = React.useCallback(
+    (values) => {
+      const params = {};
+      if (values.feeds_type !== DEFAULT_VALUES.feeds_type)
+        params.feed_type = values.feeds_type;
+      if (values.attack_type !== DEFAULT_VALUES.attack_type)
+        params.attack_type = values.attack_type;
+      if (values.ioc_type !== DEFAULT_VALUES.ioc_type)
+        params.ioc_type = values.ioc_type;
+      if (values.prioritize !== DEFAULT_VALUES.prioritize)
+        params.prioritize = values.prioritize;
+      setSearchParams(params, { replace: true });
+    },
+    [setSearchParams],
+  );
+
+  const handleSortChange = React.useCallback(async () => {
+    const formik = formikRef.current;
+    if (!formik) return;
+
+    await formik.setFieldValue("prioritize", "recent", true);
+    await formik.setFieldTouched("prioritize", true, false);
+    await formik.submitForm();
+  }, []);
 
   // callbacks
   const onSubmit = React.useCallback(
     (values) => {
       try {
-        setUrl(
-          `${FEEDS_BASE_URI}/${values.feeds_type}/${values.attack_type}/${values.prioritize}.json?ioc_type=${values.ioc_type}`,
-        );
-        initialValues.feeds_type = values.feeds_type;
-        initialValues.attack_type = values.attack_type;
-        initialValues.ioc_type = values.ioc_type;
-        initialValues.prioritize = values.prioritize;
-
-        // Clear any ordering / page query params.
-        navigate({ search: "" }, { replace: true });
-
-        // force remount FeedsTable
-        setTableKey((prev) => prev + 1);
+        setFeedsState((prev) => ({
+          url: `${FEEDS_BASE_URI}/${values.feeds_type}/${values.attack_type}/${values.prioritize}.json?ioc_type=${values.ioc_type}`,
+          tableParams: {
+            feed_type: values.feeds_type,
+            attack_type: values.attack_type,
+            ioc_type: values.ioc_type,
+            prioritize: values.prioritize,
+          },
+          tableKey: prev.tableKey + 1,
+        }));
+        updateSearchParams(values);
       } catch (e) {
         console.debug(e);
       }
     },
-    [setUrl, navigate],
+    [updateSearchParams],
   );
 
   return (
@@ -178,6 +222,7 @@ export default function Feeds() {
           outline
           href={FEEDS_LICENSE}
           target="_blank"
+          rel="noopener noreferrer"
         >
           <TbLicense />
           &nbsp;Feeds license
@@ -189,100 +234,168 @@ export default function Feeds() {
             {/* Form */}
             <Loader
               render={() => (
-                <Formik initialValues={initialValues} onSubmit={onSubmit}>
-                  {(formik) => (
-                    <Form>
-                      <FormGroup row>
-                        <Col sm={12} md={3}>
-                          <Label
-                            className="form-control-label"
-                            htmlFor="Feeds__feeds_type"
-                          >
-                            Feed type:
-                          </Label>
-                          <Select
-                            id="Feeds__feeds_type"
-                            name="feeds_type"
-                            value={initialValues.feeds_type}
-                            choices={feedTypeChoices.concat(honeypotFeedsType)}
-                            onChange={(e) => {
-                              formik.handleChange(e);
-                              formik.submitForm();
-                            }}
-                          />
-                        </Col>
-                        <Col sm={12} md={3}>
-                          <Label
-                            className="form-control-label"
-                            htmlFor="Feeds__attack_type"
-                          >
-                            Attack type:
-                          </Label>
-                          <Select
-                            id="Feeds__attack_type"
-                            name="attack_type"
-                            value={initialValues.attack_type}
-                            choices={attackTypeChoices}
-                            onChange={(e) => {
-                              formik.handleChange(e);
-                              formik.submitForm();
-                            }}
-                          />
-                        </Col>
-                        <Col sm={12} md={3}>
-                          <Label
-                            className="form-control-label"
-                            htmlFor="Feeds__ioc_type"
-                          >
-                            IOC type:
-                          </Label>
-                          <Select
-                            id="Feeds__ioc_type"
-                            name="ioc_type"
-                            value={initialValues.ioc_type}
-                            choices={iocTypeChoices}
-                            onChange={(e) => {
-                              formik.handleChange(e);
-                              formik.submitForm();
-                            }}
-                          />
-                        </Col>
-                        <Col sm={12} md={3}>
-                          <Label
-                            className="form-control-label"
-                            htmlFor="Feeds__prioritize"
-                          >
-                            Prioritize:
-                          </Label>
-                          <Select
-                            id="Feeds__prioritize"
-                            name="prioritize"
-                            value={initialValues.prioritize}
-                            choices={prioritizationChoices}
-                            onChange={(e) => {
-                              formik.handleChange(e);
-                              formik.submitForm();
-                            }}
-                          />
-                        </Col>
-                      </FormGroup>
-                    </Form>
-                  )}
+                <Formik
+                  initialValues={initialValues}
+                  onSubmit={onSubmit}
+                  innerRef={formikRef}
+                >
+                  {(formik) => {
+                    return (
+                      <Form>
+                        <FormGroup row className="align-items-end">
+                          <Col sm={12} md>
+                            <Label
+                              className="form-control-label"
+                              htmlFor="Feeds__feeds_type"
+                            >
+                              Feed type:
+                            </Label>
+                            <MultiSelectDropdown
+                              id="Feeds__feeds_type"
+                              options={honeypotFeedsType}
+                              value={
+                                formik.values.feeds_type &&
+                                formik.values.feeds_type !== "all"
+                                  ? formik.values.feeds_type
+                                      .split(",")
+                                      .map((v) =>
+                                        honeypotFeedsType.find(
+                                          (o) => o.value === v,
+                                        ),
+                                      )
+                                      .filter(Boolean)
+                                  : []
+                              }
+                              placeholder="All"
+                              onChange={(selected) => {
+                                const newFeedsType =
+                                  selected.length > 0
+                                    ? selected.map((o) => o.value).join(",")
+                                    : "all";
+                                formik.setFieldValue(
+                                  "feeds_type",
+                                  newFeedsType,
+                                );
+                                onSubmit({
+                                  ...formik.values,
+                                  feeds_type: newFeedsType,
+                                });
+                              }}
+                            />
+                          </Col>
+                          <Col sm={12} md>
+                            <Label
+                              className="form-control-label"
+                              htmlFor="Feeds__attack_type"
+                            >
+                              Attack type:
+                            </Label>
+                            <Select
+                              id="Feeds__attack_type"
+                              name="attack_type"
+                              value={formik.values.attack_type}
+                              choices={attackTypeChoices}
+                              onChange={async (e) => {
+                                await formik.setFieldValue(
+                                  "attack_type",
+                                  e.target.value,
+                                  true,
+                                );
+                                await formik.setFieldTouched(
+                                  "attack_type",
+                                  true,
+                                  false,
+                                );
+                                await formik.submitForm();
+                              }}
+                            />
+                          </Col>
+                          <Col sm={12} md>
+                            <Label
+                              className="form-control-label"
+                              htmlFor="Feeds__ioc_type"
+                            >
+                              IOC type:
+                            </Label>
+                            <Select
+                              id="Feeds__ioc_type"
+                              name="ioc_type"
+                              value={formik.values.ioc_type}
+                              choices={iocTypeChoices}
+                              onChange={async (e) => {
+                                await formik.setFieldValue(
+                                  "ioc_type",
+                                  e.target.value,
+                                  true,
+                                );
+                                await formik.setFieldTouched(
+                                  "ioc_type",
+                                  true,
+                                  false,
+                                );
+                                await formik.submitForm();
+                              }}
+                            />
+                          </Col>
+                          <Col sm={12} md>
+                            <Label
+                              className="form-control-label"
+                              htmlFor="Feeds__prioritize"
+                            >
+                              Prioritize:
+                            </Label>
+                            <Select
+                              id="Feeds__prioritize"
+                              name="prioritize"
+                              value={formik.values.prioritize}
+                              choices={prioritizationChoices}
+                              onChange={async (e) => {
+                                await formik.setFieldValue(
+                                  "prioritize",
+                                  e.target.value,
+                                  true,
+                                );
+                                await formik.setFieldTouched(
+                                  "prioritize",
+                                  true,
+                                  false,
+                                );
+                                await formik.submitForm();
+                              }}
+                            />
+                          </Col>
+                          <Col sm={12} md="auto">
+                            <Button
+                              color="primary"
+                              outline
+                              disabled={isDefault}
+                              title="Reset filters"
+                              aria-label="Reset filters"
+                              onClick={() => {
+                                formikRef.current?.resetForm({
+                                  values: DEFAULT_VALUES,
+                                });
+                                onSubmit(DEFAULT_VALUES);
+                              }}
+                            >
+                              <MdFilterAltOff />
+                            </Button>
+                          </Col>
+                        </FormGroup>
+                      </Form>
+                    );
+                  }}
                 </Formik>
               )}
             />
           </Col>
-          <Col
-            sm={12}
-            md={2}
-            className="d-flex justify-content-end align-items-end"
-          >
+          <Col sm={12} md="auto" className="d-flex align-items-end pb-3">
             <Button
-              className="mb-3"
               color="primary"
               outline
-              href={url}
+              href={feedsState.url}
               target="_blank"
+              rel="noopener noreferrer"
             >
               <VscJson />
               &nbsp;Raw data
@@ -291,13 +404,8 @@ export default function Feeds() {
         </Row>
         {/*Table*/}
         <FeedsTable
-          key={tableKey}
-          tableParams={{
-            feed_type: initialValues.feeds_type,
-            attack_type: initialValues.attack_type,
-            ioc_type: initialValues.ioc_type,
-            prioritize: initialValues.prioritize,
-          }}
+          key={feedsState.tableKey}
+          tableParams={feedsState.tableParams}
           onDataLoad={setFeedsData}
           onSortChange={handleSortChange}
         />

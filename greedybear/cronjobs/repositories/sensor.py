@@ -1,7 +1,6 @@
 import logging
 
 from greedybear.consts import IP
-from greedybear.cronjobs.extraction.utils import get_ioc_type
 from greedybear.models import Sensor
 
 
@@ -31,6 +30,8 @@ class SensorRepository:
         Returns:
             Sensor object if valid, None if invalid IP format.
         """
+        from greedybear.cronjobs.extraction.utils import get_ioc_type
+
         if ip in self.cache:
             return self.cache[ip]
         if get_ioc_type(ip) != IP:
@@ -46,3 +47,21 @@ class SensorRepository:
         """Load sensor objects from the database into the cache."""
         self.log.debug("populating sensor cache")
         self.cache = {s.address: s for s in Sensor.objects.all()}
+
+    def update_country(self, sensor: Sensor, country: str) -> None:
+        """
+        Update the country of a sensor if it has changed.
+
+        Args:
+            sensor: The Sensor instance to update.
+            country: The new country value.
+        """
+        if not sensor or not country:
+            return
+
+        if sensor.country == country:
+            return
+
+        self.log.debug(f"Updating country for sensor {sensor.address} to {country}")
+        sensor.country = country
+        sensor.save(update_fields=["country"])
