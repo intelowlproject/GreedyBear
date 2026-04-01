@@ -9,6 +9,10 @@ import axios from "axios";
 
 vi.mock("axios");
 
+vi.mock("@certego/certego-ui", () => ({
+  addToast: vi.fn(),
+}));
+
 describe("EmailForm component", () => {
   test("Submit email form", async () => {
     // mock user interaction: reccomanded to put this at the start of the test
