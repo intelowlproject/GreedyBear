@@ -41,8 +41,6 @@ export async function resendVerificationMail(body) {
   }
 }
 
-// In frontend/src/components/auth/api.js
-
 export async function requestPasswordReset(body) {
   try {
     const resp = await axios.post(

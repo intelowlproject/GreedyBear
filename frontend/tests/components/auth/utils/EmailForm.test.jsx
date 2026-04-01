@@ -4,6 +4,9 @@ import { render, screen, waitFor } from "@testing-library/react";
 import { BrowserRouter } from "react-router-dom";
 import userEvent from "@testing-library/user-event";
 import EmailForm from "../../../../src/components/auth/utils/EmailForm";
+// 1. ADD THESE IMPORTS
+import { requestPasswordReset } from "../../../../src/components/auth/api";
+import axios from "axios";
 
 vi.mock("axios");
 
@@ -78,16 +81,13 @@ describe("EmailForm component", () => {
   test("Does not trigger onFormSubmit and re-enables button when API request fails", async () => {
     const user = userEvent.setup();
 
-    // Simulate the API rejecting the promise (the fix made in api.js)
-    const mockApiFailure = vi
-      .fn()
-      .mockRejectedValue(new Error("Network Error"));
+    vi.mocked(axios.post).mockRejectedValueOnce(new Error("Network Error"));
     const mockOnFormSubmit = vi.fn();
 
     render(
       <BrowserRouter>
         <EmailForm
-          apiCallback={mockApiFailure}
+          apiCallback={requestPasswordReset}
           onFormSubmit={mockOnFormSubmit}
         />
       </BrowserRouter>,
@@ -96,20 +96,15 @@ describe("EmailForm component", () => {
     const emailInputElement = screen.getByLabelText("Email Address");
     const submitButtonElement = screen.getByRole("button", { name: /Send/i });
 
-    // User populates the email input and submits
     await user.type(emailInputElement, "test@test.com");
     await user.click(submitButtonElement);
 
-    // 1. Verify the API was actually called
-    expect(mockApiFailure).toHaveBeenCalledTimes(1);
+    expect(axios.post).toHaveBeenCalledTimes(1);
 
-    await waitFor(() => {
-      expect(mockOnFormSubmit).not.toHaveBeenCalled();
-    });
-
-    // 3. Verify the spinner stops and the button re-enables so the user can try again
     await waitFor(() => {
       expect(submitButtonElement).not.toBeDisabled();
     });
+
+    expect(mockOnFormSubmit).not.toHaveBeenCalled();
   });
 });
