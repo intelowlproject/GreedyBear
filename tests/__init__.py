@@ -229,6 +229,8 @@ class ExtractionTestCase(CustomTestCase):
         ip_reputation="",
         asn=1234,
         firehol_categories=None,
+        attacker_country="",
+        attacker_country_code="",
     ):
         mock = Mock(spec=IOC)
         mock.name = name
@@ -246,6 +248,8 @@ class ExtractionTestCase(CustomTestCase):
         mock.ip_reputation = ip_reputation
         mock.firehol_categories = firehol_categories if firehol_categories is not None else []
         mock.number_of_days_seen = len(mock.days_seen)
+        mock.attacker_country = attacker_country
+        mock.attacker_country_code = attacker_country_code
 
         if asn is not None:
             mock.autonomous_system = Mock()
