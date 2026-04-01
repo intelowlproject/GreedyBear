@@ -58,7 +58,7 @@ class MassScannersModelAdmin(admin.ModelAdmin):
     list_display = ["ip_address", "added", "reason"]
     list_filter = ["reason"]
     search_fields = ["ip_address"]
-    search_help_text = "search for the IP address source"
+    search_help_text = "search for the IP address"
 
 
 @admin.register(FireHolList)
@@ -154,7 +154,7 @@ class IOCModelAdmin(admin.ModelAdmin):
         "autonomous_system",
     ]
     search_fields = ["name", "related_ioc__name"]
-    search_help_text = "search for the IP address source"
+    search_help_text = "search by IOC name or related IOC name"
     raw_id_fields = ["related_ioc"]
     filter_horizontal = ["general_honeypot", "sensors"]
     inlines = [SessionInline]
