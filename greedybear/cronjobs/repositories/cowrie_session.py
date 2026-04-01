@@ -181,4 +181,4 @@ class CowrieSessionRepository:
         )
         session.credentials.add(credential)
         credential.sources.add(session.source)
-        self.log.debug(f"linked source {session.source.name} to credential '{username}'")
+        self.log.debug(f"linked source {session.source.name} to credential '{credential}'")

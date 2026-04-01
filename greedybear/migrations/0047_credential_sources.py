@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('greedybear', '0045_credential_protocol'),
+        ('greedybear', '0046_sensor_label'),
     ]
 
     operations = [

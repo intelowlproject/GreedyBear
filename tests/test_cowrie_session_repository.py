@@ -251,7 +251,7 @@ class CredentialReuseTestCase(CustomTestCase):
 
     def create_cowrie_session(self, source_ip: str, session_id=None):
         """Helper to create a CowrieSession with a unique session_id."""
-        source_ioc = IOC.objects.create(name=source_ip, type="ip")
+        source_ioc, _ = IOC.objects.get_or_create(name=source_ip, defaults={"type": "ip"})
         if session_id is None:
             session_id = self._session_counter
             self._session_counter += 1
@@ -279,3 +279,20 @@ class CredentialReuseTestCase(CustomTestCase):
 
         credential = Credential.objects.get(username="admin", password="123")
         self.assertEqual(credential.sources.count(), 2)
+
+    def test_same_source_ip_different_sessions_not_counted_twice(self):
+        """
+        Same credential added from two different sessions
+        but the same source IP should only be linked once.
+        """
+        # two DIFFERENT sessions, but SAME source IP
+        session1 = self.create_cowrie_session(source_ip="1.2.3.4", session_id=333)
+        session2 = self.create_cowrie_session(source_ip="1.2.3.4", session_id=444)
+
+        self.repo.add_credential(session1, "admin", "123")
+        self.repo.add_credential(session2, "admin", "123")
+
+        credential = Credential.objects.get(username="admin", password="123")
+
+        # despite two different sessions, same IP = count only 1
+        self.assertEqual(credential.sources.count(), 1)
