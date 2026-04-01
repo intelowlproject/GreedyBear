@@ -4,7 +4,6 @@ import { render, screen, waitFor } from "@testing-library/react";
 import { BrowserRouter } from "react-router-dom";
 import userEvent from "@testing-library/user-event";
 import EmailForm from "../../../../src/components/auth/utils/EmailForm";
-// 1. ADD THESE IMPORTS
 import { requestPasswordReset } from "../../../../src/components/auth/api";
 import axios from "axios";
 
