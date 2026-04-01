@@ -338,6 +338,14 @@ class TestMergeIocs(ExtractionTestCase):
 
         self.assertEqual(result.attacker_country_code, "US")
 
+    def test_rejects_invalid_length_attacker_country_code(self):
+        existing = self._create_mock_ioc(attacker_country_code="US")
+        new = self._create_mock_ioc(attacker_country_code="NPL")
+
+        result = self.processor._merge_iocs(existing, new)
+
+        self.assertEqual(result.attacker_country_code, "US")
+
 
 class TestUpdateDaysSeen(ExtractionTestCase):
     def setUp(self):

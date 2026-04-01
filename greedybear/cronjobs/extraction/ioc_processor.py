@@ -110,7 +110,7 @@ class IocProcessor:
         # we will always update attacker_country if incoming value exists
         if new.attacker_country:
             existing.attacker_country = new.attacker_country
-        if new.attacker_country_code:
+        if new.attacker_country_code and len(new.attacker_country_code) == 2:
             existing.attacker_country_code = new.attacker_country_code
 
         # Add sensors from new IOC (existing is already saved, so ManyToMany works).

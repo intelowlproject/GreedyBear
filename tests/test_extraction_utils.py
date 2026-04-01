@@ -706,6 +706,24 @@ class IocsFromHitsTestCase(CustomTestCase):
         self.assertEqual(ioc.attacker_country, "Nepal")
         self.assertEqual(ioc.attacker_country_code, "")
 
+    def test_ioc_attacker_country_code_rejects_invalid_length(self):
+        """Verify that country codes longer than 2 chars are discarded."""
+        hits = [
+            self._create_hit(
+                src_ip="8.8.8.8",
+                dest_port=22,
+                hit_type="Cowrie",
+            )
+        ]
+
+        hits[0]["geoip"] = {"country_name": "Nepal", "country_iso_code": "NPL"}
+
+        iocs = iocs_from_hits(hits)
+        self.assertEqual(len(iocs), 1)
+
+        ioc = iocs[0]
+        self.assertEqual(ioc.attacker_country_code, "")
+
     def test_ioc_autonomous_system_set_correctly(self):
         """Verify that iocs_from_hits sets autonomous_system FK correctly from hits."""
 

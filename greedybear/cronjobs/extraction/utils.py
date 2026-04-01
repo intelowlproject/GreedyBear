@@ -176,7 +176,8 @@ def iocs_from_hits(hits: list[dict]) -> list[IOC]:
 
         geoip = hits[0].get("geoip", {}) if hits else {}
         attacker_country = geoip.get("country_name", "")
-        attacker_country_code = geoip.get("country_iso_code", "")
+        raw_country_code = geoip.get("country_iso_code", "")
+        attacker_country_code = raw_country_code if len(raw_country_code) == 2 else ""
 
         asn = geoip.get("asn")
         as_name = geoip.get("as_org", "")
