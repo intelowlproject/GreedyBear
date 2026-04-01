@@ -241,3 +241,58 @@ class TestCowrieSessionRepositoryCleanup(CustomTestCase):
         self.assertEqual(deleted_count, 1)
         self.assertFalse(CowrieSession.objects.filter(session_id=777).exists())
         self.assertTrue(CowrieSession.objects.filter(session_id=888).exists())
+
+
+class CredentialReuseTestCase(CustomTestCase):
+    def setUp(self):
+        self.repo = CowrieSessionRepository()
+        # counter for generating unique session_ids
+        self._session_counter = 1000
+
+    def create_cowrie_session(self, source_ip: str, session_id=None):
+        """Helper to create a CowrieSession with a unique session_id."""
+        source_ioc, _ = IOC.objects.get_or_create(name=source_ip, defaults={"type": "ip"})
+        if session_id is None:
+            session_id = self._session_counter
+            self._session_counter += 1
+        session = CowrieSession.objects.create(
+            session_id=session_id,
+            source=source_ioc,
+        )
+        return session
+
+    def test_same_ip_not_counted_twice(self):
+        session = self.create_cowrie_session(source_ip="1.2.3.4", session_id=111)
+
+        self.repo.add_credential(session, "admin", "123")
+        self.repo.add_credential(session, "admin", "123")
+
+        credential = Credential.objects.get(username="admin", password="123")
+        self.assertEqual(credential.sources.count(), 1)
+
+    def test_different_ips_counted(self):
+        session1 = self.create_cowrie_session(source_ip="1.2.3.4", session_id=111)
+        session2 = self.create_cowrie_session(source_ip="5.6.7.8", session_id=222)
+
+        self.repo.add_credential(session1, "admin", "123")
+        self.repo.add_credential(session2, "admin", "123")
+
+        credential = Credential.objects.get(username="admin", password="123")
+        self.assertEqual(credential.sources.count(), 2)
+
+    def test_same_source_ip_different_sessions_not_counted_twice(self):
+        """
+        Same credential added from two different sessions
+        but the same source IP should only be linked once.
+        """
+        # two DIFFERENT sessions, but SAME source IP
+        session1 = self.create_cowrie_session(source_ip="1.2.3.4", session_id=333)
+        session2 = self.create_cowrie_session(source_ip="1.2.3.4", session_id=444)
+
+        self.repo.add_credential(session1, "admin", "123")
+        self.repo.add_credential(session2, "admin", "123")
+
+        credential = Credential.objects.get(username="admin", password="123")
+
+        # despite two different sessions, same IP = count only 1
+        self.assertEqual(credential.sources.count(), 1)
