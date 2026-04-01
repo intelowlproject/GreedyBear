@@ -40,6 +40,7 @@ User: AUTH_USER_MODEL = get_user_model()
 
 
 def revoke_other_tokens(user, current_token=None):
+    # Keep only the provided token for this user; revoke all when current_token is null.
     if current_token:
         AuthToken.objects.filter(user=user).exclude(pk=current_token.pk).delete()
     else:
