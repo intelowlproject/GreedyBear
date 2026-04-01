@@ -84,6 +84,11 @@ class IOC(models.Model):
         blank=True,
         default="",
     )
+    attacker_country_code = models.CharField(
+        max_length=2,
+        blank=True,
+        default="",
+    )
     autonomous_system = models.ForeignKey(
         AutonomousSystem,
         on_delete=models.SET_NULL,
