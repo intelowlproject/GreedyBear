@@ -1,30 +1,15 @@
 from collections import defaultdict
-from datetime import datetime
-from ipaddress import IPv4Address, IPv4Network, ip_address, ip_network
+from ipaddress import ip_address, ip_network
 from logging import Logger
 from urllib.parse import urlparse
 
 import requests
 from django.conf import settings
 
-from greedybear.consts import DOMAIN, IP
 from greedybear.cronjobs.repositories import ASRepository
 from greedybear.enums import IpReputation
 from greedybear.models import IOC, FireHolList, MassScanner
-
-
-def parse_timestamp(timestamp: str) -> datetime:
-    """
-    Parse an ISO-format timestamp string into a naive datetime.
-    Strips timezone info because the project uses USE_TZ=False.
-
-    Args:
-        timestamp: ISO-format timestamp string.
-
-    Returns:
-        Naive datetime object.
-    """
-    return datetime.fromisoformat(timestamp).replace(tzinfo=None)
+from greedybear.utils import get_ioc_type, parse_timestamp
 
 
 def normalize_credential_field(value: object, max_length: int = 256) -> str:
@@ -202,55 +187,6 @@ def iocs_from_hits(hits: list[dict]) -> list[IOC]:
             ioc.last_seen = parse_timestamp(max(timestamps))
         iocs.append(ioc)
     return iocs
-
-
-def is_valid_ipv4(candidate: str) -> tuple[bool, str | None]:
-    """
-    Validate if a string is a valid IPv4 address.
-
-    Args:
-        candidate: String to validate as IPv4 address.
-
-    Returns:
-        Tuple of (is_valid, cleaned_ip). If valid, cleaned_ip is the stripped
-        IP address; otherwise, it is None.
-    """
-    try:
-        IPv4Address(candidate.strip())
-        return True, candidate.strip()
-    except ValueError:
-        return False, None
-
-
-def is_valid_cidr(candidate: str) -> tuple[bool, str | None]:
-    """
-    Validate if a string is a valid CIDR notation.
-
-    Args:
-        candidate: String to validate as CIDR.
-
-    Returns:
-        True if valid CIDR, False otherwise.
-    """
-    try:
-        IPv4Network(candidate.strip(), strict=False)
-        return True, candidate.strip()
-    except ValueError:
-        return False, None
-
-
-def get_ioc_type(ioc: str) -> str:
-    """
-    Determine the type of an IOC based on its format.
-
-    Args:
-        ioc: IOC name string (IP address or domain).
-
-    Returns:
-        IP if the value is a valid IPv4 address, DOMAIN otherwise.
-    """
-    is_valid, _ = is_valid_ipv4(ioc)
-    return IP if is_valid else DOMAIN
 
 
 def threatfox_submission(ioc_record: IOC, related_urls: list, log: Logger) -> None:
