@@ -57,8 +57,8 @@ class TestSetupSchedules(TestCase):
 
     @patch("greedybear.cronjobs.schedules.Schedule")
     @override_settings(EXTRACTION_INTERVAL=10, SECRET_KEY="test-secret")
-    def test_external_enrichment_cron_is_deterministic_and_outside_local_window(self, mock_schedule):
-        """External enrichment runs weekly on Sunday at deterministic times outside 00:00-02:00."""
+    def test_external_weekly_jobs_cron_are_deterministic_and_outside_local_window(self, mock_schedule):
+        """External weekly jobs run on Sunday at deterministic times outside 00:00-02:00."""
         mock_schedule.CRON = Schedule.CRON
         mock_schedule.objects.update_or_create = MagicMock()
         mock_schedule.objects.exclude = MagicMock(return_value=MagicMock())
@@ -73,7 +73,14 @@ class TestSetupSchedules(TestCase):
         def get_cron(calls, name):
             return next(c for c in calls if c[1]["name"] == name)[1]["defaults"]["cron"]
 
-        for job_name in ("enrich_threatfox", "enrich_abuseipdb"):
+        for job_name in (
+            "get_mass_scanners",
+            "get_whatsmyip",
+            "extract_firehol_lists",
+            "get_tor_exit_nodes",
+            "enrich_threatfox",
+            "enrich_abuseipdb",
+        ):
             first_cron = get_cron(first_calls, job_name)
             second_cron = get_cron(second_calls, job_name)
 

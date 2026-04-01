@@ -60,29 +60,29 @@ def setup_schedules():
             "func": "greedybear.tasks.clean_up_db",
             "cron": "7 1 * * *",
         },
-        # Mass Scanners: Weekly (Sunday) at 01:07
+        # Mass Scanners: Weekly (Sunday) at deterministic time outside 00:00-02:00
         {
             "name": "get_mass_scanners",
             "func": "greedybear.tasks.get_mass_scanners",
-            "cron": "7 1 * * 0",
+            "cron": _external_weekly_cron("get_mass_scanners"),
         },
-        # WhatsMyIP: Weekly (Sunday) at 01:07
+        # WhatsMyIP: Weekly (Sunday) at deterministic time outside 00:00-02:00
         {
             "name": "get_whatsmyip",
             "func": "greedybear.tasks.get_whatsmyip",
-            "cron": "7 1 * * 0",
+            "cron": _external_weekly_cron("get_whatsmyip"),
         },
-        # Firehol Lists: Weekly (Sunday) at 01:07
+        # Firehol Lists: Weekly (Sunday) at deterministic time outside 00:00-02:00
         {
             "name": "extract_firehol_lists",
             "func": "greedybear.tasks.extract_firehol_lists",
-            "cron": "7 1 * * 0",
+            "cron": _external_weekly_cron("extract_firehol_lists"),
         },
-        # Tor Exit Nodes: Weekly (Sunday) at 01:07
+        # Tor Exit Nodes: Weekly (Sunday) at deterministic time outside 00:00-02:00
         {
             "name": "get_tor_exit_nodes",
             "func": "greedybear.tasks.get_tor_exit_nodes",
-            "cron": "7 1 * * 0",
+            "cron": _external_weekly_cron("get_tor_exit_nodes"),
         },
         # 10. Reverse DNS Scanner Check: Daily at 06:07
         {
