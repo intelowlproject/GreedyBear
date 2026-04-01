@@ -90,13 +90,13 @@ def setup_schedules():
             "func": "greedybear.tasks.check_reverse_dns",
             "cron": "7 6 * * *",
         },
-        # 11. ThreatFox Enrichment: Weekly (Sunday) at 01:07
+        # 11. ThreatFox Enrichment: Weekly (Sunday) at deterministic time outside 00:00-02:00
         {
             "name": "enrich_threatfox",
             "func": "greedybear.tasks.enrich_threatfox",
             "cron": _external_weekly_cron("enrich_threatfox"),
         },
-        # 12. AbuseIPDB Enrichment: Weekly (Sunday) at 01:07
+        # 12. AbuseIPDB Enrichment: Weekly (Sunday) at deterministic time outside 00:00-02:00
         {
             "name": "enrich_abuseipdb",
             "func": "greedybear.tasks.enrich_abuseipdb",
