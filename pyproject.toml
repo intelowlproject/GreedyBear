@@ -12,7 +12,7 @@ dependencies = [
     "croniter==6.2.2",
     "certego-saas==0.7.12",
     # Server Gateway Interface
-    "gunicorn==25.2.0",
+    "gunicorn==25.3.0",
     # Data stores
     "elasticsearch==9.3.0",
     "psycopg2-binary==2.9.11",
