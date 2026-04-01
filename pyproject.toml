@@ -26,7 +26,7 @@ dependencies = [
     "feedparser==6.0.12",
     "stix2==3.0.2",
     # Utilities
-    "requests==2.33.0",
+    "requests==2.33.1",
     "slack-sdk==3.41.0",
 ]
 
