@@ -60,7 +60,6 @@ RUN mkdir -p ${LOG_PATH}/django ${LOG_PATH}/gunicorn \
     && touch ${LOG_PATH}/django/django_errors.log ${LOG_PATH}/django/elasticsearch.log \
     && touch ${LOG_PATH}/django/authentication.log ${LOG_PATH}/django/authentication_errors.log \
     && mkdir -p ${APP_ROOT}/mlmodels \
-    && usermod -u 2000 www-data \
     && chown -R www-data:www-data ${LOG_PATH} /opt/deploy/ ${APP_ROOT}/mlmodels/ \
     && rm -rf frontend/
 

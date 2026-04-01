@@ -20,8 +20,9 @@ python manage.py collectstatic --noinput --clear --verbosity 0
 mkdir -p /var/log/greedybear/gunicorn
 mkdir -p /run/gunicorn
 
-# Fix log file ownership (manage.py commands above run as root and may create new log files)
-chown -R 2000:82 /var/log/greedybear /run/gunicorn
+# Fix log file ownership (manage.py commands above run as root 
+# and may create new log files owned by root instead of www-data)
+chown -R www-data:www-data /var/log/greedybear /run/gunicorn
 
 # Obtain the current GreedyBear version number
 GREEDYBEAR_VERSION=$(uv version --short)

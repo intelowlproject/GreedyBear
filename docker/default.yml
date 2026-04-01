@@ -82,7 +82,7 @@ services:
         condition: service_healthy
       app:
         condition: service_healthy
-    user: "2000:82"
+    user: "www-data:www-data"
     healthcheck:
       disable: true
 
