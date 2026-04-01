@@ -55,6 +55,42 @@ class TestSetupSchedules(TestCase):
         extract_call = next(c for c in calls if c[1]["name"] == "extract_all")
         self.assertEqual(extract_call[1]["defaults"]["cron"], "*/5 * * * *")
 
+    @patch("greedybear.cronjobs.schedules.Schedule")
+    @override_settings(EXTRACTION_INTERVAL=10, SECRET_KEY="test-secret")
+    def test_external_enrichment_cron_is_deterministic_and_outside_local_window(self, mock_schedule):
+        """External enrichment runs weekly on Sunday at deterministic times outside 00:00-02:00."""
+        mock_schedule.CRON = Schedule.CRON
+        mock_schedule.objects.update_or_create = MagicMock()
+        mock_schedule.objects.exclude = MagicMock(return_value=MagicMock())
+
+        call_command("setup_schedules")
+        first_calls = mock_schedule.objects.update_or_create.call_args_list
+
+        mock_schedule.objects.update_or_create.reset_mock()
+        call_command("setup_schedules")
+        second_calls = mock_schedule.objects.update_or_create.call_args_list
+
+        def get_cron(calls, name):
+            return next(c for c in calls if c[1]["name"] == name)[1]["defaults"]["cron"]
+
+        for job_name in ("enrich_threatfox", "enrich_abuseipdb"):
+            first_cron = get_cron(first_calls, job_name)
+            second_cron = get_cron(second_calls, job_name)
+
+            self.assertEqual(first_cron, second_cron)
+
+            minute_str, hour_str, day_of_month, month, day_of_week = first_cron.split()
+            hour = int(hour_str)
+            minute = int(minute_str)
+
+            self.assertGreaterEqual(hour, 2)
+            self.assertLessEqual(hour, 23)
+            self.assertGreaterEqual(minute, 0)
+            self.assertLessEqual(minute, 59)
+            self.assertEqual(day_of_month, "*")
+            self.assertEqual(month, "*")
+            self.assertEqual(day_of_week, "0")
+
     def test_orphan_schedules_are_deleted(self):
         """Test that orphaned schedules not in active_schedules list are deleted."""
         # Create an orphan schedule that's not in the active_schedules list

@@ -1,5 +1,18 @@
+import hashlib
+
 from django.conf import settings
 from django_q.models import Schedule
+
+
+def _external_weekly_cron(job_name: str) -> str:
+    """Return a deterministic Sunday cron for external jobs outside 00:00-02:00."""
+    seed_value = f"{settings.SECRET_KEY}:{job_name}"
+    digest = hashlib.sha256(seed_value.encode()).digest()
+    seed_int = int.from_bytes(digest[:8], byteorder="big", signed=False)
+
+    minute = seed_int % 60
+    hour = 2 + ((seed_int // 60) % 22)
+    return f"{minute} {hour} * * 0"
 
 
 def setup_schedules():
@@ -81,13 +94,13 @@ def setup_schedules():
         {
             "name": "enrich_threatfox",
             "func": "greedybear.tasks.enrich_threatfox",
-            "cron": "7 1 * * 0",
+            "cron": _external_weekly_cron("enrich_threatfox"),
         },
         # 12. AbuseIPDB Enrichment: Weekly (Sunday) at 01:07
         {
             "name": "enrich_abuseipdb",
             "func": "greedybear.tasks.enrich_abuseipdb",
-            "cron": "7 1 * * 0",
+            "cron": _external_weekly_cron("enrich_abuseipdb"),
         },
     ]
 
