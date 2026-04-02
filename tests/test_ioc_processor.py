@@ -322,6 +322,30 @@ class TestMergeIocs(ExtractionTestCase):
 
         self.assertEqual(result.firehol_categories, [])
 
+    def test_updates_attacker_country_code(self):
+        existing = self._create_mock_ioc(attacker_country_code="")
+        new = self._create_mock_ioc(attacker_country_code="NP")
+
+        result = self.processor._merge_iocs(existing, new)
+
+        self.assertEqual(result.attacker_country_code, "NP")
+
+    def test_preserves_attacker_country_code_when_new_is_empty(self):
+        existing = self._create_mock_ioc(attacker_country_code="US")
+        new = self._create_mock_ioc(attacker_country_code="")
+
+        result = self.processor._merge_iocs(existing, new)
+
+        self.assertEqual(result.attacker_country_code, "US")
+
+    def test_rejects_invalid_length_attacker_country_code(self):
+        existing = self._create_mock_ioc(attacker_country_code="US")
+        new = self._create_mock_ioc(attacker_country_code="NPL")
+
+        result = self.processor._merge_iocs(existing, new)
+
+        self.assertEqual(result.attacker_country_code, "US")
+
 
 class TestUpdateDaysSeen(ExtractionTestCase):
     def setUp(self):

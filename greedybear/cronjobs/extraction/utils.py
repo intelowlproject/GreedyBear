@@ -176,6 +176,8 @@ def iocs_from_hits(hits: list[dict]) -> list[IOC]:
 
         geoip = hits[0].get("geoip", {}) if hits else {}
         attacker_country = geoip.get("country_name", "")
+        raw_country_code = geoip.get("country_iso_code", "")
+        attacker_country_code = raw_country_code if len(raw_country_code) == 2 else ""
 
         asn = geoip.get("asn")
         as_name = geoip.get("as_org", "")
@@ -191,6 +193,7 @@ def iocs_from_hits(hits: list[dict]) -> list[IOC]:
             login_attempts=login_attempts,
             firehol_categories=firehol_categories,
             attacker_country=attacker_country,
+            attacker_country_code=attacker_country_code,
         )
         # Attach sensors to temporary attribute for later processing.
         # We cannot use `ioc.sensors.add()` here because the IOC instance is not yet saved
