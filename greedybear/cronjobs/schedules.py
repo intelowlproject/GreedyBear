@@ -1,5 +1,18 @@
+import hashlib
+
 from django.conf import settings
 from django_q.models import Schedule
+
+
+def _external_weekly_cron(job_name: str) -> str:
+    """Return a deterministic Sunday cron for external jobs outside 00:00-02:00."""
+    seed_value = f"{settings.SECRET_KEY}:{job_name}"
+    digest = hashlib.sha256(seed_value.encode()).digest()
+    seed_int = int.from_bytes(digest[:8], byteorder="big", signed=False)
+
+    minute = seed_int % 60
+    hour = 2 + ((seed_int // 60) % 22)
+    return f"{minute} {hour} * * 0"
 
 
 def setup_schedules():
@@ -47,29 +60,29 @@ def setup_schedules():
             "func": "greedybear.tasks.clean_up_db",
             "cron": "7 1 * * *",
         },
-        # Mass Scanners: Weekly (Sunday) at 01:07
+        # Mass Scanners: Weekly (Sunday) at deterministic time outside 00:00-02:00
         {
             "name": "get_mass_scanners",
             "func": "greedybear.tasks.get_mass_scanners",
-            "cron": "7 1 * * 0",
+            "cron": _external_weekly_cron("get_mass_scanners"),
         },
-        # WhatsMyIP: Weekly (Sunday) at 01:07
+        # WhatsMyIP: Weekly (Sunday) at deterministic time outside 00:00-02:00
         {
             "name": "get_whatsmyip",
             "func": "greedybear.tasks.get_whatsmyip",
-            "cron": "7 1 * * 0",
+            "cron": _external_weekly_cron("get_whatsmyip"),
         },
-        # Firehol Lists: Weekly (Sunday) at 01:07
+        # Firehol Lists: Weekly (Sunday) at deterministic time outside 00:00-02:00
         {
             "name": "extract_firehol_lists",
             "func": "greedybear.tasks.extract_firehol_lists",
-            "cron": "7 1 * * 0",
+            "cron": _external_weekly_cron("extract_firehol_lists"),
         },
-        # Tor Exit Nodes: Weekly (Sunday) at 01:07
+        # Tor Exit Nodes: Weekly (Sunday) at deterministic time outside 00:00-02:00
         {
             "name": "get_tor_exit_nodes",
             "func": "greedybear.tasks.get_tor_exit_nodes",
-            "cron": "7 1 * * 0",
+            "cron": _external_weekly_cron("get_tor_exit_nodes"),
         },
         # 10. Reverse DNS Scanner Check: Daily at 06:07
         {
@@ -77,17 +90,17 @@ def setup_schedules():
             "func": "greedybear.tasks.check_reverse_dns",
             "cron": "7 6 * * *",
         },
-        # 11. ThreatFox Enrichment: Weekly (Sunday) at 01:07
+        # 11. ThreatFox Enrichment: Weekly (Sunday) at deterministic time outside 00:00-02:00
         {
             "name": "enrich_threatfox",
             "func": "greedybear.tasks.enrich_threatfox",
-            "cron": "7 1 * * 0",
+            "cron": _external_weekly_cron("enrich_threatfox"),
         },
-        # 12. AbuseIPDB Enrichment: Weekly (Sunday) at 01:07
+        # 12. AbuseIPDB Enrichment: Weekly (Sunday) at deterministic time outside 00:00-02:00
         {
             "name": "enrich_abuseipdb",
             "func": "greedybear.tasks.enrich_abuseipdb",
-            "cron": "7 1 * * 0",
+            "cron": _external_weekly_cron("enrich_abuseipdb"),
         },
     ]
 

@@ -4,8 +4,14 @@ import { render, screen, waitFor } from "@testing-library/react";
 import { BrowserRouter } from "react-router-dom";
 import userEvent from "@testing-library/user-event";
 import EmailForm from "../../../../src/components/auth/utils/EmailForm";
+import { requestPasswordReset } from "../../../../src/components/auth/api";
+import axios from "axios";
 
 vi.mock("axios");
+
+vi.mock("@certego/certego-ui", () => ({
+  addToast: vi.fn(),
+}));
 
 describe("EmailForm component", () => {
   test("Submit email form", async () => {
@@ -73,5 +79,35 @@ describe("EmailForm component", () => {
     await waitFor(() => {
       expect(submitButtonElement).not.toBeDisabled();
     });
+  });
+
+  test("Does not trigger onFormSubmit and re-enables button when API request fails", async () => {
+    const user = userEvent.setup();
+
+    vi.mocked(axios.post).mockRejectedValueOnce(new Error("Network Error"));
+    const mockOnFormSubmit = vi.fn();
+
+    render(
+      <BrowserRouter>
+        <EmailForm
+          apiCallback={requestPasswordReset}
+          onFormSubmit={mockOnFormSubmit}
+        />
+      </BrowserRouter>,
+    );
+
+    const emailInputElement = screen.getByLabelText("Email Address");
+    const submitButtonElement = screen.getByRole("button", { name: /Send/i });
+
+    await user.type(emailInputElement, "test@test.com");
+    await user.click(submitButtonElement);
+
+    expect(axios.post).toHaveBeenCalledTimes(1);
+
+    await waitFor(() => {
+      expect(submitButtonElement).not.toBeDisabled();
+    });
+
+    expect(mockOnFormSubmit).not.toHaveBeenCalled();
   });
 });

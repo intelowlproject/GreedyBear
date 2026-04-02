@@ -180,3 +180,5 @@ class CowrieSessionRepository:
             protocol=normalized_protocol,
         )
         session.credentials.add(credential)
+        credential.sources.add(session.source)
+        self.log.debug(f"linked source {session.source.name} to credential '{credential}'")

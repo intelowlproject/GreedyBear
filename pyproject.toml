@@ -1,2 +1,48 @@
+[project]
+name = "greedybear"
+version = "3.3.0"
+requires-python = "==3.13.*"
+dependencies = [
+    # Django core
+    "Django==5.2.12",
+    "djangorestframework==3.17.1",
+    "django-rest-email-auth==5.0.0",
+    "django-ses==4.7.2",
+    "django-q2==1.9.0",
+    "croniter==6.2.2",
+    "certego-saas==0.7.12",
+    # Server Gateway Interface
+    "gunicorn==25.3.0",
+    # Data stores
+    "elasticsearch==9.3.0",
+    "psycopg2-binary==2.9.11",
+    # ML / data science
+    "scikit-learn==1.8.0",
+    "pandas==3.0.2",
+    "numpy==2.4.4",
+    "joblib==1.5.3",
+    "datasketch==1.9.0",
+    # File Format Support
+    "feedparser==6.0.12",
+    "stix2==3.0.2",
+    # Utilities
+    "requests==2.33.1",
+    "slack-sdk==3.41.0",
+]
+
+[dependency-groups]
+dev = [
+    "coverage==7.13.5",
+    "django-test-migrations==1.5.0",
+    "django-watchfiles==1.4.0",
+]
+lint = [
+    "ruff==0.15.8",
+]
+
+[tool.uv]
+prerelease = "allow"
+override-dependencies = ["markdown==3.10.2"]
+
 [tool.ruff]
 extend = ".github/configurations/python_linters/.ruff.toml"

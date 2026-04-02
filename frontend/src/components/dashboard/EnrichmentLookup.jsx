@@ -286,6 +286,25 @@ export default function EnrichmentLookup() {
                   </Col>
                 </Row>
               )}
+            {result.ioc.sensors && result.ioc.sensors.length > 0 && (
+              <Row className="mt-3">
+                <Col>
+                  <strong>Sensors:</strong>
+                  <div className="mt-2 text-primary font-monospace small">
+                    {result.ioc.sensors.map((sensor, idx) => (
+                      <div key={idx} className="mb-1">
+                        {sensor.address}
+                        {sensor.label && (
+                          <span className="text-muted italic ml-1">
+                            &nbsp;({sensor.label})
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </Col>
+              </Row>
+            )}
 
             {result.ioc.recurrence_probability !== undefined && (
               <Row className="mt-3">

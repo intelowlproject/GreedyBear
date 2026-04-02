@@ -1,14 +1,16 @@
 # This file is a part of GreedyBear https://github.com/honeynet/GreedyBear
 # See the file 'LICENSE' for copying permission.
 import csv
+import hashlib
 import logging
+import urllib.parse
 from datetime import datetime, timedelta
 
 import feedparser
 import requests
 from django.conf import settings
 from django.contrib.postgres.aggregates import ArrayAgg
-from django.core.cache import cache
+from django.core.cache import cache, caches
 from django.db.models import Count, F, Max, Min, Q, Sum, Value
 from django.db.models.functions import JSONObject
 from django.http import HttpResponse, HttpResponseBadRequest, StreamingHttpResponse
@@ -446,15 +448,33 @@ def feeds_response(request=None, iocs=None, feed_params=None, valid_feed_types=N
 
 def asn_aggregated_queryset(iocs_qs, request, feed_params):
     """
-    Perform DB-level aggregation grouped by ASN.
+    Retrieve ASN aggregation data. Caches the heavy aggregation query
+    since the data only updates during the extraction cronjob.
 
     Args
         iocs_qs (QuerySet): Filtered IOC queryset from get_queryset;
         request (Request): The API request object;
         feed_params (FeedRequestParams): Validated parameter object
 
-    Returns: A values-grouped queryset with annotated  metrics and honeypot arrays.
+    Returns: A list of dicts with aggregated metrics and honeypot arrays per ASN.
     """
+
+    # Build reliable cache key from query params
+    sorted_params = sorted(request.query_params.lists())
+    params_string = urllib.parse.urlencode(sorted_params, doseq=True)
+    param_hash = hashlib.sha256(params_string.encode("utf-8")).hexdigest()
+
+    # To prevent per-worker continuous RAM bloat, use the shared DB-backed cache
+    # instead of the default LocMemCache, since the JSON response size can be large.
+    # The extraction pipeline invalidates this cache by bumping the version counter.
+    shared_cache = caches["django-q"]
+    version = shared_cache.get("asn_feeds_version", 1)
+    cache_key = f"asn_feeds_v{version}_{param_hash}"
+
+    cached_result = shared_cache.get(cache_key)
+    if cached_result is not None:
+        return cached_result
+
     asn_filter = request.query_params.get("asn")
     if asn_filter:
         iocs_qs = iocs_qs.filter(autonomous_system__asn=asn_filter)
@@ -480,9 +500,11 @@ def asn_aggregated_queryset(iocs_qs, request, feed_params):
             first_seen=Min("first_seen"),
             last_seen=Max("last_seen"),
         )
-        .order_by(ordering)
     )
+    numeric_agg = numeric_agg.order_by(ordering)
 
+    # Honeypot names still require a lightweight aggregation because
+    # they depend on the active flag which can change independently.
     honeypot_agg = (
         iocs_qs.exclude(autonomous_system__isnull=True)
         .filter(honeypots__active=True)
@@ -497,13 +519,15 @@ def asn_aggregated_queryset(iocs_qs, request, feed_params):
 
     hp_lookup = {row["asn"]: row["honeypot_names"] or [] for row in honeypot_agg}
 
-    # merging numeric aggregate with honeypot names for each asn
     result = []
     for row in numeric_agg:
         asn = row["asn"]
         row_dict = dict(row)
         row_dict["honeypots"] = sorted(hp_lookup.get(asn, []))
         result.append(row_dict)
+
+    # Set cache with a 60-minute timeout (max extraction interval length) to prevent memory bloat
+    shared_cache.set(cache_key, result, timeout=3600)
 
     return result
 

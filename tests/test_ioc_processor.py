@@ -111,8 +111,7 @@ class TestAddIoc(ExtractionTestCase):
 
         self.processor.add_ioc(ioc, attack_type=SCANNER)
 
-        ioc.sensors.add.assert_any_call(sensor1)
-        ioc.sensors.add.assert_any_call(sensor2)
+        ioc.sensors.add.assert_called_once_with(sensor1, sensor2)
 
     def test_updates_days_seen_on_add(self):
         self.mock_sensor_repo.cache = {}

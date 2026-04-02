@@ -26,9 +26,16 @@ class TagSerializer(serializers.ModelSerializer):
         fields = ["key", "value", "source"]
 
 
+class SensorSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Sensor
+        fields = ["address", "label"]
+
+
 class IOCSerializer(serializers.ModelSerializer):
     general_honeypot = HoneypotSerializer(many=True, read_only=True, source="honeypots")
     tags = TagSerializer(many=True, read_only=True)
+    sensors = SensorSerializer(many=True, read_only=True)
 
     class Meta:
         model = IOC
@@ -56,7 +63,7 @@ class EnrichmentSerializer(serializers.Serializer):
             raise serializers.ValidationError("Observable is not a valid IP address or domain")
 
         try:
-            required_object = IOC.objects.prefetch_related("tags").get(name=observable)
+            required_object = IOC.objects.prefetch_related("tags", "sensors").get(name=observable)
             data["found"] = True
             data["ioc"] = required_object
         except IOC.DoesNotExist:

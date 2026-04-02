@@ -11,6 +11,7 @@ from durin import views as durin_views
 from durin.models import AuthToken
 from rest_framework import status
 from rest_framework.decorators import (
+    action,
     api_view,
     authentication_classes,
     permission_classes,
@@ -36,6 +37,14 @@ logger = logging.getLogger(__name__)
 """ Auth API endpoints """
 
 User: AUTH_USER_MODEL = get_user_model()
+
+
+def revoke_other_tokens(user, current_token=None):
+    # Keep only the provided token for this user; revoke all when current_token is null.
+    if current_token:
+        AuthToken.objects.filter(user=user).exclude(pk=current_token.pk).delete()
+    else:
+        AuthToken.objects.filter(user=user).delete()
 
 
 class PasswordResetRequestView(rest_email_auth.views.PasswordResetRequestView):
@@ -168,14 +177,23 @@ class ChangePasswordView(APIView):
         user.set_password(new_password)
         user.save()
 
-        if request.auth:
-            AuthToken.objects.filter(user=user).exclude(pk=request.auth.pk).delete()
-        else:
-            AuthToken.objects.filter(user=user).delete()
+        revoke_other_tokens(user=user, current_token=request.auth)
 
         # Return a success response
         return Response({"message": "Password changed successfully"})
 
 
-TokenSessionsViewSet = durin_views.TokenSessionsViewSet
+class TokenSessionsViewSet(durin_views.TokenSessionsViewSet):
+    @action(
+        detail=False,
+        methods=["delete"],
+        url_path="others",
+        authentication_classes=[CookieTokenAuthentication],
+        permission_classes=[IsAuthenticated],
+    )
+    def revoke_others(self, request: Request) -> Response:
+        revoke_other_tokens(user=request.user, current_token=request.auth)
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
 APIAccessTokenView = durin_views.APIAccessTokenView

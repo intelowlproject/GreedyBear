@@ -1,6 +1,6 @@
 import React from "react";
 import "@testing-library/jest-dom";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 import { BrowserRouter } from "react-router-dom";
 import axios from "axios";
 import userEvent from "@testing-library/user-event";
@@ -9,9 +9,40 @@ import { AUTH_BASE_URI } from "../../../src/constants/api";
 
 vi.mock("axios");
 
+function fillRegistrationForm() {
+  fireEvent.change(screen.getByLabelText("First Name"), {
+    target: { value: "firstname" },
+  });
+  fireEvent.change(screen.getByLabelText("Last Name"), {
+    target: { value: "lastname" },
+  });
+  fireEvent.change(screen.getByLabelText("Email"), {
+    target: { value: "test@test.com" },
+  });
+  fireEvent.change(screen.getByLabelText("Username"), {
+    target: { value: "test_user" },
+  });
+  fireEvent.change(screen.getByLabelText("Password"), {
+    target: { value: "GreedyBearPassword" },
+  });
+  fireEvent.change(screen.getByLabelText("Confirm Password"), {
+    target: { value: "GreedyBearPassword" },
+  });
+  fireEvent.change(screen.getByLabelText("Company/ Organization"), {
+    target: { value: "companyname" },
+  });
+  fireEvent.change(screen.getByLabelText("Role"), {
+    target: { value: "companyrole" },
+  });
+}
+
 describe("Registration component", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    vi.restoreAllMocks();
+  });
+
   test("User registration", async () => {
-    // mock user interaction: reccomanded to put this at the start of the test
     const user = userEvent.setup();
 
     render(
@@ -46,14 +77,11 @@ describe("Registration component", () => {
     expect(submitButtonElement).toBeInTheDocument();
 
     // user populates the registration form and submit
-    await user.type(firstNameInputElement, "firstname");
-    await user.type(lastNameInputElement, "lastname");
-    await user.type(emailInputElement, "test@test.com");
-    await user.type(usernameInputElement, "test_user");
-    await user.type(passwordInputElement, "GreedyBearPassword");
-    await user.type(confirmPasswordInputElement, "GreedyBearPassword");
-    await user.type(companyNameInputElement, "companyname");
-    await user.type(companyRoleInputElement, "companyrole");
+    fillRegistrationForm();
+
+    await waitFor(() => {
+      expect(submitButtonElement).not.toBeDisabled();
+    });
     await user.click(submitButtonElement);
 
     await waitFor(() => {
@@ -97,44 +125,22 @@ describe("Registration component", () => {
   test("Double-clicking Register while submitting does not trigger duplicate requests", async () => {
     const user = userEvent.setup();
 
-    // Clear the storage to prevent state pollution from previous calls
-    localStorage.clear();
-    vi.resetModules();
-
-    // Then reimporting to get a fresh state
-    const { default: Register } =
-      await import("../../../src/components/auth/Register");
-
     render(
       <BrowserRouter>
         <Register />
       </BrowserRouter>,
     );
 
-    const firstNameInputElement = screen.getByLabelText("First Name");
-    const lastNameInputElement = screen.getByLabelText("Last Name");
-    const emailInputElement = screen.getByLabelText("Email");
-    const usernameInputElement = screen.getByLabelText("Username");
-    const passwordInputElement = screen.getByLabelText("Password");
-    const confirmPasswordInputElement =
-      screen.getByLabelText("Confirm Password");
-    const companyNameInputElement = screen.getByLabelText(
-      "Company/ Organization",
-    );
-    const companyRoleInputElement = screen.getByLabelText("Role");
+    // Populating the form
+    fillRegistrationForm();
+
     const submitButtonElement = screen.getByRole("button", {
       name: /Register/i,
     });
 
-    // Populating the form
-    await user.type(firstNameInputElement, "firstname");
-    await user.type(lastNameInputElement, "lastname");
-    await user.type(emailInputElement, "test@test.com");
-    await user.type(usernameInputElement, "test_user");
-    await user.type(passwordInputElement, "GreedyBearPassword");
-    await user.type(confirmPasswordInputElement, "GreedyBearPassword");
-    await user.type(companyNameInputElement, "companyname");
-    await user.type(companyRoleInputElement, "companyrole");
+    await waitFor(() => {
+      expect(submitButtonElement).not.toBeDisabled();
+    });
 
     // setting up the mock and clearing previous calls
     axios.post.mockClear();

@@ -26,9 +26,15 @@ class Sensor(models.Model):
         blank=True,
         default="",
     )
+    label = models.CharField(
+        max_length=128,
+        blank=True,
+        default="",
+        help_text="Optional human-readable label to identify this sensor (e.g. 'home-pi', 'cloud-aws-eu').",
+    )
 
     def __str__(self):
-        return self.address
+        return f"{self.address} ({self.label})" if self.label else self.address
 
 
 class Honeypot(models.Model):
@@ -130,6 +136,11 @@ class Credential(models.Model):
     username = models.CharField(max_length=256, blank=False)
     password = models.CharField(max_length=256, blank=False)
     protocol = models.CharField(max_length=32, blank=True, default="")
+    sources = models.ManyToManyField(
+        "IOC",
+        blank=True,
+        related_name="credentials",
+    )
 
     class Meta:
         constraints = [
@@ -165,6 +176,8 @@ class CowrieSession(models.Model):
         ]
 
     def __str__(self):
+        if self.session_id is None:
+            return "New Session (unsaved)"
         return f"Session {hex(self.session_id)[2:]} from {self.source.name}"
 
 

@@ -1,3 +1,4 @@
+from django.core.cache import cache, caches
 from django.utils import timezone
 from rest_framework.test import APIClient
 
@@ -63,6 +64,8 @@ class FeedsASNViewTestCase(CustomTestCase):
 
     def setUp(self):
         super().setUp()
+        cache.clear()
+        caches["django-q"].clear()
         self.client = APIClient()
         self.client.force_authenticate(user=self.superuser)
         self.url = "/api/feeds/asn/"
@@ -221,3 +224,45 @@ class FeedsASNViewTestCase(CustomTestCase):
             # Restore original name
             self.as_low.name = original_name
             self.as_low.save(update_fields=["name"])
+
+    def test_asn_feed_caching_behavior(self):
+        """
+        Verify that identical requests to the ASN feed return cached results,
+        and that invalidating the 'asn_feeds_version' forces a re-computation.
+        """
+        # 1. First request computes and caches the result
+        response1 = self.client.get(self.url)
+        self.assertEqual(response1.status_code, 200)
+        results1 = self._get_results(response1)
+        high_item1 = next((item for item in results1 if str(item["asn"]) == self.high_asn), None)
+        self.assertIsNotNone(high_item1)
+
+        # 2. Modify DB (e.g. change an IOC's attack count)
+        original_attack_count = self.ioc_high1.attack_count
+        self.ioc_high1.attack_count += 100
+        self.ioc_high1.save(update_fields=["attack_count"])
+
+        # 3. Second request should hit the cache and return SAME old value
+        response2 = self.client.get(self.url)
+        results2 = self._get_results(response2)
+        high_item2 = next((item for item in results2 if str(item["asn"]) == self.high_asn), None)
+
+        self.assertEqual(high_item1["total_attack_count"], high_item2["total_attack_count"])
+
+        # 4. Invalidate the cache (simulate extraction cronjob behavior)
+        shared_cache = caches["django-q"]
+        try:
+            shared_cache.incr("asn_feeds_version")
+        except ValueError:
+            shared_cache.set("asn_feeds_version", 2, timeout=None)
+
+        # 5. Third request should re-compute and show UPDATED DB value
+        response3 = self.client.get(self.url)
+        results3 = self._get_results(response3)
+        high_item3 = next((item for item in results3 if str(item["asn"]) == self.high_asn), None)
+
+        self.assertEqual(high_item3["total_attack_count"], high_item1["total_attack_count"] + 100)
+
+        # Cleanup DB
+        self.ioc_high1.attack_count = original_attack_count
+        self.ioc_high1.save(update_fields=["attack_count"])

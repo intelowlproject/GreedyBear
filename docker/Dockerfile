@@ -1,4 +1,15 @@
+## ------------------------------- UV Stage ------------------------------ ## 
+
+FROM python:3.13-slim-trixie AS uv
+
+COPY --from=ghcr.io/astral-sh/uv:0.11.1 /uv /bin/uv
+COPY pyproject.toml .  
+
+RUN echo "VITE_GREEDYBEAR_VERSION=\"$(uv version --short)\"" > .env.local
+
+
 ## ------------------------------- Frontend Build Stage ------------------------------ ## 
+
 FROM node:lts-alpine3.22 AS frontend-build
 
 WORKDIR /app
@@ -9,21 +20,22 @@ RUN npm ci
 
 # copy source code and build
 COPY frontend/ .
-COPY docker/.version .env.local
+COPY --from=uv /.env.local .
 RUN VITE_BASE_URL=/static/reactapp/ npm run build
 
 
 ## ------------------------------- Production Stage ------------------------------ ##
 
-FROM python:3.13-slim-trixie AS production
+FROM uv AS production
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PYTHONUNBUFFERED=1
 ENV DJANGO_SETTINGS_MODULE=greedybear.settings
-ENV PYTHONPATH=/opt/deploy/greedybear
+ENV APP_ROOT=/opt/deploy/greedybear
 ENV LOG_PATH=/var/log/greedybear
+ENV UV_PROJECT_ENVIRONMENT=/usr/local
 
-WORKDIR $PYTHONPATH
+WORKDIR $APP_ROOT
 
 # Install runtime dependencies
 #  - libgomp1 is required for model training
@@ -33,11 +45,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install python packages
-COPY requirements/project-requirements.txt requirements/project-requirements.txt
-RUN pip install --no-cache-dir --root-user-action=ignore --disable-pip-version-check -q -r requirements/project-requirements.txt
+COPY pyproject.toml uv.lock ./
+RUN uv sync --no-dev --locked
 
 # Copy files
-COPY . $PYTHONPATH
+COPY . $APP_ROOT
 COPY --from=frontend-build /app/build /var/www/reactapp
 
 # separation is required to avoid to re-execute os installation in case of change of python requirements
@@ -47,17 +59,18 @@ RUN mkdir -p ${LOG_PATH}/django ${LOG_PATH}/gunicorn \
     && touch ${LOG_PATH}/django/django_q.log ${LOG_PATH}/django/django_q_errors.log \
     && touch ${LOG_PATH}/django/django_errors.log ${LOG_PATH}/django/elasticsearch.log \
     && touch ${LOG_PATH}/django/authentication.log ${LOG_PATH}/django/authentication_errors.log \
-    && mkdir -p ${PYTHONPATH}/mlmodels \
-    && usermod -u 2000 www-data \
-    && chown -R www-data:www-data ${LOG_PATH} /opt/deploy/ ${PYTHONPATH}/mlmodels/ \
+    && mkdir -p ${APP_ROOT}/mlmodels \
+    && chown -R www-data:www-data ${LOG_PATH} /opt/deploy/ ${APP_ROOT}/mlmodels/ \
     && rm -rf frontend/
+
 
 ## ------------------------------- Development Stage ------------------------------ ##
 
 FROM production AS development
 
-# Install dev requirements
-RUN pip install --no-cache-dir --root-user-action=ignore --disable-pip-version-check -q -r requirements/dev-requirements.txt
+# Install dev dependencies
+RUN uv sync --group dev --locked
+
 
 ## ------------------------------- Default Stage ------------------------------ ##
 

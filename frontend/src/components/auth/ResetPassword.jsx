@@ -2,7 +2,7 @@ import React from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { FormGroup, Label, Col, Input, Button, Spinner } from "reactstrap";
 import { Form, Formik } from "formik";
-import useTitle from "react-use/lib/useTitle";
+import { useTitle } from "react-use";
 
 import { ContentSection } from "@certego/certego-ui";
 

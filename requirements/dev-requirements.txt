@@ -1,4 +1,0 @@
-# Development requirements
-coverage>=7.3.2
-django-test-migrations>=1.5.0
-django-watchfiles>=1.4.0
