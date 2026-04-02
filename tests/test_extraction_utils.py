@@ -668,6 +668,62 @@ class IocsFromHitsTestCase(CustomTestCase):
 
         self.assertEqual(ioc.interaction_count, 1)
 
+    def test_ioc_attacker_country_code_set_correctly(self):
+        """Verify that iocs_from_hits extracts country_iso_code from geoip."""
+        hits = [
+            self._create_hit(
+                src_ip="8.8.8.8",
+                dest_port=22,
+                hit_type="Cowrie",
+            )
+        ]
+
+        hits[0]["geoip"] = {"country_name": "Nepal", "country_iso_code": "NP"}
+
+        iocs = iocs_from_hits(hits)
+        self.assertEqual(len(iocs), 1)
+
+        ioc = iocs[0]
+        self.assertEqual(ioc.attacker_country, "Nepal")
+        self.assertEqual(ioc.attacker_country_code, "NP")
+
+    def test_ioc_attacker_country_code_defaults_to_empty(self):
+        """Verify that attacker_country_code defaults to empty when geoip has no country_iso_code."""
+        hits = [
+            self._create_hit(
+                src_ip="8.8.8.8",
+                dest_port=22,
+                hit_type="Cowrie",
+            )
+        ]
+
+        hits[0]["geoip"] = {"country_name": "Nepal"}
+
+        iocs = iocs_from_hits(hits)
+        self.assertEqual(len(iocs), 1)
+
+        ioc = iocs[0]
+        self.assertEqual(ioc.attacker_country, "Nepal")
+        self.assertEqual(ioc.attacker_country_code, "")
+
+    def test_ioc_attacker_country_code_rejects_invalid_length(self):
+        """Verify that country codes longer than 2 chars are discarded."""
+        hits = [
+            self._create_hit(
+                src_ip="8.8.8.8",
+                dest_port=22,
+                hit_type="Cowrie",
+            )
+        ]
+
+        hits[0]["geoip"] = {"country_name": "Nepal", "country_iso_code": "NPL"}
+
+        iocs = iocs_from_hits(hits)
+        self.assertEqual(len(iocs), 1)
+
+        ioc = iocs[0]
+        self.assertEqual(ioc.attacker_country_code, "")
+
     def test_ioc_autonomous_system_set_correctly(self):
         """Verify that iocs_from_hits sets autonomous_system FK correctly from hits."""
 
