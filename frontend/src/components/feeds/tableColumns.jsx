@@ -40,7 +40,7 @@ const feedsTableColumns = [
       Array.isArray(value) ? (
         <ul className="d-flex flex-column text-left" key={value}>
           {value?.map((val, index) => (
-            <li className="mb-1 pb-2" key={index} id={val}>
+            <li className="mb-1 pb-2" key={index}>
               <div className="d-flex align-items-start">{val}</div>
             </li>
           ))}

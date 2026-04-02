@@ -157,3 +157,17 @@ section.fixed-bottom {
     border-color: $darker;
   }
 }
+
+#Dashboard {
+  .btn.btn-secondary {
+    background-color: #3f7d95;
+    border-color: #3f7d95;
+  }
+
+  .btn.btn-secondary:hover,
+  .btn.btn-secondary:focus,
+  .btn.btn-secondary:active {
+    background-color: #376d82;
+    border-color: #376d82;
+  }
+}

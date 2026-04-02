@@ -78,7 +78,7 @@ function Login() {
             id="access-info"
             className="col-12 px-1 text-center"
           >
-            <h5 className="text-info">
+            <h5 className="text-white">
               <MdInfoOutline size="1.15rem" />
               &nbsp;New users
             </h5>
