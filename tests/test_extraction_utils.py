@@ -413,6 +413,32 @@ class IocsFromHitsTestCase(CustomTestCase):
         ioc = iocs[0]
         self.assertIsNone(ioc.autonomous_system)
 
+    def test_geoip_from_later_hit_when_first_has_none(self):
+        """ASN and country must be taken from any geoip-enriched hit, not only hits[0]."""
+        hits = [
+            self._create_hit(src_ip="1.2.3.4"),
+            self._create_hit(src_ip="1.2.3.4", asn=13335),
+        ]
+        hits[1]["geoip"]["as_org"] = "CLOUDFLARE"
+        hits[1]["geoip"]["country_name"] = "United States"
+
+        iocs = iocs_from_hits(hits)
+        ioc = iocs[0]
+
+        self.assertIsNotNone(ioc.autonomous_system)
+        self.assertEqual(ioc.autonomous_system.asn, 13335)
+        self.assertEqual(ioc.attacker_country, "United States")
+
+    def test_ip_rep_from_later_hit_when_first_has_none(self):
+        """ip_rep should be read from first hit that carries it, not blindly hits[0]."""
+        hits = [
+            self._create_hit(src_ip="1.2.3.4", ip_rep=""),
+            self._create_hit(src_ip="1.2.3.4", ip_rep="known_attacker"),
+        ]
+        iocs = iocs_from_hits(hits)
+        ioc = iocs[0]
+        self.assertEqual(ioc.ip_reputation, "known_attacker")
+
     def test_extracts_timestamps(self):
         hits = [
             self._create_hit(src_ip="8.8.8.8", timestamp="2025-01-01T10:00:00.000Z"),
