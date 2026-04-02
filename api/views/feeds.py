@@ -30,9 +30,9 @@ from api.views.utils import (
     get_queryset,
     get_valid_feed_types,
 )
+from greedybear.cronjobs.trending import attacker_sort_tuple, build_ranked_attackers
 from greedybear.consts import GET
 from greedybear.models import AttackerActivityBucket, ShareToken, TrendingAttackerSnapshot
-from greedybear.trending_utils import attacker_sort_tuple, build_ranked_attackers
 
 logger = logging.getLogger(__name__)
 
