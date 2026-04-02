@@ -80,20 +80,52 @@ class TrendingAttackersCron(Cronjob):
 
         return parsed_value
 
-    def run(self):
-        now = timezone.now().replace(minute=0, second=0, microsecond=0)
+    def _validated_settings(self) -> tuple[list[int], int, int]:
+        max_window_minutes = self._positive_int_setting(
+            "TRENDING_MAX_WINDOW_MINUTES",
+            getattr(settings, "TRENDING_MAX_WINDOW_MINUTES", (24 * 31 * 60) // 2),
+        )
+        if max_window_minutes < 60:
+            raise ValueError(f"TRENDING_MAX_WINDOW_MINUTES must be >= 60, got {max_window_minutes}")
+        if max_window_minutes % 60:
+            raise ValueError(f"TRENDING_MAX_WINDOW_MINUTES must be a multiple of 60, got {max_window_minutes}")
+
         windows = getattr(settings, "TRENDING_PRECOMPUTE_WINDOWS_MINUTES", [24 * 60, 7 * 24 * 60])
         if not windows:
             raise ValueError("TRENDING_PRECOMPUTE_WINDOWS_MINUTES must contain at least one value")
+
         validated_windows = []
         for window_minutes in windows:
             parsed_window = self._positive_int_setting("TRENDING_PRECOMPUTE_WINDOWS_MINUTES entries", window_minutes)
+            if parsed_window < 60:
+                raise ValueError(f"TRENDING_PRECOMPUTE_WINDOWS_MINUTES entries must be >= 60, got {parsed_window}")
             if parsed_window % 60:
                 raise ValueError(f"TRENDING_PRECOMPUTE_WINDOWS_MINUTES entries must be multiples of 60, got {parsed_window}")
             validated_windows.append(parsed_window)
 
         per_feed_limit = self._positive_int_setting("TRENDING_PRECOMPUTE_LIMIT", getattr(settings, "TRENDING_PRECOMPUTE_LIMIT", 500))
         retention_hours = self._positive_int_setting("TRENDING_BUCKET_RETENTION_HOURS", getattr(settings, "TRENDING_BUCKET_RETENTION_HOURS", 24 * 31))
+
+        max_allowed_window_minutes = max(60, (retention_hours * 60) // 2)
+        if max_window_minutes > max_allowed_window_minutes:
+            raise ValueError(
+                "TRENDING_MAX_WINDOW_MINUTES cannot exceed half of retention horizon "
+                f"({max_allowed_window_minutes} minutes based on TRENDING_BUCKET_RETENTION_HOURS), "
+                f"got {max_window_minutes}"
+            )
+        for window in validated_windows:
+            if window > max_allowed_window_minutes:
+                raise ValueError(
+                    "TRENDING_PRECOMPUTE_WINDOWS_MINUTES entries cannot exceed half of retention horizon "
+                    f"({max_allowed_window_minutes} minutes based on TRENDING_BUCKET_RETENTION_HOURS), "
+                    f"got {window}"
+                )
+
+        return sorted(set(validated_windows)), per_feed_limit, retention_hours
+
+    def run(self):
+        now = timezone.now().replace(minute=0, second=0, microsecond=0)
+        validated_windows, per_feed_limit, retention_hours = self._validated_settings()
 
         feed_types = ["all"] + list(Honeypot.objects.filter(active=True).values_list("name", flat=True))
         normalized_feed_types = [feed_type.lower() for feed_type in feed_types]
