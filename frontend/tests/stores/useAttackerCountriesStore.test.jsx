@@ -195,6 +195,5 @@ describe("useAttackerCountriesStore", () => {
         { country: "Italy", count: 50 },
       ]);
     });
-
   });
 });
