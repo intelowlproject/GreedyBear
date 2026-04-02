@@ -55,7 +55,10 @@ describe("useAttackerCountriesStore", () => {
       await useAttackerCountriesStore.getState().fetchData(mockRange);
 
       const state = useAttackerCountriesStore.getState();
-      expect(state.rawData).toEqual(mockData);
+      expect(state.rawData).toEqual([
+        { country: "United States of America", count: 100 },
+        { country: "Italy", count: 50 },
+      ]);
       expect(state.countryDataMap).toEqual({
         "United States of America": 100,
         Italy: 50,
@@ -140,7 +143,10 @@ describe("useAttackerCountriesStore", () => {
       await Promise.all([fetch1, fetch2]);
 
       expect(axios.get).toHaveBeenCalledTimes(2);
-      expect(useAttackerCountriesStore.getState().rawData).toEqual(mockData);
+      expect(useAttackerCountriesStore.getState().rawData).toEqual([
+        { country: "United States of America", count: 100 },
+        { country: "Italy", count: 50 },
+      ]);
     });
 
     test("sets error state on failure", async () => {
@@ -184,7 +190,10 @@ describe("useAttackerCountriesStore", () => {
 
       // Now loading should be false
       expect(useAttackerCountriesStore.getState().loading).toBe(false);
-      expect(useAttackerCountriesStore.getState().rawData).toEqual(mockData);
+      expect(useAttackerCountriesStore.getState().rawData).toEqual([
+        { country: "United States of America", count: 100 },
+        { country: "Italy", count: 50 },
+      ]);
     });
   });
 });
