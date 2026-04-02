@@ -6,13 +6,12 @@ from urllib.parse import unquote, unquote_plus, urlparse
 from greedybear.consts import PAYLOAD_REQUEST, SCANNER
 from greedybear.cronjobs.extraction.strategies import BaseExtractionStrategy
 from greedybear.cronjobs.extraction.utils import (
-    get_ioc_type,
     iocs_from_hits,
-    parse_timestamp,
     threatfox_submission,
 )
 from greedybear.cronjobs.repositories import IocRepository, SensorRepository, TagRepository
 from greedybear.models import IOC
+from greedybear.utils import get_ioc_type, parse_timestamp
 
 # Attack classification regex patterns.
 # Each pattern targets common signatures of its respective web attack class.
