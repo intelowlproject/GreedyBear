@@ -11,7 +11,7 @@ from django.utils import timezone
 
 from greedybear.cronjobs.base import Cronjob
 from greedybear.cronjobs.extraction.utils import parse_timestamp
-from greedybear.models import AttackerActivityBucket, GeneralHoneypot, TrendingAttackerSnapshot
+from greedybear.models import AttackerActivityBucket, Honeypot, TrendingAttackerSnapshot
 from greedybear.trending_utils import build_ranked_attackers
 
 
@@ -86,7 +86,7 @@ class TrendingAttackersCron(Cronjob):
         per_feed_limit = self._positive_int_setting("TRENDING_PRECOMPUTE_LIMIT", getattr(settings, "TRENDING_PRECOMPUTE_LIMIT", 500))
         retention_hours = self._positive_int_setting("TRENDING_BUCKET_RETENTION_HOURS", getattr(settings, "TRENDING_BUCKET_RETENTION_HOURS", 24 * 31))
 
-        feed_types = ["all"] + list(GeneralHoneypot.objects.filter(active=True).values_list("name", flat=True))
+        feed_types = ["all"] + list(Honeypot.objects.filter(active=True).values_list("name", flat=True))
         normalized_feed_types = [feed_type.lower() for feed_type in feed_types]
 
         for window_minutes in validated_windows:

@@ -4,7 +4,7 @@ from unittest.mock import patch
 from django.test import override_settings
 
 from greedybear.cronjobs.trending import TrendingAttackersCron, update_activity_buckets_from_hits
-from greedybear.models import AttackerActivityBucket, GeneralHoneypot, TrendingAttackerSnapshot
+from greedybear.models import AttackerActivityBucket, Honeypot, TrendingAttackerSnapshot
 from tests import CustomTestCase
 
 
@@ -66,7 +66,7 @@ class TrendingAttackersCronTestCase(CustomTestCase):
         TRENDING_BUCKET_RETENTION_HOURS=24,
     )
     def test_run_materializes_snapshots_and_replaces_existing_rows(self):
-        GeneralHoneypot.objects.get_or_create(name="Cowrie", defaults={"active": True})
+        Honeypot.objects.get_or_create(name="Cowrie", defaults={"active": True})
 
         TrendingAttackerSnapshot.objects.create(
             window_minutes=60,
