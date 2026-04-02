@@ -6,7 +6,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("greedybear", "0047_credential_sources"),
+        ("greedybear", "0048_add_attacker_country_code"),
     ]
 
     operations = [
