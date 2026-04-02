@@ -5,7 +5,7 @@ from django.db import migrations, models
 
 class Migration(migrations.Migration):
     dependencies = [
-        ("greedybear", "0046_sensor_label"),
+        ("greedybear", "0049_rename_generalhoneypot_honeypot_and_more.py"),
     ]
 
     operations = [
