@@ -174,7 +174,7 @@ def iocs_from_hits(hits: list[dict]) -> list[IOC]:
         # Sort sensors by ID for consistent processing order
         sensors = sorted(sensors_map.values(), key=lambda s: s.id)
 
-        geoip = hits[0].get("geoip", {}) if hits else {}
+        geoip = next((h.get("geoip") for h in hits if h.get("geoip")), {})
         attacker_country = geoip.get("country_name", "")
         raw_country_code = geoip.get("country_iso_code", "")
         attacker_country_code = raw_country_code if len(raw_country_code) == 2 else ""
@@ -187,7 +187,7 @@ def iocs_from_hits(hits: list[dict]) -> list[IOC]:
             name=ip,
             type=get_ioc_type(ip),
             interaction_count=len(hits),
-            ip_reputation=correct_ip_reputation(ip, hits[0].get("ip_rep", ""), mass_scanner_ips),
+            ip_reputation=correct_ip_reputation(ip, next((h.get("ip_rep", "") for h in hits if h.get("ip_rep")), ""), mass_scanner_ips),
             autonomous_system=autonomous_system,
             destination_ports=sorted(set(dest_ports)),
             login_attempts=login_attempts,
