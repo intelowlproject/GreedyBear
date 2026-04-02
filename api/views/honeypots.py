@@ -6,7 +6,7 @@ from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
 from greedybear.consts import GET
-from greedybear.models import GeneralHoneypot
+from greedybear.models import Honeypot
 
 logger = logging.getLogger(__name__)
 
@@ -23,14 +23,14 @@ def general_honeypot_list(request):
         Response: A JSON response containing the list of general honeypots.
     """
 
-    logger.info(f"Requested general honeypots list from {request.user}.")
+    logger.info(f"Requested honeypots list from {request.user}.")
     active = request.query_params.get("onlyActive")
     honeypots = []
-    general_honeypots = GeneralHoneypot.objects.all()
+    honeypot_objs = Honeypot.objects.all()
     if active == "true":
-        general_honeypots = general_honeypots.filter(active=True)
-        logger.info(f"Requested only active general honeypots from {request.user}")
-    honeypots.extend([hp.name for hp in general_honeypots])
+        honeypot_objs = honeypot_objs.filter(active=True)
+        logger.info(f"Requested only active honeypots from {request.user}")
+    honeypots.extend([hp.name for hp in honeypot_objs])
 
-    logger.info(f"General honeypots: {honeypots} given back to user {request.user}")
+    logger.info(f"Honeypots: {honeypots} given back to user {request.user}")
     return Response(honeypots)

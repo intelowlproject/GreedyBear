@@ -37,12 +37,12 @@ class Sensor(models.Model):
         return f"{self.address} ({self.label})" if self.label else self.address
 
 
-class GeneralHoneypot(models.Model):
+class Honeypot(models.Model):
     name = models.CharField(max_length=15)
     active = models.BooleanField(default=True)
 
     class Meta:
-        constraints = [models.UniqueConstraint(Lower("name"), name="unique_generalhoneypot_name_ci")]
+        constraints = [models.UniqueConstraint(Lower("name"), name="unique_honeypot_name_ci")]
 
     def __str__(self):
         return self.name
@@ -97,7 +97,7 @@ class IOC(models.Model):
         related_name="iocs",
     )
     # FEEDS - list of honeypots from general list, from which the IOC was detected
-    general_honeypot = models.ManyToManyField(GeneralHoneypot, blank=True)
+    honeypots = models.ManyToManyField(Honeypot, blank=True)
     # SENSORS - list of T-Pot sensors that detected this IOC
     sensors = models.ManyToManyField(Sensor, blank=True)
     scanner = models.BooleanField(default=False)

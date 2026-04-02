@@ -10,7 +10,7 @@ from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from greedybear.models import IOC, GeneralHoneypot, Statistics, ViewType
+from greedybear.models import IOC, Honeypot, Statistics, ViewType
 
 logger = logging.getLogger(__name__)
 
@@ -92,7 +92,7 @@ class StatisticsViewSet(viewsets.ViewSet):
         qs = (
             IOC.objects.filter(last_seen__gte=delta)
             .exclude(attacker_country="")
-            .filter(general_honeypot__active=True)
+            .filter(honeypots__active=True)
             .values("attacker_country")
             .annotate(count=Count("id", distinct=True))
             .order_by("-count")
@@ -103,7 +103,7 @@ class StatisticsViewSet(viewsets.ViewSet):
     @action(detail=False, methods=["get"])
     def feeds_types(self, request):
         """
-        Retrieve statistics for different types of feeds using GeneralHoneypot M2M relationship.
+        Retrieve statistics for different types of feeds using Honeypot M2M relationship.
 
         Args:
             request: The incoming request object.
@@ -113,10 +113,10 @@ class StatisticsViewSet(viewsets.ViewSet):
         """
         # Build annotations for each active general honeypot
         annotations = {}
-        general_honeypots = GeneralHoneypot.objects.all().filter(active=True)
-        for hp in general_honeypots:
+        honeypots = Honeypot.objects.all().filter(active=True)
+        for hp in honeypots:
             # Use M2M relationship instead of boolean fields
-            annotations[hp.name] = Count("name", distinct=True, filter=Q(general_honeypot__name__iexact=hp.name))
+            annotations[hp.name] = Count("name", distinct=True, filter=Q(honeypots__name__iexact=hp.name))
         return self.__aggregation_response_static_ioc(annotations)
 
     def __aggregation_response_static_statistics(self, annotations: dict) -> Response:
@@ -147,7 +147,7 @@ class StatisticsViewSet(viewsets.ViewSet):
 
         qs = (
             IOC.objects.filter(last_seen__gte=delta)
-            .exclude(general_honeypot__active=False)
+            .exclude(honeypots__active=False)
             .annotate(date=Trunc("last_seen", basis))
             .values("date")
             .annotate(**annotations)

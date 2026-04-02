@@ -15,7 +15,7 @@ from greedybear.models import (
     IOC,
     CowrieSession,
     FireHolList,
-    GeneralHoneypot,
+    Honeypot,
     MassScanner,
     TorExitNode,
 )
@@ -71,8 +71,8 @@ def get_observables_overview(last_24h):
     )
 
     honeypot_stats = {
-        "total": GeneralHoneypot.objects.count(),
-        "active": GeneralHoneypot.objects.filter(active=True).count(),
+        "total": Honeypot.objects.count(),
+        "active": Honeypot.objects.filter(active=True).count(),
     }
 
     threat_list_stats = {

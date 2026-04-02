@@ -12,7 +12,7 @@ from greedybear.models import (
     CowrieSession,
     Credential,
     FireHolList,
-    GeneralHoneypot,
+    Honeypot,
     MassScanner,
     Sensor,
     Statistics,
@@ -138,7 +138,7 @@ class IOCModelAdmin(admin.ModelAdmin):
         "related_urls",
         "scanner",
         "payload_request",
-        "general_honeypots",
+        "honeypots_list",
         "sensor_list",
         "ip_reputation",
         "firehol_categories",
@@ -156,11 +156,11 @@ class IOCModelAdmin(admin.ModelAdmin):
     search_fields = ["name", "related_ioc__name"]
     search_help_text = "search by IOC name or related IOC name"
     raw_id_fields = ["related_ioc"]
-    filter_horizontal = ["general_honeypot", "sensors"]
+    filter_horizontal = ["honeypots", "sensors"]
     inlines = [SessionInline]
 
-    def general_honeypots(self, ioc):
-        return ", ".join([str(element) for element in ioc.general_honeypot.all()])
+    def honeypots_list(self, ioc):
+        return ", ".join([str(element) for element in ioc.honeypots.all()])
 
     def sensor_list(self, ioc):
         return ", ".join([str(sensor.address) for sensor in ioc.sensors.all()])
@@ -180,11 +180,11 @@ class IOCModelAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request):
         """Override to optimize queries and avoid N+1 problems."""
-        return super().get_queryset(request).select_related("autonomous_system").prefetch_related("sensors", "general_honeypot")
+        return super().get_queryset(request).select_related("autonomous_system").prefetch_related("sensors", "honeypots")
 
 
-@admin.register(GeneralHoneypot)
-class GeneralHoneypotAdmin(admin.ModelAdmin):
+@admin.register(Honeypot)
+class HoneypotAdmin(admin.ModelAdmin):
     list_display = [
         "name",
         "active",

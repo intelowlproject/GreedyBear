@@ -30,7 +30,7 @@ class TestGenericExtractionStrategy(ExtractionTestCase):
         self.strategy.extract_from_hits(hits)
 
         mock_iocs_from_hits.assert_called_once_with(hits)
-        self.strategy.ioc_processor.add_ioc.assert_called_once_with(mock_ioc, attack_type=SCANNER, general_honeypot_name="TestHoneypot")
+        self.strategy.ioc_processor.add_ioc.assert_called_once_with(mock_ioc, attack_type=SCANNER, honeypot_name="TestHoneypot")
         self.assertEqual(len(self.strategy.ioc_records), 1)
         mock_threatfox.assert_called_once()
 
@@ -84,7 +84,7 @@ class TestGenericExtractionStrategy(ExtractionTestCase):
         self.strategy.extract_from_hits(hits)
 
         call_kwargs = self.strategy.ioc_processor.add_ioc.call_args[1]
-        self.assertEqual(call_kwargs["general_honeypot_name"], "TestHoneypot")
+        self.assertEqual(call_kwargs["honeypot_name"], "TestHoneypot")
 
     @patch("greedybear.cronjobs.extraction.strategies.generic.iocs_from_hits")
     @patch("greedybear.cronjobs.extraction.strategies.generic.threatfox_submission")
@@ -108,4 +108,4 @@ class TestGenericExtractionStrategy(ExtractionTestCase):
         self.strategy.extract_from_hits(hits)
 
         # Should call add_ioc once with IOC object (sensors are attached to it)
-        self.strategy.ioc_processor.add_ioc.assert_called_once_with(mock_ioc, attack_type=SCANNER, general_honeypot_name="TestHoneypot")
+        self.strategy.ioc_processor.add_ioc.assert_called_once_with(mock_ioc, attack_type=SCANNER, honeypot_name="TestHoneypot")

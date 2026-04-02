@@ -2,7 +2,7 @@ from django.core.cache import cache, caches
 from django.utils import timezone
 from rest_framework.test import APIClient
 
-from greedybear.models import IOC, AutonomousSystem, GeneralHoneypot
+from greedybear.models import IOC, AutonomousSystem, Honeypot
 from tests import CustomTestCase
 
 
@@ -13,8 +13,8 @@ class FeedsASNViewTestCase(CustomTestCase):
     def setUpClass(cls):
         super().setUpClass()
         IOC.objects.all().delete()
-        cls.testpot1, _ = GeneralHoneypot.objects.get_or_create(name="testpot1", active=True)
-        cls.testpot2, _ = GeneralHoneypot.objects.get_or_create(name="testpot2", active=True)
+        cls.testpot1, _ = Honeypot.objects.get_or_create(name="testpot1", active=True)
+        cls.testpot2, _ = Honeypot.objects.get_or_create(name="testpot2", active=True)
 
         cls.high_asn = "13335"
         cls.low_asn = "16276"
@@ -34,7 +34,7 @@ class FeedsASNViewTestCase(CustomTestCase):
             recurrence_probability=0.8,
             expected_interactions=20.0,
         )
-        cls.ioc_high1.general_honeypot.add(cls.testpot1, cls.testpot2)
+        cls.ioc_high1.honeypots.add(cls.testpot1, cls.testpot2)
 
         cls.ioc_high2 = IOC.objects.create(
             name="high2.example.com",
@@ -47,7 +47,7 @@ class FeedsASNViewTestCase(CustomTestCase):
             recurrence_probability=0.3,
             expected_interactions=8.0,
         )
-        cls.ioc_high2.general_honeypot.add(cls.testpot1, cls.testpot2)
+        cls.ioc_high2.honeypots.add(cls.testpot1, cls.testpot2)
 
         cls.ioc_low = IOC.objects.create(
             name="low.example.com",
@@ -60,7 +60,7 @@ class FeedsASNViewTestCase(CustomTestCase):
             recurrence_probability=0.1,
             expected_interactions=3.0,
         )
-        cls.ioc_low.general_honeypot.add(cls.testpot1, cls.testpot2)
+        cls.ioc_low.honeypots.add(cls.testpot1, cls.testpot2)
 
     def setUp(self):
         super().setUp()
@@ -100,7 +100,7 @@ class FeedsASNViewTestCase(CustomTestCase):
         self.assertEqual(high_item["last_seen"], max(i.last_seen for i in high_iocs).isoformat())
 
         # validating honeypots dynamically
-        expected_honeypots = sorted({hp.name for i in high_iocs for hp in i.general_honeypot.all()})
+        expected_honeypots = sorted({hp.name for i in high_iocs for hp in i.honeypots.all()})
         self.assertEqual(sorted(high_item["honeypots"]), expected_honeypots)
 
     def test_200_asn_feed_default_ordering(self):
