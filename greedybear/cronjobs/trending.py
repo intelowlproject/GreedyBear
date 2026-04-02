@@ -1,7 +1,7 @@
+import logging
 from collections import Counter
 from collections.abc import Iterable, Mapping
 from datetime import timedelta
-from ipaddress import AddressValueError, ip_address
 from typing import Any
 
 from django.conf import settings
@@ -13,6 +13,10 @@ from greedybear.cronjobs.base import Cronjob
 from greedybear.cronjobs.extraction.utils import parse_timestamp
 from greedybear.models import AttackerActivityBucket, Honeypot, TrendingAttackerSnapshot
 from greedybear.trending_utils import build_ranked_attackers
+from greedybear.utils import is_ip_address
+
+
+logger = logging.getLogger(__name__)
 
 
 def _bucket_start(timestamp: str):
@@ -28,11 +32,12 @@ def update_activity_buckets_from_hits(hits: Iterable[Mapping[str, Any]]) -> int:
         timestamp = hit.get("@timestamp")
         if not attacker_ip or not feed_type or not timestamp:
             continue
-        try:
-            ip_address(attacker_ip)
-        except (AddressValueError, ValueError):
+        if not is_ip_address(str(attacker_ip)):
             continue
-        key = (attacker_ip, str(feed_type).lower(), _bucket_start(timestamp))
+        try:
+            key = (str(attacker_ip), str(feed_type).lower(), _bucket_start(timestamp))
+        except Exception:
+            continue
         counters[key] += 1
 
     if not counters:
@@ -52,8 +57,12 @@ def update_activity_buckets_from_hits(hits: Iterable[Mapping[str, Any]]) -> int:
         DO UPDATE
         SET interaction_count = {quoted_table_name}.interaction_count + EXCLUDED.interaction_count
     """
-    with connection.cursor() as cursor:
-        cursor.execute(query, params)
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute(query, params)
+    except Exception as exc:
+        logger.error("Failed to update activity buckets from hits for current chunk: %s", exc, exc_info=True)
+        return 0
 
     return len(counters)
 

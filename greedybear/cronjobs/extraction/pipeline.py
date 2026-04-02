@@ -66,14 +66,7 @@ class ExtractionPipeline:
             ioc_records = []
             hits_by_honeypot = defaultdict(list)
 
-            try:
-                update_activity_buckets_from_hits(chunk)
-            except Exception as exc:
-                self.log.error(
-                    "Failed to update activity buckets from hits for current chunk: %s",
-                    exc,
-                    exc_info=True,
-                )
+            update_activity_buckets_from_hits(chunk)
 
             # 2. Group by honeypot
             self.log.info("Grouping hits by honeypot type")
