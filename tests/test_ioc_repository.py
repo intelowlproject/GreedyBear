@@ -449,7 +449,7 @@ class TestIocRepository(CustomTestCase):
 
     # --- Tests for N+1 fix ---
 
-    def test_honeypot_cache_stores_generalhoneypot_objects(self):
+    def test_honeypot_cache_stores_honeypot_objects(self):
         """_honeypot_cache must store Honeypot instances, not booleans."""
         self.assertGreater(
             len(self.repo._honeypot_cache),

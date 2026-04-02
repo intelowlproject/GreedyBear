@@ -6,7 +6,7 @@ from django.core.exceptions import FieldDoesNotExist
 from rest_framework import serializers
 
 from greedybear.consts import REGEX_DOMAIN
-from greedybear.models import IOC, Honeypot, Tag
+from greedybear.models import IOC, Honeypot, Sensor, Tag
 from greedybear.utils import is_ip_address
 
 logger = logging.getLogger(__name__)
