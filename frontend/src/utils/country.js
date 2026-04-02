@@ -25,8 +25,8 @@ export const COUNTRY_NAME_FIXES = {
 /**
  * Returns a normalised country name if a fix is available, otherwise returns the original name.
  *
- * @param {string} name - Raw country name (e.g., from T-Pot GeoIP)
- * @returns {string} - Normalised country name (matching Natural Earth standards)
+ * @param {string|null|undefined} name - Raw country name (e.g., from T-Pot GeoIP)
+ * @returns {string|null|undefined} - Normalised country name (matching Natural Earth standards)
  */
 export function normalizeCountryName(name) {
   return COUNTRY_NAME_FIXES[name] ?? name;

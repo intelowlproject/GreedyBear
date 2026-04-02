@@ -4,7 +4,7 @@ import { IOC_ATTACKER_COUNTRIES_URI } from "../constants/api";
 import { normalizeCountryName } from "../utils/country";
 
 const useAttackerCountriesStore = create((set, get) => ({
-  rawData: [],
+  normalizedData: [],
   countryDataMap: {},
   maxCount: 0,
   loading: false,
@@ -34,7 +34,7 @@ const useAttackerCountriesStore = create((set, get) => ({
         signal: controller.signal,
       });
 
-      const rawData = (Array.isArray(resp?.data) ? resp.data : []).map(
+      const normalizedData = (Array.isArray(resp?.data) ? resp.data : []).map(
         (item) => {
           if (
             item &&
@@ -46,10 +46,11 @@ const useAttackerCountriesStore = create((set, get) => ({
           return item;
         },
       );
+
       const countryDataMap = {};
       let maxCount = 0;
 
-      rawData.forEach((item) => {
+      normalizedData.forEach((item) => {
         if (item && typeof item === "object") {
           const { country, count } = item;
           if (typeof country === "string") {
@@ -62,7 +63,7 @@ const useAttackerCountriesStore = create((set, get) => ({
 
       if (get().currentController === controller) {
         set({
-          rawData,
+          normalizedData,
           countryDataMap,
           maxCount,
           loading: false,

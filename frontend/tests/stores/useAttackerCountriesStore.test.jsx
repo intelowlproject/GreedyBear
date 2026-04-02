@@ -19,7 +19,7 @@ const createDeferred = () => {
 describe("useAttackerCountriesStore", () => {
   beforeEach(() => {
     useAttackerCountriesStore.setState({
-      rawData: [],
+      normalizedData: [],
       countryDataMap: {},
       maxCount: 0,
       loading: false,
@@ -33,7 +33,7 @@ describe("useAttackerCountriesStore", () => {
   describe("Initial State", () => {
     test("initial state is correct", () => {
       const state = useAttackerCountriesStore.getState();
-      expect(state.rawData).toEqual([]);
+      expect(state.normalizedData).toEqual([]);
       expect(state.countryDataMap).toEqual({});
       expect(state.maxCount).toBe(0);
       expect(state.loading).toBe(false);
@@ -55,7 +55,7 @@ describe("useAttackerCountriesStore", () => {
       await useAttackerCountriesStore.getState().fetchData(mockRange);
 
       const state = useAttackerCountriesStore.getState();
-      expect(state.rawData).toEqual([
+      expect(state.normalizedData).toEqual([
         { country: "United States of America", count: 100 },
         { country: "Italy", count: 50 },
       ]);
@@ -143,7 +143,7 @@ describe("useAttackerCountriesStore", () => {
       await Promise.all([fetch1, fetch2]);
 
       expect(axios.get).toHaveBeenCalledTimes(2);
-      expect(useAttackerCountriesStore.getState().rawData).toEqual([
+      expect(useAttackerCountriesStore.getState().normalizedData).toEqual([
         { country: "United States of America", count: 100 },
         { country: "Italy", count: 50 },
       ]);
@@ -190,10 +190,11 @@ describe("useAttackerCountriesStore", () => {
 
       // Now loading should be false
       expect(useAttackerCountriesStore.getState().loading).toBe(false);
-      expect(useAttackerCountriesStore.getState().rawData).toEqual([
+      expect(useAttackerCountriesStore.getState().normalizedData).toEqual([
         { country: "United States of America", count: 100 },
         { country: "Italy", count: 50 },
       ]);
     });
+
   });
 });
