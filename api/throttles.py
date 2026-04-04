@@ -15,18 +15,6 @@ class FeedsThrottle(SimpleRateThrottle):
         }
 
 
-class FeedsTrendingThrottle(SimpleRateThrottle):
-    """Rate-limit for public (unauthenticated) trending feeds endpoint."""
-
-    scope = "feeds_trending"
-
-    def get_cache_key(self, request, view):
-        return self.cache_format % {
-            "scope": self.scope,
-            "ident": self.get_ident(request),
-        }
-
-
 class FeedsAdvancedThrottle(SimpleRateThrottle):
     """Rate-limit for authenticated feeds endpoints (advanced, asn)."""
 

@@ -117,7 +117,6 @@ REST_FRAMEWORK = {
     # Throttling
     "DEFAULT_THROTTLE_RATES": {
         "feeds": os.environ.get("FEEDS_THROTTLE_RATE", "30/minute"),
-        "feeds_trending": os.environ.get("FEEDS_TRENDING_THROTTLE_RATE", "30/minute"),
         "feeds_advanced": os.environ.get("FEEDS_ADVANCED_THROTTLE_RATE", "100/minute"),
         "feeds_shared": os.environ.get("FEEDS_SHARED_THROTTLE_RATE", "10/minute"),
     },

@@ -22,7 +22,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from api.serializers import ASNFeedsOrderingSerializer, TrendingAttackersRequestSerializer, parse_feed_types
-from api.throttles import FeedsAdvancedThrottle, FeedsThrottle, FeedsTrendingThrottle, SharedFeedRateThrottle
+from api.throttles import FeedsAdvancedThrottle, FeedsThrottle, SharedFeedRateThrottle
 from api.views.utils import (
     FeedRequestParams,
     asn_aggregated_queryset,
@@ -30,8 +30,8 @@ from api.views.utils import (
     get_queryset,
     get_valid_feed_types,
 )
-from greedybear.cronjobs.trending import attacker_sort_tuple, build_ranked_attackers
 from greedybear.consts import GET
+from greedybear.cronjobs.trending import attacker_sort_tuple, build_ranked_attackers
 from greedybear.models import AttackerActivityBucket, ShareToken, TrendingAttackerSnapshot
 
 logger = logging.getLogger(__name__)
@@ -272,7 +272,7 @@ def feeds_asn(request):
 @api_view([GET])
 @authentication_classes([])
 @permission_classes([])
-@throttle_classes([FeedsTrendingThrottle])
+@throttle_classes([FeedsThrottle])
 def feeds_trending(request):
     """
     Retrieve trending attackers by comparing two hour-aligned windows
