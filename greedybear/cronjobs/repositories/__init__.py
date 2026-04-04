@@ -8,4 +8,3 @@ from greedybear.cronjobs.repositories.sensor import *
 from greedybear.cronjobs.repositories.tag import *
 from greedybear.cronjobs.repositories.tor import *
 from greedybear.cronjobs.repositories.trending_bucket import *
-from greedybear.cronjobs.repositories.trending_snapshot import *

@@ -77,7 +77,6 @@ class TestTasks(CustomTestCase):
             ("get_tor_exit_nodes", "greedybear.cronjobs.tor_exit_nodes.TorExitNodesCron"),
             ("enrich_threatfox", "greedybear.cronjobs.threatfox_feed.ThreatFoxCron"),
             ("enrich_abuseipdb", "greedybear.cronjobs.abuseipdb_feed.AbuseIPDBCron"),
-            ("materialize_trending_attackers", "greedybear.cronjobs.trending.TrendingAttackersCron"),
         ]
 
         from greedybear import tasks
