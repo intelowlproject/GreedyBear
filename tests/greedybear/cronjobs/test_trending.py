@@ -4,7 +4,7 @@ from unittest.mock import patch
 from django.test import override_settings
 
 from greedybear.cronjobs.trending import TrendingAttackersCron, update_activity_buckets_from_hits
-from greedybear.models import AttackerActivityBucket, Honeypot, TrendingAttackerSnapshot
+from greedybear.models import AttackerActivityBucket
 from tests import CustomTestCase
 
 
@@ -61,62 +61,8 @@ class TrendingAttackersCronTestCase(CustomTestCase):
         self.cron = TrendingAttackersCron()
 
     @override_settings(
-        TRENDING_PRECOMPUTE_WINDOWS_MINUTES=[60],
-        TRENDING_PRECOMPUTE_LIMIT=10,
-        TRENDING_BUCKET_RETENTION_HOURS=24,
-    )
-    def test_run_materializes_snapshots_and_replaces_existing_rows(self):
-        Honeypot.objects.get_or_create(name="Cowrie", defaults={"active": True})
-
-        TrendingAttackerSnapshot.objects.create(
-            window_minutes=60,
-            feed_type="all",
-            attacker_ip="9.9.9.9",
-            current_interactions=100,
-            previous_interactions=1,
-            interaction_delta=99,
-            growth_score=99.0,
-            current_rank=1,
-            previous_rank=2,
-            rank_delta=1,
-        )
-
-        AttackerActivityBucket.objects.bulk_create(
-            [
-                AttackerActivityBucket(
-                    attacker_ip="1.1.1.1",
-                    feed_type="cowrie",
-                    bucket_start=datetime(2026, 3, 20, 9, 0),
-                    interaction_count=5,
-                ),
-                AttackerActivityBucket(
-                    attacker_ip="1.1.1.1",
-                    feed_type="cowrie",
-                    bucket_start=datetime(2026, 3, 20, 8, 0),
-                    interaction_count=1,
-                ),
-            ]
-        )
-
-        with patch("greedybear.cronjobs.trending.timezone.now", return_value=datetime(2026, 3, 20, 10, 30, 0)):
-            self.cron.run()
-
-        self.assertFalse(TrendingAttackerSnapshot.objects.filter(attacker_ip="9.9.9.9").exists())
-        self.assertEqual(TrendingAttackerSnapshot.objects.filter(window_minutes=60, feed_type="all").count(), 1)
-        self.assertEqual(TrendingAttackerSnapshot.objects.filter(window_minutes=60, feed_type="cowrie").count(), 1)
-
-        all_snapshot = TrendingAttackerSnapshot.objects.get(window_minutes=60, feed_type="all")
-        self.assertEqual(all_snapshot.attacker_ip, "1.1.1.1")
-        self.assertEqual(all_snapshot.current_interactions, 5)
-
-        cowrie_snapshot = TrendingAttackerSnapshot.objects.get(window_minutes=60, feed_type="cowrie")
-        self.assertEqual(cowrie_snapshot.attacker_ip, "1.1.1.1")
-        self.assertEqual(cowrie_snapshot.current_interactions, 5)
-
-    @override_settings(
-        TRENDING_PRECOMPUTE_WINDOWS_MINUTES=[60],
-        TRENDING_PRECOMPUTE_LIMIT=10,
         TRENDING_BUCKET_RETENTION_HOURS=1,
+        TRENDING_MAX_WINDOW_MINUTES=60,
     )
     def test_run_applies_bucket_retention_cleanup(self):
         AttackerActivityBucket.objects.bulk_create(
@@ -143,11 +89,18 @@ class TrendingAttackersCronTestCase(CustomTestCase):
         self.assertTrue(AttackerActivityBucket.objects.filter(attacker_ip="3.3.3.3").exists())
 
     @override_settings(
-        TRENDING_PRECOMPUTE_WINDOWS_MINUTES=[60],
-        TRENDING_PRECOMPUTE_LIMIT=10,
         TRENDING_BUCKET_RETENTION_HOURS=0,
     )
     def test_run_raises_on_invalid_retention_hours(self):
+        with patch("greedybear.cronjobs.trending.timezone.now", return_value=datetime(2026, 3, 20, 10, 30, 0)):
+            with self.assertRaises(ValueError):
+                self.cron.run()
+
+    @override_settings(
+        TRENDING_BUCKET_RETENTION_HOURS=1,
+        TRENDING_MAX_WINDOW_MINUTES=120,
+    )
+    def test_run_raises_when_max_window_exceeds_retention_horizon(self):
         with patch("greedybear.cronjobs.trending.timezone.now", return_value=datetime(2026, 3, 20, 10, 30, 0)):
             with self.assertRaises(ValueError):
                 self.cron.run()
