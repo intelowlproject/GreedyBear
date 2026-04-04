@@ -1,15 +1,18 @@
 from datetime import datetime
 
+from django.core.cache import cache, caches
 from django.test import override_settings
 from rest_framework.test import APIClient
 
-from greedybear.models import AttackerActivityBucket, TrendingAttackerSnapshot
+from greedybear.models import AttackerActivityBucket
 from tests import CustomTestCase
 
 
 class FeedsTrendingViewTestCase(CustomTestCase):
     def setUp(self):
         super().setUp()
+        cache.clear()
+        caches["django-q"].clear()
         self.client = APIClient()
         self.client.force_authenticate(user=self.superuser)
 
@@ -25,11 +28,10 @@ class FeedsTrendingViewTestCase(CustomTestCase):
             ]
         )
 
-        with self.settings(TRENDING_PRECOMPUTE_WINDOWS_MINUTES=[24 * 60, 7 * 24 * 60]):
-            from unittest.mock import patch
+        from unittest.mock import patch
 
-            with patch("api.views.feeds.timezone.now", return_value=now):
-                response = self.client.get("/api/feeds/trending/?window_minutes=180&limit=10&feed_type=cowrie")
+        with patch("api.views.feeds.timezone.now", return_value=now):
+            response = self.client.get("/api/feeds/trending/?window_minutes=180&limit=10&feed_type=cowrie")
         self.assertEqual(response.status_code, 200)
 
         payload = response.json()
@@ -55,34 +57,7 @@ class FeedsTrendingViewTestCase(CustomTestCase):
         response = APIClient().get("/api/feeds/trending/?window_minutes=60&limit=10&feed_type=all")
         self.assertEqual(response.status_code, 200)
 
-    @override_settings(TRENDING_PRECOMPUTE_WINDOWS_MINUTES=[24 * 60])
-    def test_200_trending_uses_precomputed_snapshot(self):
-        TrendingAttackerSnapshot.objects.create(
-            window_minutes=24 * 60,
-            feed_type="all",
-            attacker_ip="4.4.4.4",
-            current_interactions=10,
-            previous_interactions=2,
-            interaction_delta=8,
-            growth_score=4.0,
-            current_rank=1,
-            previous_rank=3,
-            rank_delta=2,
-        )
-
-        from unittest.mock import patch
-
-        with patch("api.views.feeds.timezone.now", return_value=datetime(2026, 3, 20, 10, 30, 0)):
-            response = self.client.get("/api/feeds/trending/?window_minutes=1440&limit=10&feed_type=all")
-
-        self.assertEqual(response.status_code, 200)
-        payload = response.json()
-        self.assertEqual(payload["data_source"], "precomputed")
-        self.assertEqual(payload["count"], 1)
-        self.assertEqual(payload["attackers"][0]["attacker_ip"], "4.4.4.4")
-
-    @override_settings(TRENDING_PRECOMPUTE_WINDOWS_MINUTES=[24 * 60])
-    def test_200_trending_falls_back_to_aggregated_when_precomputed_snapshot_missing(self):
+    def test_200_trending_uses_cached_response_until_version_bump(self):
         now = datetime(2026, 3, 20, 10, 30, 0)
         AttackerActivityBucket.objects.create(
             attacker_ip="7.7.7.7",
@@ -94,76 +69,35 @@ class FeedsTrendingViewTestCase(CustomTestCase):
         from unittest.mock import patch
 
         with patch("api.views.feeds.timezone.now", return_value=now):
-            response = self.client.get("/api/feeds/trending/?window_minutes=1440&limit=10&feed_type=all")
+            response = self.client.get("/api/feeds/trending/?window_minutes=60&limit=10&feed_type=cowrie")
 
         self.assertEqual(response.status_code, 200)
         payload = response.json()
         self.assertEqual(payload["data_source"], "aggregated")
         self.assertEqual(payload["attackers"][0]["attacker_ip"], "7.7.7.7")
+        self.assertEqual(payload["attackers"][0]["current_interactions"], 4)
 
-    @override_settings(TRENDING_PRECOMPUTE_WINDOWS_MINUTES=[24 * 60])
-    def test_200_trending_falls_back_to_aggregated_when_precomputed_snapshot_stale(self):
-        now = datetime(2026, 3, 20, 10, 30, 0)
-        snapshot = TrendingAttackerSnapshot.objects.create(
-            window_minutes=24 * 60,
-            feed_type="all",
-            attacker_ip="4.4.4.4",
-            current_interactions=10,
-            previous_interactions=2,
-            interaction_delta=8,
-            growth_score=4.0,
-            current_rank=1,
-            previous_rank=3,
-            rank_delta=2,
-        )
-        TrendingAttackerSnapshot.objects.filter(pk=snapshot.pk).update(computed_at=datetime(2026, 3, 20, 8, 0, 0))
-        AttackerActivityBucket.objects.create(
-            attacker_ip="6.6.6.6",
-            feed_type="cowrie",
-            bucket_start=datetime(2026, 3, 20, 9, 0),
-            interaction_count=8,
-        )
-
-        from unittest.mock import patch
+        AttackerActivityBucket.objects.filter(attacker_ip="7.7.7.7").update(interaction_count=10)
 
         with patch("api.views.feeds.timezone.now", return_value=now):
-            response = self.client.get("/api/feeds/trending/?window_minutes=1440&limit=10&feed_type=all")
+            cached_response = self.client.get("/api/feeds/trending/?window_minutes=60&limit=10&feed_type=cowrie")
 
-        self.assertEqual(response.status_code, 200)
-        payload = response.json()
-        self.assertEqual(payload["data_source"], "aggregated")
-        self.assertEqual(payload["attackers"][0]["attacker_ip"], "6.6.6.6")
+        self.assertEqual(cached_response.status_code, 200)
+        cached_payload = cached_response.json()
+        self.assertEqual(cached_payload["attackers"][0]["current_interactions"], 4)
 
-    @override_settings(TRENDING_PRECOMPUTE_WINDOWS_MINUTES=[24 * 60], TRENDING_PRECOMPUTE_LIMIT=1)
-    def test_200_trending_falls_back_to_aggregated_when_limit_exceeds_precompute_limit(self):
-        TrendingAttackerSnapshot.objects.create(
-            window_minutes=24 * 60,
-            feed_type="all",
-            attacker_ip="4.4.4.4",
-            current_interactions=10,
-            previous_interactions=2,
-            interaction_delta=8,
-            growth_score=4.0,
-            current_rank=1,
-            previous_rank=3,
-            rank_delta=2,
-        )
-        AttackerActivityBucket.objects.create(
-            attacker_ip="8.8.8.8",
-            feed_type="cowrie",
-            bucket_start=datetime(2026, 3, 20, 9, 0),
-            interaction_count=5,
-        )
+        shared_cache = caches["django-q"]
+        try:
+            shared_cache.incr("trending_feeds_version")
+        except ValueError:
+            shared_cache.set("trending_feeds_version", 2, timeout=None)
 
-        from unittest.mock import patch
+        with patch("api.views.feeds.timezone.now", return_value=now):
+            refreshed_response = self.client.get("/api/feeds/trending/?window_minutes=60&limit=10&feed_type=cowrie")
 
-        with patch("api.views.feeds.timezone.now", return_value=datetime(2026, 3, 20, 10, 30, 0)):
-            response = self.client.get("/api/feeds/trending/?window_minutes=1440&limit=2&feed_type=all")
-
-        self.assertEqual(response.status_code, 200)
-        payload = response.json()
-        self.assertEqual(payload["data_source"], "aggregated")
-        self.assertEqual(payload["attackers"][0]["attacker_ip"], "8.8.8.8")
+        self.assertEqual(refreshed_response.status_code, 200)
+        refreshed_payload = refreshed_response.json()
+        self.assertEqual(refreshed_payload["attackers"][0]["current_interactions"], 10)
 
     def test_400_trending_invalid_window(self):
         response = self.client.get("/api/feeds/trending/?window_minutes=5")
