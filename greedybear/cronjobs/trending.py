@@ -5,15 +5,13 @@ from datetime import timedelta
 from typing import Any
 
 from django.conf import settings
-from django.db import connection, transaction
-from django.db.models import Sum
 from django.utils import timezone
 
 from greedybear.cronjobs.base import Cronjob
 from greedybear.cronjobs.extraction.utils import parse_timestamp
-from greedybear.models import AttackerActivityBucket, Honeypot, TrendingAttackerSnapshot
+from greedybear.cronjobs.repositories import TrendingBucketRepository, TrendingSnapshotRepository
+from greedybear.models import Honeypot, TrendingAttackerSnapshot
 from greedybear.utils import is_ip_address
-
 
 logger = logging.getLogger(__name__)
 
@@ -107,28 +105,11 @@ def update_activity_buckets_from_hits(hits: Iterable[Mapping[str, Any]]) -> int:
     if not counters:
         return 0
 
-    table_name = AttackerActivityBucket._meta.db_table
-    quoted_table_name = connection.ops.quote_name(table_name)
-    values_sql = ",".join(["(%s, %s, %s, %s)"] * len(counters))
-    params = []
-    for (attacker_ip, feed_type, bucket_start), interaction_count in counters.items():
-        params.extend([attacker_ip, feed_type, bucket_start, interaction_count])
-
-    query = f"""
-        INSERT INTO {quoted_table_name} (attacker_ip, feed_type, bucket_start, interaction_count)
-        VALUES {values_sql}
-        ON CONFLICT (attacker_ip, feed_type, bucket_start)
-        DO UPDATE
-        SET interaction_count = {quoted_table_name}.interaction_count + EXCLUDED.interaction_count
-    """
     try:
-        with connection.cursor() as cursor:
-            cursor.execute(query, params)
+        return TrendingBucketRepository().upsert_bucket_counts(counters)
     except Exception as exc:
         logger.error("Failed to update activity buckets from hits for current chunk: %s", exc, exc_info=True)
         return 0
-
-    return len(counters)
 
 
 class TrendingAttackersCron(Cronjob):
@@ -190,35 +171,34 @@ class TrendingAttackersCron(Cronjob):
     def run(self):
         now = timezone.now().replace(minute=0, second=0, microsecond=0)
         validated_windows, per_feed_limit, retention_hours = self._validated_settings()
+        bucket_repo = TrendingBucketRepository()
+        snapshot_repo = TrendingSnapshotRepository()
 
         feed_types = ["all"] + list(Honeypot.objects.filter(active=True).values_list("name", flat=True))
         normalized_feed_types = [feed_type.lower() for feed_type in feed_types]
 
         for window_minutes in validated_windows:
             for feed_type in normalized_feed_types:
-                snapshots = self._compute_snapshots(now, window_minutes, feed_type, per_feed_limit)
-                with transaction.atomic():
-                    TrendingAttackerSnapshot.objects.filter(window_minutes=window_minutes, feed_type=feed_type).delete()
-                    if snapshots:
-                        TrendingAttackerSnapshot.objects.bulk_create(snapshots)
+                snapshots = self._compute_snapshots(bucket_repo, now, window_minutes, feed_type, per_feed_limit)
+                snapshot_repo.replace_snapshots(window_minutes, feed_type, snapshots)
 
         cutoff = now - timedelta(hours=retention_hours)
-        AttackerActivityBucket.objects.filter(bucket_start__lt=cutoff).delete()
+        bucket_repo.delete_older_than(cutoff)
 
-    def _compute_snapshots(self, now, window_minutes: int, feed_type: str, limit: int) -> list[TrendingAttackerSnapshot]:
+    def _compute_snapshots(
+        self,
+        bucket_repo: TrendingBucketRepository,
+        now,
+        window_minutes: int,
+        feed_type: str,
+        limit: int,
+    ) -> list[TrendingAttackerSnapshot]:
         current_window_start = now - timedelta(minutes=window_minutes)
         previous_window_end = current_window_start
         previous_window_start = previous_window_end - timedelta(minutes=window_minutes)
 
-        current_qs = AttackerActivityBucket.objects.filter(bucket_start__gte=current_window_start, bucket_start__lt=now)
-        previous_qs = AttackerActivityBucket.objects.filter(bucket_start__gte=previous_window_start, bucket_start__lt=previous_window_end)
-
-        if feed_type != "all":
-            current_qs = current_qs.filter(feed_type=feed_type)
-            previous_qs = previous_qs.filter(feed_type=feed_type)
-
-        current_counts = dict(current_qs.values("attacker_ip").annotate(total=Sum("interaction_count")).values_list("attacker_ip", "total"))
-        previous_counts = dict(previous_qs.values("attacker_ip").annotate(total=Sum("interaction_count")).values_list("attacker_ip", "total"))
+        current_counts = bucket_repo.get_counts_in_window(current_window_start, now, feed_type)
+        previous_counts = bucket_repo.get_counts_in_window(previous_window_start, previous_window_end, feed_type)
         ranked_attackers = build_ranked_attackers(current_counts, previous_counts, limit)
         return [
             TrendingAttackerSnapshot(
