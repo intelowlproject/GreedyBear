@@ -272,6 +272,8 @@ class CowrieSessionViewTestCase(CustomTestCase):
             "/api/cowrie_session?query=140.246.171.141&include_similar=true&include_session_data=true"
         )
         self.assertEqual(response.status_code, 200)
+        self.assertIn("99.99.99.99", response.data["sources"])
+        self.assertTrue(any(s["source"] == "99.99.99.99" for s in response.data["sessions"]))
         self.assertNotIn("100.100.100.100", response.data["sources"])
         self.assertTrue(all(s["source"] != "100.100.100.100" for s in response.data["sessions"]))
 
