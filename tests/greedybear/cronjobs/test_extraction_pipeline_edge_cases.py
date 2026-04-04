@@ -85,6 +85,32 @@ class TestEdgeCases(E2ETestCase):
         mock_scores.return_value.score_only.assert_called_once()
         _mock_update_activity.assert_called_once()
 
+    @patch("greedybear.cronjobs.extraction.pipeline.caches")
+    @patch("greedybear.cronjobs.extraction.pipeline.update_activity_buckets_from_hits", return_value=2)
+    @patch("greedybear.cronjobs.extraction.pipeline.UpdateScores")
+    @patch("greedybear.cronjobs.extraction.pipeline.ExtractionStrategyFactory")
+    def test_bucket_updates_invalidate_trending_cache(self, mock_factory, mock_scores, _mock_update_activity, mock_caches):
+        pipeline = self._create_pipeline_with_real_factory()
+        pipeline.log = MagicMock()
+
+        hits = [
+            MockElasticHit({"src_ip": "2.2.2.2", "type": "SuccessHoneypot"}),
+        ]
+        pipeline.elastic_repo.search.return_value = [hits]
+        pipeline.ioc_repo.is_empty.return_value = False
+        pipeline.ioc_repo.is_ready_for_extraction.return_value = False
+
+        shared_cache = MagicMock()
+        mock_caches.__getitem__.return_value = shared_cache
+
+        result = pipeline.execute()
+
+        self.assertEqual(result, 0)
+        _mock_update_activity.assert_called_once()
+        shared_cache.incr.assert_called_once_with("trending_feeds_version")
+        mock_scores.return_value.score_only.assert_not_called()
+        mock_factory.return_value.get_strategy.assert_not_called()
+
 
 class TestLargeBatches(E2ETestCase):
     """Tests for large batch processing using REAL strategies."""

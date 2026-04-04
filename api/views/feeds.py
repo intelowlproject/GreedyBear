@@ -2,13 +2,14 @@
 # See the file 'LICENSE' for copying permission.
 import hashlib
 import logging
+import urllib.parse
 from collections import Counter
 from datetime import timedelta
 
 from certego_saas.apps.auth.backend import CookieTokenAuthentication
 from certego_saas.ext.pagination import CustomPageNumberPagination
-from django.conf import settings
 from django.core import signing
+from django.core.cache import caches
 from django.db.models import Sum
 from django.utils import timezone
 from rest_framework import status
@@ -31,8 +32,8 @@ from api.views.utils import (
     get_valid_feed_types,
 )
 from greedybear.consts import GET
-from greedybear.cronjobs.trending import attacker_sort_tuple, build_ranked_attackers
-from greedybear.models import AttackerActivityBucket, ShareToken, TrendingAttackerSnapshot
+from greedybear.cronjobs.trending import build_ranked_attackers
+from greedybear.models import AttackerActivityBucket, ShareToken
 
 logger = logging.getLogger(__name__)
 
@@ -82,36 +83,11 @@ def _build_trending_response(
     }
 
 
-def _get_precomputed_attackers(window_minutes: int, feed_type: str, limit: int) -> list[dict]:
-    snapshot_rows = list(
-        TrendingAttackerSnapshot.objects.filter(window_minutes=window_minutes, feed_type=feed_type).values(
-            "attacker_ip",
-            "current_interactions",
-            "previous_interactions",
-            "interaction_delta",
-            "growth_score",
-            "current_rank",
-            "previous_rank",
-            "rank_delta",
-        )
-    )
-    return sorted(
-        snapshot_rows,
-        key=lambda row: attacker_sort_tuple(
-            row["attacker_ip"],
-            row["current_rank"],
-            row["current_interactions"],
-            row["previous_interactions"],
-        ),
-    )[:limit]
-
-
-def _has_fresh_precomputed_snapshot(window_minutes: int, feed_type: str, current_window_end) -> bool:
-    return TrendingAttackerSnapshot.objects.filter(
-        window_minutes=window_minutes,
-        feed_type=feed_type,
-        computed_at__gte=current_window_end,
-    ).exists()
+def _trending_cache_key(request, version: int, current_window_end) -> str:
+    sorted_params = sorted(request.query_params.lists())
+    params_string = urllib.parse.urlencode(sorted_params, doseq=True)
+    param_hash = hashlib.sha256(params_string.encode("utf-8")).hexdigest()
+    return f"trending_feeds_v{version}_{current_window_end.isoformat()}_{param_hash}"
 
 
 @api_view([GET])
@@ -300,40 +276,28 @@ def feeds_trending(request):
     previous_window_end = current_window_start
     previous_window_start = previous_window_end - timedelta(minutes=window_minutes)
 
-    precomputed_windows = set(getattr(settings, "TRENDING_PRECOMPUTE_WINDOWS_MINUTES", []))
-    precomputed_limit = int(getattr(settings, "TRENDING_PRECOMPUTE_LIMIT", 500))
-    use_precomputed = len(feed_types) == 1 and window_minutes in precomputed_windows and limit <= precomputed_limit
-
-    if use_precomputed and _has_fresh_precomputed_snapshot(window_minutes, feed_types[0], current_window_end):
-        attackers = _get_precomputed_attackers(window_minutes, feed_types[0], limit)
-        return Response(
-            _build_trending_response(
-                window_minutes,
-                feed_types,
-                current_window_start,
-                current_window_end,
-                previous_window_start,
-                previous_window_end,
-                attackers,
-                "precomputed",
-            )
-        )
+    shared_cache = caches["django-q"]
+    version = shared_cache.get("trending_feeds_version", 1)
+    cache_key = _trending_cache_key(request, version, current_window_end)
+    cached_result = shared_cache.get(cache_key)
+    if cached_result is not None:
+        return Response(cached_result)
 
     current_counts = _count_attackers_in_window(current_window_start, current_window_end, feed_types)
     previous_counts = _count_attackers_in_window(previous_window_start, previous_window_end, feed_types)
     attackers = build_ranked_attackers(current_counts, previous_counts, limit)
-    return Response(
-        _build_trending_response(
-            window_minutes,
-            feed_types,
-            current_window_start,
-            current_window_end,
-            previous_window_start,
-            previous_window_end,
-            attackers,
-            "aggregated",
-        )
+    response_payload = _build_trending_response(
+        window_minutes,
+        feed_types,
+        current_window_start,
+        current_window_end,
+        previous_window_start,
+        previous_window_end,
+        attackers,
+        "aggregated",
     )
+    shared_cache.set(cache_key, response_payload, timeout=3600)
+    return Response(response_payload)
 
 
 @api_view([GET])
