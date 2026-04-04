@@ -29,30 +29,4 @@ class Migration(migrations.Migration):
                 ],
             },
         ),
-        migrations.CreateModel(
-            name="TrendingAttackerSnapshot",
-            fields=[
-                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
-                ("window_minutes", models.IntegerField()),
-                ("feed_type", models.CharField(max_length=32)),
-                ("computed_at", models.DateTimeField(auto_now=True)),
-                ("attacker_ip", models.GenericIPAddressField()),
-                ("current_interactions", models.IntegerField(default=0)),
-                ("previous_interactions", models.IntegerField(default=0)),
-                ("interaction_delta", models.IntegerField(default=0)),
-                ("growth_score", models.FloatField(default=0)),
-                ("current_rank", models.IntegerField(null=True)),
-                ("previous_rank", models.IntegerField(null=True)),
-                ("rank_delta", models.IntegerField(null=True)),
-            ],
-            options={
-                "indexes": [
-                    models.Index(fields=["window_minutes", "feed_type", "current_rank"], name="greedybear__window__f2275e_idx"),
-                    models.Index(fields=["computed_at"], name="greedybear__compute_85b040_idx"),
-                ],
-                "constraints": [
-                    models.UniqueConstraint(fields=("window_minutes", "feed_type", "attacker_ip"), name="unique_trending_snapshot_window_feed_ip"),
-                ],
-            },
-        ),
     ]
