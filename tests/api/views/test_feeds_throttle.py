@@ -53,7 +53,7 @@ class FeedsThrottleTestCase(CustomTestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
 
-    @patch("api.throttles.FeedsTrendingThrottle.get_rate", return_value="1/minute")
+    @patch("api.throttles.FeedsThrottle.get_rate", return_value="1/minute")
     def test_feeds_trending_throttled(self, mock_rate):
         """Verify feeds_trending returns 429 after exceeding the trending rate limit."""
         client = APIClient()
@@ -64,22 +64,18 @@ class FeedsThrottleTestCase(CustomTestCase):
         self.assertEqual(response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
 
     @patch("api.throttles.FeedsThrottle.get_rate", return_value="1/minute")
-    @patch("api.throttles.FeedsTrendingThrottle.get_rate", return_value="1/minute")
-    def test_feeds_trending_uses_dedicated_scope(self, mock_trending_rate, mock_feeds_rate):
-        """Verify feeds and feeds_trending counters are isolated via different throttle scopes."""
+    def test_feeds_trending_shares_feeds_scope(self, mock_feeds_rate):
+        """Verify feeds and feeds_trending share the same throttle scope."""
         client = APIClient()
 
         trending_response = client.get("/api/feeds/trending/?window_minutes=60&limit=10&feed_type=all")
         self.assertEqual(trending_response.status_code, status.HTTP_200_OK)
 
         feeds_response = client.get("/api/feeds/")
-        self.assertEqual(feeds_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(feeds_response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
 
         trending_response = client.get("/api/feeds/trending/?window_minutes=60&limit=10&feed_type=all")
         self.assertEqual(trending_response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
-
-        feeds_response = client.get("/api/feeds/")
-        self.assertEqual(feeds_response.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
 
     def test_feeds_advanced_within_limit(self):
         """Verify feeds_advanced succeeds when within the rate limit."""
