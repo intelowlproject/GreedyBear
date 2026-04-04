@@ -136,12 +136,13 @@ class TrendingAttackersCron(Cronjob):
 
         retention_hours = self._positive_int_setting("TRENDING_BUCKET_RETENTION_HOURS", getattr(settings, "TRENDING_BUCKET_RETENTION_HOURS", 24 * 31))
 
-        max_allowed_window_minutes = max(60, (retention_hours * 60) // 2)
-        if max_window_minutes > max_allowed_window_minutes:
+        retention_minutes = retention_hours * 60
+        required_retention_minutes = 2 * max_window_minutes
+        if retention_minutes < required_retention_minutes:
             raise ValueError(
-                "TRENDING_MAX_WINDOW_MINUTES cannot exceed half of retention horizon "
-                f"({max_allowed_window_minutes} minutes based on TRENDING_BUCKET_RETENTION_HOURS), "
-                f"got {max_window_minutes}"
+                "TRENDING_BUCKET_RETENTION_HOURS must retain at least two windows "
+                f"for TRENDING_MAX_WINDOW_MINUTES={max_window_minutes}: "
+                f"required >= {required_retention_minutes} minutes, got {retention_minutes}"
             )
 
         return max_window_minutes, retention_hours

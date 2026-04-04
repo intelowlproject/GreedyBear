@@ -80,7 +80,7 @@ class TrendingAttackersCronTestCase(CustomTestCase):
         self.cron = TrendingAttackersCron()
 
     @override_settings(
-        TRENDING_BUCKET_RETENTION_HOURS=1,
+        TRENDING_BUCKET_RETENTION_HOURS=2,
         TRENDING_MAX_WINDOW_MINUTES=60,
     )
     def test_run_applies_bucket_retention_cleanup(self):
@@ -89,7 +89,7 @@ class TrendingAttackersCronTestCase(CustomTestCase):
                 AttackerActivityBucket(
                     attacker_ip="2.2.2.2",
                     feed_type="cowrie",
-                    bucket_start=datetime(2026, 3, 20, 8, 0),
+                    bucket_start=datetime(2026, 3, 20, 7, 0),
                     interaction_count=1,
                 ),
                 AttackerActivityBucket(
@@ -111,6 +111,15 @@ class TrendingAttackersCronTestCase(CustomTestCase):
         TRENDING_BUCKET_RETENTION_HOURS=0,
     )
     def test_run_raises_on_invalid_retention_hours(self):
+        with patch("greedybear.cronjobs.trending.timezone.now", return_value=datetime(2026, 3, 20, 10, 30, 0)):
+            with self.assertRaises(ValueError):
+                self.cron.run()
+
+    @override_settings(
+        TRENDING_BUCKET_RETENTION_HOURS=1,
+        TRENDING_MAX_WINDOW_MINUTES=60,
+    )
+    def test_run_raises_when_retention_cannot_cover_two_windows(self):
         with patch("greedybear.cronjobs.trending.timezone.now", return_value=datetime(2026, 3, 20, 10, 30, 0)):
             with self.assertRaises(ValueError):
                 self.cron.run()
