@@ -2,7 +2,6 @@ import logging
 import re
 from functools import cache
 
-from django.conf import settings
 from django.core.exceptions import FieldDoesNotExist
 from rest_framework import serializers
 
@@ -103,19 +102,6 @@ def feed_type_validation(feed_type: str, valid_feed_types: frozenset) -> str:
     return feed_type
 
 
-def validate_feed_type_list(feed_type: str, valid_feed_types: frozenset) -> str:
-    feed_types = parse_feed_types(feed_type)
-    if not feed_types:
-        raise serializers.ValidationError("Invalid feed_type: must not be empty")
-    if len(feed_types) > len(valid_feed_types):
-        raise serializers.ValidationError(f"Invalid feed_type: too many types specified (max {len(valid_feed_types)})")
-    if "all" in feed_types and len(feed_types) > 1:
-        raise serializers.ValidationError("Invalid feed_type: 'all' cannot be combined with other feed types")
-    for ft in feed_types:
-        feed_type_validation(ft, valid_feed_types)
-    return feed_type
-
-
 @cache
 def ordering_validation(ordering: str) -> str:
     """Validates that given ordering corresponds to a field in the IOC model.
@@ -165,8 +151,17 @@ class FeedsRequestSerializer(serializers.Serializer):
 
     def validate_feed_type(self, feed_type):
         logger.debug(f"FeedsRequestSerializer - validation feed_type: '{feed_type}'")
+        feed_types = parse_feed_types(feed_type)
+        if not feed_types:
+            raise serializers.ValidationError("Invalid feed_type: must not be empty")
         valid_feed_types = self.context["valid_feed_types"]
-        return validate_feed_type_list(feed_type, valid_feed_types)
+        if len(feed_types) > len(valid_feed_types):
+            raise serializers.ValidationError(f"Invalid feed_type: too many types specified (max {len(valid_feed_types)})")
+        if "all" in feed_types and len(feed_types) > 1:
+            raise serializers.ValidationError("Invalid feed_type: 'all' cannot be combined with other feed types")
+        for ft in feed_types:
+            feed_type_validation(ft, valid_feed_types)
+        return feed_type
 
     def validate_ordering(self, ordering):
         logger.debug(f"FeedsRequestSerializer - validation ordering: '{ordering}'")
@@ -198,27 +193,6 @@ class ASNFeedsOrderingSerializer(FeedsRequestSerializer):
             )
 
         return ordering
-
-
-class TrendingAttackersRequestSerializer(serializers.Serializer):
-    feed_type = serializers.CharField(default="all")
-    window_minutes = serializers.IntegerField(min_value=60, default=24 * 60)
-    limit = serializers.IntegerField(min_value=1, max_value=1000, default=10)
-
-    def validate_feed_type(self, feed_type):
-        logger.debug(f"TrendingAttackersRequestSerializer - validation feed_type: '{feed_type}'")
-        valid_feed_types = self.context["valid_feed_types"]
-        normalized_feed_type = feed_type.lower()
-        validate_feed_type_list(normalized_feed_type, valid_feed_types)
-        return normalized_feed_type
-
-    def validate_window_minutes(self, window_minutes):
-        max_window_minutes = int(getattr(settings, "TRENDING_MAX_WINDOW_MINUTES", 60 * 24 * 30))
-        if window_minutes > max_window_minutes:
-            raise serializers.ValidationError(f"window_minutes cannot be greater than {max_window_minutes}")
-        if window_minutes % 60 != 0:
-            raise serializers.ValidationError("window_minutes must be a multiple of 60")
-        return window_minutes
 
 
 class FeedsResponseSerializer(serializers.Serializer):
