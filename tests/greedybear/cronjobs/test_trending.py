@@ -3,6 +3,7 @@ from unittest.mock import patch
 
 from django.test import override_settings
 
+from greedybear.cronjobs.repositories.trending_bucket import TrendingBucketRepository
 from greedybear.cronjobs.trending import TrendingAttackersCron, update_activity_buckets_from_hits
 from greedybear.models import AttackerActivityBucket
 from tests import CustomTestCase
@@ -53,6 +54,24 @@ class UpdateActivityBucketsFromHitsTestCase(CustomTestCase):
 
         self.assertEqual(unique_keys, 0)
         self.assertEqual(AttackerActivityBucket.objects.count(), 0)
+
+    def test_upsert_uses_multiple_batches_for_large_counter_sets(self):
+        counters = {
+            ("10.0.0.1", "cowrie", datetime(2026, 3, 20, 9, 0)): 1,
+            ("10.0.0.2", "cowrie", datetime(2026, 3, 20, 9, 0)): 1,
+            ("10.0.0.3", "cowrie", datetime(2026, 3, 20, 9, 0)): 1,
+            ("10.0.0.4", "cowrie", datetime(2026, 3, 20, 9, 0)): 1,
+            ("10.0.0.5", "cowrie", datetime(2026, 3, 20, 9, 0)): 1,
+        }
+
+        repository = TrendingBucketRepository()
+        with patch.object(TrendingBucketRepository, "UPSERT_BATCH_SIZE", 2):
+            with patch("greedybear.cronjobs.repositories.trending_bucket.connection.cursor") as mock_cursor_factory:
+                mock_cursor = mock_cursor_factory.return_value.__enter__.return_value
+                inserted = repository.upsert_bucket_counts(counters)
+
+        self.assertEqual(inserted, 5)
+        self.assertEqual(mock_cursor.execute.call_count, 3)
 
 
 class TrendingAttackersCronTestCase(CustomTestCase):
