@@ -2,6 +2,7 @@ import logging
 from collections import Counter
 from collections.abc import Iterable, Mapping
 from datetime import timedelta
+from ipaddress import ip_address
 from typing import Any
 
 from django.conf import settings
@@ -93,10 +94,15 @@ def update_activity_buckets_from_hits(hits: Iterable[Mapping[str, Any]]) -> int:
         timestamp = hit.get("@timestamp")
         if not attacker_ip or not feed_type or not timestamp:
             continue
-        if not is_ip_address(str(attacker_ip)):
+        attacker_ip = str(attacker_ip)
+        if not is_ip_address(attacker_ip):
+            continue
+
+        parsed_ip = ip_address(attacker_ip)
+        if parsed_ip.is_loopback or parsed_ip.is_private or parsed_ip.is_multicast or parsed_ip.is_link_local or parsed_ip.is_reserved:
             continue
         try:
-            key = (str(attacker_ip), str(feed_type).lower(), _bucket_start(timestamp))
+            key = (attacker_ip, str(feed_type).lower(), _bucket_start(timestamp))
         except Exception:
             continue
         counters[key] += 1
