@@ -99,3 +99,9 @@ def enrich_abuseipdb():
     from greedybear.cronjobs.abuseipdb_feed import AbuseIPDBCron
 
     AbuseIPDBCron().execute()
+
+
+def extract_spamhaus_drop():
+    from greedybear.cronjobs.spamhaus_drop import SpamhausDropCron
+
+    SpamhausDropCron().execute()

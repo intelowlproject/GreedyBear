@@ -102,6 +102,12 @@ def setup_schedules():
             "func": "greedybear.tasks.enrich_abuseipdb",
             "cron": _external_weekly_cron("enrich_abuseipdb"),
         },
+        # 13. SpamhausDrop Enrichment: Weekly (Sunday) at deterministic time outside 00:00-02:00
+        {
+            "name": "extract_spamhaus_drop",
+            "func": "greedybear.tasks.extract_spamhaus_drop",
+            "cron": _external_weekly_cron("extract_spamhaus_drop"),
+        },
     ]
 
     # create or update schedules
