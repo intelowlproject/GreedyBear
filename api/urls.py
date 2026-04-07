@@ -1,6 +1,7 @@
 # This file is a part of GreedyBear https://github.com/honeynet/GreedyBear
 # See the file 'LICENSE' for copying permission.
 from django.urls import include, path
+from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView
 from rest_framework import routers
 
 from api.views import (
@@ -39,6 +40,10 @@ urlpatterns = [
     path("general_honeypot", general_honeypot_list),
     path("news/", news_view),
     path("health/", health_view),
+    # API schema and docs
+    path("schema/", SpectacularAPIView.as_view(), name="schema"),
+    path("docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
+    path("docs/redoc/", SpectacularRedocView.as_view(url_name="schema"), name="redoc"),
     # router viewsets
     path("", include(router.urls)),
     # certego_saas:

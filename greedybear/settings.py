@@ -97,6 +97,7 @@ INSTALLED_APPS = [
     "authentication",
     # auth
     "rest_email_auth",
+    "drf_spectacular",
 ]
 
 if os.environ.get("DJANGO_TEST_SERVER", "False") == "True":
@@ -123,6 +124,15 @@ REST_FRAMEWORK = {
     # Disable DRF's format suffix negotiation via ?format= query param,
     # since feeds endpoints handle the format parameter internally.
     "URL_FORMAT_OVERRIDE": None,
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "GreedyBear API",
+    "DESCRIPTION": "Threat intelligence API for extracting IOCs from honeypot clusters and generating threat feeds.",
+    "VERSION": VERSION,
+    "SERVE_INCLUDE_SCHEMA": False,
+    "PREPROCESSING_HOOKS": ["greedybear.spectacular.preprocessing_filter_spec"],
 }
 
 # Django-Rest-Durin

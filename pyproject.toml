@@ -28,6 +28,7 @@ dependencies = [
     # Utilities
     "requests==2.33.1",
     "slack-sdk==3.41.0",
+    "drf-spectacular==0.29.0",
 ]
 
 [dependency-groups]
