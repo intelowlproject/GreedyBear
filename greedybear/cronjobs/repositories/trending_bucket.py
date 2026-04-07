@@ -1,4 +1,5 @@
 from collections import Counter
+from collections.abc import Iterable
 from datetime import datetime
 
 from django.db import connection
@@ -36,10 +37,15 @@ class TrendingBucketRepository:
 
         return len(counters)
 
-    def get_counts_in_window(self, window_start, window_end, feed_type: str) -> dict[str, int]:
+    def get_counts_in_window(self, window_start, window_end, feed_types: str | Iterable[str]) -> dict[str, int]:
         queryset = AttackerActivityBucket.objects.filter(bucket_start__gte=window_start, bucket_start__lt=window_end)
-        if feed_type != "all":
-            queryset = queryset.filter(feed_type=feed_type)
+        if isinstance(feed_types, str):
+            normalized_feed_types = [feed_types]
+        else:
+            normalized_feed_types = list(feed_types)
+
+        if "all" not in normalized_feed_types:
+            queryset = queryset.filter(feed_type__in=normalized_feed_types)
 
         return dict(queryset.values("attacker_ip").annotate(total=Sum("interaction_count")).values_list("attacker_ip", "total"))
 

@@ -26,6 +26,10 @@ class TestSetupSchedules(TestCase):
         self.assertEqual(extract_call[1]["defaults"]["schedule_type"], Schedule.CRON)
         self.assertEqual(extract_call[1]["defaults"]["cron"], "*/10 * * * *")
 
+        trending_cleanup_call = next(c for c in calls if c[1]["name"] == "clean_up_trending_buckets")
+        self.assertEqual(trending_cleanup_call[1]["defaults"]["schedule_type"], Schedule.CRON)
+        self.assertEqual(trending_cleanup_call[1]["defaults"]["cron"], "12 * * * *")
+
     @patch("greedybear.cronjobs.schedules.Schedule")
     @override_settings(EXTRACTION_INTERVAL=60)
     def test_extraction_interval_60_clamps_minute(self, mock_schedule):
