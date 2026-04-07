@@ -55,6 +55,22 @@ class UpdateActivityBucketsFromHitsTestCase(CustomTestCase):
         self.assertEqual(unique_keys, 0)
         self.assertEqual(AttackerActivityBucket.objects.count(), 0)
 
+    def test_non_global_ip_hits_are_ignored(self):
+        unique_keys = update_activity_buckets_from_hits(
+            [
+                {"src_ip": "10.0.0.1", "type": "cowrie", "@timestamp": "2026-03-20T09:15:00"},
+                {"src_ip": "127.0.0.1", "type": "cowrie", "@timestamp": "2026-03-20T09:15:00"},
+                {"src_ip": "224.0.0.1", "type": "cowrie", "@timestamp": "2026-03-20T09:15:00"},
+                {"src_ip": "169.254.1.1", "type": "cowrie", "@timestamp": "2026-03-20T09:15:00"},
+                {"src_ip": "240.0.0.1", "type": "cowrie", "@timestamp": "2026-03-20T09:15:00"},
+                {"src_ip": "8.8.8.8", "type": "cowrie", "@timestamp": "2026-03-20T09:15:00"},
+            ]
+        )
+
+        self.assertEqual(unique_keys, 1)
+        self.assertEqual(AttackerActivityBucket.objects.count(), 1)
+        self.assertTrue(AttackerActivityBucket.objects.filter(attacker_ip="8.8.8.8").exists())
+
     def test_upsert_uses_multiple_batches_for_large_counter_sets(self):
         counters = {
             ("10.0.0.1", "cowrie", datetime(2026, 3, 20, 9, 0)): 1,
