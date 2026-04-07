@@ -146,9 +146,16 @@ def get_valid_feed_types() -> frozenset[str]:
     Returns:
         frozenset[str]: An immutable set of valid feed type strings
     """
+    cache_key = "valid_feed_types"
+    cached_types = cache.get(cache_key)
+    if cached_types is not None:
+        return cached_types
+
     honeypots = Honeypot.objects.filter(active=True)
     feed_types = ["all"] + [hp.name.lower() for hp in honeypots]
-    return frozenset(feed_types)
+    result = frozenset(feed_types)
+    cache.set(cache_key, result, (settings.EXTRACTION_INTERVAL + 5) * 60)
+    return result
 
 
 def get_queryset(request, feed_params, valid_feed_types, is_aggregated=False, serializer_class=FeedsRequestSerializer, tag_key="", tag_value=""):
