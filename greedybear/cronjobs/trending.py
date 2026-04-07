@@ -111,6 +111,14 @@ def update_activity_buckets_from_hits(hits: Iterable[Mapping[str, Any]]) -> int:
         return 0
 
 
+def validate_window_minutes(window_minutes: int, max_window_minutes: int) -> int:
+    if window_minutes > max_window_minutes:
+        raise ValueError(f"window_minutes cannot be greater than {max_window_minutes}")
+    if window_minutes % 60 != 0:
+        raise ValueError("window_minutes must be a multiple of 60")
+    return window_minutes
+
+
 class TrendingAttackersCron(Cronjob):
     @staticmethod
     def _positive_int_setting(name: str, value) -> int:
