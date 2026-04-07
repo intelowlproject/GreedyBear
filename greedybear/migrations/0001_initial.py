@@ -45,9 +45,7 @@ class Migration(migrations.Migration):
                 ("last_seen", models.DateTimeField(default=datetime.datetime.utcnow)),
                 (
                     "days_seen",
-                    django.contrib.postgres.fields.ArrayField(
-                        base_field=models.DateField(), blank=True, size=None
-                    ),
+                    django.contrib.postgres.fields.ArrayField(base_field=models.DateField(), blank=True, size=None),
                 ),
                 ("number_of_days_seen", models.IntegerField(default=1)),
                 ("times_seen", models.IntegerField(default=1)),

@@ -24,9 +24,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name="ioc",
             name="destination_ports",
-            field=django.contrib.postgres.fields.ArrayField(
-                base_field=models.IntegerField(), default=list, size=None
-            ),
+            field=django.contrib.postgres.fields.ArrayField(base_field=models.IntegerField(), default=list, size=None),
         ),
         migrations.AddField(
             model_name="ioc",
@@ -46,9 +44,7 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="ioc",
             name="days_seen",
-            field=django.contrib.postgres.fields.ArrayField(
-                base_field=models.DateField(), blank=True, default=list, size=None
-            ),
+            field=django.contrib.postgres.fields.ArrayField(base_field=models.DateField(), blank=True, default=list, size=None),
         ),
         migrations.CreateModel(
             name="CowrieSession",
@@ -72,9 +68,7 @@ class Migration(migrations.Migration):
                 ("interaction_count", models.IntegerField(default=0)),
                 (
                     "source",
-                    models.ForeignKey(
-                        on_delete=django.db.models.deletion.CASCADE, to="greedybear.ioc"
-                    ),
+                    models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to="greedybear.ioc"),
                 ),
             ],
         ),

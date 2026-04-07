@@ -22,7 +22,6 @@ def disable_additional_honeypots(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("greedybear", "0032_torexitnode"),
     ]

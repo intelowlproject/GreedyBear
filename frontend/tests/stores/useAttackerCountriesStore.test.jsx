@@ -45,8 +45,8 @@ describe("useAttackerCountriesStore", () => {
     const mockRange = "24h";
     const rangeStr = JSON.stringify(mockRange);
     const mockData = [
-      { country: "United States", count: 100 },
-      { country: "Italy", count: 50 },
+      { country: "United States", code: "US", count: 100 },
+      { country: "Italy", code: "IT", count: 50 },
     ];
 
     test("successfully fetches and normalizes data", async () => {
@@ -56,8 +56,8 @@ describe("useAttackerCountriesStore", () => {
 
       const state = useAttackerCountriesStore.getState();
       expect(state.normalizedData).toEqual([
-        { country: "United States of America", count: 100 },
-        { country: "Italy", count: 50 },
+        { country: "United States of America", code: "US", count: 100 },
+        { country: "Italy", code: "IT", count: 50 },
       ]);
       expect(state.countryDataMap).toEqual({
         "United States of America": 100,
@@ -144,9 +144,33 @@ describe("useAttackerCountriesStore", () => {
 
       expect(axios.get).toHaveBeenCalledTimes(2);
       expect(useAttackerCountriesStore.getState().normalizedData).toEqual([
-        { country: "United States of America", count: 100 },
-        { country: "Italy", count: 50 },
+        { country: "United States of America", code: "US", count: 100 },
+        { country: "Italy", code: "IT", count: 50 },
       ]);
+    });
+
+    test("aggregates data correctly when same ISO code has different names", async () => {
+      const complexMockData = [
+        { country: "United States", code: "US", count: 100 },
+        { country: "USA", code: "US", count: 50 },
+        { country: "Italy", code: "IT", count: 30 },
+      ];
+      axios.get.mockResolvedValue({ data: complexMockData });
+
+      await useAttackerCountriesStore.getState().fetchData("all");
+
+      const state = useAttackerCountriesStore.getState();
+      // normalizedData should now be aggregated by standardized name
+      expect(state.normalizedData).toEqual([
+        { country: "United States of America", code: "US", count: 150 },
+        { country: "Italy", code: "IT", count: 30 },
+      ]);
+      // countryDataMap should aggregate them
+      expect(state.countryDataMap).toEqual({
+        "United States of America": 150,
+        Italy: 30,
+      });
+      expect(state.maxCount).toBe(150);
     });
 
     test("sets error state on failure", async () => {
@@ -191,8 +215,8 @@ describe("useAttackerCountriesStore", () => {
       // Now loading should be false
       expect(useAttackerCountriesStore.getState().loading).toBe(false);
       expect(useAttackerCountriesStore.getState().normalizedData).toEqual([
-        { country: "United States of America", count: 100 },
-        { country: "Italy", count: 50 },
+        { country: "United States of America", code: "US", count: 100 },
+        { country: "Italy", code: "IT", count: 50 },
       ]);
     });
   });

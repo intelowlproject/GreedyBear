@@ -3,7 +3,7 @@
 from django.db import migrations
 
 
-def generalHoneypot(apps, schema_editor):
+def general_honeypot(apps, schema_editor):
     GeneralHoneypot = apps.get_model("greedybear", "GeneralHoneypot")
     general_honeypots = [
         "Heralding",
@@ -33,4 +33,4 @@ class Migration(migrations.Migration):
         ("greedybear", "0007_generalhoneypot"),
     ]
 
-    operations = [migrations.RunPython(generalHoneypot)]
+    operations = [migrations.RunPython(general_honeypot)]

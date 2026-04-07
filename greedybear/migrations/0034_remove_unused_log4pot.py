@@ -30,7 +30,6 @@ def remove_unused_log4pot(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ("greedybear", "0033_disable_additional_honeypots"),
     ]
