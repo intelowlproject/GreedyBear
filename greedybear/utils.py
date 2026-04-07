@@ -92,6 +92,26 @@ def is_sha256hash(string: str) -> bool:
 
 
 
+        def is_valid_ipv4(candidate: str) -> tuple[bool, str | None]:
+    """
+    Validate if a string is a valid IPv4 address.
+
+    Args:
+        candidate: String to validate as IPv4 address.
+
+    Returns:
+        Tuple of (is_valid, cleaned_ip). If valid, cleaned_ip is the stripped
+        IP address; otherwise, it is None.
+    """
+    try:
+        IPv4Address(candidate.strip())
+        return True, candidate.strip()
+    except ValueError:
+        return False, None
+
+
+
+
 
 
 
