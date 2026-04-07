@@ -13,18 +13,7 @@ from greedybear.enums import IpReputation
 from greedybear.models import IOC, FireHolList, MassScanner
 
 
-def parse_timestamp(timestamp: str) -> datetime:
-    """
-    Parse an ISO-format timestamp string into a naive datetime.
-    Strips timezone info because the project uses USE_TZ=False.
 
-    Args:
-        timestamp: ISO-format timestamp string.
-
-    Returns:
-        Naive datetime object.
-    """
-    return datetime.fromisoformat(timestamp).replace(tzinfo=None)
 
 
 def normalize_credential_field(value: object, max_length: int = 256) -> str:

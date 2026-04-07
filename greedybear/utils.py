@@ -2,6 +2,7 @@
 # See the file 'LICENSE' for copying permission.
 import re
 from ipaddress import ip_address
+from datetime import datetime
 
 
 def is_ip_address(string: str) -> bool:
@@ -57,3 +58,19 @@ def is_sha256hash(string: str) -> bool:
         bool: True if the string is a valid SHA-256 hash, False otherwise
     """
     return bool(re.fullmatch(r"^[A-Fa-f0-9]{64}$", string))
+
+
+    def parse_timestamp(timestamp: str) -> datetime:
+    """
+    Parse an ISO-format timestamp string into a naive datetime.
+    Strips timezone info because the project uses USE_TZ=False.
+
+    Args:
+        timestamp: ISO-format timestamp string.
+
+    Returns:
+        Naive datetime object.
+    """
+    return datetime.fromisoformat(timestamp).replace(tzinfo=None)
+
+
