@@ -20,9 +20,12 @@ describe("isoMapping utility", () => {
     expect(getStandardMapName("", "Italy")).toBe("Italy");
   });
 
-  it("should handle mixed case ISO codes if possible (though backend should provide uppercase)", () => {
-    // Current implementation doesn't upperCase() the code, let's see if we should
-    // ISO_TO_MAP_NAME uses uppercase keys.
-    expect(getStandardMapName("us", "United States")).toBe("United States");
+  it("should handle mixed case ISO codes (case-insensitive)", () => {
+    expect(getStandardMapName("us", "United States")).toBe(
+      "United States of America",
+    );
+    expect(getStandardMapName("uS", "United States")).toBe(
+      "United States of America",
+    );
   });
 });

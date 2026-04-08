@@ -191,5 +191,6 @@ export const ISO_TO_MAP_NAME = {
  * @returns {string} - Resolved country name
  */
 export function getStandardMapName(code, fallback) {
-  return ISO_TO_MAP_NAME[code] || fallback;
+  const sanitizedCode = typeof code === "string" ? code.toUpperCase() : code;
+  return ISO_TO_MAP_NAME[sanitizedCode] || fallback;
 }
