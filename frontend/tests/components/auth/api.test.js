@@ -60,7 +60,7 @@ describe("auth api helpers", () => {
       body,
     );
     expect(addToast).toHaveBeenCalledWith(
-      "Your email has been succesfully verified!",
+      "Your email has been successfully verified!",
       null,
       "success",
       true,
