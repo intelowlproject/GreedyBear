@@ -31,6 +31,8 @@ describe("auth api helpers", () => {
 
     expect(axios.post).toHaveBeenCalledWith(`${AUTH_BASE_URI}/register`, body);
     expect(result).toEqual(mockResponse);
+
+    expect(addToast).not.toHaveBeenCalled();
   });
 
   test("registerUser rejects and shows failure toast", async () => {
@@ -59,8 +61,9 @@ describe("auth api helpers", () => {
       `${AUTH_BASE_URI}/verify-email`,
       body,
     );
+
     expect(addToast).toHaveBeenCalledWith(
-      "Your email has been successfully verified!",
+      "Your email has been succesfully verified!",
       null,
       "success",
       true,
@@ -200,6 +203,8 @@ describe("auth api helpers", () => {
       body,
     );
     expect(result).toEqual(mockResponse);
+
+    expect(addToast).not.toHaveBeenCalled();
   });
 
   test("checkConfiguration rejects on error", async () => {
