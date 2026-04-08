@@ -288,7 +288,7 @@ def threatfox_submission(ioc_record: IOC, related_urls: list, log: Logger) -> No
     headers = {"Auth-Key": settings.THREATFOX_API_KEY}
     log.info(f"submitting IOC {urls_to_submit} to Threatfox")
 
-    if hasattr(ioc_record, "_seen_honeypots"):
+    if isinstance(getattr(ioc_record, "_seen_honeypots", None), list):
         seen_honeypots = ioc_record._seen_honeypots
     else:
         seen_honeypots = [hp.name for hp in ioc_record.general_honeypot.all()]

@@ -37,7 +37,7 @@ class IocRepository:
         """
         normalized_name = self._normalize_name(honeypot_name)
 
-        if hasattr(ioc, "_seen_honeypots"):
+        if isinstance(getattr(ioc, "_seen_honeypots", None), list):
             honeypot_set = set(ioc._seen_honeypots)
         else:
             honeypot_set = {self._normalize_name(hp.name) for hp in ioc.general_honeypot.all()}
