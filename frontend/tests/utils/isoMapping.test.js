@@ -8,6 +8,10 @@ describe("isoMapping utility", () => {
     );
     expect(getStandardMapName("CN", "China")).toBe("China");
     expect(getStandardMapName("CZ", "Czech Republic")).toBe("Czechia");
+    expect(getStandardMapName("AQ", "Antarctica")).toBe("Antarctica");
+    expect(getStandardMapName("XK", "Kosovo")).toBe("Kosovo");
+    expect(getStandardMapName("QN", "N. Cyprus")).toBe("N. Cyprus");
+    expect(getStandardMapName("QS", "Somaliland")).toBe("Somaliland");
   });
 
   it("should return the fallback name if the ISO code is not in the mapping", () => {
