@@ -157,3 +157,20 @@ section.fixed-bottom {
     border-color: $darker;
   }
 }
+
+$dashboard-btn-secondary-bg: #3f7d95;
+$dashboard-btn-secondary-bg-hover: #376d82;
+
+#Dashboard {
+  .btn.btn-secondary {
+    background-color: $dashboard-btn-secondary-bg;
+    border-color: $dashboard-btn-secondary-bg;
+  }
+
+  .btn.btn-secondary:hover,
+  .btn.btn-secondary:focus,
+  .btn.btn-secondary:active {
+    background-color: $dashboard-btn-secondary-bg-hover;
+    border-color: $dashboard-btn-secondary-bg-hover;
+  }
+}

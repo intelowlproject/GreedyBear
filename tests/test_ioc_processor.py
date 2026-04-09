@@ -78,24 +78,24 @@ class TestAddIoc(ExtractionTestCase):
         self.assertFalse(result.scanner)
         self.assertTrue(result.payload_request)
 
-    def test_adds_general_honeypot_when_provided(self):
+    def test_adds_honeypot_when_provided(self):
         self.mock_sensor_repo.cache = {}
         self.mock_ioc_repo.get_ioc_by_name.return_value = None
         ioc = self._create_mock_ioc()
         self.mock_ioc_repo.save.return_value = ioc
         self.mock_ioc_repo.add_honeypot_to_ioc.return_value = ioc
 
-        self.processor.add_ioc(ioc, attack_type=SCANNER, general_honeypot_name="TestHoneypot")
+        self.processor.add_ioc(ioc, attack_type=SCANNER, honeypot_name="TestHoneypot")
 
         self.mock_ioc_repo.add_honeypot_to_ioc.assert_called_once_with("TestHoneypot", ioc)
 
-    def test_skips_general_honeypot_when_not_provided(self):
+    def test_skips_honeypot_when_not_provided(self):
         self.mock_sensor_repo.cache = {}
         self.mock_ioc_repo.get_ioc_by_name.return_value = None
         ioc = self._create_mock_ioc()
         self.mock_ioc_repo.save.return_value = ioc
 
-        self.processor.add_ioc(ioc, attack_type=SCANNER, general_honeypot_name=None)
+        self.processor.add_ioc(ioc, attack_type=SCANNER, honeypot_name=None)
 
         self.mock_ioc_repo.add_honeypot_to_ioc.assert_not_called()
 
@@ -321,6 +321,30 @@ class TestMergeIocs(ExtractionTestCase):
         result = self.processor._merge_iocs(existing, new)
 
         self.assertEqual(result.firehol_categories, [])
+
+    def test_updates_attacker_country_code(self):
+        existing = self._create_mock_ioc(attacker_country_code="")
+        new = self._create_mock_ioc(attacker_country_code="NP")
+
+        result = self.processor._merge_iocs(existing, new)
+
+        self.assertEqual(result.attacker_country_code, "NP")
+
+    def test_preserves_attacker_country_code_when_new_is_empty(self):
+        existing = self._create_mock_ioc(attacker_country_code="US")
+        new = self._create_mock_ioc(attacker_country_code="")
+
+        result = self.processor._merge_iocs(existing, new)
+
+        self.assertEqual(result.attacker_country_code, "US")
+
+    def test_rejects_invalid_length_attacker_country_code(self):
+        existing = self._create_mock_ioc(attacker_country_code="US")
+        new = self._create_mock_ioc(attacker_country_code="NPL")
+
+        result = self.processor._merge_iocs(existing, new)
+
+        self.assertEqual(result.attacker_country_code, "US")
 
 
 class TestUpdateDaysSeen(ExtractionTestCase):

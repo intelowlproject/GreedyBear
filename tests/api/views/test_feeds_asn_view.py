@@ -1,7 +1,8 @@
+from django.core.cache import cache, caches
 from django.utils import timezone
 from rest_framework.test import APIClient
 
-from greedybear.models import IOC, AutonomousSystem, GeneralHoneypot
+from greedybear.models import IOC, AutonomousSystem, Honeypot
 from tests import CustomTestCase
 
 
@@ -12,8 +13,8 @@ class FeedsASNViewTestCase(CustomTestCase):
     def setUpClass(cls):
         super().setUpClass()
         IOC.objects.all().delete()
-        cls.testpot1, _ = GeneralHoneypot.objects.get_or_create(name="testpot1", active=True)
-        cls.testpot2, _ = GeneralHoneypot.objects.get_or_create(name="testpot2", active=True)
+        cls.testpot1, _ = Honeypot.objects.get_or_create(name="testpot1", active=True)
+        cls.testpot2, _ = Honeypot.objects.get_or_create(name="testpot2", active=True)
 
         cls.high_asn = "13335"
         cls.low_asn = "16276"
@@ -33,7 +34,7 @@ class FeedsASNViewTestCase(CustomTestCase):
             recurrence_probability=0.8,
             expected_interactions=20.0,
         )
-        cls.ioc_high1.general_honeypot.add(cls.testpot1, cls.testpot2)
+        cls.ioc_high1.honeypots.add(cls.testpot1, cls.testpot2)
 
         cls.ioc_high2 = IOC.objects.create(
             name="high2.example.com",
@@ -46,7 +47,7 @@ class FeedsASNViewTestCase(CustomTestCase):
             recurrence_probability=0.3,
             expected_interactions=8.0,
         )
-        cls.ioc_high2.general_honeypot.add(cls.testpot1, cls.testpot2)
+        cls.ioc_high2.honeypots.add(cls.testpot1, cls.testpot2)
 
         cls.ioc_low = IOC.objects.create(
             name="low.example.com",
@@ -59,10 +60,12 @@ class FeedsASNViewTestCase(CustomTestCase):
             recurrence_probability=0.1,
             expected_interactions=3.0,
         )
-        cls.ioc_low.general_honeypot.add(cls.testpot1, cls.testpot2)
+        cls.ioc_low.honeypots.add(cls.testpot1, cls.testpot2)
 
     def setUp(self):
         super().setUp()
+        cache.clear()
+        caches["django-q"].clear()
         self.client = APIClient()
         self.client.force_authenticate(user=self.superuser)
         self.url = "/api/feeds/asn/"
@@ -97,7 +100,7 @@ class FeedsASNViewTestCase(CustomTestCase):
         self.assertEqual(high_item["last_seen"], max(i.last_seen for i in high_iocs).isoformat())
 
         # validating honeypots dynamically
-        expected_honeypots = sorted({hp.name for i in high_iocs for hp in i.general_honeypot.all()})
+        expected_honeypots = sorted({hp.name for i in high_iocs for hp in i.honeypots.all()})
         self.assertEqual(sorted(high_item["honeypots"]), expected_honeypots)
 
     def test_200_asn_feed_default_ordering(self):
@@ -221,3 +224,45 @@ class FeedsASNViewTestCase(CustomTestCase):
             # Restore original name
             self.as_low.name = original_name
             self.as_low.save(update_fields=["name"])
+
+    def test_asn_feed_caching_behavior(self):
+        """
+        Verify that identical requests to the ASN feed return cached results,
+        and that invalidating the 'asn_feeds_version' forces a re-computation.
+        """
+        # 1. First request computes and caches the result
+        response1 = self.client.get(self.url)
+        self.assertEqual(response1.status_code, 200)
+        results1 = self._get_results(response1)
+        high_item1 = next((item for item in results1 if str(item["asn"]) == self.high_asn), None)
+        self.assertIsNotNone(high_item1)
+
+        # 2. Modify DB (e.g. change an IOC's attack count)
+        original_attack_count = self.ioc_high1.attack_count
+        self.ioc_high1.attack_count += 100
+        self.ioc_high1.save(update_fields=["attack_count"])
+
+        # 3. Second request should hit the cache and return SAME old value
+        response2 = self.client.get(self.url)
+        results2 = self._get_results(response2)
+        high_item2 = next((item for item in results2 if str(item["asn"]) == self.high_asn), None)
+
+        self.assertEqual(high_item1["total_attack_count"], high_item2["total_attack_count"])
+
+        # 4. Invalidate the cache (simulate extraction cronjob behavior)
+        shared_cache = caches["django-q"]
+        try:
+            shared_cache.incr("asn_feeds_version")
+        except ValueError:
+            shared_cache.set("asn_feeds_version", 2, timeout=None)
+
+        # 5. Third request should re-compute and show UPDATED DB value
+        response3 = self.client.get(self.url)
+        results3 = self._get_results(response3)
+        high_item3 = next((item for item in results3 if str(item["asn"]) == self.high_asn), None)
+
+        self.assertEqual(high_item3["total_attack_count"], high_item1["total_attack_count"] + 100)
+
+        # Cleanup DB
+        self.ioc_high1.attack_count = original_attack_count
+        self.ioc_high1.save(update_fields=["attack_count"])

@@ -5,23 +5,23 @@ Tests for API feed type handling after migration from boolean fields.
 from django.test import override_settings
 from rest_framework.test import APIClient
 
-from greedybear.models import IOC, GeneralHoneypot, IocType
+from greedybear.models import IOC, Honeypot, IocType
 from tests import CustomTestCase
 
 
 class FeedTypeAPITestCase(CustomTestCase):
-    """Test API feed handling with GeneralHoneypot M2M instead of boolean fields."""
+    """Test API feed handling with Honeypot M2M instead of boolean fields."""
 
     def setUp(self):
         self.client = APIClient()
         self.client.force_authenticate(user=self.superuser)
 
         # Ensure Cowrie and Log4pot honeypots exist
-        self.cowrie_hp = GeneralHoneypot.objects.get_or_create(name="Cowrie", defaults={"active": True})[0]
-        self.log4pot_hp = GeneralHoneypot.objects.get_or_create(name="Log4pot", defaults={"active": True})[0]
+        self.cowrie_hp = Honeypot.objects.get_or_create(name="Cowrie", defaults={"active": True})[0]
+        self.log4pot_hp = Honeypot.objects.get_or_create(name="Log4pot", defaults={"active": True})[0]
 
     def test_feed_type_derived_from_m2m(self):
-        """Verify feed_type is derived from general_honeypot M2M."""
+        """Verify feed_type is derived from honeypot M2M."""
         response = self.client.get("/api/feeds/all/all/recent.json")
         self.assertEqual(response.status_code, 200)
 
@@ -100,7 +100,7 @@ class FeedTypeAPITestCase(CustomTestCase):
             type=IocType.IP.value,
             scanner=True,
         )
-        ioc.general_honeypot.add(self.log4pot_hp)
+        ioc.honeypots.add(self.log4pot_hp)
 
         response = self.client.get("/api/feeds/all/all/recent.json")
         self.assertEqual(response.status_code, 200)

@@ -413,6 +413,32 @@ class IocsFromHitsTestCase(CustomTestCase):
         ioc = iocs[0]
         self.assertIsNone(ioc.autonomous_system)
 
+    def test_geoip_from_later_hit_when_first_has_none(self):
+        """ASN and country must be taken from any geoip-enriched hit, not only hits[0]."""
+        hits = [
+            self._create_hit(src_ip="1.2.3.4"),
+            self._create_hit(src_ip="1.2.3.4", asn=13335),
+        ]
+        hits[1]["geoip"]["as_org"] = "CLOUDFLARE"
+        hits[1]["geoip"]["country_name"] = "United States"
+
+        iocs = iocs_from_hits(hits)
+        ioc = iocs[0]
+
+        self.assertIsNotNone(ioc.autonomous_system)
+        self.assertEqual(ioc.autonomous_system.asn, 13335)
+        self.assertEqual(ioc.attacker_country, "United States")
+
+    def test_ip_rep_from_later_hit_when_first_has_none(self):
+        """ip_rep should be read from first hit that carries it, not blindly hits[0]."""
+        hits = [
+            self._create_hit(src_ip="1.2.3.4", ip_rep=""),
+            self._create_hit(src_ip="1.2.3.4", ip_rep="known_attacker"),
+        ]
+        iocs = iocs_from_hits(hits)
+        ioc = iocs[0]
+        self.assertEqual(ioc.ip_reputation, "known_attacker")
+
     def test_extracts_timestamps(self):
         hits = [
             self._create_hit(src_ip="8.8.8.8", timestamp="2025-01-01T10:00:00.000Z"),
@@ -668,6 +694,62 @@ class IocsFromHitsTestCase(CustomTestCase):
 
         self.assertEqual(ioc.interaction_count, 1)
 
+    def test_ioc_attacker_country_code_set_correctly(self):
+        """Verify that iocs_from_hits extracts country_iso_code from geoip."""
+        hits = [
+            self._create_hit(
+                src_ip="8.8.8.8",
+                dest_port=22,
+                hit_type="Cowrie",
+            )
+        ]
+
+        hits[0]["geoip"] = {"country_name": "Nepal", "country_iso_code": "NP"}
+
+        iocs = iocs_from_hits(hits)
+        self.assertEqual(len(iocs), 1)
+
+        ioc = iocs[0]
+        self.assertEqual(ioc.attacker_country, "Nepal")
+        self.assertEqual(ioc.attacker_country_code, "NP")
+
+    def test_ioc_attacker_country_code_defaults_to_empty(self):
+        """Verify that attacker_country_code defaults to empty when geoip has no country_iso_code."""
+        hits = [
+            self._create_hit(
+                src_ip="8.8.8.8",
+                dest_port=22,
+                hit_type="Cowrie",
+            )
+        ]
+
+        hits[0]["geoip"] = {"country_name": "Nepal"}
+
+        iocs = iocs_from_hits(hits)
+        self.assertEqual(len(iocs), 1)
+
+        ioc = iocs[0]
+        self.assertEqual(ioc.attacker_country, "Nepal")
+        self.assertEqual(ioc.attacker_country_code, "")
+
+    def test_ioc_attacker_country_code_rejects_invalid_length(self):
+        """Verify that country codes longer than 2 chars are discarded."""
+        hits = [
+            self._create_hit(
+                src_ip="8.8.8.8",
+                dest_port=22,
+                hit_type="Cowrie",
+            )
+        ]
+
+        hits[0]["geoip"] = {"country_name": "Nepal", "country_iso_code": "NPL"}
+
+        iocs = iocs_from_hits(hits)
+        self.assertEqual(len(iocs), 1)
+
+        ioc = iocs[0]
+        self.assertEqual(ioc.attacker_country_code, "")
+
     def test_ioc_autonomous_system_set_correctly(self):
         """Verify that iocs_from_hits sets autonomous_system FK correctly from hits."""
 
@@ -703,7 +785,7 @@ class ThreatfoxSubmissionTestCase(ExtractionTestCase):
     def _create_mock_payload_request(self):
         mock = self._create_mock_ioc()
         mock.payload_request = True
-        mock.general_honeypot.all.return_value = []
+        mock.honeypots.all.return_value = []
         return mock
 
     def test_skips_non_payload_request_iocs(self):
@@ -733,7 +815,7 @@ class ThreatfoxSubmissionTestCase(ExtractionTestCase):
         mock_honeypot_cowrie = Mock()
         mock_honeypot_cowrie.name = "Cowrie"
         ioc_record = self._create_mock_payload_request()
-        ioc_record.general_honeypot.all.return_value = [mock_honeypot_cowrie]
+        ioc_record.honeypots.all.return_value = [mock_honeypot_cowrie]
         threatfox_submission(ioc_record, ["http://malicious.com/payload.sh"], self.mock_log)
         mock_post.assert_called_once()
         call_kwargs = mock_post.call_args[1]
@@ -752,7 +834,7 @@ class ThreatfoxSubmissionTestCase(ExtractionTestCase):
         mock_honeypot_log4pot.name = "Log4pot"
         mock_honeypot_dionaea = Mock()
         mock_honeypot_dionaea.name = "Dionaea"
-        ioc_record.general_honeypot.all.return_value = [mock_honeypot_cowrie, mock_honeypot_log4pot, mock_honeypot_dionaea]
+        ioc_record.honeypots.all.return_value = [mock_honeypot_cowrie, mock_honeypot_log4pot, mock_honeypot_dionaea]
         threatfox_submission(ioc_record, ["http://malicious.com/payload.sh"], self.mock_log)
         call_kwargs = mock_post.call_args[1]
         comment = call_kwargs["json"]["comment"]

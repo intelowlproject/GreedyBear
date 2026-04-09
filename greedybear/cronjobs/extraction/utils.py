@@ -174,8 +174,10 @@ def iocs_from_hits(hits: list[dict]) -> list[IOC]:
         # Sort sensors by ID for consistent processing order
         sensors = sorted(sensors_map.values(), key=lambda s: s.id)
 
-        geoip = hits[0].get("geoip", {}) if hits else {}
+        geoip = next((h.get("geoip") for h in hits if h.get("geoip")), {})
         attacker_country = geoip.get("country_name", "")
+        raw_country_code = geoip.get("country_iso_code", "")
+        attacker_country_code = raw_country_code if len(raw_country_code) == 2 else ""
 
         asn = geoip.get("asn")
         as_name = geoip.get("as_org", "")
@@ -185,12 +187,13 @@ def iocs_from_hits(hits: list[dict]) -> list[IOC]:
             name=ip,
             type=get_ioc_type(ip),
             interaction_count=len(hits),
-            ip_reputation=correct_ip_reputation(ip, hits[0].get("ip_rep", ""), mass_scanner_ips),
+            ip_reputation=correct_ip_reputation(ip, next((h.get("ip_rep", "") for h in hits if h.get("ip_rep")), ""), mass_scanner_ips),
             autonomous_system=autonomous_system,
             destination_ports=sorted(set(dest_ports)),
             login_attempts=login_attempts,
             firehol_categories=firehol_categories,
             attacker_country=attacker_country,
+            attacker_country_code=attacker_country_code,
         )
         # Attach sensors to temporary attribute for later processing.
         # We cannot use `ioc.sensors.add()` here because the IOC instance is not yet saved
@@ -291,7 +294,7 @@ def threatfox_submission(ioc_record: IOC, related_urls: list, log: Logger) -> No
     if hasattr(ioc_record, "_seen_honeypots"):
         seen_honeypots = ioc_record._seen_honeypots
     else:
-        seen_honeypots = [hp.name for hp in ioc_record.general_honeypot.all()]
+        seen_honeypots = [hp.name for hp in ioc_record.honeypots.all()]
 
     seen_honeypots_str = ", ".join(seen_honeypots)
 

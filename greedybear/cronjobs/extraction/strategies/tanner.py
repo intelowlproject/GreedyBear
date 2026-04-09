@@ -114,7 +114,7 @@ class TannerExtractionStrategy(BaseExtractionStrategy):
         """Extract scanner IPs from hits."""
         for ioc in iocs_from_hits(hits):
             self.log.info(f"found IP {ioc.name} by honeypot {self.honeypot}")
-            ioc_record = self.ioc_processor.add_ioc(ioc, attack_type=SCANNER, general_honeypot_name=TANNER_HONEYPOT)
+            ioc_record = self.ioc_processor.add_ioc(ioc, attack_type=SCANNER, honeypot_name=TANNER_HONEYPOT)
             if ioc_record:
                 self.ioc_records.append(ioc_record)
                 threatfox_submission(ioc_record, ioc.related_urls, self.log)
@@ -272,7 +272,7 @@ class TannerExtractionStrategy(BaseExtractionStrategy):
             if sensor:
                 ioc._sensors_to_add = [sensor]
 
-            ioc_record = self.ioc_processor.add_ioc(ioc, attack_type=PAYLOAD_REQUEST, general_honeypot_name=TANNER_HONEYPOT)
+            ioc_record = self.ioc_processor.add_ioc(ioc, attack_type=PAYLOAD_REQUEST, honeypot_name=TANNER_HONEYPOT)
             if ioc_record:
                 self.rfi_hostnames_added += 1
                 threatfox_submission(ioc_record, ioc.related_urls, self.log)

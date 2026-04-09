@@ -122,6 +122,7 @@ export default function APIAccess() {
                     id="toggle-show-apikey-btn"
                     color="dark"
                     title={tokenVisible ? "Hide API key" : "Show API Key"}
+                    aria-label={tokenVisible ? "Hide API key" : "Show API Key"}
                     className="ms-2 border border-dark"
                     Icon={tokenVisible ? MdVisibility : MdVisibilityOff}
                     onClick={() => setTokenVisible((s) => !s)}
@@ -129,6 +130,7 @@ export default function APIAccess() {
                   <IconButton
                     id="delete-apikey-btn"
                     title="Delete API key"
+                    aria-label="Delete API key"
                     outline
                     color="danger"
                     className="border border-dark"
@@ -150,6 +152,7 @@ export default function APIAccess() {
               id="create-apikey-btn"
               color="tertiary"
               title="Click to generate new API key"
+              aria-label="Create new API key"
               titlePlacement="bottom"
               size="sm"
               Icon={GenerateIcon}

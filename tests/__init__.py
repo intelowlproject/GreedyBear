@@ -13,7 +13,7 @@ from greedybear.models import (
     CommandSequence,
     CowrieSession,
     Credential,
-    GeneralHoneypot,
+    Honeypot,
     IocType,
 )
 
@@ -24,15 +24,15 @@ class CustomTestCase(TestCase):
         super().setUpTestData()
 
         cls.as_obj, _ = AutonomousSystem.objects.get_or_create(asn="12345", defaults={"name": "greedybear"})
-        cls.heralding = GeneralHoneypot.objects.get_or_create(name="Heralding", defaults={"active": True})[0]
-        cls.ciscoasa = GeneralHoneypot.objects.get_or_create(name="Ciscoasa", defaults={"active": True})[0]
-        cls.ddospot = GeneralHoneypot.objects.get_or_create(name="Ddospot", defaults={"active": False})[0]
+        cls.heralding = Honeypot.objects.get_or_create(name="Heralding", defaults={"active": True})[0]
+        cls.ciscoasa = Honeypot.objects.get_or_create(name="Ciscoasa", defaults={"active": True})[0]
+        cls.ddospot = Honeypot.objects.get_or_create(name="Ddospot", defaults={"active": False})[0]
 
         cls.current_time = datetime.now()
 
         # Create honeypots for Cowrie and Log4pot (replacing boolean fields)
-        cls.cowrie_hp = GeneralHoneypot.objects.get_or_create(name="Cowrie", defaults={"active": True})[0]
-        cls.log4pot_hp = GeneralHoneypot.objects.get_or_create(name="Log4pot", defaults={"active": True})[0]
+        cls.cowrie_hp = Honeypot.objects.get_or_create(name="Cowrie", defaults={"active": True})[0]
+        cls.log4pot_hp = Honeypot.objects.get_or_create(name="Log4pot", defaults={"active": True})[0]
 
         cls.ioc = IOC.objects.create(
             name="140.246.171.141",
@@ -117,20 +117,20 @@ class CustomTestCase(TestCase):
             expected_interactions=5.5,
         )
 
-        cls.ioc.general_honeypot.add(cls.heralding)  # FEEDS
-        cls.ioc.general_honeypot.add(cls.ciscoasa)  # FEEDS
-        cls.ioc.general_honeypot.add(cls.cowrie_hp)  # Cowrie honeypot
-        cls.ioc.general_honeypot.add(cls.log4pot_hp)  # Log4pot honeypot
+        cls.ioc.honeypots.add(cls.heralding)  # FEEDS
+        cls.ioc.honeypots.add(cls.ciscoasa)  # FEEDS
+        cls.ioc.honeypots.add(cls.cowrie_hp)  # Cowrie honeypot
+        cls.ioc.honeypots.add(cls.log4pot_hp)  # Log4pot honeypot
         cls.ioc.save()
-        cls.ioc_2.general_honeypot.add(cls.heralding)  # FEEDS
-        cls.ioc_2.general_honeypot.add(cls.ciscoasa)  # FEEDS
-        cls.ioc_2.general_honeypot.add(cls.cowrie_hp)  # Cowrie honeypot
-        cls.ioc_2.general_honeypot.add(cls.log4pot_hp)  # Log4pot honeypot
+        cls.ioc_2.honeypots.add(cls.heralding)  # FEEDS
+        cls.ioc_2.honeypots.add(cls.ciscoasa)  # FEEDS
+        cls.ioc_2.honeypots.add(cls.cowrie_hp)  # Cowrie honeypot
+        cls.ioc_2.honeypots.add(cls.log4pot_hp)  # Log4pot honeypot
         cls.ioc_2.save()
-        cls.ioc_3.general_honeypot.add(cls.cowrie_hp)  # Cowrie honeypot
+        cls.ioc_3.honeypots.add(cls.cowrie_hp)  # Cowrie honeypot
         cls.ioc_3.save()
-        cls.ioc_domain.general_honeypot.add(cls.heralding)  # FEEDS
-        cls.ioc_domain.general_honeypot.add(cls.log4pot_hp)  # Log4pot honeypot
+        cls.ioc_domain.honeypots.add(cls.heralding)  # FEEDS
+        cls.ioc_domain.honeypots.add(cls.log4pot_hp)  # Log4pot honeypot
         cls.ioc_domain.save()
 
         # IOC with an inactive-only honeypot
@@ -145,7 +145,7 @@ class CustomTestCase(TestCase):
             interaction_count=1,
             attacker_country="Russia",
         )
-        cls.ioc_inactive_country.general_honeypot.add(cls.ddospot)
+        cls.ioc_inactive_country.honeypots.add(cls.ddospot)
         cls.ioc_inactive_country.save()
 
         cls.cmd_seq = ["cd foo", "ls -la"]
@@ -229,6 +229,8 @@ class ExtractionTestCase(CustomTestCase):
         ip_reputation="",
         asn=1234,
         firehol_categories=None,
+        attacker_country="",
+        attacker_country_code="",
     ):
         mock = Mock(spec=IOC)
         mock.name = name
@@ -246,6 +248,8 @@ class ExtractionTestCase(CustomTestCase):
         mock.ip_reputation = ip_reputation
         mock.firehol_categories = firehol_categories if firehol_categories is not None else []
         mock.number_of_days_seen = len(mock.days_seen)
+        mock.attacker_country = attacker_country
+        mock.attacker_country_code = attacker_country_code
 
         if asn is not None:
             mock.autonomous_system = Mock()

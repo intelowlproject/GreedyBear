@@ -54,10 +54,12 @@ To install it locally, Please refer to our [installation guide](https://intelowl
 
 Thanks to [The Honeynet Project](https://www.honeynet.org) we are providing free public feeds available [here](https://greedybear.honeynet.org).
 
-#### DigitalOcean
+#### Google Summer of Code
+<a href="https://summerofcode.withgoogle.com/"> <img style="border: 0.2px solid black" width=150 height=89 src="static/gsoc_logo.png" alt="GSoC logo"> </a>
 
-In 2022 we joined the official [DigitalOcean Open Source Program](https://www.digitalocean.com/open-source?utm_medium=opensource&utm_source=IntelOwl).
+In 2026 we started participating to the [Google Summer of Code](https://summerofcode.withgoogle.com/) (GSoC)!
 
+If you are interested in participating in the next Google Summer of Code, check all the info available in the [dedicated repository](https://github.com/intelowlproject/gsoc)!
 
 ## Maintainers and Key Contributors
 

@@ -1,6 +1,6 @@
 [project]
 name = "greedybear"
-version = "3.3.0"
+version = "3.3.1"
 requires-python = "==3.13.*"
 dependencies = [
     # Django core
@@ -12,21 +12,21 @@ dependencies = [
     "croniter==6.2.2",
     "certego-saas==0.7.12",
     # Server Gateway Interface
-    "gunicorn==25.2.0",
+    "gunicorn==25.3.0",
     # Data stores
     "elasticsearch==9.3.0",
-    "psycopg2-binary==2.9.11",
+    "psycopg[c]==3.3.3",
     # ML / data science
     "scikit-learn==1.8.0",
-    "pandas==3.0.1",
-    "numpy==2.4.3",
+    "pandas==3.0.2",
+    "numpy==2.4.4",
     "joblib==1.5.3",
     "datasketch==1.9.0",
     # File Format Support
     "feedparser==6.0.12",
     "stix2==3.0.2",
     # Utilities
-    "requests==2.33.0",
+    "requests==2.33.1",
     "slack-sdk==3.41.0",
 ]
 
@@ -37,7 +37,7 @@ dev = [
     "django-watchfiles==1.4.0",
 ]
 lint = [
-    "ruff==0.15.8",
+    "ruff==0.15.9",
 ]
 
 [tool.uv]

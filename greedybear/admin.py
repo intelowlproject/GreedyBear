@@ -12,7 +12,7 @@ from greedybear.models import (
     CowrieSession,
     Credential,
     FireHolList,
-    GeneralHoneypot,
+    Honeypot,
     MassScanner,
     Sensor,
     Statistics,
@@ -27,7 +27,7 @@ logger = logging.getLogger(__name__)
 class TorExitNodeModelAdmin(admin.ModelAdmin):
     list_display = ["ip_address", "added", "reason"]
     search_fields = ["ip_address"]
-    search_help_text = ["search for the IP address"]
+    search_help_text = "search for the IP address"
 
 
 @admin.register(Sensor)
@@ -35,7 +35,7 @@ class SensorsModelAdmin(admin.ModelAdmin):
     list_display = ["id", "address", "country", "label"]
     list_editable = ["label"]
     search_fields = ["address", "label"]
-    search_help_text = ["search for the sensor IP address or label"]
+    search_help_text = "search for the sensor IP address or label"
 
 
 @admin.register(Statistics)
@@ -43,14 +43,14 @@ class StatisticsModelAdmin(admin.ModelAdmin):
     list_display = ["source", "view", "request_date"]
     list_filter = ["source"]
     search_fields = ["source"]
-    search_help_text = ["search for the IP address source"]
+    search_help_text = "search for the IP address source"
 
 
 @admin.register(WhatsMyIPDomain)
 class WhatsMyIPModelAdmin(admin.ModelAdmin):
     list_display = ["domain", "added"]
     search_fields = ["domain"]
-    search_help_text = ["search for the domain"]
+    search_help_text = "search for the domain"
 
 
 @admin.register(MassScanner)
@@ -58,7 +58,7 @@ class MassScannersModelAdmin(admin.ModelAdmin):
     list_display = ["ip_address", "added", "reason"]
     list_filter = ["reason"]
     search_fields = ["ip_address"]
-    search_help_text = ["search for the IP address source"]
+    search_help_text = "search for the IP address"
 
 
 @admin.register(FireHolList)
@@ -66,7 +66,7 @@ class FireHolListModelAdmin(admin.ModelAdmin):
     list_display = ["ip_address", "added", "source"]
     list_filter = ["source"]
     search_fields = ["ip_address"]
-    search_help_text = ["search for the IP address"]
+    search_help_text = "search for the IP address"
 
 
 class SessionInline(admin.TabularInline):
@@ -101,7 +101,7 @@ class CowrieSessionModelAdmin(admin.ModelAdmin):
         "source",
     ]
     search_fields = ["source__name"]
-    search_help_text = ["search for the IP address source"]
+    search_help_text = "search for the IP address source"
     raw_id_fields = ["source", "commands"]
     list_filter = ["login_attempt", "command_execution"]
 
@@ -113,7 +113,7 @@ class CowrieSessionModelAdmin(admin.ModelAdmin):
 class CredentialModelAdmin(admin.ModelAdmin):
     list_display = ["username", "password"]
     search_fields = ["username", "password"]
-    search_help_text = ["search for username or password"]
+    search_help_text = "search for username or password"
 
 
 @admin.register(CommandSequence)
@@ -138,7 +138,7 @@ class IOCModelAdmin(admin.ModelAdmin):
         "related_urls",
         "scanner",
         "payload_request",
-        "general_honeypots",
+        "honeypots_list",
         "sensor_list",
         "ip_reputation",
         "firehol_categories",
@@ -154,13 +154,13 @@ class IOCModelAdmin(admin.ModelAdmin):
         "autonomous_system",
     ]
     search_fields = ["name", "related_ioc__name"]
-    search_help_text = ["search for the IP address source"]
+    search_help_text = "search by IOC name or related IOC name"
     raw_id_fields = ["related_ioc"]
-    filter_horizontal = ["general_honeypot", "sensors"]
+    filter_horizontal = ["honeypots", "sensors"]
     inlines = [SessionInline]
 
-    def general_honeypots(self, ioc):
-        return ", ".join([str(element) for element in ioc.general_honeypot.all()])
+    def honeypots_list(self, ioc):
+        return ", ".join([str(element) for element in ioc.honeypots.all()])
 
     def sensor_list(self, ioc):
         return ", ".join([str(sensor.address) for sensor in ioc.sensors.all()])
@@ -180,11 +180,11 @@ class IOCModelAdmin(admin.ModelAdmin):
 
     def get_queryset(self, request):
         """Override to optimize queries and avoid N+1 problems."""
-        return super().get_queryset(request).select_related("autonomous_system").prefetch_related("sensors", "general_honeypot")
+        return super().get_queryset(request).select_related("autonomous_system").prefetch_related("sensors", "honeypots")
 
 
-@admin.register(GeneralHoneypot)
-class GeneralHoneypotAdmin(admin.ModelAdmin):
+@admin.register(Honeypot)
+class HoneypotAdmin(admin.ModelAdmin):
     list_display = [
         "name",
         "active",

@@ -36,6 +36,7 @@ function AppFooter() {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="ms-3 text-white text-decoration-none"
+                aria-label="IntelOwl on X"
               >
                 <FaXTwitter size={20} />
               </a>
@@ -44,6 +45,7 @@ function AppFooter() {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="ms-3 text-white text-decoration-none"
+                aria-label="IntelOwl on GitHub"
               >
                 <FaGithub size={20} />
               </a>
@@ -52,6 +54,7 @@ function AppFooter() {
                 target="_blank"
                 rel="noopener noreferrer"
                 className="ms-3 text-white text-decoration-none"
+                aria-label="IntelOwl on LinkedIn"
               >
                 <FaLinkedin size={20} />
               </a>
