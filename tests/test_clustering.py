@@ -196,3 +196,48 @@ class ClusterCommandSequencesTestCase(CustomTestCase):
         self.assertEqual(clustering_input, [expected_tokenized])
         command_sequence.refresh_from_db()
         self.assertEqual(command_sequence.cluster, 42)
+
+    def test_run_ignores_payload_request_observables_from_non_scanner_sources(self):
+        """
+        Payload URLs linked through non-scanner sources are ignored for clustering input.
+        """
+        CowrieSession.objects.all().delete()
+        CommandSequence.objects.all().delete()
+
+        command_lines = ["uname -a"]
+        command_sequence = CommandSequence.objects.create(
+            first_seen=self.current_time,
+            last_seen=self.current_time,
+            commands=command_lines,
+            commands_hash=sha256("\n".join(command_lines).encode()).hexdigest(),
+            cluster=5,
+        )
+        non_scanner_ioc = IOC.objects.create(
+            name="198.51.100.15",
+            type=IocType.IP.value,
+            scanner=False,
+        )
+        payload_ioc = IOC.objects.create(
+            name="payload.example.net",
+            type=IocType.DOMAIN.value,
+            payload_request=True,
+            related_urls=["http://payload.example.net/b.sh"],
+        )
+        non_scanner_ioc.related_ioc.add(payload_ioc)
+        CowrieSession.objects.create(
+            session_id=int("defdefdefdef", 16),
+            start_time=self.current_time,
+            duration=1.0,
+            source=non_scanner_ioc,
+            commands=command_sequence,
+        )
+
+        with patch("greedybear.cronjobs.commands.cluster.LSHConnectedComponents") as mock_lsh_cls:
+            mock_lsh_cls.return_value.get_components.return_value = [77]
+            ClusterCommandSequences().run()
+
+            clustering_input = mock_lsh_cls.return_value.get_components.call_args[0][0]
+
+        self.assertEqual(clustering_input, [tokenize(command_lines)])
+        command_sequence.refresh_from_db()
+        self.assertEqual(command_sequence.cluster, 77)

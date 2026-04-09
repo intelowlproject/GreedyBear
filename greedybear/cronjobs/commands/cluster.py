@@ -49,7 +49,7 @@ class ClusterCommandSequences(Cronjob):
             return {}
 
         scanners = (
-            IOC.objects.filter(cowriesession__commands_id__in=sequence_ids)
+            IOC.objects.filter(cowriesession__commands_id__in=sequence_ids, scanner=True)
             .distinct()
             .only("id")
             .prefetch_related(
