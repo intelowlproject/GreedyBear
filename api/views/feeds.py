@@ -258,8 +258,19 @@ def feeds_consume(request, token):
     """
     logger.info("request /api/feeds/consume with token")
     token_hash = hashlib.sha256(token.encode()).hexdigest()
-    if ShareToken.objects.filter(token_hash=token_hash, revoked=True).exists():
-        return Response({"error": "Token has been revoked"}, status=status.HTTP_400_BAD_REQUEST)
+    try:
+        share_token = ShareToken.objects.get(token_hash=token_hash)
+    except ShareToken.DoesNotExist:
+        return Response(
+            {"error": "Invalid or expired token"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    if share_token.revoked:
+        return Response(
+            {"error": "Token has been revoked"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
     try:
         data = signing.loads(token, salt="greedybear-feeds", max_age=86400 * 30)  # 30 days validity
     except signing.BadSignature:
