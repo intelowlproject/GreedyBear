@@ -98,6 +98,21 @@ class FeedsAdvancedViewTestCase(CustomTestCase):
         self.assertIsNotNone(target_ioc)
         self.assertEqual(target_ioc["attacker_country"], "Nepal")
 
+    def test_200_feed_contains_attacker_country_code(self):
+        """
+        Ensures that the response includes the attacker_country_code field.
+        """
+        self.ioc.attacker_country_code = "NP"
+        self.ioc.save()
+
+        response = self.client.get("/api/feeds/advanced/")
+
+        iocs = response.json()["iocs"]
+        target_ioc = next((i for i in iocs if i["value"] == self.ioc.name), None)
+
+        self.assertIsNotNone(target_ioc)
+        self.assertEqual(target_ioc["attacker_country_code"], "NP")
+
 
 class FeedsEnhancementsTestCase(CustomTestCase):
     """Tests for advanced filtering, STIX export, and shareable feeds functionality."""
@@ -195,6 +210,19 @@ class FeedsEnhancementsTestCase(CustomTestCase):
         future_start = (datetime.now() + timedelta(days=2)).strftime("%Y-%m-%d")
         response = self.client.get(f"/api/feeds/advanced/?start_date={future_start}")
         self.assertEqual(response.json()["iocs"], [])
+
+    def test_filter_by_country_code(self):
+        """Filter by country_code returns only matching IOCs."""
+        self.ioc.attacker_country_code = "CN"
+        self.ioc.save()
+        self.ioc2.attacker_country_code = "US"
+        self.ioc2.save()
+
+        response = self.client.get("/api/feeds/advanced/?country_code=CN")
+        self.assertEqual(response.status_code, 200)
+        iocs = response.json()["iocs"]
+        self.assertEqual(len(iocs), 1)
+        self.assertEqual(iocs[0]["value"], self.ioc.name)
 
     # ── STIX 2.1 export ──────────────────────────────────────────────────────
 
