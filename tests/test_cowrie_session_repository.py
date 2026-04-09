@@ -110,7 +110,7 @@ class TestCowrieSessionRepository(CustomTestCase):
             shasum="abc123def456",
             url="http://malware.com/bad.exe",
             outfile="/data/cowrie/downloads/bad.exe",
-            timestamp="2023-01-01T10:00:04",
+            timestamp=datetime(2023, 1, 1, 10, 0, 4),
         )
 
         self.assertIsNotNone(transfer.pk)
@@ -118,7 +118,7 @@ class TestCowrieSessionRepository(CustomTestCase):
         self.assertEqual(transfer.shasum, "abc123def456")
         self.assertEqual(transfer.url, "http://malware.com/bad.exe")
         self.assertEqual(transfer.outfile, "/data/cowrie/downloads/bad.exe")
-        self.assertEqual(transfer.timestamp, "2023-01-01T10:00:04")
+        self.assertEqual(transfer.timestamp, datetime(2023, 1, 1, 10, 0, 4))
 
     def test_get_or_create_file_transfer_updates_timestamp(self):
         session = self.cowrie_session
@@ -128,7 +128,7 @@ class TestCowrieSessionRepository(CustomTestCase):
             shasum="abc123def456",
             url="http://malware.com/bad.exe",
             outfile="/data/cowrie/downloads/bad.exe",
-            timestamp="2023-01-01T10:00:04",
+            timestamp=datetime(2023, 1, 1, 10, 0, 4),
         )
 
         transfer = self.repo.get_or_create_file_transfer(
@@ -136,11 +136,11 @@ class TestCowrieSessionRepository(CustomTestCase):
             shasum="abc123def456",
             url="http://malware.com/ignored.exe",
             outfile="/data/cowrie/downloads/ignored.exe",
-            timestamp="2023-01-02T10:00:04",
+            timestamp=datetime(2023, 1, 2, 10, 0, 4),
         )
 
         self.assertEqual(transfer.pk, existing.pk)
-        self.assertEqual(transfer.timestamp, "2023-01-02T10:00:04")
+        self.assertEqual(transfer.timestamp, datetime(2023, 1, 2, 10, 0, 4))
         self.assertEqual(
             CowrieFileTransfer.objects.filter(session=session, shasum="abc123def456").count(),
             1,
