@@ -5,9 +5,9 @@ import requests
 from django.conf import settings
 
 from greedybear.cronjobs.base import Cronjob
-from greedybear.cronjobs.extraction.utils import is_valid_ipv4
 from greedybear.cronjobs.repositories.tag import TagRepository
 from greedybear.models import IOC
+from greedybear.utils import is_valid_ipv4
 
 SOURCE_NAME = "threatfox"
 
