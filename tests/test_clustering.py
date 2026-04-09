@@ -1,7 +1,8 @@
+from hashlib import sha256
 from unittest.mock import patch
 
 from greedybear.cronjobs.commands.cluster import ClusterCommandSequences, tokenize
-from greedybear.models import CommandSequence
+from greedybear.models import IOC, CommandSequence, CowrieSession, IocType
 
 from . import CustomTestCase
 
@@ -149,3 +150,49 @@ class ClusterCommandSequencesTestCase(CustomTestCase):
                 call_args = mock_bulk.call_args
                 self.assertIn("cluster", call_args[0][1])
                 self.assertEqual(call_args[1].get("batch_size"), 1000)
+
+    def test_run_adds_payload_request_observables_to_clustering_input(self):
+        """
+        Payload URLs related to scanner IOCs are added as synthetic commands before tokenization.
+        """
+        CowrieSession.objects.all().delete()
+        CommandSequence.objects.all().delete()
+
+        command_lines = ["uname -a"]
+        command_sequence = CommandSequence.objects.create(
+            first_seen=self.current_time,
+            last_seen=self.current_time,
+            commands=command_lines,
+            commands_hash=sha256("\n".join(command_lines).encode()).hexdigest(),
+            cluster=3,
+        )
+        scanner_ioc = IOC.objects.create(
+            name="203.0.113.10",
+            type=IocType.IP.value,
+            scanner=True,
+        )
+        payload_ioc = IOC.objects.create(
+            name="payload.example.com",
+            type=IocType.DOMAIN.value,
+            payload_request=True,
+            related_urls=["http://payload.example.com/a.sh"],
+        )
+        scanner_ioc.related_ioc.add(payload_ioc)
+        CowrieSession.objects.create(
+            session_id=int("abcabcabcabc", 16),
+            start_time=self.current_time,
+            duration=1.0,
+            source=scanner_ioc,
+            commands=command_sequence,
+        )
+
+        with patch("greedybear.cronjobs.commands.cluster.LSHConnectedComponents") as mock_lsh_cls:
+            mock_lsh_cls.return_value.get_components.return_value = [42]
+            ClusterCommandSequences().run()
+
+            clustering_input = mock_lsh_cls.return_value.get_components.call_args[0][0]
+
+        expected_tokenized = tokenize(command_lines + ["PAYLOAD REQUEST http://payload.example.com/a.sh"])
+        self.assertEqual(clustering_input, [expected_tokenized])
+        command_sequence.refresh_from_db()
+        self.assertEqual(command_sequence.cluster, 42)
