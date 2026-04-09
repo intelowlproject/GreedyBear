@@ -1,13 +1,6 @@
 # Top level settings
 ## Reference: https://docs.astral.sh/ruff/settings/#top-level
 
-extend-exclude = [
-    ".github",
-    ".idea",
-    ".vscode",
-    "**/migrations/*"
-]
-
 include = ["*.py"]
 
 indent-width = 4

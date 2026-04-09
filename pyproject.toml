@@ -47,3 +47,9 @@ override-dependencies = ["markdown==3.10.2"]
 
 [tool.ruff]
 extend = ".github/configurations/python_linters/.ruff.toml"
+extend-exclude = [
+    ".github",
+    ".idea",
+    ".vscode",
+    "**/migrations/*",
+]
