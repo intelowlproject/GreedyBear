@@ -58,7 +58,7 @@ line-length = 160
 output-format = "full"
 respect-gitignore = false
 show-fixes = true
-target-version = "py312"
+target-version = "py313"
 
 [tool.ruff.format]
 docstring-code-format = true
