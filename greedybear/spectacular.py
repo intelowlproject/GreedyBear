@@ -2,7 +2,7 @@ EXCLUDED_PREFIXES = [
     "/api/auth/",
     "/api/me/",
     "/api/news/",
-    "/api/statistics",
+    "/api/statistics/",
 ]
 
 
