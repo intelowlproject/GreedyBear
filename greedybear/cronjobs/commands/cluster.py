@@ -66,12 +66,7 @@ class ClusterCommandSequences(Cronjob):
 
         payload_urls_by_sequence_id: dict[int, set[str]] = defaultdict(set)
         for scanner in scanners:
-            payload_urls = {
-                payload_url
-                for related_payload_ioc in scanner.related_ioc.all()
-                for payload_url in related_payload_ioc.related_urls
-                if payload_url
-            }
+            payload_urls = {payload_url for related_payload_ioc in scanner.related_ioc.all() for payload_url in related_payload_ioc.related_urls if payload_url}
             if not payload_urls:
                 continue
 
