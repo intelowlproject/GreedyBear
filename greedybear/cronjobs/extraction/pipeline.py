@@ -10,6 +10,7 @@ from greedybear.cronjobs.repositories import (
     SensorRepository,
 )
 from greedybear.cronjobs.scoring.scoring_jobs import UpdateScores
+from greedybear.cronjobs.trending import update_activity_buckets_from_hits
 from greedybear.settings import (
     EXTRACTION_INTERVAL,
     INITIAL_EXTRACTION_TIMESPAN,
@@ -57,6 +58,7 @@ class ExtractionPipeline:
             Number of IOC records processed.
         """
         ioc_record_count = 0
+        bucket_update_count = 0
         factory = ExtractionStrategyFactory(self.ioc_repo, self.sensor_repo)
 
         # 1. Search in chunks
@@ -64,6 +66,8 @@ class ExtractionPipeline:
         for chunk in self.elastic_repo.search(self._minutes_back_to_lookup):
             ioc_records = []
             hits_by_honeypot = defaultdict(list)
+
+            bucket_update_count += update_activity_buckets_from_hits(chunk)
 
             # 2. Group by honeypot
             self.log.info("Grouping hits by honeypot type")
@@ -116,5 +120,13 @@ class ExtractionPipeline:
                 shared_cache.incr("asn_feeds_version")
             except ValueError:
                 shared_cache.set("asn_feeds_version", 2, timeout=None)
+
+        if bucket_update_count > 0:
+            self.log.info("Invalidating feeds trending cache")
+            shared_cache = caches["django-q"]
+            try:
+                shared_cache.incr("trending_feeds_version")
+            except ValueError:
+                shared_cache.set("trending_feeds_version", 2, timeout=None)
 
         return ioc_record_count

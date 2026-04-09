@@ -305,3 +305,23 @@ class ShareToken(models.Model):
     def __str__(self):
         status = "revoked" if self.revoked else "active"
         return f"ShareToken({self.token_hash[:12]}… [{status}])"
+
+
+class AttackerActivityBucket(models.Model):
+    attacker_ip = models.GenericIPAddressField()
+    feed_type = models.CharField(max_length=32)
+    bucket_start = models.DateTimeField()
+    interaction_count = models.IntegerField(default=0)
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["attacker_ip", "feed_type", "bucket_start"], name="unique_attacker_activity_bucket"),
+        ]
+        indexes = [
+            models.Index(fields=["bucket_start"]),
+            models.Index(fields=["feed_type", "bucket_start"]),
+            models.Index(fields=["attacker_ip", "bucket_start"]),
+        ]
+
+    def __str__(self):
+        return f"{self.attacker_ip} [{self.feed_type}] @ {self.bucket_start} ({self.interaction_count})"

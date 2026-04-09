@@ -1,0 +1,215 @@
+import logging
+from collections import Counter
+from collections.abc import Iterable, Mapping
+from datetime import datetime, timedelta
+from ipaddress import IPv4Address, IPv6Address, ip_address
+from typing import Any
+
+from django.conf import settings
+from django.utils import timezone
+
+from greedybear.cronjobs.base import Cronjob
+from greedybear.cronjobs.extraction.utils import parse_timestamp
+from greedybear.cronjobs.repositories import TrendingBucketRepository
+
+logger = logging.getLogger(__name__)
+
+AttackerCounts = Mapping[str, int]
+AttackerRank = int | None
+BucketHit = Mapping[str, Any]
+BucketKey = tuple[str, str, datetime]
+ParsedIPAddress = IPv4Address | IPv6Address
+RankedAttacker = dict[str, str | int | float | None]
+
+UNRANKED_ATTACKER_SORT_ORDER = 10**9
+DEFAULT_TRENDING_MAX_WINDOW_MINUTES = (24 * 31 * 60) // 2
+DEFAULT_TRENDING_BUCKET_RETENTION_HOURS = 24 * 31
+
+
+def _rank_map(sorted_counts: list[tuple[str, int]]) -> dict[str, int]:
+    return {attacker_ip: rank for rank, (attacker_ip, _) in enumerate(sorted_counts, start=1)}
+
+
+def growth_score(current_count: int, previous_count: int) -> float:
+    if previous_count == 0:
+        return round(float(current_count), 4)
+    return round((current_count - previous_count) / previous_count, 4)
+
+
+def rank_delta(current_rank: int | None, previous_rank: int | None) -> int | None:
+    if current_rank is not None and previous_rank is not None:
+        return previous_rank - current_rank
+    if current_rank is None and previous_rank is not None:
+        return -previous_rank
+    return None
+
+
+def attacker_sort_tuple(attacker_ip: str, current_rank: AttackerRank, current_count: int, previous_count: int) -> tuple[bool, int, int, int, str]:
+    return (
+        current_rank is None,
+        current_rank or UNRANKED_ATTACKER_SORT_ORDER,
+        -(current_count - previous_count),
+        -previous_count,
+        attacker_ip,
+    )
+
+
+def _ranked_attacker(
+    attacker_ip: str,
+    current_rank: AttackerRank,
+    previous_rank: AttackerRank,
+    current_count: int,
+    previous_count: int,
+) -> RankedAttacker:
+    return {
+        "attacker_ip": attacker_ip,
+        "current_interactions": current_count,
+        "previous_interactions": previous_count,
+        "interaction_delta": current_count - previous_count,
+        "growth_score": growth_score(current_count, previous_count),
+        "current_rank": current_rank,
+        "previous_rank": previous_rank,
+        "rank_delta": rank_delta(current_rank, previous_rank),
+    }
+
+
+def build_ranked_attackers(current_counts: AttackerCounts, previous_counts: AttackerCounts, limit: int) -> list[RankedAttacker]:
+    sorted_current = sorted(current_counts.items(), key=lambda item: (-item[1], item[0]))
+    sorted_previous = sorted(previous_counts.items(), key=lambda item: (-item[1], item[0]))
+
+    current_ranks = _rank_map(sorted_current)
+    previous_ranks = _rank_map(sorted_previous)
+
+    candidate_ips = {ip for ip, _ in sorted_current[:limit]}
+    candidate_ips |= {ip for ip, _ in sorted_previous[:limit]}
+
+    sorted_ips = sorted(
+        candidate_ips,
+        key=lambda attacker_ip: attacker_sort_tuple(
+            attacker_ip,
+            current_ranks.get(attacker_ip),
+            current_counts.get(attacker_ip, 0),
+            previous_counts.get(attacker_ip, 0),
+        ),
+    )[:limit]
+
+    return [
+        _ranked_attacker(
+            attacker_ip,
+            current_ranks.get(attacker_ip),
+            previous_ranks.get(attacker_ip),
+            current_counts.get(attacker_ip, 0),
+            previous_counts.get(attacker_ip, 0),
+        )
+        for attacker_ip in sorted_ips
+    ]
+
+
+def _bucket_start(timestamp: str) -> datetime:
+    parsed = parse_timestamp(timestamp)
+    return parsed.replace(minute=0, second=0, microsecond=0)
+
+
+def _is_non_global_ip(parsed_ip: ParsedIPAddress) -> bool:
+    return (
+        parsed_ip.is_loopback
+        or parsed_ip.is_private
+        or parsed_ip.is_multicast
+        or parsed_ip.is_link_local
+        or parsed_ip.is_reserved
+    )
+
+
+def _bucket_key_from_hit(hit: BucketHit) -> BucketKey | None:
+    attacker_ip = hit.get("src_ip")
+    feed_type = hit.get("type")
+    timestamp = hit.get("@timestamp")
+    if not attacker_ip or not feed_type or not timestamp:
+        return None
+
+    normalized_ip = str(attacker_ip)
+    try:
+        parsed_ip = ip_address(normalized_ip)
+    except ValueError:
+        return None
+
+    if _is_non_global_ip(parsed_ip):
+        return None
+
+    try:
+        return normalized_ip, str(feed_type).lower(), _bucket_start(timestamp)
+    except Exception:
+        return None
+
+
+def update_activity_buckets_from_hits(hits: Iterable[BucketHit]) -> int:
+    counters: Counter[BucketKey] = Counter()
+    for hit in hits:
+        key = _bucket_key_from_hit(hit)
+        if key is not None:
+            counters[key] += 1
+
+    if not counters:
+        return 0
+
+    try:
+        return TrendingBucketRepository().upsert_bucket_counts(counters)
+    except Exception as exc:
+        logger.error("Failed to update activity buckets from hits for current chunk: %s", exc, exc_info=True)
+        return 0
+
+
+def validate_window_minutes(window_minutes: int, max_window_minutes: int) -> int:
+    if window_minutes > max_window_minutes:
+        raise ValueError(f"window_minutes cannot be greater than {max_window_minutes}")
+    if window_minutes % 60 != 0:
+        raise ValueError("window_minutes must be a multiple of 60")
+    return window_minutes
+
+
+class TrendingAttackersCron(Cronjob):
+    @staticmethod
+    def _positive_int_setting(name: str, value) -> int:
+        try:
+            parsed_value = int(value)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"{name} must be a positive integer, got {value!r}") from exc
+
+        if parsed_value < 1:
+            raise ValueError(f"{name} must be >= 1, got {parsed_value}")
+
+        return parsed_value
+
+    def _validated_settings(self) -> tuple[int, int]:
+        max_window_minutes = self._positive_int_setting(
+            "TRENDING_MAX_WINDOW_MINUTES",
+            getattr(settings, "TRENDING_MAX_WINDOW_MINUTES", DEFAULT_TRENDING_MAX_WINDOW_MINUTES),
+        )
+        if max_window_minutes < 60:
+            raise ValueError(f"TRENDING_MAX_WINDOW_MINUTES must be >= 60, got {max_window_minutes}")
+        if max_window_minutes % 60:
+            raise ValueError(f"TRENDING_MAX_WINDOW_MINUTES must be a multiple of 60, got {max_window_minutes}")
+
+        retention_hours = self._positive_int_setting(
+            "TRENDING_BUCKET_RETENTION_HOURS",
+            getattr(settings, "TRENDING_BUCKET_RETENTION_HOURS", DEFAULT_TRENDING_BUCKET_RETENTION_HOURS),
+        )
+
+        retention_minutes = retention_hours * 60
+        required_retention_minutes = 2 * max_window_minutes
+        if retention_minutes < required_retention_minutes:
+            raise ValueError(
+                "TRENDING_BUCKET_RETENTION_HOURS must retain at least two windows "
+                f"for TRENDING_MAX_WINDOW_MINUTES={max_window_minutes}: "
+                f"required >= {required_retention_minutes} minutes, got {retention_minutes}"
+            )
+
+        return max_window_minutes, retention_hours
+
+    def run(self) -> None:
+        now = timezone.now().replace(minute=0, second=0, microsecond=0)
+        _, retention_hours = self._validated_settings()
+        bucket_repo = TrendingBucketRepository()
+
+        cutoff = now - timedelta(hours=retention_hours)
+        bucket_repo.delete_older_than(cutoff)

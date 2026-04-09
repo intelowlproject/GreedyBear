@@ -48,6 +48,12 @@ def setup_schedules():
             "func": "greedybear.tasks.monitor_logs",
             "cron": "7 * * * *",
         },
+        # Trending Buckets Cleanup: Hourly at :12
+        {
+            "name": "clean_up_trending_buckets",
+            "func": "greedybear.tasks.clean_up_trending_buckets",
+            "cron": "12 * * * *",
+        },
         # Cluster Commands: Daily at 01:07
         {
             "name": "cluster_commands",
