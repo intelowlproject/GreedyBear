@@ -146,6 +146,7 @@ class FeedsRequestSerializer(serializers.Serializer):
     end_date = serializers.DateField(format="%Y-%m-%d", required=False, allow_null=True)
     tag_key = serializers.CharField(max_length=128, required=False, allow_blank=True)
     tag_value = serializers.CharField(max_length=256, required=False, allow_blank=True)
+    country_code = serializers.CharField(max_length=2, required=False, allow_blank=True)
 
     def validate_feed_type(self, feed_type):
         logger.debug(f"FeedsRequestSerializer - validation feed_type: '{feed_type}'")

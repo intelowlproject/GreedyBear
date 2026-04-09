@@ -106,6 +106,7 @@ class FeedRequestParams:
         self.port = query_params.get("port")
         self.start_date = query_params.get("start_date")
         self.end_date = query_params.get("end_date")
+        self.country_code = query_params.get("country_code")
 
     def apply_default_filters(self, query_params):
         if not query_params:
@@ -201,6 +202,8 @@ def get_queryset(request, feed_params, valid_feed_types, is_aggregated=False, se
         query_dict["recurrence_probability__gte"] = feed_params.min_score
     if feed_params.port:
         query_dict["destination_ports__contains"] = [int(feed_params.port)]
+    if feed_params.country_code:
+        query_dict["attacker_country_code__iexact"] = feed_params.country_code
 
     # Date handling
     if feed_params.start_date:
