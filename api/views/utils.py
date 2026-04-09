@@ -320,6 +320,7 @@ def feeds_response(request=None, iocs=None, feed_params=None, valid_feed_types=N
                 "honeypot_names",  # used to build feed_type; removed from response
                 "destination_ports",  # used to calculate destination_port_count
                 "attacker_country",
+                "attacker_country_code",
                 "autonomous_system",
                 "tags",
             )
