@@ -28,6 +28,7 @@ dependencies = [
     # Utilities
     "requests==2.33.1",
     "slack-sdk==3.41.0",
+    "drf-spectacular==0.29.0",
 ]
 
 [dependency-groups]
@@ -45,4 +46,40 @@ prerelease = "allow"
 override-dependencies = ["markdown==3.10.2"]
 
 [tool.ruff]
-extend = ".github/configurations/python_linters/.ruff.toml"
+extend-exclude = [
+    ".github",
+    ".idea",
+    ".vscode",
+    "**/migrations/*",
+]
+include = ["*.py"]
+indent-width = 4
+line-length = 160
+output-format = "full"
+respect-gitignore = false
+show-fixes = true
+target-version = "py313"
+
+[tool.ruff.format]
+docstring-code-format = true
+indent-style = "space"
+line-ending = "lf"
+quote-style = "double"
+skip-magic-trailing-comma = false
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle errors
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # isort
+    "N",   # pep8-naming
+    "UP",  # pyupgrade
+    "B",   # flake8-bugbear
+    "C4",  # flake8-comprehensions
+    "DJ",  # flake8-django
+]
+ignore = [
+    "F403",  # Allow wildcard imports in __init__.py files
+    "E501",  # Allow long lines in docstrings
+]

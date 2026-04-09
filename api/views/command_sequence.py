@@ -5,6 +5,7 @@ import logging
 from certego_saas.apps.auth.backend import CookieTokenAuthentication
 from django.conf import settings
 from django.http import Http404, HttpResponseBadRequest
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import status
 from rest_framework.decorators import (
     api_view,
@@ -21,28 +22,27 @@ from greedybear.utils import is_ip_address, is_sha256hash
 logger = logging.getLogger(__name__)
 
 
+@extend_schema(
+    summary="Look up command sequences (authenticated)",
+    parameters=[
+        OpenApiParameter("query", str, required=True, description="Search term: an IP address or a SHA-256 command sequence hash."),
+        OpenApiParameter("include_similar", bool, description="When present, expand results to include related command sequences from the same cluster."),
+    ],
+    tags=["cowrie"],
+)
 @api_view([GET])
 @authentication_classes([CookieTokenAuthentication])
 @permission_classes([IsAuthenticated])
 def command_sequence_view(request):
     """
-    View function that handles command sequence queries based on IP addresses or SHA-256 hashes.
+    Retrieve command sequences and related IOCs by IP address or SHA-256 hash. Requires authentication.
 
-    Retrieves and returns command sequences and related IOCs based on the query parameter.
-    If IP address is given, returns all command sequences executed from this IP.
-    If SHA-256 hash is given, returns details about the specific command sequence.
-    Can include similar command sequences if requested.
+    - **By IP**: Returns all command sequences executed from that IP, along with related IOCs.
+    - **By SHA-256 hash**: Returns the specific command sequence and the IOCs that executed it.
 
-    Args:
-        request: The HTTP request object containing query parameters
-        query (str): The search term, can be either an IP address or a SHA-256 hash.
-        include_similar (bool): When parameter is present, returns related command sequences based on clustering.
-
-    Returns:
-        Response object with command sequence data or an error response
-
-    Raises:
-        Http404: If the requested resource is not found
+    **Query parameters:**
+    - **query** (str, required): An IP address or a SHA-256 command sequence hash.
+    - **include_similar** (bool): When present, expand results to include related command sequences from the same cluster.
     """
     observable = request.query_params.get("query")
     include_similar = request.query_params.get("include_similar") is not None
