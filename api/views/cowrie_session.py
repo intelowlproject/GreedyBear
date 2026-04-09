@@ -6,6 +6,7 @@ import logging
 from certego_saas.apps.auth.backend import CookieTokenAuthentication
 from django.conf import settings
 from django.http import Http404, HttpResponseBadRequest
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import status
 from rest_framework.decorators import (
     api_view,
@@ -22,50 +23,39 @@ from greedybear.utils import is_ip_address, is_sha256hash
 logger = logging.getLogger(__name__)
 
 
+@extend_schema(
+    summary="Look up Cowrie honeypot sessions (authenticated)",
+    parameters=[
+        OpenApiParameter("query", str, required=True, description="Search term: an IP address, a SHA-256 command sequence hash, or a password."),
+        OpenApiParameter("include_similar", bool, description="Expand results to include sessions with command sequences from the same cluster. Requires command clustering enabled. Default: `false`."),
+        OpenApiParameter("include_credentials", bool, description="Include all credentials used across matching sessions. Default: `false`."),
+        OpenApiParameter("include_session_data", bool, description="Include detailed session information (time, duration, source, interactions, credentials, commands). Default: `false`."),
+    ],
+    tags=["cowrie"],
+)
 @api_view([GET])
 @authentication_classes([CookieTokenAuthentication])
 @permission_classes([IsAuthenticated])
 def cowrie_session_view(request):
     """
     Retrieve Cowrie honeypot session data including command sequences, credentials, and session details.
-    Queries can be performed using an IP address to find all sessions from that source,
-    a SHA-256 hash to find sessions containing a specific command sequence,
-    or a password to find all sessions where that password was used.
+    Requires authentication.
 
-    Args:
-        request: The HTTP request object containing query parameters
-        query (str, required): The search term, can be an IP address, the SHA-256 hash of a command sequence,
-            or a password. SHA-256 hashes should match command sequences generated using Python's "\\n".join(sequence) format.
-        include_similar (bool, optional): When "true", expands the result to include all sessions that executed
-            command sequences belonging to the same cluster(s) as command sequences found in the initial query result.
-            Requires CLUSTER_COWRIE_COMMAND_SEQUENCES enabled in configuration. Default: false
-        include_credentials (bool, optional): When "true", includes all credentials used across matching Cowrie sessions.
-            Default: false
-        include_session_data (bool, optional): When "true", includes detailed information about matching Cowrie sessions.
-            Default: false
+    Search by IP address (all sessions from that source), SHA-256 hash (sessions containing a specific
+    command sequence), or password (sessions where that password was used).
 
-    Returns:
-        Response (200): JSON object containing:
-            - query (str): The original query parameter
-            - commands (list[str]): Unique command sequences (newline-delimited strings)
-            - sources (list[str]): Unique source IP addresses
-            - credentials (list[str], optional): Unique credentials if include_credentials=true
-            - sessions (list[dict], optional): Session details if include_session_data=true
-                - time (datetime): Session start time
-                - duration (float): Session duration in seconds
-                - source (str): Source IP address
-                - interactions (int): Number of interactions in session
-                - credentials (list[str]): Credentials used in this session
-                - commands (str): Command sequence executed (newline-delimited)
-        Response (400): Bad Request - Missing or invalid query parameter
-        Response (404): Not Found - No matching sessions found
-        Response (500): Internal Server Error - Unexpected error occurred
+    **Query parameters:**
+    - **query** (str, required): Search term — an IP address, a SHA-256 command sequence hash, or a password.
+    - **include_similar** (bool): Expand results to include sessions with command sequences from the same cluster. Default: `false`.
+    - **include_credentials** (bool): Include all credentials used across matching sessions. Default: `false`.
+    - **include_session_data** (bool): Include detailed session information (time, duration, source, interactions, credentials, commands). Default: `false`.
 
-    Example Queries:
-        /api/cowrie_session?query=1.2.3.4
-        /api/cowrie_session?query=5120e94e366ec83a79ee80454e4d1c76c06499ab19032bcdc7f0b4523bdb37a6
-        /api/cowrie_session?query=1.2.3.4&include_credentials=true&include_session_data=true&include_similar=true
-        /api/cowrie_session?query=admin123
+    **Response fields:**
+    - **query**: The original search term.
+    - **commands**: Unique command sequences (newline-delimited strings).
+    - **sources**: Unique source IP addresses.
+    - **credentials** (optional): Unique credentials, if `include_credentials=true`.
+    - **sessions** (optional): Session details, if `include_session_data=true`.
     """
     observable = request.query_params.get("query")
     include_similar = request.query_params.get("include_similar", "false").lower() == "true"

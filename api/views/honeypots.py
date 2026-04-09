@@ -2,6 +2,7 @@
 # See the file 'LICENSE' for copying permission.
 import logging
 
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
@@ -11,16 +12,20 @@ from greedybear.models import Honeypot
 logger = logging.getLogger(__name__)
 
 
+@extend_schema(
+    summary="List honeypot types",
+    parameters=[
+        OpenApiParameter("onlyActive", bool, description="When `true`, return only active honeypots."),
+    ],
+    tags=["honeypots"],
+)
 @api_view([GET])
 def general_honeypot_list(request):
     """
-    Retrieve a list of all general honeypots, optionally filtering by active status.
+    Retrieve the list of known honeypot types. Returns a JSON array of honeypot names.
 
-    Args:
-        request: The incoming request object containing query parameters.
-
-    Returns:
-        Response: A JSON response containing the list of general honeypots.
+    **Query parameters:**
+    - **onlyActive** (bool): When `true`, return only currently active honeypots.
     """
 
     logger.info(f"Requested honeypots list from {request.user}.")

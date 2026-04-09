@@ -3,6 +3,7 @@
 import logging
 
 from certego_saas.apps.auth.backend import CookieTokenAuthentication
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import status
 from rest_framework.decorators import (
     api_view,
@@ -19,19 +20,24 @@ from greedybear.models import Statistics, ViewType
 logger = logging.getLogger(__name__)
 
 
+@extend_schema(
+    summary="Enrich an observable (authenticated)",
+    parameters=[
+        OpenApiParameter("query", str, required=True, description="IP address or domain to look up."),
+    ],
+    tags=["enrichment"],
+)
 @api_view([GET])
 @authentication_classes([CookieTokenAuthentication])
 @permission_classes([IsAuthenticated])
 def enrichment_view(request):
     """
-    Handle enrichment requests for a specific observable (domain or IP address).
+    Look up an IP address or domain and return matching IOC data. Requires authentication.
 
-    Args:
-        request: The incoming request object containing query parameters.
+    Returns `found: true` with the full IOC object if a match exists, or `found: false` otherwise.
 
-    Returns:
-        Response: A JSON response indicating whether the observable was found,
-        and if so, the corresponding IOC.
+    **Query parameters:**
+    - **query** (str, required): IP address (IPv4/IPv6) or domain to look up.
     """
     observable_name = request.query_params.get("query")
     logger.info(f"Enrichment view requested for: {str(observable_name)}")

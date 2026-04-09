@@ -7,6 +7,7 @@ from certego_saas.apps.auth.backend import CookieTokenAuthentication
 from certego_saas.ext.pagination import CustomPageNumberPagination
 from django.core import signing
 from django.utils import timezone
+from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import status
 from rest_framework.decorators import (
     api_view,
@@ -42,23 +43,37 @@ ALLOWED_UNAUTHENTICATED_QUERY_PARAMS = [
 ]
 
 
+@extend_schema(
+    summary="Get IOC feed",
+    parameters=[
+        OpenApiParameter("feed_type", str, OpenApiParameter.PATH, description="Honeypot type to filter by (e.g. `cowrie`, `honeytrap`, or `all`)."),
+        OpenApiParameter("attack_type", str, OpenApiParameter.PATH, description="Attack category: `scanner`, `payload_request`, or `all`."),
+        OpenApiParameter("prioritize", str, OpenApiParameter.PATH, description="Prioritization strategy: `recent`, `persistent`, `likely_to_recur`, or `most_expected_hits`."),
+        OpenApiParameter("format_", str, OpenApiParameter.PATH, description="Response format: `json`, `csv`, or `txt`."),
+        OpenApiParameter("include_mass_scanners", bool, description="Include IOCs flagged as known mass scanners. Excluded by default."),
+        OpenApiParameter("include_tor_exit_nodes", bool, description="Include IOCs flagged as known Tor exit nodes. Excluded by default."),
+        OpenApiParameter("ordering", str, description="Field to order results by, with optional `-` prefix for descending."),
+    ],
+    tags=["feeds"],
+)
 @api_view([GET])
 @throttle_classes([FeedsThrottle])
 def feeds(request, feed_type, attack_type, prioritize, format_):
     """
-    Handle requests for IOC feeds with specific parameters and format the response accordingly.
+    Retrieve an IOC feed filtered by honeypot type, attack type, and prioritization strategy.
 
-    Args:
-        request: The incoming request object.
-        feed_type (str): Type of feed (e.g. cowrie, honeytrap, etc.).
-        attack_type (str): Type of attack (e.g., all, specific attack types).
-        prioritize (str): Prioritization mechanism to use (e.g., recent, persistent).
-        format_ (str): Desired format of the response (e.g., json, csv, txt).
-        include_mass_scanners (bool): query parameter flag to include IOCs that are known mass scanners.
-        include_tor_exit_nodes (bool): query parameter flag to include IOCs that are known tor exit nodes.
+    By default, known mass scanners and Tor exit nodes are excluded.
 
-    Returns:
-        Response: The HTTP response with formatted IOC data.
+    **Path parameters:**
+    - **feed_type**: Honeypot type to filter by (e.g. `cowrie`, `honeytrap`, or `all`).
+    - **attack_type**: Attack category: `scanner`, `payload_request`, or `all`.
+    - **prioritize**: Prioritization strategy: `recent`, `persistent`, `likely_to_recur`, or `most_expected_hits`.
+    - **format_**: Response format: `json`, `csv`, or `txt`.
+
+    **Query parameters:**
+    - **include_mass_scanners** (bool): Include IOCs flagged as known mass scanners. Excluded by default.
+    - **include_tor_exit_nodes** (bool): Include IOCs flagged as known Tor exit nodes. Excluded by default.
+    - **ordering** (str): Field to order results by, with optional `-` prefix for descending.
     """
     logger.info(f"request /api/feeds with params: feed type: {feed_type}, attack_type: {attack_type}, prioritization: {prioritize}, format: {format_}")
 
@@ -75,17 +90,37 @@ def feeds(request, feed_type, attack_type, prioritize, format_):
     return feeds_response(request, iocs_queryset, feed_params, valid_feed_types)
 
 
+@extend_schema(
+    summary="Get paginated IOC feed",
+    parameters=[
+        OpenApiParameter("feed_type", str, description="Honeypot type to filter by (e.g. `cowrie`, `honeytrap`, or `all`). Default: `all`."),
+        OpenApiParameter("attack_type", str, description="Attack category: `scanner`, `payload_request`, or `all`. Default: `all`."),
+        OpenApiParameter("ioc_type", str, description="IOC type: `ip`, `domain`, or `all`. Default: `all`."),
+        OpenApiParameter("ordering", str, description="Field to order results by, with optional `-` prefix for descending. Default: `-last_seen`."),
+        OpenApiParameter("prioritize", str, description="Prioritization strategy: `recent`, `persistent`, `likely_to_recur`, or `most_expected_hits`."),
+        OpenApiParameter("include_mass_scanners", bool, description="Include IOCs flagged as known mass scanners. Excluded by default."),
+        OpenApiParameter("include_tor_exit_nodes", bool, description="Include IOCs flagged as known Tor exit nodes. Excluded by default."),
+        OpenApiParameter("page", int, description="Page number for pagination."),
+    ],
+    tags=["feeds"],
+)
 @api_view([GET])
 @throttle_classes([FeedsThrottle])
 def feeds_pagination(request):
     """
-    Handle requests for paginated IOC feeds based on query parameters.
+    Retrieve a paginated IOC feed. Always returns JSON format.
 
-    Args:
-        request: The incoming request object.
+    By default, known mass scanners and Tor exit nodes are excluded.
 
-    Returns:
-        Response: The paginated HTTP response with IOC data.
+    **Query parameters:**
+    - **feed_type** (str): Honeypot type to filter by (e.g. `cowrie`, `honeytrap`, or `all`). Default: `all`.
+    - **attack_type** (str): Attack category: `scanner`, `payload_request`, or `all`. Default: `all`.
+    - **ioc_type** (str): IOC type: `ip`, `domain`, or `all`. Default: `all`.
+    - **ordering** (str): Field to order results by, with optional `-` prefix for descending. Default: `-last_seen`.
+    - **prioritize** (str): Prioritization strategy: `recent`, `persistent`, `likely_to_recur`, or `most_expected_hits`.
+    - **include_mass_scanners** (bool): Include IOCs flagged as known mass scanners. Excluded by default.
+    - **include_tor_exit_nodes** (bool): Include IOCs flagged as known Tor exit nodes. Excluded by default.
+    - **page** (int): Page number for pagination.
     """
 
     logger.info(f"request /api/feeds with params: {request.query_params}")
@@ -105,32 +140,47 @@ def feeds_pagination(request):
     return paginator.get_paginated_response(resp_data)
 
 
+@extend_schema(
+    summary="Get advanced IOC feed (authenticated)",
+    parameters=[
+        OpenApiParameter("feed_type", str, description="Honeypot type to filter by (e.g. `cowrie`, `honeytrap`, or `all`). Default: `all`."),
+        OpenApiParameter("attack_type", str, description="Attack category: `scanner`, `payload_request`, or `all`. Default: `all`."),
+        OpenApiParameter("max_age", int, description="Maximum number of days since last occurrence. Default: `3`."),
+        OpenApiParameter("min_days_seen", int, description="Minimum number of days on which an IOC must have been seen. Default: `1`."),
+        OpenApiParameter("include_reputation", str, description="`;`-separated reputation values to include (e.g. `known attacker`). Default: include all."),
+        OpenApiParameter("exclude_reputation", str, description="`;`-separated reputation values to exclude (e.g. `mass scanner`). Default: exclude none."),
+        OpenApiParameter("feed_size", int, description="Number of IOC items to return. Default: `5000`."),
+        OpenApiParameter("ordering", str, description="Field to order results by, with optional `-` prefix for descending. Default: `-last_seen`."),
+        OpenApiParameter("verbose", bool, description="`true` to include verbose IOC properties (e.g. days_seen). Default: `false`."),
+        OpenApiParameter("paginate", bool, description="`true` to paginate results (forces JSON format). Default: `false`."),
+        OpenApiParameter("format", str, description="Response format: `json`, `txt`, `csv`, or `stix21`. Non-JSON formats return IOC values only. Default: `json`."),
+        OpenApiParameter("tag_key", str, description="Filter IOCs by tag key (e.g. `malware`, `confidence_of_abuse`)."),
+        OpenApiParameter("tag_value", str, description="Filter IOCs by tag value (case-insensitive substring match, e.g. `mirai`). Can be combined with `tag_key`."),
+    ],
+    tags=["feeds"],
+)
 @api_view([GET])
 @authentication_classes([CookieTokenAuthentication])
 @permission_classes([IsAuthenticated])
 @throttle_classes([FeedsAdvancedThrottle])
 def feeds_advanced(request):
     """
-    Handle requests for IOC feeds based on query parameters and format the response accordingly.
+    Retrieve IOC feed data with full filtering capabilities. Requires authentication.
 
-    Args:
-        request: The incoming request object.
-        feed_type (str): Type of feed to retrieve. (supported: `cowrie`, `honeytrap`, etc.; default: `all`)
-        attack_type (str): Type of attack to filter. (supported: `scanner`, `payload_request`, `all`; default: `all`)
-        max_age (int): Maximum number of days since last occurrence. E.g. an IOC that was last seen 4 days ago is excluded by default. (default: 3)
-        min_days_seen (int): Minimum number of days on which an IOC must have been seen. (default: 1)
-        include_reputation (str): `;`-separated list of reputation values to include, e.g. `known attacker` or `known attacker;` to include IOCs without reputation. (default: include all)
-        exclude_reputation (str): `;`-separated list of reputation values to exclude, e.g. `mass scanner` or `mass scanner;bot, crawler`. (default: exclude none)
-        feed_size (int): Number of IOC items to return. (default: 5000)
-        ordering (str): Field to order results by, with optional `-` prefix for descending. (default: `-last_seen`)
-        verbose (bool): `true` to include IOC properties that contain a lot of data, e.g. the list of days it was seen. (default: `false`)
-        paginate (bool): `true` to paginate results. This forces the json format. (default: `false`)
-        format (str): Response format type. Besides `json`, `txt` and `csv` are supported but the response will only contain IOC values (e.g. IP addresses) without further information. (default: `json`)
-        tag_key (str, optional): Filter IOCs by tag key, e.g. `malware` or `confidence_of_abuse`. Only IOCs with at least one matching tag are returned.
-        tag_value (str, optional): Filter IOCs by tag value (case-insensitive substring match), e.g. `mirai`. Can be used alone or combined with `tag_key`.
-
-    Returns:
-        Response: The HTTP response with formatted IOC data.
+    **Query parameters:**
+    - **feed_type** (str): Honeypot type to filter by (e.g. `cowrie`, `honeytrap`, or `all`). Default: `all`.
+    - **attack_type** (str): Attack category: `scanner`, `payload_request`, or `all`. Default: `all`.
+    - **max_age** (int): Maximum number of days since last occurrence. Default: `3`.
+    - **min_days_seen** (int): Minimum number of days on which an IOC must have been seen. Default: `1`.
+    - **include_reputation** (str): `;`-separated reputation values to include (e.g. `known attacker`). Default: include all.
+    - **exclude_reputation** (str): `;`-separated reputation values to exclude (e.g. `mass scanner`). Default: exclude none.
+    - **feed_size** (int): Number of IOC items to return. Default: `5000`.
+    - **ordering** (str): Field to order results by, with optional `-` prefix for descending. Default: `-last_seen`.
+    - **verbose** (bool): `true` to include verbose IOC properties (e.g. days_seen). Default: `false`.
+    - **paginate** (bool): `true` to paginate results (forces JSON format). Default: `false`.
+    - **format** (str): Response format: `json`, `txt`, `csv`, or `stix21`. Non-JSON formats return IOC values only. Default: `json`.
+    - **tag_key** (str): Filter IOCs by tag key (e.g. `malware`, `confidence_of_abuse`).
+    - **tag_value** (str): Filter IOCs by tag value (case-insensitive substring match, e.g. `mirai`). Can be combined with `tag_key`.
     """
     logger.info(f"request /api/feeds/advanced/ with params: {request.query_params}")
     feed_params = FeedRequestParams(request.query_params)
@@ -154,37 +204,39 @@ def feeds_advanced(request):
     return feeds_response(request, iocs_queryset, feed_params, valid_feed_types, verbose=verbose)
 
 
+@extend_schema(
+    summary="Get IOC feed aggregated by ASN (authenticated)",
+    parameters=[
+        OpenApiParameter("feed_type", str, description="Honeypot type to filter by. Default: `all`."),
+        OpenApiParameter("attack_type", str, description="Attack category: `scanner`, `payload_request`, or `all`. Default: `all`."),
+        OpenApiParameter("max_age", int, description="Maximum age of IOCs in days. Default: `3`."),
+        OpenApiParameter("min_days_seen", int, description="Minimum days an IOC must have been observed. Default: `1`."),
+        OpenApiParameter("exclude_reputation", str, description="`;`-separated reputations to exclude (e.g. `mass scanner`). Default: none."),
+        OpenApiParameter("ordering", str, description="Aggregation ordering field (e.g. `total_attack_count`, `asn`). Default: `-ioc_count`."),
+        OpenApiParameter("asn", int, description="Filter results to a single ASN."),
+    ],
+    tags=["feeds"],
+)
 @api_view(["GET"])
 @authentication_classes([CookieTokenAuthentication])
 @permission_classes([IsAuthenticated])
 @throttle_classes([FeedsAdvancedThrottle])
 def feeds_asn(request):
     """
-    Retrieve aggregated IOC feed data grouped by ASN (Autonomous System Number).
+    Retrieve IOC feed data aggregated by ASN (Autonomous System Number). Requires authentication.
 
-    Args:
-        request: The HTTP request object.
-        feed_type (str): Filter by feed type (e.g. 'cowrie', 'honeytrap'). Default: 'all'.
-        attack_type (str): Filter by attack type (e.g., 'scanner', 'payload_request'). Default: 'all'.
-        max_age (int): Maximum age of IOCs in days. Default: 3.
-        min_days_seen (int): Minimum days an IOC must have been observed. Default: 1.
-        exclude_reputation (str): ';'-separated reputations to exclude (e.g., 'mass scanner'). Default: none.
-        ordering (str): Aggregation ordering field (e.g., 'total_attack_count', 'asn'). Default: '-ioc_count'.
-        asn (str, optional): Filter results to a single ASN.
+    Returns a JSON list where each object contains:
+    `asn`, `ioc_count`, `total_attack_count`, `total_interaction_count`, `total_login_attempts`,
+    `honeypots`, `expected_ioc_count`, `expected_interactions`, `first_seen`, `last_seen`.
 
-    Returns:
-     Response: HTTP response with a JSON list of ASN aggregation objects.
-     Each object contains:
-            asn (int): ASN number.
-            ioc_count (int): Number of IOCs for this ASN.
-            total_attack_count (int): Sum of attack_count for all IOCs.
-            total_interaction_count (int): Sum of interaction_count for all IOCs.
-            total_login_attempts (int): Sum of login_attempts for all IOCs.
-            honeypots (List[str]): Sorted list of unique honeypots that observed these IOCs.
-            expected_ioc_count (float): Sum of recurrence_probability for all IOCs, rounded to 4 decimals.
-            expected_interactions (float): Sum of expected_interactions for all IOCs, rounded to 4 decimals.
-            first_seen (DateTime): Earliest first_seen timestamp among IOCs.
-            last_seen (DateTime): Latest last_seen timestamp among IOCs.
+    **Query parameters:**
+    - **feed_type** (str): Honeypot type to filter by. Default: `all`.
+    - **attack_type** (str): Attack category: `scanner`, `payload_request`, or `all`. Default: `all`.
+    - **max_age** (int): Maximum age of IOCs in days. Default: `3`.
+    - **min_days_seen** (int): Minimum days an IOC must have been observed. Default: `1`.
+    - **exclude_reputation** (str): `;`-separated reputations to exclude (e.g. `mass scanner`). Default: none.
+    - **ordering** (str): Aggregation ordering field (e.g. `total_attack_count`, `asn`). Default: `-ioc_count`.
+    - **asn** (int): Filter results to a single ASN.
     """
     logger.info(f"request /api/feeds/asn/ with params: {request.query_params}")
     feed_params = FeedRequestParams(request.query_params)
@@ -197,31 +249,48 @@ def feeds_asn(request):
     return Response(data)
 
 
+@extend_schema(
+    summary="Generate a shareable feed link (authenticated)",
+    parameters=[
+        OpenApiParameter("feed_type", str, description="Honeypot type to filter by."),
+        OpenApiParameter("attack_type", str, description="Attack category to filter."),
+        OpenApiParameter("max_age", int, description="Maximum number of days since last occurrence."),
+        OpenApiParameter("min_days_seen", int, description="Minimum number of days on which an IOC must have been seen."),
+        OpenApiParameter("include_reputation", str, description="`;`-separated reputation values to include."),
+        OpenApiParameter("exclude_reputation", str, description="`;`-separated reputation values to exclude."),
+        OpenApiParameter("ordering", str, description="Field to order results by."),
+        OpenApiParameter("verbose", bool, description="`true` to include verbose IOC properties."),
+        OpenApiParameter("asn", int, description="Filter by ASN."),
+        OpenApiParameter("min_score", float, description="Filter by minimum recurrence_probability (0–1)."),
+        OpenApiParameter("port", int, description="Filter by destination port."),
+        OpenApiParameter("start_date", str, description="Filter by start date (`YYYY-MM-DD`)."),
+        OpenApiParameter("end_date", str, description="Filter by end date (`YYYY-MM-DD`)."),
+    ],
+    tags=["feeds"],
+)
 @api_view([GET])
 @authentication_classes([CookieTokenAuthentication])
 @permission_classes([IsAuthenticated])
 def feeds_share(request):
     """
-    Generate a shareable link for the current feed configuration.
+    Generate a signed, shareable link for the current feed configuration. Requires authentication.
 
-    Args:
-        request: The incoming request object.
-        feed_type (str): Type of feed to retrieve.
-        attack_type (str): Type of attack to filter.
-        max_age (int): Maximum number of days since last occurrence.
-        min_days_seen (int): Minimum number of days on which an IOC must have been seen.
-        include_reputation (str): `;`-separated list of reputation values to include.
-        exclude_reputation (str): `;`-separated list of reputation values to exclude.
-        ordering (str): Field to order results by.
-        verbose (bool): `true` to include IOC properties that contain a lot of data.
-        asn (int): Filter by ASN.
-        min_score (float): Filter by minimum recurrence_probability (0-1).
-        port (int): Filter by destination port.
-        start_date (str): Filter by start date (YYYY-MM-DD).
-        end_date (str): Filter by end date (YYYY-MM-DD).
+    Returns a JSON object with `url` (the shareable feed URL, valid for 30 days) and `revoke_url`.
 
-    Returns:
-        Response: A JSON object containing the signed shareable URL.
+    **Query parameters:**
+    - **feed_type** (str): Honeypot type to filter by.
+    - **attack_type** (str): Attack category to filter.
+    - **max_age** (int): Maximum number of days since last occurrence.
+    - **min_days_seen** (int): Minimum number of days on which an IOC must have been seen.
+    - **include_reputation** (str): `;`-separated reputation values to include.
+    - **exclude_reputation** (str): `;`-separated reputation values to exclude.
+    - **ordering** (str): Field to order results by.
+    - **verbose** (bool): `true` to include verbose IOC properties.
+    - **asn** (int): Filter by ASN.
+    - **min_score** (float): Filter by minimum recurrence_probability (0–1).
+    - **port** (int): Filter by destination port.
+    - **start_date** (str): Filter by start date (`YYYY-MM-DD`).
+    - **end_date** (str): Filter by end date (`YYYY-MM-DD`).
     """
     logger.info(f"request /api/feeds/share with params: {request.query_params}")
     feed_params = FeedRequestParams(request.query_params)
@@ -240,21 +309,25 @@ def feeds_share(request):
     return Response({"url": share_url, "revoke_url": revoke_url})
 
 
+@extend_schema(
+    summary="Consume a shared feed via token",
+    parameters=[
+        OpenApiParameter("token", str, OpenApiParameter.PATH, description="Signed token containing the feed configuration (generated by the share endpoint)."),
+    ],
+    tags=["feeds"],
+)
 @api_view([GET])
 @authentication_classes([])
 @permission_classes([])
 @throttle_classes([SharedFeedRateThrottle])
 def feeds_consume(request, token):
     """
-    Consume a shared feed using a signed token.
-    This endpoint is publicly accessible but strictly rate-limited.
+    Consume a shared feed using a signed token. Publicly accessible but strictly rate-limited.
 
-    Args:
-        request: The incoming request object.
-        token (str): The signed token containing feed configuration.
+    Tokens are valid for 30 days and can be revoked by the creator.
 
-    Returns:
-        Response: The HTTP response with formatted IOC data in JSON/CSV/TXT/STIX2.1.
+    **Path parameters:**
+    - **token** (str): Signed token containing the feed configuration (generated by the share endpoint).
     """
     logger.info("request /api/feeds/consume with token")
     token_hash = hashlib.sha256(token.encode()).hexdigest()
@@ -273,23 +346,26 @@ def feeds_consume(request, token):
     return feeds_response(request, iocs_queryset, feed_params, valid_feed_types)
 
 
+@extend_schema(
+    summary="Revoke a shared feed token (authenticated)",
+    parameters=[
+        OpenApiParameter("token", str, OpenApiParameter.PATH, description="The signed token to revoke."),
+    ],
+    tags=["feeds"],
+)
 @api_view([GET])
 @authentication_classes([CookieTokenAuthentication])
 @permission_classes([IsAuthenticated])
 def feeds_revoke(request, token):
     """
-    Revoke a previously generated shareable feed token.
+    Revoke a previously generated shareable feed token. Requires authentication.
 
     Once revoked, any attempt to consume the feed via that token will return a 400 error.
-    This is intentionally a GET endpoint so the revoke link can be opened directly in a browser.
-    Only the user who created the token (or staff) can revoke it.
+    Only the token creator (or staff) can revoke it. This is a GET endpoint so the revoke
+    link can be opened directly in a browser.
 
-    Args:
-        request: The incoming request object.
-        token (str): The raw signed token to revoke.
-
-    Returns:
-        Response: 200 on successful revocation, 400/403 if invalid, expired, or not authorized.
+    **Path parameters:**
+    - **token** (str): The signed token to revoke.
     """
     logger.info("request /api/feeds/revoke")
     try:
