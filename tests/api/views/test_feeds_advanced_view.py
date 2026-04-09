@@ -98,6 +98,35 @@ class FeedsAdvancedViewTestCase(CustomTestCase):
         self.assertIsNotNone(target_ioc)
         self.assertEqual(target_ioc["attacker_country"], "Nepal")
 
+    def test_feeds_advanced_includes_sensors(self):
+        """Sensors field appears in feeds_advanced response for authenticated users."""
+        from greedybear.models import Sensor
+        sensor = Sensor.objects.create(address="10.0.0.1", label="test-sensor")
+        self.ioc.sensors.add(sensor)
+        response = self.client.get("/api/feeds/advanced/")
+        self.assertEqual(response.status_code, 200)
+        iocs = response.json()["iocs"]
+        target_ioc = next((i for i in iocs if i["value"] == self.ioc.name), None)
+        self.assertIsNotNone(target_ioc)
+        self.assertIn("sensors", target_ioc)
+        self.assertEqual(len(target_ioc["sensors"]), 1)
+        self.assertEqual(target_ioc["sensors"][0]["address"], "10.0.0.1")
+        self.assertEqual(target_ioc["sensors"][0]["label"], "test-sensor")
+
+    def test_public_feeds_excludes_sensors(self):
+        """Sensors field must NOT appear in public feeds response."""
+        from greedybear.models import Sensor
+        sensor = Sensor.objects.create(address="10.0.0.2", label="secret-sensor")
+        self.ioc.sensors.add(sensor)
+        self.client.logout()
+        response = self.client.get(
+            "/api/feeds/cowrie/all/recent.json"
+        )
+        self.assertEqual(response.status_code, 200)
+        iocs = response.json()["iocs"]
+        for ioc in iocs:
+            self.assertNotIn("sensors", ioc)
+
 
 class FeedsEnhancementsTestCase(CustomTestCase):
     """Tests for advanced filtering, STIX export, and shareable feeds functionality."""
