@@ -105,7 +105,8 @@ if os.environ.get("DJANGO_TEST_SERVER", "False") == "True":
 # required by the certego-saas, but GreedyBear doesn't use the recaptcha, for this reason is filled with a placeholder
 DRF_RECAPTCHA_SECRET_KEY = "not-active"
 
-REST_FRAMEWORK = {
+REST_FRAMEWORK = {  
+    "DEFAULT_SCHEMA_CLASS": ["drf_spectacular.openapi.AutoSch"]
     "DEFAULT_RENDERER_CLASSES": ["rest_framework.renderers.JSONRenderer"],
     # Exception Handling
     "EXCEPTION_HANDLER": "certego_saas.ext.exceptions.custom_exception_handler",
@@ -125,6 +126,12 @@ REST_FRAMEWORK = {
     "URL_FORMAT_OVERRIDE": None,
 }
 
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "GreedyBear API",
+    "DESCRIPTION": "Threat Intel Platform for T-POTs",
+    "VERSION": "1.0.0",
+}
 # Django-Rest-Durin
 REST_DURIN = {
     "DEFAULT_TOKEN_TTL": timedelta(days=14),
