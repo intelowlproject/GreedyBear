@@ -48,7 +48,9 @@ ALLOWED_UNAUTHENTICATED_QUERY_PARAMS = [
     parameters=[
         OpenApiParameter("feed_type", str, OpenApiParameter.PATH, description="Honeypot type to filter by (e.g. `cowrie`, `honeytrap`, or `all`)."),
         OpenApiParameter("attack_type", str, OpenApiParameter.PATH, description="Attack category: `scanner`, `payload_request`, or `all`."),
-        OpenApiParameter("prioritize", str, OpenApiParameter.PATH, description="Prioritization strategy: `recent`, `persistent`, `likely_to_recur`, or `most_expected_hits`."),
+        OpenApiParameter(
+            "prioritize", str, OpenApiParameter.PATH, description="Prioritization strategy: `recent`, `persistent`, `likely_to_recur`, or `most_expected_hits`."
+        ),
         OpenApiParameter("format_", str, OpenApiParameter.PATH, description="Response format: `json`, `csv`, or `txt`."),
         OpenApiParameter("include_mass_scanners", bool, description="Include IOCs flagged as known mass scanners. Excluded by default."),
         OpenApiParameter("include_tor_exit_nodes", bool, description="Include IOCs flagged as known Tor exit nodes. Excluded by default."),
@@ -153,9 +155,13 @@ def feeds_pagination(request):
         OpenApiParameter("ordering", str, description="Field to order results by, with optional `-` prefix for descending. Default: `-last_seen`."),
         OpenApiParameter("verbose", bool, description="`true` to include verbose IOC properties (e.g. days_seen). Default: `false`."),
         OpenApiParameter("paginate", bool, description="`true` to paginate results (forces JSON format). Default: `false`."),
-        OpenApiParameter("format", str, description="Response format: `json`, `txt`, `csv`, or `stix21`. Non-JSON formats return IOC values only. Default: `json`."),
+        OpenApiParameter(
+            "format", str, description="Response format: `json`, `txt`, `csv`, or `stix21`. Non-JSON formats return IOC values only. Default: `json`."
+        ),
         OpenApiParameter("tag_key", str, description="Filter IOCs by tag key (e.g. `malware`, `confidence_of_abuse`)."),
-        OpenApiParameter("tag_value", str, description="Filter IOCs by tag value (case-insensitive substring match, e.g. `mirai`). Can be combined with `tag_key`."),
+        OpenApiParameter(
+            "tag_value", str, description="Filter IOCs by tag value (case-insensitive substring match, e.g. `mirai`). Can be combined with `tag_key`."
+        ),
     ],
     tags=["feeds"],
 )

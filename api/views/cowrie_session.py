@@ -27,9 +27,17 @@ logger = logging.getLogger(__name__)
     summary="Look up Cowrie honeypot sessions (authenticated)",
     parameters=[
         OpenApiParameter("query", str, required=True, description="Search term: an IP address, a SHA-256 command sequence hash, or a password."),
-        OpenApiParameter("include_similar", bool, description="Expand results to include sessions with command sequences from the same cluster. Requires command clustering enabled. Default: `false`."),
+        OpenApiParameter(
+            "include_similar",
+            bool,
+            description="Expand results to include sessions with command sequences from the same cluster. Requires command clustering enabled. Default: `false`.",
+        ),
         OpenApiParameter("include_credentials", bool, description="Include all credentials used across matching sessions. Default: `false`."),
-        OpenApiParameter("include_session_data", bool, description="Include detailed session information (time, duration, source, interactions, credentials, commands). Default: `false`."),
+        OpenApiParameter(
+            "include_session_data",
+            bool,
+            description="Include detailed session information (time, duration, source, interactions, credentials, commands). Default: `false`.",
+        ),
     ],
     tags=["cowrie"],
 )
