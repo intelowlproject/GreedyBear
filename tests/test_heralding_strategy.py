@@ -4,6 +4,8 @@ Tests for the Heralding credential-catching honeypot extraction strategy.
 
 from unittest.mock import Mock, patch
 
+from django.test import override_settings
+
 from greedybear.consts import SCANNER
 from greedybear.cronjobs.extraction.strategies.heralding import (
     HERALDING_HONEYPOT,
@@ -15,6 +17,7 @@ from greedybear.cronjobs.extraction.strategies.heralding import (
 from . import ExtractionTestCase
 
 
+@override_settings(THREATFOX_API_KEY="")
 class TestHeraldingExtractionStrategy(ExtractionTestCase):
     """Tests for the main extract_from_hits entrypoint."""
 
@@ -147,6 +150,7 @@ class TestHeraldingProtocolExtraction(ExtractionTestCase):
         self.assertIsNone(result)
 
 
+@override_settings(THREATFOX_API_KEY="")
 class TestHeraldingCredentialClassification(ExtractionTestCase):
     """Tests for _classify_credential_attacks and credential persistence logic."""
 
