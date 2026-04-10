@@ -43,9 +43,9 @@ vi.mock("react-simple-maps", () => ({
 }));
 
 const COUNTRIES_DATA = [
-  { country: "China", count: 120 },
-  { country: "United States", count: 80 },
-  { country: "Germany", count: 40 },
+  { country: "China", code: "CN", count: 120 },
+  { country: "United States", code: "US", count: 80 },
+  { country: "Germany", code: "DE", count: 40 },
 ];
 
 describe("AttackOriginMap", () => {

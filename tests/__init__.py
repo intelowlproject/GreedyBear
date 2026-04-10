@@ -53,6 +53,7 @@ class CustomTestCase(TestCase):
             recurrence_probability=0.1,
             expected_interactions=11.1,
             attacker_country="China",
+            attacker_country_code="CN",
         )
 
         cls.ioc_2 = IOC.objects.create(
@@ -72,8 +73,8 @@ class CustomTestCase(TestCase):
             destination_ports=[22, 23, 24],
             login_attempts=1,
             recurrence_probability=0.1,
-            expected_interactions=11.1,
             attacker_country="China",
+            attacker_country_code="CN",
         )
 
         cls.ioc_3 = IOC.objects.create(
@@ -95,6 +96,7 @@ class CustomTestCase(TestCase):
             recurrence_probability=0.1,
             expected_interactions=11.1,
             attacker_country="United States",
+            attacker_country_code="US",
         )
 
         cls.ioc_domain = IOC.objects.create(
@@ -144,6 +146,7 @@ class CustomTestCase(TestCase):
             attack_count=1,
             interaction_count=1,
             attacker_country="Russia",
+            attacker_country_code="RU",
         )
         cls.ioc_inactive_country.honeypots.add(cls.ddospot)
         cls.ioc_inactive_country.save()

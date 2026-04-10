@@ -1,7 +1,7 @@
 import axios from "axios";
 import { create } from "zustand";
 import { IOC_ATTACKER_COUNTRIES_URI } from "../constants/api";
-import { normalizeCountryName } from "../utils/country";
+import { getStandardMapName } from "../utils/isoMapping";
 
 const useAttackerCountriesStore = create((set, get) => ({
   normalizedData: [],
@@ -34,32 +34,36 @@ const useAttackerCountriesStore = create((set, get) => ({
         signal: controller.signal,
       });
 
-      const normalizedData = (Array.isArray(resp?.data) ? resp.data : []).map(
-        (item) => {
-          if (
-            item &&
-            typeof item === "object" &&
-            typeof item.country === "string"
-          ) {
-            return { ...item, country: normalizeCountryName(item.country) };
-          }
-          return item;
-        },
-      );
-
+      const rawData = Array.isArray(resp?.data) ? resp.data : [];
       const countryDataMap = {};
+      const countryCodeMap = {}; // representative code for the label
       let maxCount = 0;
 
-      normalizedData.forEach((item) => {
+      rawData.forEach((item) => {
         if (item && typeof item === "object") {
-          const { country, count } = item;
-          if (typeof country === "string") {
-            const countNum = Number(count) || 0;
-            countryDataMap[country] = countNum;
-            if (countNum > maxCount) maxCount = countNum;
+          const standardName = getStandardMapName(item.code, item.country);
+          const countNum = Number(item.count) || 0;
+
+          // Aggregate count by standard name
+          countryDataMap[standardName] =
+            (countryDataMap[standardName] || 0) + countNum;
+          countryCodeMap[standardName] =
+            item.code || countryCodeMap[standardName];
+
+          if (countryDataMap[standardName] > maxCount) {
+            maxCount = countryDataMap[standardName];
           }
         }
       });
+
+      // Create unique aggregated list for charts
+      const normalizedData = Object.entries(countryDataMap)
+        .map(([country, count]) => ({
+          country,
+          count,
+          code: countryCodeMap[country],
+        }))
+        .sort((a, b) => b.count - a.count);
 
       if (get().currentController === controller) {
         set({

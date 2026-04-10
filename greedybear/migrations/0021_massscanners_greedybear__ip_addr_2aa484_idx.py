@@ -11,8 +11,6 @@ class Migration(migrations.Migration):
     operations = [
         migrations.AddIndex(
             model_name="massscanners",
-            index=models.Index(
-                fields=["ip_address"], name="greedybear__ip_addr_2aa484_idx"
-            ),
+            index=models.Index(fields=["ip_address"], name="greedybear__ip_addr_2aa484_idx"),
         ),
     ]

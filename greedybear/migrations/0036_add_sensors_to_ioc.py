@@ -3,7 +3,6 @@
 from django.db import migrations, models
 
 
-
 def deduplicate_sensors(apps, schema_editor):
     """
     Remove duplicate Sensor records directly from the database to facilitate
@@ -13,23 +12,18 @@ def deduplicate_sensors(apps, schema_editor):
     """
     Sensor = apps.get_model("greedybear", "Sensor")
     db_alias = schema_editor.connection.alias
-    
+
     # Identify duplicate addresses
     # Grouping by address:
     from django.db.models import Count
-    
-    duplicates = (
-        Sensor.objects.using(db_alias)
-        .values("address")
-        .annotate(count=Count("id"))
-        .filter(count__gt=1)
-    )
+
+    duplicates = Sensor.objects.using(db_alias).values("address").annotate(count=Count("id")).filter(count__gt=1)
 
     for entry in duplicates:
         address = entry["address"]
         # Get all sensors for this address, ordered by ID (oldest first)
         sensors = Sensor.objects.using(db_alias).filter(address=address).order_by("id")
-        
+
         # Keep the first one (lowest ID), delete the rest
         first_sensor = sensors.first()
         if first_sensor:
@@ -38,21 +32,20 @@ def deduplicate_sensors(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('greedybear', '0035_rename_greedybear_ip_addr_tor_idx_greedybear__ip_addr_6bc095_idx'),
+        ("greedybear", "0035_rename_greedybear_ip_addr_tor_idx_greedybear__ip_addr_6bc095_idx"),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='ioc',
-            name='sensors',
-            field=models.ManyToManyField(blank=True, to='greedybear.sensor'),
+            model_name="ioc",
+            name="sensors",
+            field=models.ManyToManyField(blank=True, to="greedybear.sensor"),
         ),
         migrations.RunPython(deduplicate_sensors, reverse_code=migrations.RunPython.noop),
         migrations.AlterField(
-            model_name='sensor',
-            name='address',
+            model_name="sensor",
+            name="address",
             field=models.CharField(max_length=15, unique=True),
         ),
     ]

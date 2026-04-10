@@ -1,7 +1,7 @@
 from django.db import migrations, models
 
 
-def migrateData(apps, schema_editor):
+def migrate_data(apps, schema_editor):
     IOC = apps.get_model("greedybear", "IOC")
 
     for ioc in IOC.objects.all():
@@ -22,7 +22,7 @@ class Migration(migrations.Migration):
             name="general_honeypot",
             field=models.ManyToManyField(blank=True, to="greedybear.GeneralHoneypot"),
         ),
-        migrations.RunPython(migrateData),
+        migrations.RunPython(migrate_data),
         migrations.RemoveField(
             model_name="ioc",
             name="general",
@@ -30,8 +30,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name="ioc",
             name="type",
-            field=models.CharField(
-                choices=[("ip", "Ip"), ("domain", "Domain")], max_length=32
-            ),
+            field=models.CharField(choices=[("ip", "Ip"), ("domain", "Domain")], max_length=32),
         ),
     ]

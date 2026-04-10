@@ -4,15 +4,14 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('greedybear', '0039_ioc_attacker_country_sensor_country_and_more'),
+        ("greedybear", "0039_ioc_attacker_country_sensor_country_and_more"),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name='tag',
-            name='key',
+            model_name="tag",
+            name="key",
             field=models.CharField(db_index=True, max_length=128),
         ),
     ]

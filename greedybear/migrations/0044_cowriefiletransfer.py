@@ -5,25 +5,24 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
-        ('greedybear', '0043_autonomoussystem_remove_ioc_asn_and_more'),
+        ("greedybear", "0043_autonomoussystem_remove_ioc_asn_and_more"),
     ]
 
     operations = [
         migrations.CreateModel(
-            name='CowrieFileTransfer',
+            name="CowrieFileTransfer",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('shasum', models.CharField(max_length=64)),
-                ('url', models.CharField(blank=True, max_length=900)),
-                ('outfile', models.CharField(blank=True, max_length=256)),
-                ('timestamp', models.DateTimeField()),
-                ('session', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='file_transfers', to='greedybear.cowriesession')),
+                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
+                ("shasum", models.CharField(max_length=64)),
+                ("url", models.CharField(blank=True, max_length=900)),
+                ("outfile", models.CharField(blank=True, max_length=256)),
+                ("timestamp", models.DateTimeField()),
+                ("session", models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name="file_transfers", to="greedybear.cowriesession")),
             ],
             options={
-                'indexes': [models.Index(fields=['shasum'], name='greedybear__shasum_083f18_idx')],
-                'constraints': [models.UniqueConstraint(fields=('shasum', 'session'), name='unique_download_per_session')],
+                "indexes": [models.Index(fields=["shasum"], name="greedybear__shasum_083f18_idx")],
+                "constraints": [models.UniqueConstraint(fields=("shasum", "session"), name="unique_download_per_session")],
             },
         ),
     ]
