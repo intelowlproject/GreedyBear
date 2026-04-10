@@ -4,6 +4,8 @@ Tests for Cowrie extraction helper functions and strategy.
 
 from unittest.mock import MagicMock, Mock, patch
 
+from django.test import override_settings
+
 from greedybear.cronjobs.extraction.strategies.cowrie import (
     CowrieExtractionStrategy,
     normalize_command,
@@ -88,6 +90,7 @@ class TestHelperFunctions(ExtractionTestCase):
         self.assertEqual(result, short_field)
 
 
+@override_settings(THREATFOX_API_KEY="")
 class TestCowrieExtractionStrategy(ExtractionTestCase):
     """Test CowrieExtractionStrategy class."""
 
@@ -195,6 +198,7 @@ class TestCowrieExtractionStrategy(ExtractionTestCase):
 
         self.mock_ioc_repo.get_ioc_by_name.side_effect = [scanner_mock, payload_mock]
         mock_payload_record = Mock()
+        mock_payload_record.payload_request = False
         mock_payload_record.honeypots.all.return_value = []
         self.strategy.ioc_processor.add_ioc.return_value = mock_payload_record
 
