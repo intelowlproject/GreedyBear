@@ -213,7 +213,6 @@ class FeedsRequestSerializersTestCase(CustomTestCase):
             self.assertIn("paginate", serializer.errors)
             self.assertIn("format", serializer.errors)
 
-
     def _base_request_data(self):
         return {
             "feed_type": "all",
