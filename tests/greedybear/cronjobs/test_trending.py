@@ -166,9 +166,7 @@ class UpdateActivityBucketsFromHitsTestCase(CustomTestCase):
 
     @patch("greedybear.cronjobs.bucket_utils.TrendingBucketRepository.upsert_bucket_counts", side_effect=Exception("db down"))
     def test_upsert_failure_returns_zero(self, mock_upsert):
-        unique_keys = update_activity_buckets_from_hits(
-            [{"src_ip": "8.8.8.8", "type": "cowrie", "@timestamp": "2026-03-20T09:15:00"}]
-        )
+        unique_keys = update_activity_buckets_from_hits([{"src_ip": "8.8.8.8", "type": "cowrie", "@timestamp": "2026-03-20T09:15:00"}])
         self.assertEqual(unique_keys, 0)
         mock_upsert.assert_called_once()
 

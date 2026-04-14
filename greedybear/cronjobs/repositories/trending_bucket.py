@@ -65,11 +65,7 @@ class TrendingBucketRepository:
         if "all" not in normalized_feed_types:
             queryset = queryset.filter(feed_type__in=normalized_feed_types)
 
-        return dict(
-            queryset.values("attacker_ip")
-            .annotate(total=Sum("interaction_count"))
-            .values_list("attacker_ip", "total")
-        )
+        return dict(queryset.values("attacker_ip").annotate(total=Sum("interaction_count")).values_list("attacker_ip", "total"))
 
     def delete_older_than(self, cutoff: datetime) -> int:
         """Delete buckets older than the cutoff and return Django's reported delete count."""
