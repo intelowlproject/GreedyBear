@@ -15,7 +15,7 @@
     "bootstrap": ">=5.3.8",
     "formik": "^2.4.9",
     "prop-types": "^15.8.1",
-    "react": "^17.0.2",
+    "react": "^19.2.5",
     "react-dom": "^17.0.2",
     "react-icons": "^4.12.0",
     "react-router-dom": "^6.30.3",
