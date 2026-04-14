@@ -219,6 +219,7 @@ def feeds_share(request):
         port (int): Filter by destination port.
         start_date (str): Filter by start date (YYYY-MM-DD).
         end_date (str): Filter by end date (YYYY-MM-DD).
+        reason (str): Optional human-readable label for this share token (max 256 chars).
 
     Returns:
         Response: A JSON object containing the signed shareable URL.
@@ -229,10 +230,15 @@ def feeds_share(request):
     # Remove internal or non-serializable objects if any
     data.pop("feed_type_sorting", None)
 
+    reason = request.query_params.get("reason", "").strip()[:256]
+
     # Generate signed token and persist a ShareToken record
     token = signing.dumps(data, salt="greedybear-feeds")
     token_hash = hashlib.sha256(token.encode()).hexdigest()
-    ShareToken.objects.get_or_create(token_hash=token_hash, defaults={"user": request.user})
+    ShareToken.objects.get_or_create(
+        token_hash=token_hash,
+        defaults={"user": request.user, "reason": reason},
+    )
 
     host = request.build_absolute_uri("/")
     share_url = f"{host}api/feeds/consume/{token}"
@@ -312,3 +318,32 @@ def feeds_revoke(request, token):
     share_token.revoked_at = timezone.now()
     share_token.save(update_fields=["revoked", "revoked_at"])
     return Response({"detail": "Token revoked successfully."}, status=status.HTTP_200_OK)
+
+
+@api_view([GET])
+@authentication_classes([CookieTokenAuthentication])
+@permission_classes([IsAuthenticated])
+def feeds_tokens(request):
+    """
+    List the calling user's share tokens with safe metadata.
+
+    Returns only non-sensitive fields: a truncated hash prefix (first 12 hex
+    chars), the reason label, creation timestamp, and revocation status.
+    The raw token is never stored and therefore cannot be returned.
+
+    Returns:
+        Response: A JSON list of token metadata objects.
+    """
+    logger.info("request /api/feeds/tokens/")
+    tokens = ShareToken.objects.filter(user=request.user).order_by("-created_at").values("token_hash", "reason", "created_at", "revoked", "revoked_at")
+    results = [
+        {
+            "hash_prefix": t["token_hash"][:12],
+            "reason": t["reason"],
+            "created_at": t["created_at"],
+            "revoked": t["revoked"],
+            "revoked_at": t["revoked_at"],
+        }
+        for t in tokens
+    ]
+    return Response(results)
