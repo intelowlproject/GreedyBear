@@ -283,6 +283,7 @@ class FeedsResponseSerializersTestCase(CustomTestCase):
                 "recurrence_probability": "0.1",
                 "expected_interactions": "11.1",
                 "attacker_country": "Nepal",
+                "attacker_country_code": "NP",
             }
             serializer = FeedsResponseSerializer(
                 data=data_,
@@ -308,6 +309,7 @@ class FeedsResponseSerializersTestCase(CustomTestCase):
             "login_attempts": "-1",
             "recurrence_probability": "1.1",
             "expected_interactions": "-1",
+            "attacker_country_code": "INV",
         }
         serializer = FeedsResponseSerializer(
             data=data_,
@@ -329,6 +331,7 @@ class FeedsResponseSerializersTestCase(CustomTestCase):
             self.assertIn("login_attempts", serializer.errors)
             self.assertIn("recurrence_probability", serializer.errors)
             self.assertIn("expected_interactions", serializer.errors)
+            self.assertIn("attacker_country_code", serializer.errors)
 
 
 class IOCSerializerTestCase(CustomTestCase):
