@@ -7,7 +7,7 @@ from django.conf import settings
 from greedybear.cronjobs.base import Cronjob
 from greedybear.cronjobs.repositories.tag import TagRepository
 from greedybear.models import IOC
-from greedybear.utils import is_valid_ipv4
+from greedybear.utils import is_non_global_ip, is_valid_ipv4
 
 SOURCE_NAME = "threatfox"
 
@@ -152,7 +152,7 @@ class ThreatFoxCron(Cronjob):
             # Check if IP is global (not private, loopback, etc.)
             try:
                 parsed_ip = ip_address(validated_ip)
-                if parsed_ip.is_loopback or parsed_ip.is_private or parsed_ip.is_multicast or parsed_ip.is_link_local or parsed_ip.is_reserved:
+                if is_non_global_ip(parsed_ip):
                     self.log.debug(f"Skipping non-global IP: {validated_ip}")
                     continue
             except ValueError:

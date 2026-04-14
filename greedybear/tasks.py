@@ -108,6 +108,6 @@ def extract_spamhaus_drop():
 
 
 def clean_up_trending_buckets():
-    from greedybear.cronjobs.trending import TrendingAttackersCron
+    from greedybear.cronjobs.bucket_cleanup import TrendingBucketCleanupCron
 
-    TrendingAttackersCron().execute()
+    TrendingBucketCleanupCron().execute()

@@ -3,6 +3,7 @@ from collections import defaultdict
 
 from django.core.cache import caches
 
+from greedybear.cronjobs.bucket_utils import update_activity_buckets_from_hits
 from greedybear.cronjobs.extraction.strategies.factory import ExtractionStrategyFactory
 from greedybear.cronjobs.repositories import (
     ElasticRepository,
@@ -10,7 +11,6 @@ from greedybear.cronjobs.repositories import (
     SensorRepository,
 )
 from greedybear.cronjobs.scoring.scoring_jobs import UpdateScores
-from greedybear.cronjobs.trending import update_activity_buckets_from_hits
 from greedybear.settings import (
     EXTRACTION_INTERVAL,
     INITIAL_EXTRACTION_TIMESPAN,
