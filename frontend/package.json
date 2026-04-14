@@ -11,7 +11,7 @@
   "dependencies": {
     "@certego/certego-ui": "0.1.14",
     "axios": "^1.14.0",
-    "axios-hooks": "^3.0.4",
+    "axios-hooks": "^5.1.1",
     "bootstrap": ">=5.3.8",
     "formik": "^2.4.9",
     "prop-types": "^15.8.1",
