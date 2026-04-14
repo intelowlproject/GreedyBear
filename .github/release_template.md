@@ -1,6 +1,6 @@
 # Checklist for creating a new release
 
-- [ ] Change version number in `pyproject.toml`
+- [ ] Change version number in `pyproject.toml` and run `uv lock`
 - [ ] Verify CI Tests
 - [ ] Verify that the PR is named with a correct version number like x.x.x
 - [ ] Merge the PR to the `main` branch. The release will be done automatically by the CI

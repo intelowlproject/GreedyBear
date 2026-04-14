@@ -17,8 +17,8 @@ class ModelsTestCase(CustomTestCase):
         self.assertEqual(self.ioc.attack_count, 1)
         self.assertEqual(self.ioc.interaction_count, 1)
         # Honeypots are now via M2M relationship
-        self.assertIn(self.cowrie_hp, self.ioc.general_honeypot.all())
-        self.assertIn(self.log4pot_hp, self.ioc.general_honeypot.all())
+        self.assertIn(self.cowrie_hp, self.ioc.honeypots.all())
+        self.assertIn(self.log4pot_hp, self.ioc.honeypots.all())
         self.assertEqual(self.ioc.scanner, True)
         self.assertEqual(self.ioc.payload_request, True)
         self.assertEqual(self.ioc.related_urls, [])
@@ -31,8 +31,8 @@ class ModelsTestCase(CustomTestCase):
 
         self.assertEqual(self.ioc_2.ip_reputation, IpReputation.MASS_SCANNER)
 
-        self.assertIn(self.heralding, self.ioc.general_honeypot.all())
-        self.assertIn(self.ciscoasa, self.ioc.general_honeypot.all())
+        self.assertIn(self.heralding, self.ioc.honeypots.all())
+        self.assertIn(self.ciscoasa, self.ioc.honeypots.all())
 
     def test_command_sequence_model(self):
         self.assertEqual(self.command_sequence.first_seen, self.current_time)
@@ -71,7 +71,7 @@ class ModelsTestCase(CustomTestCase):
         self.assertEqual(self.statistic.view, ViewType.ENRICHMENT_VIEW.value)
         self.assertEqual(self.statistic.request_date, self.current_time)
 
-    def test_general_honeypot_model(self):
+    def test_honeypot_model(self):
         self.assertEqual(self.heralding.name, "Heralding")
         self.assertEqual(self.heralding.active, True)
 

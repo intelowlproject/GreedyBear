@@ -95,6 +95,7 @@ export default function SessionsList() {
             <IconButton
               id="sessionslist__revoke-others-btn"
               title="Revoke other sessions"
+              aria-label="Revoke other sessions"
               color="warning"
               outline
               size="sm"
@@ -150,6 +151,7 @@ export default function SessionsList() {
                         <IconButton
                           id={`sessionslist-${id}__revoke-btn`}
                           title="Revoke Session"
+                          aria-label={`Revoke session for ${client}`}
                           color="danger"
                           outline
                           size="xs"
@@ -157,7 +159,7 @@ export default function SessionsList() {
                           onClick={() => revokeSessionCb(id, client)}
                         />
                       ) : (
-                        <Badge color="info">current</Badge>
+                        <Badge color="dark">current</Badge>
                       )}
                     </Col>
                   </Row>

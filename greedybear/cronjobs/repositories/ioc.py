@@ -4,7 +4,7 @@ from django.contrib.postgres.aggregates import ArrayAgg
 from django.db import IntegrityError
 from django.db.models import F
 
-from greedybear.models import IOC, GeneralHoneypot
+from greedybear.models import IOC, Honeypot
 
 
 class IocRepository:
@@ -18,7 +18,7 @@ class IocRepository:
     def __init__(self):
         """Initialize the repository and populate the honeypot cache from the database."""
         self.log = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
-        self._honeypot_cache = {self._normalize_name(hp.name): hp for hp in GeneralHoneypot.objects.all()}
+        self._honeypot_cache = {self._normalize_name(hp.name): hp for hp in Honeypot.objects.all()}
 
     def _normalize_name(self, name: str) -> str:
         """Normalize honeypot names for consistent cache and DB usage."""
@@ -40,13 +40,13 @@ class IocRepository:
         if hasattr(ioc, "_seen_honeypots"):
             honeypot_set = set(ioc._seen_honeypots)
         else:
-            honeypot_set = {self._normalize_name(hp.name) for hp in ioc.general_honeypot.all()}
+            honeypot_set = {self._normalize_name(hp.name) for hp in ioc.honeypots.all()}
 
         if normalized_name not in honeypot_set:
             self.log.debug(f"adding honeypot {honeypot_name} to IoC {ioc}")
             honeypot = self._honeypot_cache.get(normalized_name)
             if honeypot is not None:
-                ioc.general_honeypot.add(honeypot)
+                ioc.honeypots.add(honeypot)
                 honeypot_set.add(normalized_name)
             else:
                 self.log.error(f"Honeypot '{honeypot_name}' not found in cache; skipping association for IOC {ioc}")
@@ -56,7 +56,7 @@ class IocRepository:
         ioc._seen_honeypots = list(honeypot_set)
         return ioc
 
-    def create_honeypot(self, honeypot_name: str) -> GeneralHoneypot:
+    def create_honeypot(self, honeypot_name: str) -> Honeypot:
         """
         Create a new honeypot or return an existing one.
 
@@ -68,12 +68,12 @@ class IocRepository:
             honeypot_name: Name for the new honeypot.
 
         Returns:
-            A GeneralHoneypot instance (newly created or existing).
+            A Honeypot instance (newly created or existing).
         """
         normalized = self._normalize_name(honeypot_name)
 
         try:
-            honeypot = GeneralHoneypot.objects.create(
+            honeypot = Honeypot.objects.create(
                 name=honeypot_name,
                 active=True,
             )
@@ -86,14 +86,14 @@ class IocRepository:
         self._honeypot_cache[normalized] = honeypot
         return honeypot
 
-    def get_active_honeypots(self) -> list[GeneralHoneypot]:
+    def get_active_honeypots(self) -> list[Honeypot]:
         """
         Retrieve a list of all active honeypots.
 
         Returns:
             A list of all active honeypots in the database.
         """
-        return list(GeneralHoneypot.objects.filter(active=True))
+        return list(Honeypot.objects.filter(active=True))
 
     def get_ioc_by_name(self, name: str) -> IOC | None:
         """
@@ -106,11 +106,11 @@ class IocRepository:
             The matching IOC, or None if not found.
         """
         try:
-            return IOC.objects.prefetch_related("general_honeypot").get(name=name)
+            return IOC.objects.prefetch_related("honeypots").get(name=name)
         except IOC.DoesNotExist:
             return None
 
-    def get_hp_by_name(self, name: str) -> GeneralHoneypot | None:
+    def get_hp_by_name(self, name: str) -> Honeypot | None:
         """
         Retrieve a honeypot by its name.
 
@@ -118,9 +118,9 @@ class IocRepository:
             name: The honeypot name to look up.
 
         Returns:
-            The matching GeneralHoneypot, or None if not found.
+            The matching Honeypot, or None if not found.
         """
-        return GeneralHoneypot.objects.filter(name__iexact=name).first()
+        return Honeypot.objects.filter(name__iexact=name).first()
 
     def is_empty(self) -> bool:
         """
@@ -188,7 +188,7 @@ class IocRepository:
         Returns:
             QuerySet of IOC objects with only name and score fields loaded.
         """
-        return IOC.objects.filter(general_honeypot__active=True).filter(scanner=True).distinct().only("name", *score_fields)
+        return IOC.objects.filter(honeypots__active=True).filter(scanner=True).distinct().only("name", *score_fields)
 
     def get_scanners_by_pks(self, primary_keys: set[int]):
         """
@@ -198,14 +198,14 @@ class IocRepository:
             primary_keys: Set of IOC primary keys to retrieve.
 
         Returns:
-            QuerySet of IOC objects with prefetched general_honeypot relationships
+            QuerySet of IOC objects with prefetched honeypots relationships
             and annotated with value and honeypots fields.
         """
         return (
             IOC.objects.filter(pk__in=primary_keys)
-            .prefetch_related("general_honeypot")
+            .prefetch_related("honeypots")
             .annotate(value=F("name"))
-            .annotate(honeypots=ArrayAgg("general_honeypot__name", distinct=True))
+            .annotate(honeypot_names=ArrayAgg("honeypots__name", distinct=True))
             .values()
         )
 
@@ -224,11 +224,11 @@ class IocRepository:
             QuerySet of IOC objects with prefetched relationships and annotations.
         """
         return (
-            IOC.objects.filter(general_honeypot__active=True)
+            IOC.objects.filter(honeypots__active=True)
             .filter(last_seen__gte=cutoff_date, scanner=True)
-            .prefetch_related("general_honeypot")
+            .prefetch_related("honeypots")
             .annotate(value=F("name"))
-            .annotate(honeypots=ArrayAgg("general_honeypot__name", distinct=True))
+            .annotate(honeypot_names=ArrayAgg("honeypots__name", distinct=True))
             .values()
         )
 

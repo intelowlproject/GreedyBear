@@ -139,7 +139,7 @@ export const AttackOriginCountriesChart = React.memo(() => {
 
   const { range } = useTimePickerStore();
   const {
-    rawData: data,
+    normalizedData: data,
     loading,
     error,
     fetchData,

@@ -17,7 +17,7 @@ class FeedsViewTestCase(CustomTestCase):
         target_ioc = next((i for i in iocs if i["value"] == self.ioc.name), None)
         self.assertIsNotNone(target_ioc)
 
-        # feed_type now derived from general_honeypot M2M
+        # feed_type now derived from honeypot M2M
         self.assertIn("log4pot", target_ioc["feed_type"])
         self.assertIn("cowrie", target_ioc["feed_type"])
         self.assertIn("heralding", target_ioc["feed_type"])

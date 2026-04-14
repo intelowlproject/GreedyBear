@@ -19,13 +19,15 @@ function Home() {
     <>
       {/* BG Image */}
       <Container fluid id="home__bgImg" style={{ backgroundImage: logoBgImg }}>
-        <h2
-          id="home__versionText"
-          className="text-accent"
-          data-glitch={versionText}
-        >
-          {versionText}
-        </h2>
+        {versionText && (
+          <h2
+            id="home__versionText"
+            className="text-accent"
+            data-glitch={versionText}
+          >
+            {versionText}
+          </h2>
+        )}
       </Container>
       {/* Content */}
       <Container id="home__content" className="mt-2">

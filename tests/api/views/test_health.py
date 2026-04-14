@@ -5,7 +5,7 @@ from django.contrib.auth import get_user_model
 from django.test import override_settings
 from rest_framework.test import APIClient
 
-from greedybear.models import IOC, GeneralHoneypot
+from greedybear.models import IOC, Honeypot
 from tests import CustomTestCase
 
 User = get_user_model()
@@ -17,7 +17,7 @@ class HealthViewTestCase(CustomTestCase):
     @classmethod
     def setUpTestData(cls):
         # deleting all existing objects to have predictable test counts
-        GeneralHoneypot.objects.all().delete()
+        Honeypot.objects.all().delete()
         IOC.objects.all().delete()
 
         cls.superuser = User.objects.create_superuser(
@@ -26,8 +26,8 @@ class HealthViewTestCase(CustomTestCase):
             password="adminpass",
         )
 
-        cls.testpot1 = GeneralHoneypot.objects.create(name="testpot1", active=True)
-        cls.testpot2 = GeneralHoneypot.objects.create(name="testpot2", active=True)
+        cls.testpot1 = Honeypot.objects.create(name="testpot1", active=True)
+        cls.testpot2 = Honeypot.objects.create(name="testpot2", active=True)
 
         cls.ioc1 = IOC.objects.create(
             name="ioc1.example.com",
@@ -37,7 +37,7 @@ class HealthViewTestCase(CustomTestCase):
             login_attempts=2,
             first_seen=datetime.now() - timedelta(days=2),
         )
-        cls.ioc1.general_honeypot.add(cls.testpot1, cls.testpot2)
+        cls.ioc1.honeypots.add(cls.testpot1, cls.testpot2)
 
         cls.ioc2 = IOC.objects.create(
             name="ioc2.example.com",
@@ -47,7 +47,7 @@ class HealthViewTestCase(CustomTestCase):
             login_attempts=1,
             first_seen=datetime.now() - timedelta(hours=5),
         )
-        cls.ioc2.general_honeypot.add(cls.testpot1)
+        cls.ioc2.honeypots.add(cls.testpot1)
 
     def setUp(self):
         self.client = APIClient()

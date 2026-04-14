@@ -1,34 +1,10 @@
 import axios from "axios";
 import { create } from "zustand";
 import { IOC_ATTACKER_COUNTRIES_URI } from "../constants/api";
-
-// Normalise country names from T-Pot geoip to match Natural Earth names used by world-atlas@2. (https://github.com/topojson/world-atlas)
-const NAME_FIXES = {
-  "United States": "United States of America",
-  "Czech Republic": "Czechia",
-  "Ivory Coast": "Côte d'Ivoire",
-  "Democratic Republic of the Congo": "Dem. Rep. Congo",
-  "Republic of the Congo": "Congo",
-  "Bosnia and Herzegovina": "Bosnia and Herz.",
-  "Central African Republic": "Central African Rep.",
-  "Dominican Republic": "Dominican Rep.",
-  "Equatorial Guinea": "Eq. Guinea",
-  "South Sudan": "S. Sudan",
-  "North Macedonia": "Macedonia",
-  Eswatini: "eSwatini",
-  "State of Palestine": "Palestine",
-  "Western Sahara": "W. Sahara",
-  "Solomon Islands": "Solomon Is.",
-  "Falkland Islands": "Falkland Is.",
-  "French Southern Territories": "Fr. S. Antarctic Lands",
-};
-
-function normalise(name) {
-  return NAME_FIXES[name] ?? name;
-}
+import { normalizeCountryName } from "../utils/country";
 
 const useAttackerCountriesStore = create((set, get) => ({
-  rawData: [],
+  normalizedData: [],
   countryDataMap: {},
   maxCount: 0,
   loading: false,
@@ -58,17 +34,28 @@ const useAttackerCountriesStore = create((set, get) => ({
         signal: controller.signal,
       });
 
-      const rawData = Array.isArray(resp?.data) ? resp.data : [];
+      const normalizedData = (Array.isArray(resp?.data) ? resp.data : []).map(
+        (item) => {
+          if (
+            item &&
+            typeof item === "object" &&
+            typeof item.country === "string"
+          ) {
+            return { ...item, country: normalizeCountryName(item.country) };
+          }
+          return item;
+        },
+      );
+
       const countryDataMap = {};
       let maxCount = 0;
 
-      rawData.forEach((item) => {
+      normalizedData.forEach((item) => {
         if (item && typeof item === "object") {
           const { country, count } = item;
           if (typeof country === "string") {
-            const key = normalise(country);
             const countNum = Number(count) || 0;
-            countryDataMap[key] = countNum;
+            countryDataMap[country] = countNum;
             if (countNum > maxCount) maxCount = countNum;
           }
         }
@@ -76,7 +63,7 @@ const useAttackerCountriesStore = create((set, get) => ({
 
       if (get().currentController === controller) {
         set({
-          rawData,
+          normalizedData,
           countryDataMap,
           maxCount,
           loading: false,

@@ -1,10 +1,10 @@
-import multiprocessing
+import os
 
 # Server socket
 bind = "unix:/run/gunicorn/main.sock"
 
 # Worker processes
-workers = 2 * multiprocessing.cpu_count() + 1
+workers = 2 * len(os.sched_getaffinity(0)) + 1
 max_requests = 1000
 max_requests_jitter = 50
 

@@ -17,7 +17,7 @@ The project goal is to extract data of the attacks detected by a [TPOT](https://
 
 ## Documentation
 
-Documentation about GreedyBear installation, usage, configuration and contribution can be found at [this link](https://intelowlproject.github.io/docs/GreedyBear/Introduction/)
+Documentation about GreedyBear installation, usage, configuration and contribution can be found at [this link](https://github.com/GreedyBear-Project/GreedyBear/wiki)
 
 ## Public feeds
 
@@ -27,14 +27,14 @@ Please do not perform too many requests to extract feeds or you will be banned.
 
 If you want to be updated regularly, please download the feeds only once every 10 minutes (this is the time between each internal update).
 
-To check all the available feeds, Please refer to our [usage guide](https://intelowlproject.github.io/docs/GreedyBear/Usage/)
+To check all the available feeds, Please refer to our [usage guide](https://github.com/GreedyBear-Project/GreedyBear/wiki/Usage)
 
 
 ## Enrichment Service
 
 GreedyBear provides an easy-to-query API to get the information available in GB regarding the queried observable (domain or IP address).
 
-To understand more, Please refer to our [usage guide](https://intelowlproject.github.io/docs/GreedyBear/Usage/)
+To understand more, Please refer to our [usage guide](https://github.com/GreedyBear-Project/GreedyBear/wiki/Usage)
 
 ## Run Greedybear on your environment
 The tool has been created not only to provide the feeds from The Honeynet Project's cluster of TPOTs.
@@ -42,7 +42,7 @@ The tool has been created not only to provide the feeds from The Honeynet Projec
 If you manage one or more T-POTs of your own, you can get the code of this application and run Greedybear on your environment.
 In this way, you are able to provide new feeds of your own.
 
-To install it locally, Please refer to our [installation guide](https://intelowlproject.github.io/docs/GreedyBear/Installation/)
+To install it locally, Please refer to our [installation guide](https://github.com/GreedyBear-Project/GreedyBear/wiki/Installation)
 
 ## Sponsors and Acknowledgements
 
@@ -54,10 +54,12 @@ To install it locally, Please refer to our [installation guide](https://intelowl
 
 Thanks to [The Honeynet Project](https://www.honeynet.org) we are providing free public feeds available [here](https://greedybear.honeynet.org).
 
-#### DigitalOcean
+#### Google Summer of Code
+<a href="https://summerofcode.withgoogle.com/"> <img style="border: 0.2px solid black" width=150 height=89 src="static/gsoc_logo.png" alt="GSoC logo"> </a>
 
-In 2022 we joined the official [DigitalOcean Open Source Program](https://www.digitalocean.com/open-source?utm_medium=opensource&utm_source=IntelOwl).
+In 2026 we started participating to the [Google Summer of Code](https://summerofcode.withgoogle.com/) (GSoC)!
 
+If you are interested in participating in the next Google Summer of Code, check all the info available in the [dedicated repository](https://github.com/intelowlproject/gsoc)!
 
 ## Maintainers and Key Contributors
 

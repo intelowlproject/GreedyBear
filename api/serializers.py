@@ -6,15 +6,15 @@ from django.core.exceptions import FieldDoesNotExist
 from rest_framework import serializers
 
 from greedybear.consts import REGEX_DOMAIN
-from greedybear.models import IOC, GeneralHoneypot, Sensor, Tag
+from greedybear.models import IOC, Honeypot, Sensor, Tag
 from greedybear.utils import is_ip_address
 
 logger = logging.getLogger(__name__)
 
 
-class GeneralHoneypotSerializer(serializers.ModelSerializer):
+class HoneypotSerializer(serializers.ModelSerializer):
     class Meta:
-        model = GeneralHoneypot
+        model = Honeypot
 
     def to_representation(self, value):
         return value.name
@@ -33,7 +33,7 @@ class SensorSerializer(serializers.ModelSerializer):
 
 
 class IOCSerializer(serializers.ModelSerializer):
-    general_honeypot = GeneralHoneypotSerializer(many=True, read_only=True)
+    general_honeypot = HoneypotSerializer(many=True, read_only=True, source="honeypots")
     tags = TagSerializer(many=True, read_only=True)
     sensors = SensorSerializer(many=True, read_only=True)
 
@@ -141,6 +141,7 @@ class FeedsRequestSerializer(serializers.Serializer):
     format = serializers.ChoiceField(choices=["csv", "json", "txt", "stix21"])
     asn = serializers.IntegerField(min_value=1, required=False, allow_null=True)
     min_score = serializers.FloatField(min_value=0, max_value=1, required=False, allow_null=True)
+    min_expected_interactions = serializers.FloatField(min_value=0, required=False, allow_null=True)
     port = serializers.IntegerField(min_value=1, max_value=65535, required=False, allow_null=True)
     start_date = serializers.DateField(format="%Y-%m-%d", required=False, allow_null=True)
     end_date = serializers.DateField(format="%Y-%m-%d", required=False, allow_null=True)

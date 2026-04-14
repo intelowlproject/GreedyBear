@@ -31,7 +31,7 @@ class IocProcessor:
         self,
         ioc: IOC,
         attack_type: str,
-        general_honeypot_name: str = None,
+        honeypot_name: str = None,
     ) -> IOC | None:
         """
         Process an IOC record.
@@ -42,7 +42,7 @@ class IocProcessor:
         Args:
             ioc: IOC instance to process.
             attack_type: Type of attack (SCANNER or PAYLOAD_REQUEST).
-            general_honeypot_name: Optional honeypot name to associate with the IOC.
+            honeypot_name: Optional honeypot name to associate with the IOC.
 
         Returns:
             The persisted IOC record, or None if filtered out.
@@ -69,8 +69,8 @@ class IocProcessor:
             self.log.debug(f"{ioc} is already known - updating record")
             ioc_record = self._merge_iocs(ioc_record, ioc)
 
-        if general_honeypot_name is not None:
-            ioc_record = self.ioc_repo.add_honeypot_to_ioc(general_honeypot_name, ioc_record)
+        if honeypot_name is not None:
+            ioc_record = self.ioc_repo.add_honeypot_to_ioc(honeypot_name, ioc_record)
 
         ioc_record = self._update_days_seen(ioc_record)
         ioc_record.scanner = ioc_record.scanner or (attack_type == SCANNER)
@@ -110,6 +110,8 @@ class IocProcessor:
         # we will always update attacker_country if incoming value exists
         if new.attacker_country:
             existing.attacker_country = new.attacker_country
+        if new.attacker_country_code and len(new.attacker_country_code) == 2:
+            existing.attacker_country_code = new.attacker_country_code
 
         # Add sensors from new IOC (existing is already saved, so ManyToMany works).
         # We retrieve sensors from the temporary attribute of the input IOC object.

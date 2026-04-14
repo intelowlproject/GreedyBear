@@ -30,7 +30,7 @@ class TestTannerExtractionStrategy(ExtractionTestCase):
         self.strategy.extract_from_hits(hits)
 
         mock_iocs_from_hits.assert_called_once_with(hits)
-        self.strategy.ioc_processor.add_ioc.assert_any_call(mock_ioc, attack_type=SCANNER, general_honeypot_name=TANNER_HONEYPOT)
+        self.strategy.ioc_processor.add_ioc.assert_any_call(mock_ioc, attack_type=SCANNER, honeypot_name=TANNER_HONEYPOT)
         self.assertEqual(len(self.strategy.ioc_records), 1)
         mock_threatfox.assert_called_once()
 
@@ -373,7 +373,7 @@ class TestTannerRfiExtraction(ExtractionTestCase):
         payload_calls = [call for call in self.strategy.ioc_processor.add_ioc.call_args_list if call[1].get("attack_type") == PAYLOAD_REQUEST]
         self.assertEqual(len(payload_calls), 1)
         self.assertEqual(payload_calls[0][0][0].name, "evil.com")
-        self.assertEqual(payload_calls[0][1]["general_honeypot_name"], TANNER_HONEYPOT)
+        self.assertEqual(payload_calls[0][1]["honeypot_name"], TANNER_HONEYPOT)
 
     @patch("greedybear.cronjobs.extraction.strategies.tanner.iocs_from_hits")
     @patch("greedybear.cronjobs.extraction.strategies.tanner.threatfox_submission")

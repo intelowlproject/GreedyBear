@@ -71,6 +71,8 @@ services:
     container_name: greedybear_qcluster
     restart: unless-stopped
     stop_grace_period: 3m
+    entrypoint:
+      - ./docker/entrypoint_qcluster.sh
     command: sh -c "python manage.py setup_schedules && exec python manage.py qcluster"
     volumes:
       - generic_logs:/var/log/greedybear
@@ -82,7 +84,6 @@ services:
         condition: service_healthy
       app:
         condition: service_healthy
-    user: "2000:82"
     healthcheck:
       disable: true
 
