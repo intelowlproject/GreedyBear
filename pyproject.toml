@@ -1,6 +1,6 @@
 [project]
 name = "greedybear"
-version = "3.3.0"
+version = "3.3.1"
 requires-python = "==3.13.*"
 dependencies = [
     # Django core
@@ -37,7 +37,7 @@ dev = [
     "django-watchfiles==1.4.0",
 ]
 lint = [
-    "ruff==0.15.9",
+    "ruff==0.15.10",
 ]
 
 [tool.uv]

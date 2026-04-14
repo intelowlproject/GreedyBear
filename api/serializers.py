@@ -141,6 +141,7 @@ class FeedsRequestSerializer(serializers.Serializer):
     format = serializers.ChoiceField(choices=["csv", "json", "txt", "stix21"])
     asn = serializers.IntegerField(min_value=1, required=False, allow_null=True)
     min_score = serializers.FloatField(min_value=0, max_value=1, required=False, allow_null=True)
+    min_expected_interactions = serializers.FloatField(min_value=0, required=False, allow_null=True)
     port = serializers.IntegerField(min_value=1, max_value=65535, required=False, allow_null=True)
     start_date = serializers.DateField(format="%Y-%m-%d", required=False, allow_null=True)
     end_date = serializers.DateField(format="%Y-%m-%d", required=False, allow_null=True)

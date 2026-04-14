@@ -1,5 +1,5 @@
 export const GREEDYBEAR_DOCS_URL =
-  "https://intelowlproject.github.io/docs/GreedyBear/Introduction/";
+  "https://github.com/GreedyBear-Project/GreedyBear/wiki";
 
 // env variables
 // Vite uses import.meta.env, Jest uses process.env
