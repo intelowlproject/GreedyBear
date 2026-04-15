@@ -1,5 +1,7 @@
 from unittest.mock import Mock, patch
 
+from django.test import override_settings
+
 from greedybear.consts import PAYLOAD_REQUEST, SCANNER
 from greedybear.cronjobs.extraction.strategies.tanner import (
     TANNER_ATTACK_PATTERNS,
@@ -10,6 +12,7 @@ from greedybear.cronjobs.extraction.strategies.tanner import (
 from . import ExtractionTestCase
 
 
+@override_settings(THREATFOX_API_KEY="")
 class TestTannerExtractionStrategy(ExtractionTestCase):
     def setUp(self):
         super().setUp()
@@ -226,6 +229,7 @@ class TestTannerRequestTextExtraction(ExtractionTestCase):
         self.assertIn("/from-url", text)
 
 
+@override_settings(THREATFOX_API_KEY="")
 class TestTannerAttackClassification(ExtractionTestCase):
     def setUp(self):
         super().setUp()
@@ -345,6 +349,7 @@ class TestTannerAttackClassification(ExtractionTestCase):
         self.assertEqual(self.strategy.attack_tags_added, 0)
 
 
+@override_settings(THREATFOX_API_KEY="")
 class TestTannerRfiExtraction(ExtractionTestCase):
     def setUp(self):
         super().setUp()

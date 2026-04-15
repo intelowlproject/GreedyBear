@@ -213,6 +213,40 @@ class FeedsRequestSerializersTestCase(CustomTestCase):
             self.assertIn("paginate", serializer.errors)
             self.assertIn("format", serializer.errors)
 
+    def _base_request_data(self):
+        return {
+            "feed_type": "all",
+            "attack_type": "all",
+            "ioc_type": "all",
+            "max_age": "1",
+            "min_days_seen": "1",
+            "include_reputation": [],
+            "exclude_reputation": [],
+            "feed_size": "1",
+            "ordering": "last_seen",
+            "verbose": "false",
+            "paginate": "false",
+            "format": "json",
+        }
+
+    def test_min_expected_interactions_valid(self):
+        """min_expected_interactions accepts valid non-negative floats and None."""
+        valid_feed_types = frozenset(["all"])
+        for value in ["0", "0.0", "5.5", "100"]:
+            with self.subTest(value=value):
+                data_ = {**self._base_request_data(), "min_expected_interactions": value}
+                serializer = FeedsRequestSerializer(data=data_, context={"valid_feed_types": valid_feed_types})
+                self.assertTrue(serializer.is_valid(raise_exception=True))
+
+    def test_min_expected_interactions_invalid(self):
+        """min_expected_interactions rejects negative values."""
+        valid_feed_types = frozenset(["all"])
+        data_ = {**self._base_request_data(), "min_expected_interactions": "-0.1"}
+        serializer = FeedsRequestSerializer(data=data_, context={"valid_feed_types": valid_feed_types})
+        with self.assertRaises(ValidationError):
+            serializer.is_valid(raise_exception=True)
+        self.assertIn("min_expected_interactions", serializer.errors)
+
 
 class FeedsResponseSerializersTestCase(CustomTestCase):
     @classmethod
@@ -248,6 +282,7 @@ class FeedsResponseSerializersTestCase(CustomTestCase):
                 "recurrence_probability": "0.1",
                 "expected_interactions": "11.1",
                 "attacker_country": "Nepal",
+                "attacker_country_code": "NP",
             }
             serializer = FeedsResponseSerializer(
                 data=data_,
@@ -273,6 +308,7 @@ class FeedsResponseSerializersTestCase(CustomTestCase):
             "login_attempts": "-1",
             "recurrence_probability": "1.1",
             "expected_interactions": "-1",
+            "attacker_country_code": "INV",
         }
         serializer = FeedsResponseSerializer(
             data=data_,
@@ -294,6 +330,7 @@ class FeedsResponseSerializersTestCase(CustomTestCase):
             self.assertIn("login_attempts", serializer.errors)
             self.assertIn("recurrence_probability", serializer.errors)
             self.assertIn("expected_interactions", serializer.errors)
+            self.assertIn("attacker_country_code", serializer.errors)
 
 
 class IOCSerializerTestCase(CustomTestCase):
