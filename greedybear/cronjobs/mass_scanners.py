@@ -3,9 +3,9 @@ import re
 import requests
 
 from greedybear.cronjobs.base import Cronjob
-from greedybear.cronjobs.extraction.utils import is_valid_ipv4
 from greedybear.cronjobs.repositories import IocRepository, MassScannerRepository
 from greedybear.enums import IpReputation
+from greedybear.utils import is_valid_ipv4
 
 
 class MassScannersCron(Cronjob):

@@ -98,6 +98,21 @@ class FeedsAdvancedViewTestCase(CustomTestCase):
         self.assertIsNotNone(target_ioc)
         self.assertEqual(target_ioc["attacker_country"], "Nepal")
 
+    def test_200_feed_contains_attacker_country_code(self):
+        """
+        Ensures that the response includes the attacker_country_code field.
+        """
+        self.ioc.attacker_country_code = "NP"
+        self.ioc.save()
+
+        response = self.client.get("/api/feeds/advanced/")
+
+        iocs = response.json()["iocs"]
+        target_ioc = next((i for i in iocs if i["value"] == self.ioc.name), None)
+
+        self.assertIsNotNone(target_ioc)
+        self.assertEqual(target_ioc["attacker_country_code"], "NP")
+
 
 class FeedsEnhancementsTestCase(CustomTestCase):
     """Tests for advanced filtering, STIX export, and shareable feeds functionality."""
@@ -113,6 +128,7 @@ class FeedsEnhancementsTestCase(CustomTestCase):
         # Give the base IOC unique values to isolate filter tests
         self.ioc.destination_ports = [9001, 9002]
         self.ioc.recurrence_probability = 0.8
+        self.ioc.expected_interactions = 10.0
         self.ioc.save()
 
         # Second IOC for contrast
@@ -127,6 +143,7 @@ class FeedsEnhancementsTestCase(CustomTestCase):
             first_seen=datetime.now() - timedelta(days=1),
             last_seen=datetime.now(),
             recurrence_probability=0.2,
+            expected_interactions=1.0,
             autonomous_system=as_obj2,
             destination_ports=[9003],
             attack_count=1,
@@ -163,6 +180,22 @@ class FeedsEnhancementsTestCase(CustomTestCase):
         values = [i["value"] for i in response.json()["iocs"]]
         self.assertIn(self.ioc.name, values)
 
+    def test_filter_by_min_expected_interactions(self):
+        """Filter by min_expected_interactions=5.0 excludes low-score IOC."""
+        response = self.client.get("/api/feeds/advanced/?min_expected_interactions=5.0")
+        self.assertEqual(response.status_code, 200)
+        values = [i["value"] for i in response.json()["iocs"]]
+        self.assertIn(self.ioc.name, values)
+        self.assertNotIn(self.ioc2.name, values)
+
+    def test_filter_by_min_expected_interactions_zero(self):
+        """Edge case: min_expected_interactions=0 must NOT be ignored."""
+        response = self.client.get("/api/feeds/advanced/?asn=11111&min_expected_interactions=0")
+        self.assertEqual(response.status_code, 200)
+        # ioc has expected_interactions=10.0 >= 0, so it should be returned
+        values = [i["value"] for i in response.json()["iocs"]]
+        self.assertIn(self.ioc.name, values)
+
     def test_filter_by_port(self):
         """Filter by destination port returns only matching IOC."""
         response = self.client.get("/api/feeds/advanced/?port=9001")
@@ -176,8 +209,8 @@ class FeedsEnhancementsTestCase(CustomTestCase):
         self.assertEqual(response.json()["iocs"][0]["value"], self.ioc2.name)
 
     def test_filter_combined(self):
-        """Combined filter (asn + min_score + port) narrows results correctly."""
-        response = self.client.get("/api/feeds/advanced/?asn=11111&min_score=0.5&port=9001")
+        """Combined filter (asn + min_score + min_expected_interactions + port) narrows results correctly."""
+        response = self.client.get("/api/feeds/advanced/?asn=11111&min_score=0.5&min_expected_interactions=5.0&port=9001")
         self.assertEqual(response.status_code, 200)
         iocs = response.json()["iocs"]
         self.assertEqual(len(iocs), 1)
@@ -195,6 +228,19 @@ class FeedsEnhancementsTestCase(CustomTestCase):
         future_start = (datetime.now() + timedelta(days=2)).strftime("%Y-%m-%d")
         response = self.client.get(f"/api/feeds/advanced/?start_date={future_start}")
         self.assertEqual(response.json()["iocs"], [])
+
+    def test_filter_by_country_code(self):
+        """Filter by country_code returns only matching IOCs."""
+        self.ioc.attacker_country_code = "CN"
+        self.ioc.save()
+        self.ioc2.attacker_country_code = "US"
+        self.ioc2.save()
+
+        response = self.client.get("/api/feeds/advanced/?country_code=CN")
+        self.assertEqual(response.status_code, 200)
+        iocs = response.json()["iocs"]
+        self.assertEqual(len(iocs), 1)
+        self.assertEqual(iocs[0]["value"], self.ioc.name)
 
     # ── STIX 2.1 export ──────────────────────────────────────────────────────
 

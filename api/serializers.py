@@ -141,11 +141,13 @@ class FeedsRequestSerializer(serializers.Serializer):
     format = serializers.ChoiceField(choices=["csv", "json", "txt", "stix21"])
     asn = serializers.IntegerField(min_value=1, required=False, allow_null=True)
     min_score = serializers.FloatField(min_value=0, max_value=1, required=False, allow_null=True)
+    min_expected_interactions = serializers.FloatField(min_value=0, required=False, allow_null=True)
     port = serializers.IntegerField(min_value=1, max_value=65535, required=False, allow_null=True)
     start_date = serializers.DateField(format="%Y-%m-%d", required=False, allow_null=True)
     end_date = serializers.DateField(format="%Y-%m-%d", required=False, allow_null=True)
     tag_key = serializers.CharField(max_length=128, required=False, allow_blank=True)
     tag_value = serializers.CharField(max_length=256, required=False, allow_blank=True)
+    country_code = serializers.CharField(max_length=2, required=False, allow_blank=True)
 
     def validate_feed_type(self, feed_type):
         logger.debug(f"FeedsRequestSerializer - validation feed_type: '{feed_type}'")
@@ -233,6 +235,7 @@ class FeedsResponseSerializer(serializers.Serializer):
     recurrence_probability = serializers.FloatField(min_value=0, max_value=1)
     expected_interactions = serializers.FloatField(min_value=0)
     attacker_country = serializers.CharField(allow_null=True, allow_blank=True, max_length=120)
+    attacker_country_code = serializers.CharField(allow_null=True, allow_blank=True, max_length=2)
     tags = TagSerializer(many=True, required=False, default=list)
 
     def validate_feed_type(self, feed_type):
