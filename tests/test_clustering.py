@@ -192,7 +192,7 @@ class ClusterCommandSequencesTestCase(CustomTestCase):
 
             clustering_input = mock_lsh_cls.return_value.get_components.call_args[0][0]
 
-        expected_tokenized = tokenize(command_lines + ["PAYLOAD REQUEST http://payload.example.com/a.sh"])
+        expected_tokenized = tokenize(command_lines + ["PAYLOAD_REQUEST:http://payload.example.com/a.sh"])
         self.assertEqual(clustering_input, [expected_tokenized])
         command_sequence.refresh_from_db()
         self.assertEqual(command_sequence.cluster, 42)
@@ -335,9 +335,9 @@ class ClusterCommandSequencesTestCase(CustomTestCase):
         expected_tokenized = tokenize(
             command_lines
             + [
-                "PAYLOAD REQUEST http://a.example/p.sh",
-                "PAYLOAD REQUEST http://m.example/p.sh",
-                "PAYLOAD REQUEST http://z.example/p.sh",
+                "PAYLOAD_REQUEST:http://a.example/p.sh",
+                "PAYLOAD_REQUEST:http://m.example/p.sh",
+                "PAYLOAD_REQUEST:http://z.example/p.sh",
             ]
         )
         self.assertEqual(clustering_input, [expected_tokenized])
@@ -355,14 +355,14 @@ class ClusterCommandSequencesTestCase(CustomTestCase):
             first_seen=self.current_time,
             last_seen=self.current_time,
             commands=["uname -a"],
-            commands_hash=sha256("uname -a".encode()).hexdigest(),
+            commands_hash=sha256(b"uname -a").hexdigest(),
             cluster=1001,
         )
         second_sequence = CommandSequence.objects.create(
             first_seen=self.current_time,
             last_seen=self.current_time,
             commands=["id -u"],
-            commands_hash=sha256("id -u".encode()).hexdigest(),
+            commands_hash=sha256(b"id -u").hexdigest(),
             cluster=1002,
         )
 
@@ -397,13 +397,7 @@ class ClusterCommandSequencesTestCase(CustomTestCase):
             payload_signature_to_label = {}
             labels = []
             for tokens in tokenized_sequences:
-                payload_urls = tuple(
-                    sorted(
-                        tokens[index + 2]
-                        for index in range(len(tokens) - 2)
-                        if tokens[index] == "PAYLOAD" and tokens[index + 1] == "REQUEST"
-                    )
-                )
+                payload_urls = tuple(sorted(token.split(":", maxsplit=1)[1] for token in tokens if token.startswith("PAYLOAD_REQUEST:") and ":" in token))
                 label = payload_signature_to_label.setdefault(payload_urls, len(payload_signature_to_label) + 700)
                 labels.append(label)
             return labels
@@ -465,8 +459,8 @@ class ClusterCommandSequencesTestCase(CustomTestCase):
         expected_tokenized = tokenize(
             command_lines
             + [
-                "PAYLOAD REQUEST http://dup.example/a.sh",
-                "PAYLOAD REQUEST http://dup.example/b.sh",
+                "PAYLOAD_REQUEST:http://dup.example/a.sh",
+                "PAYLOAD_REQUEST:http://dup.example/b.sh",
             ]
         )
         self.assertEqual(clustering_input, [expected_tokenized])
