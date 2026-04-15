@@ -276,6 +276,9 @@ class TestCowrieExtractionStrategy(ExtractionTestCase):
         self.assertTrue(session_record.command_execution)
         self.assertIsInstance(session_record.commands, CommandSequence)
         self.assertEqual(session_record.commands.first_seen, datetime(2023, 1, 1, 10, 0, 5))
+        self.assertIsNone(session_record.commands.first_seen.tzinfo)
+        self.assertEqual(session_record.commands.last_seen, datetime(2023, 1, 1, 10, 0, 5))
+        self.assertIsNone(session_record.commands.last_seen.tzinfo)
         self.assertIn("ls -la", session_record.commands.commands)
 
     def test_process_session_hit_session_closed(self):
@@ -404,7 +407,7 @@ class TestCowrieExtractionStrategy(ExtractionTestCase):
         session = Mock()
         session.commands = Mock()
         session.commands.commands = ["ls", "pwd", "whoami"]
-        session.commands.last_seen = "2023-01-01T10:00:10"
+        session.commands.last_seen = datetime(2023, 1, 1, 10, 0, 10)
 
         existing_cmd_seq = Mock()
         self.mock_session_repo.get_command_sequence_by_hash.return_value = existing_cmd_seq
@@ -413,7 +416,8 @@ class TestCowrieExtractionStrategy(ExtractionTestCase):
 
         self.assertTrue(result)
         self.assertEqual(session.commands, existing_cmd_seq)
-        self.assertEqual(session.commands.last_seen, "2023-01-01T10:00:10")
+        self.assertIsInstance(session.commands.last_seen, datetime)
+        self.assertIsNone(session.commands.last_seen.tzinfo)
 
     def test_start_time_is_naive_datetime_not_string(self):
         """Regression: parse_timestamp() must be called so that timezone-aware
