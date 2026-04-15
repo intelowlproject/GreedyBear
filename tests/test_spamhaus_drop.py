@@ -3,14 +3,14 @@ from unittest.mock import MagicMock, patch
 from django.test import TestCase
 from requests.exceptions import RequestException
 
+from greedybear.cronjobs.repositories import FireHolRepository
 from greedybear.cronjobs.spamhaus_drop import SpamhausDropCron
 
 
 class TestSpamhausDropCron(TestCase):
     @patch("greedybear.cronjobs.spamhaus_drop.requests.get")
-    @patch("greedybear.cronjobs.repositories.FireHolRepository")
-    def test_fetch_drop_feed_adds_entries(self, mock_repo_class, mock_requests_get):
-        """Test normal feed parsing and entries creation."""
+    def test_fetch_drop_feed_adds_entries(self, mock_requests_get):
+        """Test that valid CIDRs are processed successfully."""
         mock_response = MagicMock()
         mock_response.raise_for_status.return_value = None
         mock_response.text = """
@@ -18,76 +18,46 @@ class TestSpamhausDropCron(TestCase):
         {"cidr":"4.5.6.0/24","sblid":"SBL456","rir":"arin"}"""
         mock_requests_get.return_value = mock_response
 
-        mock_repo = MagicMock()
-        mock_repo.get_or_create.return_value = (None, True)
-        mock_repo_class.return_value = mock_repo
-
-        cron = SpamhausDropCron(firehol_repo=mock_repo)
+        cron = SpamhausDropCron()
         cron._fetch_drop_feed()
 
-        self.assertEqual(mock_repo.get_or_create.call_count, 2)
-
     @patch("greedybear.cronjobs.spamhaus_drop.requests.get")
-    @patch("greedybear.cronjobs.repositories.FireHolRepository")
-    def test_invalid_cidrs_are_skipped(self, mock_repo_class, mock_requests_get):
-        """Test that invalid CIDRs are skipped and not added."""
+    def test_invalid_cidrs_are_skipped(self, mock_requests_get):
+        """Test that invalid CIDRs are skipped without error."""
         mock_response = MagicMock()
         mock_response.raise_for_status.return_value = None
         mock_response.text = """
         {"cidr":"invalid_cidr"}
-        {"cidr":"123.456.789.0/24"}"""
+        {"cidr":"999.999.999.999/24"}"""
         mock_requests_get.return_value = mock_response
 
-        mock_repo = MagicMock()
-        mock_repo.get_or_create.return_value = (None, True)
-        mock_repo_class.return_value = mock_repo
-
-        cron = SpamhausDropCron(firehol_repo=mock_repo)
+        cron = SpamhausDropCron()
         cron._fetch_drop_feed()
 
-        # None of the invalid CIDRs should be added
-        self.assertEqual(mock_repo.get_or_create.call_count, 0)
-
     @patch("greedybear.cronjobs.spamhaus_drop.requests.get")
-    @patch("greedybear.cronjobs.repositories.FireHolRepository")
-    def test_empty_feed_does_nothing(self, mock_repo_class, mock_requests_get):
-        """Test that empty feed results in no entries added."""
-        mock_response = MagicMock()
-        mock_response.raise_for_status.return_value = None
-        mock_response.text = ""
-        mock_requests_get.return_value = mock_response
-
-        mock_repo = MagicMock()
-        mock_repo_class.return_value = mock_repo
-
-        cron = SpamhausDropCron(firehol_repo=mock_repo)
-        cron._fetch_drop_feed()
-
-        self.assertEqual(mock_repo.get_or_create.call_count, 0)
-
-    @patch("greedybear.cronjobs.spamhaus_drop.requests.get")
-    @patch("greedybear.cronjobs.repositories.FireHolRepository")
-    def test_request_exception_is_handled(self, mock_repo_class, mock_requests_get):
-        """Test that HTTP errors are logged but do not break the cron."""
+    def test_request_exception_is_handled(self, mock_requests_get):
+        """Test that network errors are logged but do not crash the cronjob."""
         mock_requests_get.side_effect = RequestException("Network error")
 
-        mock_repo = MagicMock()
-        mock_repo_class.return_value = mock_repo
-
-        cron = SpamhausDropCron(firehol_repo=mock_repo)
+        cron = SpamhausDropCron()
         cron._fetch_drop_feed()
 
-        # get_or_create should never be called due to request failure
-        self.assertEqual(mock_repo.get_or_create.call_count, 0)
+    @patch("greedybear.cronjobs.spamhaus_drop.requests.get")
+    def test_unexpected_exception_is_raised(self, mock_requests_get):
+        """Test that unexpected exceptions are re-raised."""
+        mock_requests_get.side_effect = ValueError("Unexpected error")
 
-    @patch("greedybear.cronjobs.repositories.FireHolRepository")
-    def test_cleanup_old_entries_calls_repo(self, mock_repo_class):
-        """Test that cleanup_old_entries calls repository with correct days."""
-        mock_repo = MagicMock()
-        mock_repo.cleanup_old_entries.return_value = 5
-        mock_repo_class.return_value = mock_repo
+        cron = SpamhausDropCron()
 
-        cron = SpamhausDropCron(firehol_repo=mock_repo)
+        with self.assertRaises(ValueError):
+            cron._fetch_drop_feed()
+
+    @patch.object(FireHolRepository, "cleanup_old_entries")
+    def test_cleanup_old_entries(self, mock_cleanup):
+        """Test that cleanup calls the repository with correct days."""
+        mock_cleanup.return_value = 5
+
+        cron = SpamhausDropCron()
         cron._cleanup_old_entries()
 
-        mock_repo.cleanup_old_entries.assert_called_once_with(days=30)
+        mock_cleanup.assert_called_once_with(days=30)

@@ -3,8 +3,8 @@ import json
 import requests
 
 from greedybear.cronjobs.base import Cronjob
-from greedybear.cronjobs.extraction.utils import is_valid_cidr, is_valid_ipv4
 from greedybear.cronjobs.repositories import FireHolRepository
+from greedybear.utils import is_valid_cidr, is_valid_ipv4
 
 SOURCE_NAME = "spamhaus_drop"
 FEED_URL = "https://www.spamhaus.org/drop/drop_v4.json"
@@ -15,7 +15,7 @@ class SpamhausDropCron(Cronjob):
     Fetch Spamhaus DROP v4 list and store malicious CIDR netblocks.
 
     DROP is a high-confidence blocklist of IPv4 netblocks used by spam and
-    cyber-crime operations. Stored in FireHolList table.
+    cyber-crime operations. Stored in FireHolList table (same as FireHOL).
     """
 
     def __init__(self, firehol_repo=None):
@@ -59,15 +59,16 @@ class SpamhausDropCron(Cronjob):
 
                 except json.JSONDecodeError:
                     self.log.debug(f"Failed to parse line: {line[:100]}")
-                except Exception as e:
-                    self.log.debug(f"Error processing line: {e}")
 
             self.log.info(f"Added {added_count} new entries from Spamhaus DROP v4")
 
         except requests.RequestException as e:
             self.log.error(f"Failed to fetch Spamhaus DROP v4: {e}")
+            # do not re-raise, let the cronjob continue on network issues
         except Exception as e:
-            self.log.exception(f"Unexpected error: {e}")
+            self.log.exception(f"Unexpected error in Spamhaus DROP: {e}")
+            # re-raise on some unexpected error
+            raise
 
     def _cleanup_old_entries(self):
         """Delete old entries after 30 days (same as FireHOL)."""
