@@ -26,6 +26,7 @@ logger = logging.getLogger(__name__)
         OpenApiParameter("query", str, required=True, description="IP address or domain to look up."),
     ],
     tags=["enrichment"],
+    responses=EnrichmentSerializer,
 )
 @api_view([GET])
 @authentication_classes([CookieTokenAuthentication])

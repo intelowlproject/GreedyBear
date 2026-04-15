@@ -6,6 +6,7 @@ from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
+from api.serializers import HoneypotSerializer
 from greedybear.consts import GET
 from greedybear.models import Honeypot
 
@@ -18,6 +19,8 @@ logger = logging.getLogger(__name__)
         OpenApiParameter("onlyActive", bool, description="When `true`, return only active honeypots."),
     ],
     tags=["honeypots"],
+    responses=HoneypotSerializer,
+    auth=[],
 )
 @api_view([GET])
 def general_honeypot_list(request):

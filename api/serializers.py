@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 class HoneypotSerializer(serializers.ModelSerializer):
     class Meta:
         model = Honeypot
+        fields = ["name"]
 
     def to_representation(self, value):
         return value.name

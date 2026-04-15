@@ -8,3 +8,4 @@ class GreedyBearConfig(AppConfig):
 
     def ready(self):
         import greedybear.checks  # noqa: F401 — register system checks
+        import greedybear.schema_extensions  # noqa: F401 — register drf-spectacular auth extensions

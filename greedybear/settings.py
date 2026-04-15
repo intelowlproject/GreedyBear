@@ -133,6 +133,7 @@ SPECTACULAR_SETTINGS = {
     "VERSION": VERSION,
     "SERVE_INCLUDE_SCHEMA": False,
     "PREPROCESSING_HOOKS": ["greedybear.spectacular.preprocessing_filter_spec"],
+    "persistAuthorization": True,
 }
 
 # Django-Rest-Durin
