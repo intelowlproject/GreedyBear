@@ -232,7 +232,7 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
 
         match eventid:
             case "cowrie.session.connect":
-                session_record.start_time = hit["timestamp"]
+                session_record.start_time = parse_timestamp(hit["timestamp"])
 
             case "cowrie.login.failed" | "cowrie.login.success":
                 session_record.login_attempt = True
@@ -246,10 +246,10 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
 
                 if session_record.commands is None:
                     session_record.commands = CommandSequence()
-                    session_record.commands.first_seen = hit["timestamp"]
+                    session_record.commands.first_seen = parse_timestamp(hit["timestamp"])
 
                 command = normalize_command(hit["message"])
-                session_record.commands.last_seen = hit["timestamp"]
+                session_record.commands.last_seen = parse_timestamp(hit["timestamp"])
                 session_record.commands.commands.append(command)
 
             case "cowrie.session.closed":
@@ -260,7 +260,7 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
                 if shasum:
                     url = hit.get("url", "")
                     outfile = hit.get("outfile", "")
-                    timestamp = hit["timestamp"]
+                    timestamp = parse_timestamp(hit["timestamp"])
                     self.log.info(f"found file with shasum {shasum[:8]}... from {ioc.name}")
 
                     self.session_repo.get_or_create_file_transfer(
