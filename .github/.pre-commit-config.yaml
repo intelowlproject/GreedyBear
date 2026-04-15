@@ -5,7 +5,7 @@ repos:
     hooks:
       - id: ruff
         name: ruff-lint
-        args: ["--fix", "--config", "./.github/configurations/python_linters/.ruff.toml"]
+        args: ["--fix"]
       - id: ruff-format
         args: ["--config", "./.github/configurations/python_linters/.ruff.toml"]
 
