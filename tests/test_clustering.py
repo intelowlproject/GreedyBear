@@ -106,7 +106,7 @@ class ClusterCommandSequencesTestCase(CustomTestCase):
 
     def test_run_no_label_changes(self):
         """seqs_to_update stays empty → bulk_update skipped (line 59 else branch)."""
-        seqs = list(CommandSequence.objects.all())
+        seqs = list(CommandSequence.objects.order_by("id"))
         current_labels = [s.cluster for s in seqs]
         self._run_job(current_labels)
         for seq, original_label in zip(seqs, current_labels, strict=False):
@@ -131,7 +131,7 @@ class ClusterCommandSequencesTestCase(CustomTestCase):
 
     def test_run_all_labels_changed(self):
         """All sequences are updated when every label differs (lines 53–59)."""
-        seqs = list(CommandSequence.objects.all())
+        seqs = list(CommandSequence.objects.order_by("id"))
         new_labels = [777] * len(seqs)
         self._run_job(new_labels)
         for seq in seqs:
@@ -140,7 +140,7 @@ class ClusterCommandSequencesTestCase(CustomTestCase):
 
     def test_run_bulk_update_called_with_correct_args(self):
         """bulk_update is called with field='cluster' and batch_size=1000 (line 59)."""
-        seqs = list(CommandSequence.objects.all())
+        seqs = list(CommandSequence.objects.order_by("id"))
         new_labels = [888] * len(seqs)
         with patch("greedybear.cronjobs.commands.cluster.LSHConnectedComponents") as mock_lsh_cls:
             mock_lsh_cls.return_value.get_components.return_value = new_labels

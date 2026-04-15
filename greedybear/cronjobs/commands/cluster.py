@@ -100,7 +100,7 @@ class ClusterCommandSequences(Cronjob):
         4. Identify sequences whose cluster assignment has changed
         5. Perform batched bulk updates for changed sequences only
         """
-        sequences = list(CommandSequence.objects.all().only("id", "commands", "cluster"))
+        sequences = list(CommandSequence.objects.order_by("id").only("id", "commands", "cluster"))
         if not sequences:
             self.log.info("no sequences found to cluster")
             return
