@@ -45,11 +45,17 @@ class FeedsShareReasonTestCase(CustomTestCase):
         r1 = self.client.get("/api/feeds/share?reason=first")
         self.assertEqual(r1.status_code, 200)
 
-        # Same params → same token → get_or_create returns existing record
+        # Same feed params → same signed token → get_or_create returns existing record
         r2 = self.client.get("/api/feeds/share?reason=second")
         self.assertEqual(r2.status_code, 200)
 
+        # Both calls must have produced the exact same token/URL
+        self.assertEqual(r1.json()["url"], r2.json()["url"])
+
+        # Only one ShareToken should exist (not two)
         token_hash = self._hash_from_url(r1.json()["url"])
+        self.assertEqual(ShareToken.objects.filter(token_hash=token_hash).count(), 1)
+
         share_token = ShareToken.objects.get(token_hash=token_hash)
         self.assertEqual(share_token.reason, "first")
 

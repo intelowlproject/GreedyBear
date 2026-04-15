@@ -41,6 +41,14 @@ ALLOWED_UNAUTHENTICATED_QUERY_PARAMS = [
     "prioritize",
 ]
 
+_TOKEN_LIST_FIELDS = (
+    "token_hash",
+    "reason",
+    "created_at",
+    "revoked",
+    "revoked_at",
+)
+
 
 @api_view([GET])
 @throttle_classes([FeedsThrottle])
@@ -224,7 +232,8 @@ def feeds_share(request):
     Returns:
         Response: A JSON object containing the signed shareable URL.
     """
-    logger.info(f"request /api/feeds/share with params: {request.query_params}")
+    safe_params = {k: v for k, v in request.query_params.items() if k != "reason"}
+    logger.info(f"request /api/feeds/share with params: {safe_params}")
     feed_params = FeedRequestParams(request.query_params)
     data = vars(feed_params)
     # Remove internal or non-serializable objects if any
@@ -335,7 +344,7 @@ def feeds_tokens(request):
         Response: A JSON list of token metadata objects.
     """
     logger.info("request /api/feeds/tokens/")
-    tokens = ShareToken.objects.filter(user=request.user).order_by("-created_at").values("token_hash", "reason", "created_at", "revoked", "revoked_at")
+    tokens = ShareToken.objects.filter(user=request.user).order_by("-created_at").values(*_TOKEN_LIST_FIELDS)
     results = [
         {
             "hash_prefix": t["token_hash"][:12],
