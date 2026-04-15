@@ -73,6 +73,7 @@ class CustomTestCase(TestCase):
             destination_ports=[22, 23, 24],
             login_attempts=1,
             recurrence_probability=0.1,
+            expected_interactions=11.1,
             attacker_country="China",
             attacker_country_code="CN",
         )
