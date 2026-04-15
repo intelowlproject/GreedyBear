@@ -7,7 +7,6 @@ repos:
         name: ruff-lint
         args: ["--fix"]
       - id: ruff-format
-        args: ["--config", "./.github/configurations/python_linters/.ruff.toml"]
 
 # Frontend formatting with Prettier (using local npm)
 # Skips if frontend/node_modules doesn't exist (for backend-only contributors)
