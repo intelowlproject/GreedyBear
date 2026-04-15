@@ -53,7 +53,11 @@ class Migration(migrations.Migration):
                 ("source", models.CharField(blank=True, max_length=64, null=True)),
             ],
             options={
-                "indexes": [models.Index(fields=["ip_address"], name="greedybear__ip_addr_e01f2f_idx")],
+                "indexes": [
+                    models.Index(
+                        fields=["ip_address"], name="greedybear__ip_addr_e01f2f_idx"
+                    )
+                ],
             },
         ),
     ]

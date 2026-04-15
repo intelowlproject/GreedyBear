@@ -2,7 +2,6 @@
 Migration to replace the credentials ArrayField on CowrieSession with
 a normalized Credential model using a ManyToMany relationship.
 """
-
 from django.db import migrations, models
 
 
@@ -30,6 +29,7 @@ def migrate_credentials(apps, schema_editor):
 
 
 class Migration(migrations.Migration):
+
     dependencies = [
         ("greedybear", "0041_sharetoken"),
     ]

@@ -6,23 +6,24 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
+
     dependencies = [
-        ("greedybear", "0037_alter_commandsequence_first_seen_and_more"),
+        ('greedybear', '0037_alter_commandsequence_first_seen_and_more'),
     ]
 
     operations = [
         migrations.CreateModel(
-            name="Tag",
+            name='Tag',
             fields=[
-                ("id", models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name="ID")),
-                ("key", models.CharField(max_length=128)),
-                ("value", models.CharField(max_length=256)),
-                ("source", models.CharField(max_length=64)),
-                ("added", models.DateTimeField(db_default=django.db.models.functions.datetime.Now())),
-                ("ioc", models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name="tags", to="greedybear.ioc")),
+                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
+                ('key', models.CharField(max_length=128)),
+                ('value', models.CharField(max_length=256)),
+                ('source', models.CharField(max_length=64)),
+                ('added', models.DateTimeField(db_default=django.db.models.functions.datetime.Now())),
+                ('ioc', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='tags', to='greedybear.ioc')),
             ],
             options={
-                "indexes": [models.Index(fields=["source", "ioc"], name="greedybear__source_72b458_idx")],
+                'indexes': [models.Index(fields=['source', 'ioc'], name='greedybear__source_72b458_idx')],
             },
         ),
     ]

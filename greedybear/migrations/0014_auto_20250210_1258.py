@@ -3,7 +3,7 @@
 from django.db import migrations
 
 
-def remove_ddospot(apps, schema_editor):
+def removeDdospot(apps, schema_editor):
     GeneralHoneypot = apps.get_model("greedybear", "GeneralHoneypot")
     try:
         ddospot = GeneralHoneypot.objects.get(name__iexact="Ddospot")
@@ -21,4 +21,4 @@ class Migration(migrations.Migration):
         ("greedybear", "0013_ioc_greedybear__name_b54897_idx"),
     ]
 
-    operations = [migrations.RunPython(remove_ddospot)]
+    operations = [migrations.RunPython(removeDdospot)]

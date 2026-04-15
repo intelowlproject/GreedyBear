@@ -4,14 +4,15 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
+
     dependencies = [
-        ("greedybear", "0046_sensor_label"),
+        ('greedybear', '0046_sensor_label'),
     ]
 
     operations = [
         migrations.AddField(
-            model_name="credential",
-            name="sources",
-            field=models.ManyToManyField(blank=True, related_name="credentials", to="greedybear.ioc"),
+            model_name='credential',
+            name='sources',
+            field=models.ManyToManyField(blank=True, related_name='credentials', to='greedybear.ioc'),
         ),
     ]

@@ -5,69 +5,70 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
+
     dependencies = [
-        ("greedybear", "0036_add_sensors_to_ioc"),
+        ('greedybear', '0036_add_sensors_to_ioc'),
     ]
 
     operations = [
         migrations.AlterField(
-            model_name="commandsequence",
-            name="first_seen",
+            model_name='commandsequence',
+            name='first_seen',
             field=models.DateTimeField(db_default=django.db.models.functions.datetime.Now()),
         ),
         migrations.AlterField(
-            model_name="commandsequence",
-            name="last_seen",
+            model_name='commandsequence',
+            name='last_seen',
             field=models.DateTimeField(db_default=django.db.models.functions.datetime.Now()),
         ),
         migrations.AlterField(
-            model_name="firehollist",
-            name="added",
+            model_name='firehollist',
+            name='added',
             field=models.DateTimeField(db_default=django.db.models.functions.datetime.Now()),
         ),
         migrations.AlterField(
-            model_name="ioc",
-            name="first_seen",
+            model_name='ioc',
+            name='first_seen',
             field=models.DateTimeField(db_default=django.db.models.functions.datetime.Now()),
         ),
         migrations.AlterField(
-            model_name="ioc",
-            name="last_seen",
+            model_name='ioc',
+            name='last_seen',
             field=models.DateTimeField(db_default=django.db.models.functions.datetime.Now()),
         ),
         migrations.AlterField(
-            model_name="massscanner",
-            name="added",
+            model_name='massscanner',
+            name='added',
             field=models.DateTimeField(db_default=django.db.models.functions.datetime.Now()),
         ),
         migrations.AlterField(
-            model_name="massscanner",
-            name="ip_address",
+            model_name='massscanner',
+            name='ip_address',
             field=models.GenericIPAddressField(),
         ),
         migrations.AlterField(
-            model_name="sensor",
-            name="address",
+            model_name='sensor',
+            name='address',
             field=models.GenericIPAddressField(unique=True),
         ),
         migrations.AlterField(
-            model_name="statistics",
-            name="request_date",
+            model_name='statistics',
+            name='request_date',
             field=models.DateTimeField(db_default=django.db.models.functions.datetime.Now()),
         ),
         migrations.AlterField(
-            model_name="torexitnode",
-            name="added",
+            model_name='torexitnode',
+            name='added',
             field=models.DateTimeField(db_default=django.db.models.functions.datetime.Now()),
         ),
         migrations.AlterField(
-            model_name="torexitnode",
-            name="ip_address",
+            model_name='torexitnode',
+            name='ip_address',
             field=models.GenericIPAddressField(unique=True),
         ),
         migrations.AlterField(
-            model_name="whatsmyipdomain",
-            name="added",
+            model_name='whatsmyipdomain',
+            name='added',
             field=models.DateTimeField(db_default=django.db.models.functions.datetime.Now()),
         ),
     ]
