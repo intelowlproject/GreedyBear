@@ -274,6 +274,63 @@ class FeedsEnhancementsTestCase(CustomTestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn("error", response.json())
 
+    def test_consume_valid_token_without_db_record_is_rejected(self):
+        """A valid signed token that was never saved to the DB is rejected (allowlist check)."""
+        import hashlib
+
+        from django.core import signing
+
+        data = {
+            "feed_type": "all",
+            "attack_type": "all",
+            "ioc_type": "all",
+            "max_age": "3",
+            "min_days_seen": "1",
+            "include_reputation": [],
+            "exclude_reputation": [],
+            "feed_size": "5000",
+            "ordering": "-last_seen",
+            "verbose": "false",
+            "paginate": "false",
+            "format": "json",
+            "asn": None,
+            "min_score": None,
+            "port": None,
+            "start_date": None,
+            "end_date": None,
+        }
+        token = signing.dumps(data, salt="greedybear-feeds")
+        token_hash = hashlib.sha256(token.encode()).hexdigest()
+
+        from greedybear.models import ShareToken
+
+        self.assertFalse(ShareToken.objects.filter(token_hash=token_hash).exists())
+
+        self.client.logout()
+        response = self.client.get(f"/api/feeds/consume/{token}")
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()["error"], "Invalid or expired token")
+
+    def test_consume_token_deleted_from_db_is_rejected(self):
+        """A token whose DB record has been deleted is rejected even though the signature is valid."""
+        import hashlib
+
+        from greedybear.models import ShareToken
+
+        share_response = self.client.get("/api/feeds/share?asn=11111")
+        self.assertEqual(share_response.status_code, 200)
+        token = share_response.json()["url"].split("/")[-1]
+
+        self.client.logout()
+        self.assertEqual(self.client.get(f"/api/feeds/consume/{token}").status_code, 200)
+
+        token_hash = hashlib.sha256(token.encode()).hexdigest()
+        ShareToken.objects.filter(token_hash=token_hash).delete()
+
+        response = self.client.get(f"/api/feeds/consume/{token}")
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()["error"], "Invalid or expired token")
+
     def test_rate_limiting_consume(self):
         """
         Shared feed endpoint enforces rate limiting on the /feeds/consume/ endpoint.
