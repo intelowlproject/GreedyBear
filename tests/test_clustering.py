@@ -241,3 +241,234 @@ class ClusterCommandSequencesTestCase(CustomTestCase):
         self.assertEqual(clustering_input, [tokenize(command_lines)])
         command_sequence.refresh_from_db()
         self.assertEqual(command_sequence.cluster, 77)
+
+    def test_run_ignores_scanner_payload_ioc_with_empty_related_urls(self):
+        """
+        Scanner-linked payload IOCs without related URLs do not affect clustering input.
+        """
+        CowrieSession.objects.all().delete()
+        CommandSequence.objects.all().delete()
+
+        command_lines = ["whoami"]
+        command_sequence = CommandSequence.objects.create(
+            first_seen=self.current_time,
+            last_seen=self.current_time,
+            commands=command_lines,
+            commands_hash=sha256("\n".join(command_lines).encode()).hexdigest(),
+            cluster=1,
+        )
+        scanner_ioc = IOC.objects.create(
+            name="198.51.100.50",
+            type=IocType.IP.value,
+            scanner=True,
+        )
+        payload_ioc = IOC.objects.create(
+            name="payload-empty.example",
+            type=IocType.DOMAIN.value,
+            payload_request=True,
+            related_urls=[],
+        )
+        scanner_ioc.related_ioc.add(payload_ioc)
+        CowrieSession.objects.create(
+            session_id=int("111111111111", 16),
+            start_time=self.current_time,
+            duration=1.0,
+            source=scanner_ioc,
+            commands=command_sequence,
+        )
+
+        with patch("greedybear.cronjobs.commands.cluster.LSHConnectedComponents") as mock_lsh_cls:
+            mock_lsh_cls.return_value.get_components.return_value = [12]
+            ClusterCommandSequences().run()
+            clustering_input = mock_lsh_cls.return_value.get_components.call_args[0][0]
+
+        self.assertEqual(clustering_input, [tokenize(command_lines)])
+        command_sequence.refresh_from_db()
+        self.assertEqual(command_sequence.cluster, 12)
+
+    def test_run_orders_multiple_payload_iocs_deterministically(self):
+        """
+        Payload URL observables from multiple related IOCs are deterministically sorted.
+        """
+        CowrieSession.objects.all().delete()
+        CommandSequence.objects.all().delete()
+
+        command_lines = ["echo start"]
+        command_sequence = CommandSequence.objects.create(
+            first_seen=self.current_time,
+            last_seen=self.current_time,
+            commands=command_lines,
+            commands_hash=sha256("\n".join(command_lines).encode()).hexdigest(),
+            cluster=2,
+        )
+        scanner_ioc = IOC.objects.create(
+            name="203.0.113.42",
+            type=IocType.IP.value,
+            scanner=True,
+        )
+        payload_ioc_1 = IOC.objects.create(
+            name="payload-1.example",
+            type=IocType.DOMAIN.value,
+            payload_request=True,
+            related_urls=["http://z.example/p.sh", "http://a.example/p.sh"],
+        )
+        payload_ioc_2 = IOC.objects.create(
+            name="payload-2.example",
+            type=IocType.DOMAIN.value,
+            payload_request=True,
+            related_urls=["http://m.example/p.sh"],
+        )
+        scanner_ioc.related_ioc.add(payload_ioc_2, payload_ioc_1)
+        CowrieSession.objects.create(
+            session_id=int("222222222222", 16),
+            start_time=self.current_time,
+            duration=1.0,
+            source=scanner_ioc,
+            commands=command_sequence,
+        )
+
+        with patch("greedybear.cronjobs.commands.cluster.LSHConnectedComponents") as mock_lsh_cls:
+            mock_lsh_cls.return_value.get_components.return_value = [34]
+            ClusterCommandSequences().run()
+            clustering_input = mock_lsh_cls.return_value.get_components.call_args[0][0]
+
+        expected_tokenized = tokenize(
+            command_lines
+            + [
+                "PAYLOAD REQUEST http://a.example/p.sh",
+                "PAYLOAD REQUEST http://m.example/p.sh",
+                "PAYLOAD REQUEST http://z.example/p.sh",
+            ]
+        )
+        self.assertEqual(clustering_input, [expected_tokenized])
+        command_sequence.refresh_from_db()
+        self.assertEqual(command_sequence.cluster, 34)
+
+    def test_run_shared_payload_url_across_sequences_can_yield_identical_labels(self):
+        """
+        Shared payload URL observables are present for both sequences and can drive identical labels.
+        """
+        CowrieSession.objects.all().delete()
+        CommandSequence.objects.all().delete()
+
+        first_sequence = CommandSequence.objects.create(
+            first_seen=self.current_time,
+            last_seen=self.current_time,
+            commands=["uname -a"],
+            commands_hash=sha256("uname -a".encode()).hexdigest(),
+            cluster=1001,
+        )
+        second_sequence = CommandSequence.objects.create(
+            first_seen=self.current_time,
+            last_seen=self.current_time,
+            commands=["id -u"],
+            commands_hash=sha256("id -u".encode()).hexdigest(),
+            cluster=1002,
+        )
+
+        shared_payload = IOC.objects.create(
+            name="shared-payload.example",
+            type=IocType.DOMAIN.value,
+            payload_request=True,
+            related_urls=["http://shared.example/payload.sh"],
+        )
+
+        first_scanner = IOC.objects.create(name="10.0.0.11", type=IocType.IP.value, scanner=True)
+        second_scanner = IOC.objects.create(name="10.0.0.12", type=IocType.IP.value, scanner=True)
+        first_scanner.related_ioc.add(shared_payload)
+        second_scanner.related_ioc.add(shared_payload)
+
+        CowrieSession.objects.create(
+            session_id=int("333333333333", 16),
+            start_time=self.current_time,
+            duration=1.0,
+            source=first_scanner,
+            commands=first_sequence,
+        )
+        CowrieSession.objects.create(
+            session_id=int("444444444444", 16),
+            start_time=self.current_time,
+            duration=1.0,
+            source=second_scanner,
+            commands=second_sequence,
+        )
+
+        def labels_from_payload_urls(tokenized_sequences):
+            payload_signature_to_label = {}
+            labels = []
+            for tokens in tokenized_sequences:
+                payload_urls = tuple(
+                    sorted(
+                        tokens[index + 2]
+                        for index in range(len(tokens) - 2)
+                        if tokens[index] == "PAYLOAD" and tokens[index + 1] == "REQUEST"
+                    )
+                )
+                label = payload_signature_to_label.setdefault(payload_urls, len(payload_signature_to_label) + 700)
+                labels.append(label)
+            return labels
+
+        with patch("greedybear.cronjobs.commands.cluster.LSHConnectedComponents") as mock_lsh_cls:
+            mock_lsh_cls.return_value.get_components.side_effect = labels_from_payload_urls
+            ClusterCommandSequences().run()
+
+        first_sequence.refresh_from_db()
+        second_sequence.refresh_from_db()
+        self.assertEqual(first_sequence.cluster, second_sequence.cluster)
+
+    def test_run_deduplicates_and_filters_empty_payload_urls(self):
+        """
+        Duplicate and empty payload URLs from related payload IOCs are normalized before clustering.
+        """
+        CowrieSession.objects.all().delete()
+        CommandSequence.objects.all().delete()
+
+        command_lines = ["pwd"]
+        command_sequence = CommandSequence.objects.create(
+            first_seen=self.current_time,
+            last_seen=self.current_time,
+            commands=command_lines,
+            commands_hash=sha256("\n".join(command_lines).encode()).hexdigest(),
+            cluster=9,
+        )
+        scanner_ioc = IOC.objects.create(
+            name="198.51.100.60",
+            type=IocType.IP.value,
+            scanner=True,
+        )
+        payload_ioc_1 = IOC.objects.create(
+            name="payload-dedup-1.example",
+            type=IocType.DOMAIN.value,
+            payload_request=True,
+            related_urls=["http://dup.example/a.sh", "", "http://dup.example/a.sh"],
+        )
+        payload_ioc_2 = IOC.objects.create(
+            name="payload-dedup-2.example",
+            type=IocType.DOMAIN.value,
+            payload_request=True,
+            related_urls=["http://dup.example/a.sh", "http://dup.example/b.sh"],
+        )
+        scanner_ioc.related_ioc.add(payload_ioc_1, payload_ioc_2)
+        CowrieSession.objects.create(
+            session_id=int("555555555555", 16),
+            start_time=self.current_time,
+            duration=1.0,
+            source=scanner_ioc,
+            commands=command_sequence,
+        )
+
+        with patch("greedybear.cronjobs.commands.cluster.LSHConnectedComponents") as mock_lsh_cls:
+            mock_lsh_cls.return_value.get_components.return_value = [99]
+            ClusterCommandSequences().run()
+            clustering_input = mock_lsh_cls.return_value.get_components.call_args[0][0]
+
+        expected_tokenized = tokenize(
+            command_lines
+            + [
+                "PAYLOAD REQUEST http://dup.example/a.sh",
+                "PAYLOAD REQUEST http://dup.example/b.sh",
+            ]
+        )
+        self.assertEqual(clustering_input, [expected_tokenized])
+        command_sequence.refresh_from_db()
+        self.assertEqual(command_sequence.cluster, 99)
