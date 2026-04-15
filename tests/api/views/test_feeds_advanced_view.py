@@ -1,9 +1,14 @@
+import hashlib
 from datetime import datetime, timedelta
+from unittest.mock import patch
 
 from django.conf import settings
+from django.core import signing
+from django.core.cache import cache
 from rest_framework.test import APIClient
 
-from greedybear.models import IOC, AutonomousSystem, IocType
+from api.throttles import SharedFeedRateThrottle
+from greedybear.models import IOC, AutonomousSystem, IocType, ShareToken
 from tests import CustomTestCase
 
 
@@ -246,8 +251,6 @@ class FeedsEnhancementsTestCase(CustomTestCase):
 
     def test_shareable_feed_expired_token(self):
         """Consuming a tampered/expired token returns 400."""
-        from django.core import signing
-
         data = {
             "feed_type": "all",
             "attack_type": "all",
@@ -276,10 +279,6 @@ class FeedsEnhancementsTestCase(CustomTestCase):
 
     def test_consume_valid_token_without_db_record_is_rejected(self):
         """A valid signed token that was never saved to the DB is rejected (allowlist check)."""
-        import hashlib
-
-        from django.core import signing
-
         data = {
             "feed_type": "all",
             "attack_type": "all",
@@ -302,8 +301,6 @@ class FeedsEnhancementsTestCase(CustomTestCase):
         token = signing.dumps(data, salt="greedybear-feeds")
         token_hash = hashlib.sha256(token.encode()).hexdigest()
 
-        from greedybear.models import ShareToken
-
         self.assertFalse(ShareToken.objects.filter(token_hash=token_hash).exists())
 
         self.client.logout()
@@ -313,10 +310,6 @@ class FeedsEnhancementsTestCase(CustomTestCase):
 
     def test_consume_token_deleted_from_db_is_rejected(self):
         """A token whose DB record has been deleted is rejected even though the signature is valid."""
-        import hashlib
-
-        from greedybear.models import ShareToken
-
         share_response = self.client.get("/api/feeds/share?asn=11111")
         self.assertEqual(share_response.status_code, 200)
         token = share_response.json()["url"].split("/")[-1]
@@ -339,12 +332,6 @@ class FeedsEnhancementsTestCase(CustomTestCase):
         then verifies the second request within the window returns 429.
         cache.clear() is scoped to this test to avoid leaking throttle state.
         """
-        from unittest.mock import patch
-
-        from django.core.cache import cache
-
-        from api.throttles import SharedFeedRateThrottle
-
         share_response = self.client.get("/api/feeds/share")
         token = share_response.json()["url"].split("/")[-1]
         anon = APIClient()
