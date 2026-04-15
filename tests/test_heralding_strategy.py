@@ -334,6 +334,56 @@ class TestHeraldingCredentialClassification(ExtractionTestCase):
             protocol="ssh",
         )
 
+    @patch("greedybear.cronjobs.extraction.strategies.heralding.iocs_from_hits")
+    @patch("greedybear.cronjobs.extraction.strategies.heralding.Credential.objects")
+    @patch("greedybear.cronjobs.extraction.strategies.heralding.threatfox_submission")
+    def test_credential_sources_linked(self, mock_threatfox, mock_credential_objects, mock_iocs_from_hits):
+        """Credentials are linked to their source IOC via credential.sources.add()."""
+        mock_credential = Mock()
+        mock_credential_objects.get_or_create.return_value = (mock_credential, True)
+        mock_ioc = self._create_mock_ioc("1.2.3.4")
+        mock_iocs_from_hits.return_value = [mock_ioc]
+        self.strategy.ioc_processor.add_ioc = Mock(return_value=mock_ioc)
+
+        hits = [{"src_ip": "1.2.3.4", "protocol": "ssh", "username": "root", "password": "toor", "@timestamp": "2025-01-01T00:00:00"}]
+        self.strategy.extract_from_hits(hits)
+
+        mock_credential.sources.add.assert_called_once_with(mock_ioc)
+
+    @patch("greedybear.cronjobs.extraction.strategies.heralding.iocs_from_hits")
+    @patch("greedybear.cronjobs.extraction.strategies.heralding.Credential.objects")
+    @patch("greedybear.cronjobs.extraction.strategies.heralding.threatfox_submission")
+    def test_credential_sources_multiple_ips(self, mock_threatfox, mock_credential_objects, mock_iocs_from_hits):
+        """Same credential from two IPs links both sources."""
+        mock_credential = Mock()
+        mock_credential_objects.get_or_create.return_value = (mock_credential, True)
+        ioc1 = self._create_mock_ioc("1.2.3.4")
+        ioc2 = self._create_mock_ioc("5.6.7.8")
+        mock_iocs_from_hits.return_value = [ioc1, ioc2]
+        self.strategy.ioc_processor.add_ioc = Mock(side_effect=[ioc1, ioc2])
+
+        hits = [
+            {"src_ip": "1.2.3.4", "protocol": "ssh", "username": "root", "password": "toor", "@timestamp": "2025-01-01T00:00:00"},
+            {"src_ip": "5.6.7.8", "protocol": "ssh", "username": "root", "password": "toor", "@timestamp": "2025-01-01T00:00:00"},
+        ]
+        self.strategy.extract_from_hits(hits)
+
+        linked_iocs = {call[0][0] for call in mock_credential.sources.add.call_args_list}
+        self.assertEqual(linked_iocs, {ioc1, ioc2})
+
+    @patch("greedybear.cronjobs.extraction.strategies.heralding.iocs_from_hits")
+    @patch("greedybear.cronjobs.extraction.strategies.heralding.Credential.objects")
+    def test_credential_sources_skipped_without_ioc(self, mock_credential_objects, mock_iocs_from_hits):
+        """Credentials from IPs without a matching IOC record are not linked."""
+        mock_credential = Mock()
+        mock_credential_objects.get_or_create.return_value = (mock_credential, True)
+        mock_iocs_from_hits.return_value = []
+
+        hits = [{"src_ip": "9.9.9.9", "protocol": "ssh", "username": "root", "password": "toor"}]
+        self.strategy.extract_from_hits(hits)
+
+        mock_credential.sources.add.assert_not_called()
+
 
 class TestHeraldingCredentialNormalization(ExtractionTestCase):
     """Tests for normalize_credential_field helper."""
