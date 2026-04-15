@@ -85,12 +85,13 @@ class HeraldingExtractionStrategy(BaseExtractionStrategy):
 
         Extracts username/password pairs from Heralding hits and stores them
         together with the normalized protocol on the Credential model.
-        Duplicate tuples in the same batch are deduplicated.
+        Duplicate tuples in the same batch are deduplicated while preserving
+        the mapping to source IPs for linking via Credential.sources.
 
         Args:
             hits: List of Elasticsearch hit documents.
         """
-        credentials: set[tuple[str, str, str]] = set()
+        credentials: dict[tuple[str, str, str], set[str]] = {}
         for hit in hits:
             protocol = self._extract_protocol(hit)
             if not protocol:
@@ -103,14 +104,21 @@ class HeraldingExtractionStrategy(BaseExtractionStrategy):
 
             username = normalize_credential_field(raw_username)
             password = normalize_credential_field(raw_password)
-            credentials.add((username, password, protocol))
+            key = (username, password, protocol)
+            credentials.setdefault(key, set()).add(hit.get("src_ip", ""))
 
-        for username, password, protocol in sorted(credentials):
-            _, created = Credential.objects.get_or_create(
+        ioc_by_ip = {ioc.name: ioc for ioc in self.ioc_records}
+
+        for (username, password, protocol), src_ips in sorted(credentials.items()):
+            credential, created = Credential.objects.get_or_create(
                 username=username,
                 password=password,
                 protocol=protocol,
             )
+            for ip in src_ips:
+                ioc_record = ioc_by_ip.get(ip)
+                if ioc_record:
+                    credential.sources.add(ioc_record)
             if created:
                 self.credentials_added += 1
                 self.log.info(f"stored credential for protocol={protocol}")
