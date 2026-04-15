@@ -17,7 +17,7 @@ The project goal is to extract data of the attacks detected by a [TPOT](https://
 
 ## Documentation
 
-Documentation about GreedyBear installation, usage, configuration and contribution can be found at [this link](https://intelowlproject.github.io/docs/GreedyBear/Introduction/)
+Documentation about GreedyBear installation, usage, configuration and contribution can be found at [this link](https://github.com/GreedyBear-Project/GreedyBear/wiki)
 
 ## Public feeds
 
@@ -27,14 +27,14 @@ Please do not perform too many requests to extract feeds or you will be banned.
 
 If you want to be updated regularly, please download the feeds only once every 10 minutes (this is the time between each internal update).
 
-To check all the available feeds, Please refer to our [usage guide](https://intelowlproject.github.io/docs/GreedyBear/Usage/)
+To check all the available feeds, Please refer to our [usage guide](https://github.com/GreedyBear-Project/GreedyBear/wiki/Usage)
 
 
 ## Enrichment Service
 
 GreedyBear provides an easy-to-query API to get the information available in GB regarding the queried observable (domain or IP address).
 
-To understand more, Please refer to our [usage guide](https://intelowlproject.github.io/docs/GreedyBear/Usage/)
+To understand more, Please refer to our [usage guide](https://github.com/GreedyBear-Project/GreedyBear/wiki/Usage)
 
 ## Run Greedybear on your environment
 The tool has been created not only to provide the feeds from The Honeynet Project's cluster of TPOTs.
@@ -42,7 +42,7 @@ The tool has been created not only to provide the feeds from The Honeynet Projec
 If you manage one or more T-POTs of your own, you can get the code of this application and run Greedybear on your environment.
 In this way, you are able to provide new feeds of your own.
 
-To install it locally, Please refer to our [installation guide](https://intelowlproject.github.io/docs/GreedyBear/Installation/)
+To install it locally, Please refer to our [installation guide](https://github.com/GreedyBear-Project/GreedyBear/wiki/Installation)
 
 ## Sponsors and Acknowledgements
 

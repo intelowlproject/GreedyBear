@@ -19,7 +19,7 @@ Please complete this checklist carefully. It helps guide your contribution and l
 
 ### Formalities
 
-- [ ] I have read and understood the rules about [how to Contribute](https://intelowlproject.github.io/docs/GreedyBear/Contribute/) to this project.
+- [ ] I have read and understood the rules about [how to Contribute](https://github.com/GreedyBear-Project/GreedyBear/wiki/Contribute) to this project.
 - [ ] I chose an appropriate title for the pull request in the form: `<feature name>. Closes #999`
 - [ ] My branch is based on `develop`.
 - [ ] The pull request is for the branch `develop`.
@@ -28,8 +28,8 @@ Please complete this checklist carefully. It helps guide your contribution and l
 ### Docs and tests
 
 - [ ] I documented my code changes with docstrings and/or comments.
-- [ ] I have checked if my changes affect user-facing behavior that is described in the [docs](https://intelowlproject.github.io/docs/GreedyBear/Introduction/). If so, I also created a pull request in the [docs repository](https://github.com/intelowlproject/docs).
-- [ ] Linter (`Ruff`) gave 0 errors. If you have correctly installed [pre-commit](https://intelowlproject.github.io/docs/GreedyBear/Contribute/#how-to-start-setup-project-and-development-instance), it does these checks and adjustments on your behalf.
+- [ ] I have checked if my changes affect user-facing behavior that is described in the [docs](https://github.com/GreedyBear-Project/GreedyBear/wiki). If so, I also included an update to the [wiki](https://github.com/GreedyBear-Project/GreedyBear/wiki) in the description of this PR.
+- [ ] Linter (`Ruff`) gave 0 errors. If you have correctly installed [pre-commit](https://github.com/GreedyBear-Project/GreedyBear/wiki/Contribute), it does these checks and adjustments on your behalf.
 - [ ] I have added tests for the feature/bug I solved.
 - [ ] All the tests gave 0 errors.
 

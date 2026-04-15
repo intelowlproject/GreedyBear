@@ -105,6 +105,7 @@ function Login() {
                     name="username"
                     placeholder="Enter username"
                     autoComplete="username"
+                    value={formik.values.username}
                     onChange={formik.handleChange}
                   />
                 </FormGroup>
@@ -117,6 +118,7 @@ function Login() {
                     name="password"
                     placeholder="Enter password"
                     autoComplete="current-password"
+                    value={formik.values.password}
                     onChange={formik.handleChange}
                   />
                 </FormGroup>
