@@ -16,3 +16,15 @@ class SecuritySettingsTests(SimpleTestCase):
     def test_ssl_redirect_not_set(self):
         """SECURE_SSL_REDIRECT must not be enabled (TLS terminates at nginx)."""
         self.assertFalse(getattr(settings, "SECURE_SSL_REDIRECT", False))
+
+    def test_cookie_security_matches_environment(self):
+        """Cookies should only be marked secure in production."""
+        is_production = getattr(settings, "STAGE_PRODUCTION", False)
+        
+        # Test SESSION_COOKIE_SECURE
+        session_secure = getattr(settings, "SESSION_COOKIE_SECURE", False)
+        self.assertEqual(session_secure, is_production)
+        
+        # Test CSRF_COOKIE_SECURE
+        csrf_secure = getattr(settings, "CSRF_COOKIE_SECURE", False)
+        self.assertEqual(csrf_secure, is_production)
