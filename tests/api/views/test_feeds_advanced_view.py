@@ -236,12 +236,12 @@ class FeedsEnhancementsTestCase(CustomTestCase):
 
     def test_filter_by_country_code(self):
         """Filter by country_code returns only matching IOCs."""
-        self.ioc.attacker_country_code = "CN"
+        self.ioc.attacker_country_code = "IT"
         self.ioc.save()
-        self.ioc2.attacker_country_code = "US"
+        self.ioc2.attacker_country_code = "FR"
         self.ioc2.save()
 
-        response = self.client.get("/api/feeds/advanced/?country_code=CN")
+        response = self.client.get("/api/feeds/advanced/?country_code=IT")
         self.assertEqual(response.status_code, 200)
         iocs = response.json()["iocs"]
         self.assertEqual(len(iocs), 1)

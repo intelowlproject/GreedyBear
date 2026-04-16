@@ -12,7 +12,10 @@ vi.mock("@certego/certego-ui", () => ({
   useTimePickerStore: () => ({ range: "7d" }),
 }));
 
-// Mock react-simple-maps components
+// Mock react-simple-maps components.
+// Each mock geography carries a numeric ISO id (geo.id) so that
+// AttackOriginMap can resolve it to an alpha-2 code via i18n-iso-countries,
+// matching the alpha-2-keyed countryDataMap from the store.
 vi.mock("react-simple-maps", () => ({
   ComposableMap: ({ children, onMouseMove, onMouseLeave }) => (
     <div
@@ -26,9 +29,13 @@ vi.mock("react-simple-maps", () => ({
   Geographies: ({ children }) =>
     children({
       geographies: [
-        { rsmKey: "geo-cn", properties: { name: "China" } },
-        { rsmKey: "geo-usa", properties: { name: "United States of America" } },
-        { rsmKey: "geo-fr", properties: { name: "France" } },
+        { rsmKey: "geo-cn", id: "156", properties: { name: "China" } },
+        {
+          rsmKey: "geo-usa",
+          id: "840",
+          properties: { name: "United States of America" },
+        },
+        { rsmKey: "geo-fr", id: "250", properties: { name: "France" } },
       ],
     }),
   Geography: ({ fill, onMouseEnter, onMouseLeave, geography }) => (
@@ -43,15 +50,15 @@ vi.mock("react-simple-maps", () => ({
 }));
 
 const COUNTRIES_DATA = [
-  { country: "China", count: 120 },
-  { country: "United States", count: 80 },
-  { country: "Germany", count: 40 },
+  { country: "China", code: "CN", count: 120 },
+  { country: "United States", code: "US", count: 80 },
+  { country: "Germany", code: "DE", count: 40 },
 ];
 
 describe("AttackOriginMap", () => {
   beforeEach(() => {
     useAttackerCountriesStore.setState({
-      rawData: [],
+      normalizedData: [],
       countryDataMap: {},
       maxCount: 0,
       loading: false,
@@ -127,15 +134,17 @@ describe("AttackOriginMap", () => {
     await waitFor(() =>
       expect(screen.getByTestId("geography-geo-fr")).toBeInTheDocument(),
     );
-    // France is not in COUNTRIES_DATA so it must receive the empty/default colour
+    // France (id="250") is not in COUNTRIES_DATA so it must receive the empty/default colour
     const franceEl = screen.getByTestId("geography-geo-fr");
     expect(franceEl.dataset.fill).toBe("#2a2a3a");
-    // China IS in the data so it must not receive the empty colour
+    // China (id="156") IS in the data so it must not receive the empty colour
     const chinaEl = screen.getByTestId("geography-geo-cn");
     expect(chinaEl.dataset.fill).not.toBe("#2a2a3a");
   });
 
-  test("country name normalisation is applied (United States => United States of America)", async () => {
+  test("geo.id numeric lookup correctly colours a country regardless of API name variant", async () => {
+    // The API returns "United States" but the map looks up by geo.id="840" → alpha-2 "US"
+    // so the geography is coloured even though the name doesn't match the TopoJSON name
     axios.get.mockResolvedValue({ data: COUNTRIES_DATA });
     render(<AttackOriginMap />);
     await waitFor(() =>

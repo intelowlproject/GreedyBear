@@ -45,8 +45,8 @@ describe("useAttackerCountriesStore", () => {
     const mockRange = "24h";
     const rangeStr = JSON.stringify(mockRange);
     const mockData = [
-      { country: "United States", count: 100 },
-      { country: "Italy", count: 50 },
+      { country: "United States", code: "US", count: 100 },
+      { country: "Italy", code: "IT", count: 50 },
     ];
 
     test("successfully fetches and normalizes data", async () => {
@@ -55,13 +55,14 @@ describe("useAttackerCountriesStore", () => {
       await useAttackerCountriesStore.getState().fetchData(mockRange);
 
       const state = useAttackerCountriesStore.getState();
+      // countryDataMap is keyed by alpha-2; normalizedData uses raw API name
       expect(state.normalizedData).toEqual([
-        { country: "United States of America", count: 100 },
-        { country: "Italy", count: 50 },
+        { country: "United States", code: "US", count: 100 },
+        { country: "Italy", code: "IT", count: 50 },
       ]);
       expect(state.countryDataMap).toEqual({
-        "United States of America": 100,
-        Italy: 50,
+        US: 100,
+        IT: 50,
       });
       expect(state.maxCount).toBe(100);
       expect(state.loading).toBe(false);
@@ -144,8 +145,49 @@ describe("useAttackerCountriesStore", () => {
 
       expect(axios.get).toHaveBeenCalledTimes(2);
       expect(useAttackerCountriesStore.getState().normalizedData).toEqual([
-        { country: "United States of America", count: 100 },
-        { country: "Italy", count: 50 },
+        { country: "United States", code: "US", count: 100 },
+        { country: "Italy", code: "IT", count: 50 },
+      ]);
+    });
+
+    test("aggregates data correctly when same ISO code has different names", async () => {
+      const complexMockData = [
+        { country: "United States", code: "US", count: 100 },
+        { country: "USA", code: "US", count: 50 },
+        { country: "Italy", code: "IT", count: 30 },
+      ];
+      axios.get.mockResolvedValue({ data: complexMockData });
+
+      await useAttackerCountriesStore.getState().fetchData("all");
+
+      const state = useAttackerCountriesStore.getState();
+      // Aggregated by alpha-2; display name is the first-seen value
+      expect(state.normalizedData).toEqual([
+        { country: "United States", code: "US", count: 150 },
+        { country: "Italy", code: "IT", count: 30 },
+      ]);
+      expect(state.countryDataMap).toEqual({
+        US: 150,
+        IT: 30,
+      });
+      expect(state.maxCount).toBe(150);
+    });
+
+    test("skips items that have no ISO code", async () => {
+      const mixedData = [
+        { country: "United States", code: "US", count: 100 },
+        { country: "Unknown", code: null, count: 50 },
+        { country: "Italy", code: "IT", count: 30 },
+      ];
+      axios.get.mockResolvedValue({ data: mixedData });
+
+      await useAttackerCountriesStore.getState().fetchData(mockRange);
+
+      const state = useAttackerCountriesStore.getState();
+      // The entry with no code is excluded
+      expect(state.normalizedData).toEqual([
+        { country: "United States", code: "US", count: 100 },
+        { country: "Italy", code: "IT", count: 30 },
       ]);
     });
 
@@ -191,8 +233,8 @@ describe("useAttackerCountriesStore", () => {
       // Now loading should be false
       expect(useAttackerCountriesStore.getState().loading).toBe(false);
       expect(useAttackerCountriesStore.getState().normalizedData).toEqual([
-        { country: "United States of America", count: 100 },
-        { country: "Italy", count: 50 },
+        { country: "United States", code: "US", count: 100 },
+        { country: "Italy", code: "IT", count: 50 },
       ]);
     });
   });

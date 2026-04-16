@@ -6,7 +6,9 @@ import {
   ZoomableGroup,
 } from "react-simple-maps";
 import { useTimePickerStore } from "@certego/certego-ui";
+import countries from "i18n-iso-countries";
 import useAttackerCountriesStore from "../../stores/useAttackerCountriesStore";
+
 const WORLD_ATLAS_GEO_URL = `${import.meta.env.BASE_URL}countries-110m.json`;
 
 function lerpColor(a, b, t) {
@@ -52,12 +54,18 @@ export default function AttackOriginMap() {
     fetchData(range);
   }, [range, fetchData]);
 
+  /**
+   * Resolve fill colour for a geography.
+   * geo.id is the ISO 3166-1 numeric code (e.g. "840").
+   * i18n-iso-countries converts it to alpha-2 ("US"), which is the key
+   * used in countryData — no hand-maintained name table required.
+   */
   const getColor = React.useCallback(
-    (geoName) => {
-      const count = countryData[geoName];
+    (geoId) => {
+      const alpha2 = countries.numericToAlpha2(geoId);
+      const count = alpha2 ? countryData[alpha2] : undefined;
       if (maxCount <= 0 || !count) return COLOR_EMPTY;
-      const t = Math.sqrt(count / maxCount); // sqrt scale so small values are still visible
-      // 3-stop: low (yellow) → mid (orange) → high (red)
+      const t = Math.sqrt(count / maxCount);
       if (t < 0.5) return lerpColor(COLOR_LOW, COLOR_MID, t * 2);
       return lerpColor(COLOR_MID, COLOR_HIGH, (t - 0.5) * 2);
     },
@@ -66,13 +74,13 @@ export default function AttackOriginMap() {
 
   const handleMouseEnter = React.useCallback(
     (geo, evt) => {
-      const name = geo.properties.name;
-      const count = countryData[name] ?? 0;
+      const alpha2 = countries.numericToAlpha2(geo.id);
+      const count = alpha2 ? (countryData[alpha2] ?? 0) : 0;
       setTooltip({
         visible: true,
         x: evt.clientX,
         y: evt.clientY,
-        name,
+        name: geo.properties.name, // canonical TopoJSON name for display
         count,
       });
     },
@@ -171,7 +179,7 @@ export default function AttackOriginMap() {
                   <Geography
                     key={geo.rsmKey}
                     geography={geo}
-                    fill={getColor(geo.properties.name)}
+                    fill={getColor(geo.id)}
                     stroke="#111"
                     strokeWidth={0.4}
                     onMouseEnter={(evt) => handleMouseEnter(geo, evt)}

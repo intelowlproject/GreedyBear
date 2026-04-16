@@ -65,6 +65,12 @@ class StatisticsViewTestCase(CustomTestCase):
         self.assertNotIn("Russia", countries)
         self.assertEqual(counts["China"], 2)
         self.assertEqual(counts["United States"], 1)
+
+        # check codes
+        codes = {item["country"]: item["code"] for item in data}
+        self.assertEqual(codes["China"], "CN")
+        self.assertEqual(codes["United States"], "US")
+
         # Results must be ordered descending by count
         count_values = [item["count"] for item in data]
         self.assertEqual(count_values, sorted(count_values, reverse=True))
