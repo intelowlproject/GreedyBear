@@ -71,6 +71,7 @@ class TestTasks(CustomTestCase):
             ("monitor_honeypots", "greedybear.cronjobs.monitor_honeypots.MonitorHoneypots"),
             ("monitor_logs", "greedybear.cronjobs.monitor_logs.MonitorLogs"),
             ("clean_up_db", "greedybear.cronjobs.cleanup.CleanUp"),
+            ("clean_up_trending_buckets", "greedybear.cronjobs.bucket_cleanup.TrendingBucketCleanupCron"),
             ("get_mass_scanners", "greedybear.cronjobs.mass_scanners.MassScannersCron"),
             ("get_whatsmyip", "greedybear.cronjobs.whatsmyip.WhatsMyIPCron"),
             ("extract_firehol_lists", "greedybear.cronjobs.firehol.FireHolCron"),
