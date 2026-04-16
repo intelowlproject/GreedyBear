@@ -36,16 +36,18 @@ const COUNTRIES_DATA = [
   { country: "India", code: "IN", count: 30 },
 ];
 
-// 16 entries (one more than the 15-entry limit)
+// 16 entries (one more than the 15-entry limit).
+// Each entry needs a code so the store doesn't skip codeless items.
 const SIXTEEN_COUNTRIES = Array.from({ length: 16 }, (_, i) => ({
   country: `Country${i + 1}`,
+  code: `T${String(i + 1).padStart(1, "0")}`.slice(0, 2), // fictional alpha-2
   count: 100 - i,
 }));
 
 describe("AttackOriginCountriesChart", () => {
   beforeEach(() => {
     useAttackerCountriesStore.setState({
-      rawData: [],
+      normalizedData: [],
       countryDataMap: {},
       maxCount: 0,
       loading: false,

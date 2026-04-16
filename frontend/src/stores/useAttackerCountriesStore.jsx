@@ -1,7 +1,6 @@
 import axios from "axios";
 import { create } from "zustand";
 import { IOC_ATTACKER_COUNTRIES_URI } from "../constants/api";
-import { getStandardMapName } from "../utils/isoMapping";
 
 const useAttackerCountriesStore = create((set, get) => ({
   normalizedData: [],
@@ -36,32 +35,37 @@ const useAttackerCountriesStore = create((set, get) => ({
 
       const rawData = Array.isArray(resp?.data) ? resp.data : [];
       const countryDataMap = {};
-      const countryCodeMap = {}; // representative code for the label
+      const countryNameMap = {}; // alpha-2 code → first-seen display name
       let maxCount = 0;
 
       rawData.forEach((item) => {
         if (item && typeof item === "object") {
-          const standardName = getStandardMapName(item.code, item.country);
+          const code =
+            typeof item.code === "string" ? item.code.toUpperCase() : null;
+          if (!code) return; // skip items without an ISO-A2 code
+
           const countNum = Number(item.count) || 0;
 
-          // Aggregate count by standard name
-          countryDataMap[standardName] =
-            (countryDataMap[standardName] || 0) + countNum;
-          countryCodeMap[standardName] =
-            item.code || countryCodeMap[standardName];
+          // Aggregate count by alpha-2 code
+          countryDataMap[code] = (countryDataMap[code] || 0) + countNum;
 
-          if (countryDataMap[standardName] > maxCount) {
-            maxCount = countryDataMap[standardName];
+          // Keep the first-seen display name for this code
+          if (!countryNameMap[code]) {
+            countryNameMap[code] = item.country || code;
+          }
+
+          if (countryDataMap[code] > maxCount) {
+            maxCount = countryDataMap[code];
           }
         }
       });
 
-      // Create unique aggregated list for charts
+      // Build unique aggregated list for charts
       const normalizedData = Object.entries(countryDataMap)
-        .map(([country, count]) => ({
-          country,
+        .map(([code, count]) => ({
+          country: countryNameMap[code],
           count,
-          code: countryCodeMap[country],
+          code,
         }))
         .sort((a, b) => b.count - a.count);
 
