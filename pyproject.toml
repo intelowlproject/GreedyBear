@@ -4,7 +4,7 @@ version = "3.3.1"
 requires-python = "==3.13.*"
 dependencies = [
     # Django core
-    "Django==5.2.12",
+    "Django==5.2.13",
     "djangorestframework==3.17.1",
     "django-rest-email-auth==5.0.0",
     "django-ses==4.7.2",
