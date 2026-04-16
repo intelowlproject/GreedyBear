@@ -13,6 +13,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from api.serializers import EnrichmentSerializer
+from api.views.utils import get_request_source_ip
 from greedybear.consts import GET
 from greedybear.models import Statistics, ViewType
 
@@ -38,7 +39,7 @@ def enrichment_view(request):
     serializer = EnrichmentSerializer(data=request.query_params, context={"request": request})
     serializer.is_valid(raise_exception=True)
 
-    source_ip = str(request.META["REMOTE_ADDR"])
+    source_ip = get_request_source_ip(request)
     request_source = Statistics(source=source_ip, view=ViewType.ENRICHMENT_VIEW.value)
     request_source.save()
 

@@ -14,6 +14,7 @@ from rest_framework.decorators import (
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from api.views.utils import get_request_source_ip
 from greedybear.consts import GET
 from greedybear.models import IOC, CommandSequence, CowrieSession, Statistics, ViewType
 from greedybear.utils import is_ip_address, is_sha256hash
@@ -51,7 +52,7 @@ def command_sequence_view(request):
     if not observable:
         return HttpResponseBadRequest("Missing required 'query' parameter")
 
-    source_ip = str(request.META["REMOTE_ADDR"])
+    source_ip = get_request_source_ip(request)
     request_source = Statistics(source=source_ip, view=ViewType.COMMAND_SEQUENCE_VIEW.value)
     request_source.save()
 

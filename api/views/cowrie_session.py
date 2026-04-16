@@ -15,6 +15,7 @@ from rest_framework.decorators import (
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from api.views.utils import get_request_source_ip
 from greedybear.consts import GET
 from greedybear.models import CommandSequence, CowrieSession, Statistics, ViewType
 from greedybear.utils import is_ip_address, is_sha256hash
@@ -95,7 +96,7 @@ def cowrie_session_view(request):
         if not sessions.exists():
             raise Http404(f"No information found for password: {observable}")
 
-    source_ip = str(request.META["REMOTE_ADDR"])
+    source_ip = get_request_source_ip(request)
     Statistics(source=source_ip, view=ViewType.COWRIE_SESSION_VIEW.value).save()
 
     if include_similar:

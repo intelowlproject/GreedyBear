@@ -204,7 +204,7 @@ class CowrieFileTransfer(models.Model):
 
 
 class Statistics(models.Model):
-    source = models.CharField(max_length=15)
+    source = models.CharField(max_length=64)
     view = models.CharField(
         max_length=32,
         choices=ViewType.choices,
