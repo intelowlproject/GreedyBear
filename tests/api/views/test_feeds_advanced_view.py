@@ -103,7 +103,6 @@ class FeedsAdvancedViewTestCase(CustomTestCase):
         self.assertIsNotNone(target_ioc)
         self.assertEqual(target_ioc["attacker_country"], "Nepal")
 
-
     def test_200_feed_contains_attacker_country_code(self):
         """
         Ensures that the response includes the attacker_country_code field.
@@ -135,9 +134,7 @@ class FeedsAdvancedViewTestCase(CustomTestCase):
         sensor = Sensor.objects.create(address="10.0.0.2", label="secret-sensor")
         self.ioc.sensors.add(sensor)
         self.client.logout()
-        response = self.client.get(
-            "/api/feeds/cowrie/all/recent.json"
-        )
+        response = self.client.get("/api/feeds/cowrie/all/recent.json")
         self.assertEqual(response.status_code, 200)
         iocs = response.json()["iocs"]
         for ioc in iocs:

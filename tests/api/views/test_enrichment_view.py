@@ -90,6 +90,7 @@ class EnrichmentViewTestCase(CustomTestCase):
     def test_enrichment_includes_sensors(self):
         """Sensors field appears in enrichment response for authenticated users."""
         from greedybear.models import Sensor
+
         sensor = Sensor.objects.create(address="10.0.0.3", label="enrichment-sensor")
         self.ioc.sensors.add(sensor)
         response = self.client.get(f"/api/enrichment?query={self.ioc.name}")

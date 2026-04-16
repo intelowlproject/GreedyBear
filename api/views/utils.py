@@ -153,7 +153,9 @@ def get_valid_feed_types() -> frozenset[str]:
     return frozenset(feed_types)
 
 
-def get_queryset(request, feed_params, valid_feed_types, is_aggregated=False, serializer_class=FeedsRequestSerializer, tag_key="", tag_value="", include_sensors=False):
+def get_queryset(
+    request, feed_params, valid_feed_types, is_aggregated=False, serializer_class=FeedsRequestSerializer, tag_key="", tag_value="", include_sensors=False
+):
     """
     Build a queryset to filter IOC data based on the request parameters.
 
@@ -360,11 +362,7 @@ def feeds_response(request=None, iocs=None, feed_params=None, valid_feed_types=N
                 has_tags_annotation = "tags_json" in getattr(iocs, "query", type("", (), {"annotations": {}})()).annotations
                 has_sensors_annotation = include_sensors and "sensors_json" in getattr(iocs, "query", type("", (), {"annotations": {}})()).annotations
 
-            required_fields = tuple(
-                ("tags_json" if f == "tags" else f)
-                for f in required_fields
-                if f != "tags" or has_tags_annotation
-            )
+            required_fields = tuple(("tags_json" if f == "tags" else f) for f in required_fields if f != "tags" or has_tags_annotation)
             if has_sensors_annotation:
                 required_fields = required_fields + ("sensors_json",)
 
