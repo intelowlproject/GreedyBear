@@ -98,7 +98,7 @@ runs:
     - name: ruff formatter
       run: |
         if [[ ${{ inputs.use_ruff_formatter }} != 'false' ]]; then
-          ruff format --config ${GITHUB_WORKSPACE}/.github/configurations/python_linters/.ruff.toml --diff .
+          ruff format --diff .
         else
           echo "Skipping ruff formatter"
         fi
@@ -108,7 +108,7 @@ runs:
     - name: ruff linter
       run: |
         if [[ ${{ inputs.use_ruff_linter }} != 'false' ]]; then
-          ruff check --config ${GITHUB_WORKSPACE}/.github/configurations/python_linters/.ruff.toml .
+          ruff check .
         else
           echo "Skipping ruff linter"
         fi
