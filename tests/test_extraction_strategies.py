@@ -1,11 +1,14 @@
 from unittest.mock import Mock, patch
 
+from django.test import override_settings
+
 from greedybear.consts import SCANNER
 from greedybear.cronjobs.extraction.strategies import GenericExtractionStrategy
 
 from . import ExtractionTestCase
 
 
+@override_settings(THREATFOX_API_KEY="")
 class TestGenericExtractionStrategy(ExtractionTestCase):
     def setUp(self):
         super().setUp()

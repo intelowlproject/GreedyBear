@@ -103,9 +103,11 @@ class FeedRequestParams:
         self.feed_type_sorting = None
         self.asn = query_params.get("asn")
         self.min_score = query_params.get("min_score")
+        self.min_expected_interactions = query_params.get("min_expected_interactions")
         self.port = query_params.get("port")
         self.start_date = query_params.get("start_date")
         self.end_date = query_params.get("end_date")
+        self.country_code = query_params.get("country_code")
 
     def apply_default_filters(self, query_params):
         if not query_params:
@@ -199,8 +201,12 @@ def get_queryset(request, feed_params, valid_feed_types, is_aggregated=False, se
         query_dict["autonomous_system__asn"] = feed_params.asn
     if feed_params.min_score is not None:
         query_dict["recurrence_probability__gte"] = feed_params.min_score
+    if feed_params.min_expected_interactions is not None:
+        query_dict["expected_interactions__gte"] = feed_params.min_expected_interactions
     if feed_params.port:
         query_dict["destination_ports__contains"] = [int(feed_params.port)]
+    if feed_params.country_code:
+        query_dict["attacker_country_code__iexact"] = feed_params.country_code
 
     # Date handling
     if feed_params.start_date:
@@ -320,6 +326,7 @@ def feeds_response(request=None, iocs=None, feed_params=None, valid_feed_types=N
                 "honeypot_names",  # used to build feed_type; removed from response
                 "destination_ports",  # used to calculate destination_port_count
                 "attacker_country",
+                "attacker_country_code",
                 "autonomous_system",
                 "tags",
             )

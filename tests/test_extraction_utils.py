@@ -4,15 +4,13 @@ from unittest.mock import Mock, patch
 from greedybear.consts import DOMAIN, IP
 from greedybear.cronjobs.extraction.utils import (
     correct_ip_reputation,
-    get_ioc_type,
     iocs_from_hits,
-    is_valid_cidr,
-    is_valid_ipv4,
     is_whatsmyip_domain,
     threatfox_submission,
 )
 from greedybear.enums import IpReputation
 from greedybear.models import FireHolList, MassScanner
+from greedybear.utils import get_ioc_type, is_valid_cidr, is_valid_ipv4
 
 from . import CustomTestCase, ExtractionTestCase
 

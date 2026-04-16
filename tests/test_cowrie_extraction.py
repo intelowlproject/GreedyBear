@@ -2,7 +2,10 @@
 Tests for Cowrie extraction helper functions and strategy.
 """
 
+from datetime import datetime
 from unittest.mock import MagicMock, Mock, patch
+
+from django.test import override_settings
 
 from greedybear.cronjobs.extraction.strategies.cowrie import (
     CowrieExtractionStrategy,
@@ -88,6 +91,7 @@ class TestHelperFunctions(ExtractionTestCase):
         self.assertEqual(result, short_field)
 
 
+@override_settings(THREATFOX_API_KEY="")
 class TestCowrieExtractionStrategy(ExtractionTestCase):
     """Test CowrieExtractionStrategy class."""
 
@@ -194,7 +198,8 @@ class TestCowrieExtractionStrategy(ExtractionTestCase):
         payload_mock = Mock()
 
         self.mock_ioc_repo.get_ioc_by_name.side_effect = [scanner_mock, payload_mock]
-        mock_payload_record = Mock()
+        mock_payload_record = Mock(spec=["honeypots", "payload_request"])
+        mock_payload_record.payload_request = False
         mock_payload_record.honeypots.all.return_value = []
         self.strategy.ioc_processor.add_ioc.return_value = mock_payload_record
 
@@ -233,7 +238,8 @@ class TestCowrieExtractionStrategy(ExtractionTestCase):
 
         self.strategy._process_session_hit(session_record, hit, ioc)
 
-        self.assertEqual(session_record.start_time, "2023-01-01T10:00:00")
+        self.assertEqual(session_record.start_time, datetime(2023, 1, 1, 10, 0, 0))
+        self.assertIsNone(session_record.start_time.tzinfo)
         self.assertEqual(session_record.interaction_count, 1)
 
     def test_process_session_hit_login_failed(self):
@@ -273,7 +279,10 @@ class TestCowrieExtractionStrategy(ExtractionTestCase):
 
         self.assertTrue(session_record.command_execution)
         self.assertIsInstance(session_record.commands, CommandSequence)
-        self.assertEqual(session_record.commands.first_seen, "2023-01-01T10:00:05")
+        self.assertEqual(session_record.commands.first_seen, datetime(2023, 1, 1, 10, 0, 5))
+        self.assertIsNone(session_record.commands.first_seen.tzinfo)
+        self.assertEqual(session_record.commands.last_seen, datetime(2023, 1, 1, 10, 0, 5))
+        self.assertIsNone(session_record.commands.last_seen.tzinfo)
         self.assertIn("ls -la", session_record.commands.commands)
 
     def test_process_session_hit_session_closed(self):
@@ -312,7 +321,7 @@ class TestCowrieExtractionStrategy(ExtractionTestCase):
             shasum="abc123def456",
             url="http://malware.com/bad.exe",
             outfile="/data/cowrie/downloads/bad.exe",
-            timestamp="2023-01-01T10:00:04",
+            timestamp=datetime(2023, 1, 1, 10, 0, 4),
         )
         self.assertEqual(session_record.interaction_count, 1)
 
@@ -337,7 +346,7 @@ class TestCowrieExtractionStrategy(ExtractionTestCase):
             shasum="deadbeef123456",
             url="",  # upload events do not contain URL
             outfile="/var/lib/cowrie/downloads/deadbeef123456",
-            timestamp="2023-01-01T10:00:04",
+            timestamp=datetime(2023, 1, 1, 10, 0, 4),
         )
         self.assertEqual(session_record.interaction_count, 1)
 
@@ -402,7 +411,7 @@ class TestCowrieExtractionStrategy(ExtractionTestCase):
         session = Mock()
         session.commands = Mock()
         session.commands.commands = ["ls", "pwd", "whoami"]
-        session.commands.last_seen = "2023-01-01T10:00:10"
+        session.commands.last_seen = datetime(2023, 1, 1, 10, 0, 10)
 
         existing_cmd_seq = Mock()
         self.mock_session_repo.get_command_sequence_by_hash.return_value = existing_cmd_seq
@@ -411,7 +420,24 @@ class TestCowrieExtractionStrategy(ExtractionTestCase):
 
         self.assertTrue(result)
         self.assertEqual(session.commands, existing_cmd_seq)
-        self.assertEqual(session.commands.last_seen, "2023-01-01T10:00:10")
+        self.assertIsInstance(session.commands.last_seen, datetime)
+        self.assertIsNone(session.commands.last_seen.tzinfo)
+
+    def test_start_time_is_naive_datetime_not_string(self):
+        """Regression: parse_timestamp() must be called so that timezone-aware
+        Elasticsearch strings are stripped to naive datetimes before .save().
+        Without the fix, USE_TZ=False causes a ValueError on PostgreSQL."""
+        session_record = Mock()
+        session_record.interaction_count = 0
+        hit = {
+            "eventid": "cowrie.session.connect",
+            "timestamp": "2025-06-01T12:00:00.000000+00:00",
+        }
+
+        self.strategy._process_session_hit(session_record, hit, Mock())
+
+        self.assertIsInstance(session_record.start_time, datetime)
+        self.assertIsNone(session_record.start_time.tzinfo)
 
     @patch("greedybear.cronjobs.extraction.strategies.cowrie.iocs_from_hits")
     def test_extract_from_hits_integration(self, mock_iocs_from_hits):

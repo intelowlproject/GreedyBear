@@ -1,9 +1,14 @@
+import hashlib
 from datetime import datetime, timedelta
+from unittest.mock import patch
 
 from django.conf import settings
+from django.core import signing
+from django.core.cache import cache
 from rest_framework.test import APIClient
 
-from greedybear.models import IOC, AutonomousSystem, IocType
+from api.throttles import SharedFeedRateThrottle
+from greedybear.models import IOC, AutonomousSystem, IocType, ShareToken
 from tests import CustomTestCase
 
 
@@ -98,6 +103,21 @@ class FeedsAdvancedViewTestCase(CustomTestCase):
         self.assertIsNotNone(target_ioc)
         self.assertEqual(target_ioc["attacker_country"], "Nepal")
 
+    def test_200_feed_contains_attacker_country_code(self):
+        """
+        Ensures that the response includes the attacker_country_code field.
+        """
+        self.ioc.attacker_country_code = "NP"
+        self.ioc.save()
+
+        response = self.client.get("/api/feeds/advanced/")
+
+        iocs = response.json()["iocs"]
+        target_ioc = next((i for i in iocs if i["value"] == self.ioc.name), None)
+
+        self.assertIsNotNone(target_ioc)
+        self.assertEqual(target_ioc["attacker_country_code"], "NP")
+
 
 class FeedsEnhancementsTestCase(CustomTestCase):
     """Tests for advanced filtering, STIX export, and shareable feeds functionality."""
@@ -113,6 +133,7 @@ class FeedsEnhancementsTestCase(CustomTestCase):
         # Give the base IOC unique values to isolate filter tests
         self.ioc.destination_ports = [9001, 9002]
         self.ioc.recurrence_probability = 0.8
+        self.ioc.expected_interactions = 10.0
         self.ioc.save()
 
         # Second IOC for contrast
@@ -127,6 +148,7 @@ class FeedsEnhancementsTestCase(CustomTestCase):
             first_seen=datetime.now() - timedelta(days=1),
             last_seen=datetime.now(),
             recurrence_probability=0.2,
+            expected_interactions=1.0,
             autonomous_system=as_obj2,
             destination_ports=[9003],
             attack_count=1,
@@ -163,6 +185,22 @@ class FeedsEnhancementsTestCase(CustomTestCase):
         values = [i["value"] for i in response.json()["iocs"]]
         self.assertIn(self.ioc.name, values)
 
+    def test_filter_by_min_expected_interactions(self):
+        """Filter by min_expected_interactions=5.0 excludes low-score IOC."""
+        response = self.client.get("/api/feeds/advanced/?min_expected_interactions=5.0")
+        self.assertEqual(response.status_code, 200)
+        values = [i["value"] for i in response.json()["iocs"]]
+        self.assertIn(self.ioc.name, values)
+        self.assertNotIn(self.ioc2.name, values)
+
+    def test_filter_by_min_expected_interactions_zero(self):
+        """Edge case: min_expected_interactions=0 must NOT be ignored."""
+        response = self.client.get("/api/feeds/advanced/?asn=11111&min_expected_interactions=0")
+        self.assertEqual(response.status_code, 200)
+        # ioc has expected_interactions=10.0 >= 0, so it should be returned
+        values = [i["value"] for i in response.json()["iocs"]]
+        self.assertIn(self.ioc.name, values)
+
     def test_filter_by_port(self):
         """Filter by destination port returns only matching IOC."""
         response = self.client.get("/api/feeds/advanced/?port=9001")
@@ -176,8 +214,8 @@ class FeedsEnhancementsTestCase(CustomTestCase):
         self.assertEqual(response.json()["iocs"][0]["value"], self.ioc2.name)
 
     def test_filter_combined(self):
-        """Combined filter (asn + min_score + port) narrows results correctly."""
-        response = self.client.get("/api/feeds/advanced/?asn=11111&min_score=0.5&port=9001")
+        """Combined filter (asn + min_score + min_expected_interactions + port) narrows results correctly."""
+        response = self.client.get("/api/feeds/advanced/?asn=11111&min_score=0.5&min_expected_interactions=5.0&port=9001")
         self.assertEqual(response.status_code, 200)
         iocs = response.json()["iocs"]
         self.assertEqual(len(iocs), 1)
@@ -195,6 +233,19 @@ class FeedsEnhancementsTestCase(CustomTestCase):
         future_start = (datetime.now() + timedelta(days=2)).strftime("%Y-%m-%d")
         response = self.client.get(f"/api/feeds/advanced/?start_date={future_start}")
         self.assertEqual(response.json()["iocs"], [])
+
+    def test_filter_by_country_code(self):
+        """Filter by country_code returns only matching IOCs."""
+        self.ioc.attacker_country_code = "CN"
+        self.ioc.save()
+        self.ioc2.attacker_country_code = "US"
+        self.ioc2.save()
+
+        response = self.client.get("/api/feeds/advanced/?country_code=CN")
+        self.assertEqual(response.status_code, 200)
+        iocs = response.json()["iocs"]
+        self.assertEqual(len(iocs), 1)
+        self.assertEqual(iocs[0]["value"], self.ioc.name)
 
     # ── STIX 2.1 export ──────────────────────────────────────────────────────
 
@@ -246,8 +297,6 @@ class FeedsEnhancementsTestCase(CustomTestCase):
 
     def test_shareable_feed_expired_token(self):
         """Consuming a tampered/expired token returns 400."""
-        from django.core import signing
-
         data = {
             "feed_type": "all",
             "attack_type": "all",
@@ -274,6 +323,53 @@ class FeedsEnhancementsTestCase(CustomTestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn("error", response.json())
 
+    def test_consume_valid_token_without_db_record_is_rejected(self):
+        """A valid signed token that was never saved to the DB is rejected (allowlist check)."""
+        data = {
+            "feed_type": "all",
+            "attack_type": "all",
+            "ioc_type": "all",
+            "max_age": "3",
+            "min_days_seen": "1",
+            "include_reputation": [],
+            "exclude_reputation": [],
+            "feed_size": "5000",
+            "ordering": "-last_seen",
+            "verbose": "false",
+            "paginate": "false",
+            "format": "json",
+            "asn": None,
+            "min_score": None,
+            "port": None,
+            "start_date": None,
+            "end_date": None,
+        }
+        token = signing.dumps(data, salt="greedybear-feeds")
+        token_hash = hashlib.sha256(token.encode()).hexdigest()
+
+        self.assertFalse(ShareToken.objects.filter(token_hash=token_hash).exists())
+
+        self.client.logout()
+        response = self.client.get(f"/api/feeds/consume/{token}")
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()["error"], "Invalid or expired token")
+
+    def test_consume_token_deleted_from_db_is_rejected(self):
+        """A token whose DB record has been deleted is rejected even though the signature is valid."""
+        share_response = self.client.get("/api/feeds/share?asn=11111")
+        self.assertEqual(share_response.status_code, 200)
+        token = share_response.json()["url"].split("/")[-1]
+
+        self.client.logout()
+        self.assertEqual(self.client.get(f"/api/feeds/consume/{token}").status_code, 200)
+
+        token_hash = hashlib.sha256(token.encode()).hexdigest()
+        ShareToken.objects.filter(token_hash=token_hash).delete()
+
+        response = self.client.get(f"/api/feeds/consume/{token}")
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json()["error"], "Invalid or expired token")
+
     def test_rate_limiting_consume(self):
         """
         Shared feed endpoint enforces rate limiting on the /feeds/consume/ endpoint.
@@ -282,12 +378,6 @@ class FeedsEnhancementsTestCase(CustomTestCase):
         then verifies the second request within the window returns 429.
         cache.clear() is scoped to this test to avoid leaking throttle state.
         """
-        from unittest.mock import patch
-
-        from django.core.cache import cache
-
-        from api.throttles import SharedFeedRateThrottle
-
         share_response = self.client.get("/api/feeds/share")
         token = share_response.json()["url"].split("/")[-1]
         anon = APIClient()

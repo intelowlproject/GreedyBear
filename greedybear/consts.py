@@ -57,6 +57,5 @@ RSS_FEED_URL = "https://intelowlproject.github.io/feed.xml"
 CACHE_KEY_GREEDYBEAR_NEWS = "greedybear_news"
 CACHE_TIMEOUT_SECONDS = 60 * 60
 
-
 # tracking application start time
 START_TIME = time.time()
