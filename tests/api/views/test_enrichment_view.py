@@ -1,5 +1,6 @@
 from rest_framework.test import APIClient
 
+from greedybear.models import Sensor
 from tests import CustomTestCase
 
 
@@ -86,3 +87,16 @@ class EnrichmentViewTestCase(CustomTestCase):
         response = self.client.get("/api/enrichment?query=example.com")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["found"], False)
+
+    def test_enrichment_includes_sensors(self):
+        """Sensors field appears in enrichment response for authenticated users."""
+
+        sensor = Sensor.objects.create(address="10.0.0.3", label="enrichment-sensor")
+        self.ioc.sensors.add(sensor)
+        response = self.client.get(f"/api/enrichment?query={self.ioc.name}")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["found"], True)
+        sensors = response.json()["ioc"]["sensors"]
+        self.assertEqual(len(sensors), 1)
+        self.assertEqual(sensors[0]["address"], "10.0.0.3")
+        self.assertEqual(sensors[0]["label"], "enrichment-sensor")

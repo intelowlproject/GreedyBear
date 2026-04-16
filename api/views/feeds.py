@@ -153,13 +153,14 @@ def feeds_advanced(request):
         valid_feed_types,
         tag_key=request.query_params.get("tag_key", "").strip(),
         tag_value=request.query_params.get("tag_value", "").strip(),
+        include_sensors=True,
     )
     if paginate:
         paginator = CustomPageNumberPagination()
         iocs = paginator.paginate_queryset(iocs_queryset, request)
-        resp_data = feeds_response(request, iocs, feed_params, valid_feed_types, dict_only=True, verbose=verbose)
+        resp_data = feeds_response(request, iocs, feed_params, valid_feed_types, dict_only=True, verbose=verbose, include_sensors=True)
         return paginator.get_paginated_response(resp_data)
-    return feeds_response(request, iocs_queryset, feed_params, valid_feed_types, verbose=verbose)
+    return feeds_response(request, iocs_queryset, feed_params, valid_feed_types, verbose=verbose, include_sensors=True)
 
 
 @api_view(["GET"])
