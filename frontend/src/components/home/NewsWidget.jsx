@@ -95,3 +95,4 @@ export const NewsWidget = React.memo(() => {
     </>
   );
 });
+// fix rendering issue
