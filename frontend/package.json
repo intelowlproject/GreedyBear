@@ -10,8 +10,8 @@
   },
   "dependencies": {
     "@certego/certego-ui": "0.1.14",
-    "axios": "^1.14.0",
-    "axios-hooks": "^3.0.4",
+    "axios": "^1.15.0",
+    "axios-hooks": "^3.1.5",
     "bootstrap": ">=5.3.8",
     "formik": "^2.4.9",
     "prop-types": "^15.8.1",
@@ -56,10 +56,10 @@
     "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-jsx-a11y": "^6.10.2",
     "eslint-plugin-react": "^7.37.5",
-    "eslint-plugin-react-hooks": "^4.6.0",
+    "eslint-plugin-react-hooks": "^4.6.2",
     "jsdom": "^29.0.2",
-    "prettier": "^3.8.2",
-    "stylelint": "^17.6.0",
+    "prettier": "^3.8.3",
+    "stylelint": "^17.8.0",
     "vite": "^8.0.8",
     "vitest": "^4.1.4"
   }
