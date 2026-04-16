@@ -59,6 +59,27 @@ with open(os.path.join(BASE_DIR, "pyproject.toml"), "rb") as f:
 CSRF_COOKIE_SAMESITE = "Strict"
 CSRF_COOKIE_HTTPONLY = True
 
+# Prevent browsers from MIME-sniffing the content type, reducing
+# the risk of drive-by downloads.
+SECURE_CONTENT_TYPE_NOSNIFF = True
+
+# Block framing of the site entirely to prevent clickjacking.
+# XFrameOptionsMiddleware is already in the middleware stack but
+# defaults to SAMEORIGIN; DENY is stricter and appropriate here
+# because GreedyBear has no legitimate need to be framed.
+X_FRAME_OPTIONS = "DENY"
+
+if STAGE_PRODUCTION:
+    # Mark session and CSRF cookies as Secure so they are only
+    # sent over HTTPS connections. Gated to production because
+    # local/CI environments run plain HTTP.
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    # NOTE: SECURE_SSL_REDIRECT is intentionally omitted. TLS is
+    # terminated at nginx, which already redirects HTTP -> HTTPS.
+    # Enabling it here would cause an infinite redirect loop because
+    # Django only sees plain HTTP from the gunicorn unix socket.
+
 # Read DJANGO_ALLOWED_HOSTS from env (comma-separated).
 # Falls back to ["*"] for backward compatibility.
 # For security checks, see greedybear/checks.py.
