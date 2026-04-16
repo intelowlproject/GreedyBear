@@ -2,7 +2,7 @@ import React from "react";
 import PropTypes from "prop-types";
 import { Navigate, useLocation } from "react-router-dom";
 
-import { FallBackLoading, addToast } from "@certego/certego-ui";
+
 
 import { useAuthStore } from "../stores";
 import { AUTHENTICATION_STATUSES } from "../constants";
@@ -27,7 +27,7 @@ export default function AuthGuard({ children }) {
   }, [didJustLogout, isAuthenticated]);
 
   if (isAuthenticated === AUTHENTICATION_STATUSES.PENDING) {
-    return <FallBackLoading />;
+   return <div>Loading...</div>;
   }
 
   if (isAuthenticated === AUTHENTICATION_STATUSES.FALSE) {
@@ -47,3 +47,4 @@ export default function AuthGuard({ children }) {
 AuthGuard.propTypes = {
   children: PropTypes.node.isRequired,
 };
+<div className=""></div>

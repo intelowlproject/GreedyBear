@@ -1,7 +1,7 @@
 import React, { Suspense } from "react";
 import { useRoutes, Outlet } from "react-router-dom";
 
-import { FallBackLoading } from "@certego/certego-ui";
+
 
 // wrapper
 import withAuth from "../wrappers/withAuth";
@@ -38,7 +38,7 @@ function AppMain() {
     {
       path: "*",
       element: (
-        <Suspense fallback={<FallBackLoading />}>
+       <Suspense fallback={<div>Loading...</div>}>
           <NotFoundPage />
         </Suspense>
       ),

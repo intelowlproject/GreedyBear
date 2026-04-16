@@ -16,7 +16,7 @@ vi.mock("@certego/certego-ui", async (importOriginal) => {
   return {
     ...original,
     addToast: vi.fn(),
-    FallBackLoading: () => <div>Loading...</div>,
+   
   };
 });
 

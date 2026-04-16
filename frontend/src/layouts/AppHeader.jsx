@@ -57,8 +57,14 @@ const rightLinks = (
   </NavItem>
 );
 
+
+let renderCount = 0;
 function AppHeader() {
+  console.log("AppHeader rendered");
   console.debug("AppHeader rendered!");
+
+  renderCount += 1;
+console.log("AppHeader render count:", renderCount);
 
   // local state
   const [isOpen, setIsOpen] = React.useState(false);

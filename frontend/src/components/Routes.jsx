@@ -1,5 +1,5 @@
 import React, { Suspense } from "react";
-import { FallBackLoading } from "@certego/certego-ui";
+
 
 import IfAuthRedirectGuard from "../wrappers/ifAuthRedirectGuard";
 import AuthGuard from "../wrappers/AuthGuard";
@@ -43,9 +43,9 @@ const publicRoutesLazy = [
   element: (
     <ConditionalWrapper
       condition={r.withErrorBoundary}
-      wrapper={(children) => <ErrorBoundary>{children}</ErrorBoundary>}
+      wrapper={(children) => children}
     >
-      <Suspense fallback={<FallBackLoading />}>{r.element}</Suspense>
+      <Suspense fallback={<div>Loading...</div>}>{r.element}</Suspense>
     </ConditionalWrapper>
   ),
 }));
@@ -78,9 +78,9 @@ const noAuthRoutesLazy = [
     <IfAuthRedirectGuard>
       <ConditionalWrapper
         condition={r.withErrorBoundary}
-        wrapper={(children) => <ErrorBoundary>{children}</ErrorBoundary>}
+       wrapper={(children) => children}
       >
-        <Suspense fallback={<FallBackLoading />}>{r.element}</Suspense>
+       <Suspense fallback={<div>Loading...</div>}>{r.element}</Suspense>
       </ConditionalWrapper>
     </IfAuthRedirectGuard>
   ),
@@ -112,9 +112,9 @@ const authRoutesLazy = [
     <AuthGuard>
       <ConditionalWrapper
         condition={r.withErrorBoundary}
-        wrapper={(children) => <ErrorBoundary>{children}</ErrorBoundary>}
+           wrapper={(children) => children}
       >
-        <Suspense fallback={<FallBackLoading />}>{r.element}</Suspense>
+        <Suspense fallback={<div>Loading...</div>}>{r.element}</Suspense>
       </ConditionalWrapper>
     </AuthGuard>
   ),

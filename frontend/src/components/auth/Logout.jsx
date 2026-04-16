@@ -1,6 +1,6 @@
 import React from "react";
 
-import { FallBackLoading } from "@certego/certego-ui";
+
 
 import { useAuthStore } from "../../stores";
 import { AUTHENTICATION_STATUSES } from "../../constants";
@@ -17,5 +17,5 @@ export default function Logout() {
     }
   }, [isAuthenticated, logoutUser]);
 
-  return <FallBackLoading text="Logging you out..." />;
+  return <div>Logging you out...</div>;
 }

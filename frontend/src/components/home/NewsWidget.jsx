@@ -26,20 +26,29 @@ export const NewsWidget = React.memo(() => {
   };
 
   React.useEffect(() => {
-    fetch(GREEDYBEAR_NEWS_URL)
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`HTTP error ${response.status}`);
-        }
-        return response.json();
-      })
-      .then(setData)
-      .catch((err) => {
-        console.error("Error fetching news:", err);
-        setError(true);
-      })
-      .finally(() => setLoading(false));
-  }, []);
+  fetch(GREEDYBEAR_NEWS_URL)
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(`HTTP error ${response.status}`);
+      }
+      return response.json();
+    })
+    .then(setData)
+    .catch((err) => {
+      console.error("Error fetching news:", err);
+
+      // 🔥 fallback data instead of breaking UI
+      setData([
+        {
+          title: "Welcome to GreedyBear",
+          subtext: "Backend unavailable. Showing demo content.",
+          link: "#",
+          date: new Date().toISOString(),
+        },
+      ]);
+    })
+    .finally(() => setLoading(false));
+}, []);
 
   if (loading) {
     return (
