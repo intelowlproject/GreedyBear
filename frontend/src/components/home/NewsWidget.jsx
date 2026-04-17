@@ -36,6 +36,14 @@ export const NewsWidget = React.memo(() => {
       .then(setData)
       .catch((err) => {
         console.error("Error fetching news:", err);
+        setData([
+          {
+            title: "Welcome to GreedyBear",
+            subtext: "Backend unavailable. Showing demo content.",
+            link: "#",
+            date: new Date().toISOString(),
+          },
+        ]);
         setError(true);
       })
       .finally(() => setLoading(false));
@@ -50,15 +58,7 @@ export const NewsWidget = React.memo(() => {
     );
   }
 
-  if (error) {
-    return (
-      <div className="d-flex justify-content-center align-items-center py-4">
-        <span className="text-muted">
-          Unable to load news. Please try again later.
-        </span>
-      </div>
-    );
-  }
+
 
   if (data.length === 0) {
     return (
