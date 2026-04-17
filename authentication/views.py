@@ -6,7 +6,6 @@ from certego_saas.apps.auth.backend import CookieTokenAuthentication
 from certego_saas.ext.throttling import POSTUserRateThrottle
 from django.conf import settings
 from django.contrib.auth import get_user_model, login
-
 from durin import views as durin_views
 from durin.models import AuthToken
 from rest_framework import status
