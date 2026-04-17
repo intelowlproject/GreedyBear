@@ -90,7 +90,7 @@ else:
     ALLOWED_HOSTS = ["*"]
 
 # certego_saas
-HOST_URI = "http://localhost"
+HOST_URI = os.environ.get("HOST_URI", "http://localhost")
 HOST_NAME = "GreedyBear"
 
 # Application definition
