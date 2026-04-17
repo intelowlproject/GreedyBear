@@ -1,6 +1,6 @@
 import re
 
-import requests
+import httpx
 
 from greedybear.cronjobs.base import Cronjob
 from greedybear.cronjobs.repositories import IocRepository
@@ -24,9 +24,9 @@ class TorExitNodesCron(Cronjob):
         try:
             self.log.info("Starting download of Tor exit node list from torproject.org")
 
-            r = requests.get(
+            r = httpx.get(
                 "https://check.torproject.org/exit-addresses",
-                timeout=10,
+                timeout=10.0,
             )
             r.raise_for_status()
 
@@ -45,6 +45,6 @@ class TorExitNodesCron(Cronjob):
 
             self.log.info("Completed download of Tor exit node list")
 
-        except requests.RequestException as e:
+        except httpx.HTTPError as e:
             self.log.error(f"Failed to fetch Tor exit nodes: {e}")
             raise
