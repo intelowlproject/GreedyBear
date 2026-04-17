@@ -58,15 +58,7 @@ export const NewsWidget = React.memo(() => {
     );
   }
 
-  if (error && data.length === 0) {
-    return (
-      <div className="d-flex justify-content-center align-items-center py-4">
-        <span className="text-muted">
-          Unable to load news. Please try again later.
-        </span>
-      </div>
-    );
-  }
+
 
   if (data.length === 0) {
     return (
