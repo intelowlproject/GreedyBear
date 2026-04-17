@@ -17,6 +17,7 @@ IP = "ip"
 
 REQUIRED_FIELDS = [
     "@timestamp",
+    "type",
     "src_ip",
     "dest_port",
     "ip_rep",
