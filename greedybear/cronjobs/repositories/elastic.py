@@ -72,7 +72,7 @@ class ElasticRepository:
             search = Search(using=self.elastic_client, index="logstash-*")
             q = Q("range", **{"@timestamp": {"gte": chunk_start, "lt": chunk_end}})
             search = search.query(q)
-            search.source(REQUIRED_FIELDS)
+            search = search.source(REQUIRED_FIELDS)
             result = list(search.scan())
             self.log.debug(f"found {len(result)} hits")
             result.sort(key=lambda hit: hit["@timestamp"])
