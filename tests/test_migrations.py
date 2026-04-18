@@ -261,3 +261,104 @@ class TestSensorLabelMigration(MigrationTestCase):
         sensor_new = new_state.apps.get_model(self.app_name, "Sensor")
         migrated = sensor_new.objects.get(address="10.0.0.1")
         self.assertEqual(migrated.label, "")
+
+
+@tag("migration")
+class TestIocIdentityUniquenessAndDedupe(MigrationTestCase):
+    """Tests IOC duplicate merge and identity uniqueness enforcement."""
+
+    migrate_from = "0050_attackeractivitybucket"
+    migrate_to = "0051_ioc_identity_uniqueness_and_dedupe"
+
+    def test_duplicate_iocs_are_merged(self):
+        from datetime import datetime, timedelta
+
+        IOC = self.old_state.apps.get_model(self.app_name, "IOC")
+        Honeypot = self.old_state.apps.get_model(self.app_name, "Honeypot")
+        Sensor = self.old_state.apps.get_model(self.app_name, "Sensor")
+        Tag = self.old_state.apps.get_model(self.app_name, "Tag")
+        CowrieSession = self.old_state.apps.get_model(self.app_name, "CowrieSession")
+
+        hp1, _ = Honeypot.objects.get_or_create(name="Cowrie", defaults={"active": True})
+        hp2, _ = Honeypot.objects.get_or_create(name="Heralding", defaults={"active": True})
+        s1 = Sensor.objects.create(address="10.10.10.1")
+        s2 = Sensor.objects.create(address="10.10.10.2")
+
+        now = datetime.now()
+        ioc1 = IOC.objects.create(
+            name="1.2.3.4",
+            type="ip",
+            first_seen=now - timedelta(days=3),
+            last_seen=now - timedelta(days=2),
+            attack_count=2,
+            interaction_count=5,
+            login_attempts=1,
+            related_urls=["http://a.example"],
+            destination_ports=[22],
+            firehol_categories=["scanner"],
+        )
+        ioc2 = IOC.objects.create(
+            name="1.2.3.4",
+            type="ip",
+            first_seen=now - timedelta(days=5),
+            last_seen=now - timedelta(days=1),
+            attack_count=3,
+            interaction_count=7,
+            login_attempts=4,
+            related_urls=["http://b.example"],
+            destination_ports=[80],
+            firehol_categories=["botnet"],
+            ip_reputation="tor_exit_node",
+        )
+        ioc_other_type = IOC.objects.create(name="1.2.3.4", type="domain")
+
+        ioc1.honeypots.add(hp1)
+        ioc2.honeypots.add(hp2)
+        ioc1.sensors.add(s1)
+        ioc2.sensors.add(s2)
+
+        Tag.objects.create(ioc=ioc2, key="source", value="threatfox", source="threatfox")
+        CowrieSession.objects.create(session_id=42, source=ioc2, interaction_count=3)
+
+        new_state = self.apply_tested_migration()
+        ioc_new = new_state.apps.get_model(self.app_name, "IOC")
+        tag_new = new_state.apps.get_model(self.app_name, "Tag")
+        cowrie_session_new = new_state.apps.get_model(self.app_name, "CowrieSession")
+
+        merged = ioc_new.objects.get(name="1.2.3.4", type="ip")
+        self.assertEqual(ioc_new.objects.filter(name="1.2.3.4", type="ip").count(), 1)
+        self.assertTrue(ioc_new.objects.filter(pk=ioc_other_type.pk, type="domain").exists())
+
+        self.assertEqual(merged.attack_count, 5)
+        self.assertEqual(merged.interaction_count, 12)
+        self.assertEqual(merged.login_attempts, 5)
+        self.assertEqual(merged.first_seen, now - timedelta(days=5))
+        self.assertEqual(merged.last_seen, now - timedelta(days=1))
+        self.assertEqual(sorted(merged.destination_ports), [22, 80])
+        self.assertEqual(sorted(merged.firehol_categories), ["botnet", "scanner"])
+        self.assertEqual(sorted(merged.related_urls), ["http://a.example", "http://b.example"])
+
+        self.assertEqual(merged.honeypots.count(), 2)
+        self.assertEqual(merged.sensors.count(), 2)
+        self.assertEqual(tag_new.objects.filter(ioc_id=merged.pk).count(), 1)
+        self.assertEqual(cowrie_session_new.objects.get(session_id=42).source_id, merged.pk)
+
+
+@tag("migration")
+class TestIocIdentityUniqueConstraint(MigrationTestCase):
+    """Tests IOC identity unique constraint added in migration 0052."""
+
+    migrate_from = "0051_ioc_identity_uniqueness_and_dedupe"
+    migrate_to = "0052_ioc_unique_identity_constraint"
+
+    def test_unique_constraint_is_enforced_after_migration(self):
+        IOC = self.old_state.apps.get_model(self.app_name, "IOC")
+        IOC.objects.create(name="9.9.9.9", type="ip")
+
+        new_state = self.apply_tested_migration()
+        ioc_new = new_state.apps.get_model(self.app_name, "IOC")
+
+        with self.assertRaises(IntegrityError):
+            ioc_new.objects.create(name="9.9.9.9", type="ip")
+
+        ioc_new.objects.create(name="9.9.9.9", type="domain")
