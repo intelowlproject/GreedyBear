@@ -58,8 +58,6 @@ export const NewsWidget = React.memo(() => {
     );
   }
 
-
-
   if (data.length === 0) {
     return (
       <div className="d-flex justify-content-center align-items-center py-4">
