@@ -31,34 +31,36 @@ const COLOR_LOW = "#ffffb2";
 const COLOR_MID = "#fd8d3c";
 const COLOR_HIGH = "#bd0026";
 
-const MapPaths = React.memo(({ getColor, handleMouseEnter, handleMouseLeave }) => {
-  return (
-    <Geographies geography={WORLD_ATLAS_GEO_URL}>
-      {({ geographies }) =>
-        geographies.map((geo) => (
-          <Geography
-            key={geo.rsmKey}
-            geography={geo}
-            fill={getColor(geo.id)}
-            stroke="#111"
-            strokeWidth={0.4}
-            onMouseEnter={(evt) => handleMouseEnter(geo, evt)}
-            onMouseLeave={handleMouseLeave}
-            style={{
-              default: { outline: "none" },
-              hover: {
-                outline: "none",
-                fill: "#facc15",
-                transition: "fill 80ms",
-              },
-              pressed: { outline: "none" },
-            }}
-          />
-        ))
-      }
-    </Geographies>
-  );
-});
+const MapPaths = React.memo(
+  ({ getColor, handleMouseEnter, handleMouseLeave }) => {
+    return (
+      <Geographies geography={WORLD_ATLAS_GEO_URL}>
+        {({ geographies }) =>
+          geographies.map((geo) => (
+            <Geography
+              key={geo.rsmKey}
+              geography={geo}
+              fill={getColor(geo.id)}
+              stroke="#111"
+              strokeWidth={0.4}
+              onMouseEnter={(evt) => handleMouseEnter(geo, evt)}
+              onMouseLeave={handleMouseLeave}
+              style={{
+                default: { outline: "none" },
+                hover: {
+                  outline: "none",
+                  fill: "#facc15",
+                  transition: "fill 80ms",
+                },
+                pressed: { outline: "none" },
+              }}
+            />
+          ))
+        }
+      </Geographies>
+    );
+  },
+);
 MapPaths.displayName = "MapPaths";
 
 export default function AttackOriginMap() {
