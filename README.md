@@ -3,9 +3,9 @@
 # GreedyBear
 [![GitHub release (latest by date)](https://img.shields.io/github/v/release/intelowlproject/Greedybear)](https://github.com/intelowlproject/Greedybear/releases)
 [![GitHub Repo stars](https://img.shields.io/github/stars/intelowlproject/Greedybear?style=social)](https://github.com/intelowlproject/Greedybear/stargazers)
-[![Twitter Follow](https://img.shields.io/twitter/follow/intel_owl?style=social)](https://twitter.com/intel_owl)
-[![Linkedin](https://img.shields.io/badge/LinkedIn-0077B5?style=flat&logo=linkedin&logoColor=white)](https://www.linkedin.com/company/intelowl/)
+![GitHub License](https://img.shields.io/github/license/GreedyBear-Project/GreedyBear)
 
+[![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![CodeQL](https://github.com/intelowlproject/GreedyBear/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/intelowlproject/GreedyBear/actions/workflows/codeql-analysis.yml)
 [![Dependency Review](https://github.com/intelowlproject/GreedyBear/actions/workflows/dependency_review.yml/badge.svg)](https://github.com/intelowlproject/GreedyBear/actions/workflows/dependency_review.yml)
@@ -16,7 +16,7 @@ The project goal is to extract data of the attacks detected by a [T-Pot](https:/
 ## How to ...
 - **... try it out**: visit the [public instance](https://greedybear.honeynet.org) provided by [The Honeynet Project](https://www.honeynet.org) and take a look at a [threat intelligence live feed example](https://greedybear.honeynet.org/api/feeds/cowrie/all/recent.txt)
 - **... dive in**: read through our documentation in the [Wiki](https://github.com/GreedyBear-Project/GreedyBear/wiki) and explore GreedyBear's features
-- **... run your own instance**: to leverage everything GreedyBear has to offer, you might want to [install](https://github.com/GreedyBear-Project/GreedyBear/wiki/Installation) it and conntect it to your T-Pot
+- **... run your own instance**: to leverage everything GreedyBear has to offer, you might want to [install](https://github.com/GreedyBear-Project/GreedyBear/wiki/Installation) it and conntect it to your own T-Pot
 - **... stay up to date**: [read](https://greedybear-project.github.io/) and [subscribe](https://greedybear-project.github.io/feed.xml) to our blog, where we regularly write about the most recent changes and new features
 - **... contact us**: using a Github [issue](https://github.com/GreedyBear-Project/GreedyBear/issues) or start a [discussion](https://github.com/GreedyBear-Project/GreedyBear/discussions)
 - **... contribute**: read through our [contribution guidelines](https://github.com/GreedyBear-Project/GreedyBear/wiki/Contribute), open an [issue](https://github.com/GreedyBear-Project/GreedyBear/issues), get assigned and raise a [pull request](https://github.com/GreedyBear-Project/GreedyBear/pulls)
