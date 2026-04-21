@@ -31,6 +31,36 @@ const COLOR_LOW = "#ffffb2";
 const COLOR_MID = "#fd8d3c";
 const COLOR_HIGH = "#bd0026";
 
+const MapPaths = React.memo(({ getColor, handleMouseEnter, handleMouseLeave }) => {
+  return (
+    <Geographies geography={WORLD_ATLAS_GEO_URL}>
+      {({ geographies }) =>
+        geographies.map((geo) => (
+          <Geography
+            key={geo.rsmKey}
+            geography={geo}
+            fill={getColor(geo.id)}
+            stroke="#111"
+            strokeWidth={0.4}
+            onMouseEnter={(evt) => handleMouseEnter(geo, evt)}
+            onMouseLeave={handleMouseLeave}
+            style={{
+              default: { outline: "none" },
+              hover: {
+                outline: "none",
+                fill: "#facc15",
+                transition: "fill 80ms",
+              },
+              pressed: { outline: "none" },
+            }}
+          />
+        ))
+      }
+    </Geographies>
+  );
+});
+MapPaths.displayName = "MapPaths";
+
 export default function AttackOriginMap() {
   const { range } = useTimePickerStore();
   const {
@@ -54,6 +84,20 @@ export default function AttackOriginMap() {
     fetchData(range);
   }, [range, fetchData]);
 
+  const colors = React.useMemo(() => {
+    const colorMap = {};
+    if (maxCount <= 0) return colorMap;
+    for (const [alpha2, count] of Object.entries(countryData)) {
+      if (!count) continue;
+      const t = Math.sqrt(count / maxCount);
+      colorMap[alpha2] =
+        t < 0.5
+          ? lerpColor(COLOR_LOW, COLOR_MID, t * 2)
+          : lerpColor(COLOR_MID, COLOR_HIGH, (t - 0.5) * 2);
+    }
+    return colorMap;
+  }, [countryData, maxCount]);
+
   /**
    * Resolve fill colour for a geography.
    * geo.id is the ISO 3166-1 numeric code (e.g. "840").
@@ -63,13 +107,9 @@ export default function AttackOriginMap() {
   const getColor = React.useCallback(
     (geoId) => {
       const alpha2 = countries.numericToAlpha2(geoId);
-      const count = alpha2 ? countryData[alpha2] : undefined;
-      if (maxCount <= 0 || !count) return COLOR_EMPTY;
-      const t = Math.sqrt(count / maxCount);
-      if (t < 0.5) return lerpColor(COLOR_LOW, COLOR_MID, t * 2);
-      return lerpColor(COLOR_MID, COLOR_HIGH, (t - 0.5) * 2);
+      return (alpha2 && colors[alpha2]) || COLOR_EMPTY;
     },
-    [countryData, maxCount],
+    [colors],
   );
 
   const handleMouseEnter = React.useCallback(
@@ -173,30 +213,11 @@ export default function AttackOriginMap() {
           onMouseLeave={handleMouseLeave}
         >
           <ZoomableGroup zoom={1} minZoom={0.6} maxZoom={6}>
-            <Geographies geography={WORLD_ATLAS_GEO_URL}>
-              {({ geographies }) =>
-                geographies.map((geo) => (
-                  <Geography
-                    key={geo.rsmKey}
-                    geography={geo}
-                    fill={getColor(geo.id)}
-                    stroke="#111"
-                    strokeWidth={0.4}
-                    onMouseEnter={(evt) => handleMouseEnter(geo, evt)}
-                    onMouseLeave={handleMouseLeave}
-                    style={{
-                      default: { outline: "none" },
-                      hover: {
-                        outline: "none",
-                        fill: "#facc15",
-                        transition: "fill 80ms",
-                      },
-                      pressed: { outline: "none" },
-                    }}
-                  />
-                ))
-              }
-            </Geographies>
+            <MapPaths
+              getColor={getColor}
+              handleMouseEnter={handleMouseEnter}
+              handleMouseLeave={handleMouseLeave}
+            />
           </ZoomableGroup>
         </ComposableMap>
       </div>
