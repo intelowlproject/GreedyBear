@@ -557,7 +557,7 @@ def get_greedybear_news() -> list[dict]:
         feed = feedparser.parse(response.content)
 
         filtered_entries = sorted(
-            [entry for entry in feed.entries if "greedybear" in entry.get("title", "").lower() and entry.get("published_parsed")],
+            [entry for entry in feed.entries if entry.get("published_parsed")],
             key=lambda e: e.published_parsed,
             reverse=True,
         )
