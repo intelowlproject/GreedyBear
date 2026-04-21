@@ -11,38 +11,15 @@
 [![Dependency Review](https://github.com/intelowlproject/GreedyBear/actions/workflows/dependency_review.yml/badge.svg)](https://github.com/intelowlproject/GreedyBear/actions/workflows/dependency_review.yml)
 [![Pull request automation](https://github.com/intelowlproject/GreedyBear/actions/workflows/pull_request_automation.yml/badge.svg)](https://github.com/intelowlproject/GreedyBear/actions/workflows/pull_request_automation.yml)
 
-The project goal is to extract data of the attacks detected by a [TPOT](https://github.com/telekom-security/tpotce) or a cluster of them and to generate some feeds that can be used to prevent and detect attacks.
+The project goal is to extract data of the attacks detected by a [T-Pot](https://github.com/telekom-security/tpotce) or a cluster of them and to generate some feeds that can be used to prevent and detect attacks. You can read the [official announcement here](https://www.honeynet.org/2021/12/27/new-project-available-greedybear/).
 
-[Official announcement here](https://www.honeynet.org/2021/12/27/new-project-available-greedybear/).
-
-## Documentation
-
-Documentation about GreedyBear installation, usage, configuration and contribution can be found at [this link](https://github.com/GreedyBear-Project/GreedyBear/wiki)
-
-## Public feeds
-
-There are public feeds provided by [The Honeynet Project](https://www.honeynet.org) in this [site](https://greedybear.honeynet.org). [Example](https://greedybear.honeynet.org/api/feeds/cowrie/all/recent.txt)
-
-Please do not perform too many requests to extract feeds or you will be banned.
-
-If you want to be updated regularly, please download the feeds only once every 10 minutes (this is the time between each internal update).
-
-To check all the available feeds, Please refer to our [usage guide](https://github.com/GreedyBear-Project/GreedyBear/wiki/Usage)
-
-
-## Enrichment Service
-
-GreedyBear provides an easy-to-query API to get the information available in GB regarding the queried observable (domain or IP address).
-
-To understand more, Please refer to our [usage guide](https://github.com/GreedyBear-Project/GreedyBear/wiki/Usage)
-
-## Run Greedybear on your environment
-The tool has been created not only to provide the feeds from The Honeynet Project's cluster of TPOTs.
-
-If you manage one or more T-POTs of your own, you can get the code of this application and run Greedybear on your environment.
-In this way, you are able to provide new feeds of your own.
-
-To install it locally, Please refer to our [installation guide](https://github.com/GreedyBear-Project/GreedyBear/wiki/Installation)
+## How to ...
+- **... try it out**: visit the [public instance](https://greedybear.honeynet.org) provided by [The Honeynet Project](https://www.honeynet.org) and take a look at a [threat intelligence live feed example](https://greedybear.honeynet.org/api/feeds/cowrie/all/recent.txt)
+- **... dive in**: read through our documentation in the [Wiki](https://github.com/GreedyBear-Project/GreedyBear/wiki) and explore GreedyBear's features
+- **... run your own instance**: to leverage everything GreedyBear has to offer, you might want to [install](https://github.com/GreedyBear-Project/GreedyBear/wiki/Installation) it and conntect it to your T-Pot
+- **... stay up to date**: [read](https://greedybear-project.github.io/) and [subscribe](https://greedybear-project.github.io/feed.xml) to our blog, where we regularly write about the most recent changes and new features
+- **... contact us**: using a Github [issue](https://github.com/GreedyBear-Project/GreedyBear/issues) or start a [discussion](https://github.com/GreedyBear-Project/GreedyBear/discussions)
+- **... contribute**: read through our [contribution guidelines](https://github.com/GreedyBear-Project/GreedyBear/wiki/Contribute), open an [issue](https://github.com/GreedyBear-Project/GreedyBear/issues), get assigned and raise a [pull request](https://github.com/GreedyBear-Project/GreedyBear/pulls)
 
 ## Sponsors and Acknowledgements
 
