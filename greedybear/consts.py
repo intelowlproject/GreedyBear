@@ -15,7 +15,7 @@ REGEX_PASSWORD = r"^(?=.*[a-zA-Z])\S{12,}$"
 DOMAIN = "domain"
 IP = "ip"
 
-REQUIRED_FIELDS = [
+FIELDS_TO_EXTRACT = [
     "@timestamp",
     "type",
     "src_ip",

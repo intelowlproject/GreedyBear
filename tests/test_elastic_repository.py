@@ -1,7 +1,7 @@
 from datetime import datetime, timedelta
 from unittest.mock import Mock, call, patch
 
-from greedybear.consts import REQUIRED_FIELDS
+from greedybear.consts import FIELDS_TO_EXTRACT
 from greedybear.cronjobs.repositories import ElasticRepository, get_time_window
 
 from . import CustomTestCase
@@ -128,12 +128,12 @@ class TestElasticRepository(CustomTestCase):
         chunks = list(self.repo.search(minutes_back_to_lookup=10))
 
         self.assertEqual(chunks, [[{"@timestamp": 1}]])
-        base_search.source.assert_called_once_with(REQUIRED_FIELDS)
+        base_search.source.assert_called_once_with(FIELDS_TO_EXTRACT)
         filtered_search.scan.assert_called_once()
         base_search.scan.assert_not_called()
 
-    def test_required_fields_include_type_for_trending_bucketing(self):
-        self.assertIn("type", REQUIRED_FIELDS)
+    def test_fields_to_extract_include_type_for_trending_bucketing(self):
+        self.assertIn("type", FIELDS_TO_EXTRACT)
 
 
 class TestSearchChunking(CustomTestCase):
