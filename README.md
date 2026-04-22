@@ -52,6 +52,5 @@ Special thanks to:
   <img src="https://contrib.rocks/image?repo=GreedyBear-Project/GreedyBear" alt="GreedyBear contributors" />
 </a>
 
- ## License
- Distributed under the MIT license. See [`LICENSE`](LICENSE) for the full text.
- 
+## License
+Distributed under the MIT license. See [`LICENSE`](LICENSE) for the full text.
