@@ -1,15 +1,15 @@
 <p align="center"><img src="static/greedybear.png" width=350 height=404 alt="GreedyBear"/></p>
 
 # GreedyBear
-[![GitHub release (latest by date)](https://img.shields.io/github/v/release/intelowlproject/Greedybear)](https://github.com/intelowlproject/Greedybear/releases)
-[![GitHub Repo stars](https://img.shields.io/github/stars/intelowlproject/Greedybear?style=social)](https://github.com/intelowlproject/Greedybear/stargazers)
+[![GitHub release (latest by date)](https://img.shields.io/github/v/release/GreedyBear-Project/Greedybear)](https://github.com/GreedyBear-Project/Greedybear/releases)
+[![GitHub Repo stars](https://img.shields.io/github/stars/GreedyBear-Project/Greedybear?style=social)](https://github.com/GreedyBear-Project/Greedybear/stargazers)
 ![GitHub License](https://img.shields.io/github/license/GreedyBear-Project/GreedyBear)
 
 [![uv](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/uv/main/assets/badge/v0.json)](https://github.com/astral-sh/uv)
 [![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/astral-sh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
-[![CodeQL](https://github.com/intelowlproject/GreedyBear/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/intelowlproject/GreedyBear/actions/workflows/codeql-analysis.yml)
-[![Dependency Review](https://github.com/intelowlproject/GreedyBear/actions/workflows/dependency_review.yml/badge.svg)](https://github.com/intelowlproject/GreedyBear/actions/workflows/dependency_review.yml)
-[![Pull request automation](https://github.com/intelowlproject/GreedyBear/actions/workflows/pull_request_automation.yml/badge.svg)](https://github.com/intelowlproject/GreedyBear/actions/workflows/pull_request_automation.yml)
+[![CodeQL](https://github.com/GreedyBear-Project/GreedyBear/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/GreedyBear-Project/GreedyBear/actions/workflows/codeql-analysis.yml)
+[![Dependency Review](https://github.com/GreedyBear-Project/GreedyBear/actions/workflows/dependency_review.yml/badge.svg)](https://github.com/GreedyBear-Project/GreedyBear/actions/workflows/dependency_review.yml)
+[![Pull request automation](https://github.com/GreedyBear-Project/GreedyBear/actions/workflows/pull_request_automation.yml/badge.svg)](https://github.com/GreedyBear-Project/GreedyBear/actions/workflows/pull_request_automation.yml)
 
 The project goal is to extract data of the attacks detected by a [T-Pot](https://github.com/telekom-security/tpotce) or a cluster of them and to generate some feeds that can be used to prevent and detect attacks. You can read the [official announcement here](https://www.honeynet.org/2021/12/27/new-project-available-greedybear/).
 
