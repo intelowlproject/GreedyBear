@@ -8,6 +8,7 @@ from django.utils.translation import ngettext
 
 from greedybear.models import (
     IOC,
+    AttackerActivityBucket,
     CommandSequence,
     CowrieSession,
     Credential,
@@ -181,6 +182,16 @@ class IOCModelAdmin(admin.ModelAdmin):
     def get_queryset(self, request):
         """Override to optimize queries and avoid N+1 problems."""
         return super().get_queryset(request).select_related("autonomous_system").prefetch_related("sensors", "honeypots")
+
+
+@admin.register(AttackerActivityBucket)
+class AttackerActivityBucketAdmin(admin.ModelAdmin):
+    list_display = ["attacker_ip", "feed_type", "bucket_start", "interaction_count"]
+    list_filter = ["feed_type"]
+    search_fields = ["attacker_ip"]
+    search_help_text = "search for the attacker IP address"
+    date_hierarchy = "bucket_start"
+    ordering = ["-bucket_start"]
 
 
 @admin.register(Honeypot)

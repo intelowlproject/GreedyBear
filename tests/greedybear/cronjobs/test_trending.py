@@ -2,10 +2,9 @@ from datetime import datetime
 from unittest.mock import patch
 
 from django.test import SimpleTestCase, override_settings
-from elasticsearch.dsl.response import Hit
 
 from greedybear.cronjobs.bucket_cleanup import TrendingBucketCleanupCron
-from greedybear.cronjobs.bucket_utils import update_activity_buckets_from_hits
+from greedybear.cronjobs.extraction.bucket_updater import BucketUpdater
 from greedybear.cronjobs.repositories.trending_bucket import TrendingBucketRepository
 from greedybear.cronjobs.trending import (
     attacker_sort_tuple,
@@ -70,13 +69,15 @@ class UpdateActivityBucketsFromHitsTestCase(CustomTestCase):
             interaction_count=3,
         )
 
-        unique_keys = update_activity_buckets_from_hits(
+        bu = BucketUpdater()
+        bu.collect_hits(
             [
-                Hit({"_source": {"src_ip": "1.1.1.1", "type": "Cowrie", "@timestamp": "2026-03-20T09:15:00"}}),
-                Hit({"_source": {"src_ip": "1.1.1.1", "type": "cowrie", "@timestamp": "2026-03-20T09:50:00"}}),
-                Hit({"_source": {"src_ip": "2.2.2.2", "type": "Heralding", "@timestamp": "2026-03-20T09:10:00"}}),
+                {"src_ip": "1.1.1.1", "type": "Cowrie", "@timestamp": "2026-03-20T09:15:00"},
+                {"src_ip": "1.1.1.1", "type": "cowrie", "@timestamp": "2026-03-20T09:50:00"},
+                {"src_ip": "2.2.2.2", "type": "Heralding", "@timestamp": "2026-03-20T09:10:00"},
             ]
         )
+        unique_keys = bu.update()
 
         self.assertEqual(unique_keys, 2)
 
@@ -95,49 +96,59 @@ class UpdateActivityBucketsFromHitsTestCase(CustomTestCase):
         self.assertEqual(created_bucket.interaction_count, 1)
 
     def test_invalid_hits_are_ignored(self):
-        unique_keys = update_activity_buckets_from_hits(
+        bu = BucketUpdater()
+        bu.collect_hits(
             [
-                Hit({"_source": {"src_ip": "", "type": "cowrie", "@timestamp": "2026-03-20T09:15:00"}}),
-                Hit({"_source": {"src_ip": "999.999.999.999", "type": "cowrie", "@timestamp": "2026-03-20T09:15:00"}}),
-                Hit({"_source": {"src_ip": "3.3.3.3", "type": "", "@timestamp": "2026-03-20T09:15:00"}}),
-                Hit({"_source": {"src_ip": "3.3.3.3", "type": "cowrie"}}),
+                {"src_ip": "", "type": "cowrie", "@timestamp": "2026-03-20T09:15:00"},
+                {"src_ip": "999.999.999.999", "type": "cowrie", "@timestamp": "2026-03-20T09:15:00"},
+                {"src_ip": "3.3.3.3", "type": "", "@timestamp": "2026-03-20T09:15:00"},
+                {"src_ip": "3.3.3.3", "type": "cowrie"},
             ]
         )
+        unique_keys = bu.update()
 
         self.assertEqual(unique_keys, 0)
         self.assertEqual(AttackerActivityBucket.objects.count(), 0)
 
     def test_invalid_timestamp_is_ignored(self):
-        unique_keys = update_activity_buckets_from_hits(
+        bu = BucketUpdater()
+        bu.collect_hits(
             [
-                Hit({"_source": {"src_ip": "8.8.8.8", "type": "cowrie", "@timestamp": "not-a-timestamp"}}),
+                {"src_ip": "8.8.8.8", "type": "cowrie", "@timestamp": "not-a-timestamp"},
             ]
         )
+        unique_keys = bu.update()
+
         self.assertEqual(unique_keys, 0)
         self.assertEqual(AttackerActivityBucket.objects.count(), 0)
 
     def test_non_global_ip_hits_are_ignored(self):
-        unique_keys = update_activity_buckets_from_hits(
+        bu = BucketUpdater()
+        bu.collect_hits(
             [
-                Hit({"_source": {"src_ip": "10.0.0.1", "type": "cowrie", "@timestamp": "2026-03-20T09:15:00"}}),
-                Hit({"_source": {"src_ip": "127.0.0.1", "type": "cowrie", "@timestamp": "2026-03-20T09:15:00"}}),
-                Hit({"_source": {"src_ip": "224.0.0.1", "type": "cowrie", "@timestamp": "2026-03-20T09:15:00"}}),
-                Hit({"_source": {"src_ip": "169.254.1.1", "type": "cowrie", "@timestamp": "2026-03-20T09:15:00"}}),
-                Hit({"_source": {"src_ip": "240.0.0.1", "type": "cowrie", "@timestamp": "2026-03-20T09:15:00"}}),
-                Hit({"_source": {"src_ip": "8.8.8.8", "type": "cowrie", "@timestamp": "2026-03-20T09:15:00"}}),
+                {"src_ip": "10.0.0.1", "type": "cowrie", "@timestamp": "2026-03-20T09:15:00"},
+                {"src_ip": "127.0.0.1", "type": "cowrie", "@timestamp": "2026-03-20T09:15:00"},
+                {"src_ip": "224.0.0.1", "type": "cowrie", "@timestamp": "2026-03-20T09:15:00"},
+                {"src_ip": "169.254.1.1", "type": "cowrie", "@timestamp": "2026-03-20T09:15:00"},
+                {"src_ip": "240.0.0.1", "type": "cowrie", "@timestamp": "2026-03-20T09:15:00"},
+                {"src_ip": "8.8.8.8", "type": "cowrie", "@timestamp": "2026-03-20T09:15:00"},
             ]
         )
+        unique_keys = bu.update()
 
         self.assertEqual(unique_keys, 1)
         self.assertEqual(AttackerActivityBucket.objects.count(), 1)
         self.assertTrue(AttackerActivityBucket.objects.filter(attacker_ip="8.8.8.8").exists())
 
     def test_global_ipv6_hit_is_counted(self):
-        unique_keys = update_activity_buckets_from_hits(
+        bu = BucketUpdater()
+        bu.collect_hits(
             [
-                Hit({"_source": {"src_ip": "2001:4860:4860::8888", "type": "Cowrie", "@timestamp": "2026-03-20T09:15:00"}}),
+                {"src_ip": "2001:4860:4860::8888", "type": "Cowrie", "@timestamp": "2026-03-20T09:15:00"},
             ]
         )
+        unique_keys = bu.update()
+
         self.assertEqual(unique_keys, 1)
         self.assertTrue(
             AttackerActivityBucket.objects.filter(
@@ -165,9 +176,11 @@ class UpdateActivityBucketsFromHitsTestCase(CustomTestCase):
         self.assertEqual(inserted, 5)
         self.assertEqual(mock_cursor.execute.call_count, 3)
 
-    @patch("greedybear.cronjobs.bucket_utils.TrendingBucketRepository.upsert_bucket_counts", side_effect=Exception("db down"))
+    @patch("greedybear.cronjobs.extraction.bucket_updater.TrendingBucketRepository.upsert_bucket_counts", side_effect=Exception("db down"))
     def test_upsert_failure_returns_zero(self, mock_upsert):
-        unique_keys = update_activity_buckets_from_hits([Hit({"_source": {"src_ip": "8.8.8.8", "type": "cowrie", "@timestamp": "2026-03-20T09:15:00"}})])
+        bu = BucketUpdater()
+        bu.collect_hits([{"src_ip": "8.8.8.8", "type": "cowrie", "@timestamp": "2026-03-20T09:15:00"}])
+        unique_keys = bu.update()
         self.assertEqual(unique_keys, 0)
         mock_upsert.assert_called_once()
 
