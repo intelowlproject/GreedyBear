@@ -1,6 +1,6 @@
 [project]
 name = "greedybear"
-version = "3.3.2"
+version = "3.4.0"
 requires-python = "==3.13.*"
 dependencies = [
     # Django core
