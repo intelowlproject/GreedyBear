@@ -46,3 +46,7 @@ Special thanks to:
 * [Tim Leonhard](https://github.com/regulartim) for having greatly improved the project and added Machine Learning Models during his master thesis. He's the actual Principal Mantainer.
 * [Martina Carella](https://github.com/carellamartina) for having created the GUI during her master thesis.
 * [Daniele Rosetti](https://github.com/drosetti) for helping maintaining the Frontend.
+
+ ## License
+ Distributed under the MIT license. See [`LICENSE`](LICENSE) for the full text.
+ 
