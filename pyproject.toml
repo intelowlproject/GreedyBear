@@ -88,6 +88,7 @@ select = [
     "DJ",  # flake8-django
     "E",   # pycodestyle errors
     "F",   # pyflakes
+    "FLY", # flynt
     "I",   # isort
     "ICN", # flake8-import-conventions
     "LOG", # flake8-logging
