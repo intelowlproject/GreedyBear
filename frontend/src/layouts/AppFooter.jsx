@@ -32,31 +32,13 @@ function AppFooter() {
                 Follow us on:
               </span>
               <a
-                href="https://x.com/intel_owl"
+                href="https://github.com/GreedyBear-Project"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="ms-3 text-white text-decoration-none"
-                aria-label="IntelOwl on X"
-              >
-                <FaXTwitter size={20} />
-              </a>
-              <a
-                href="https://github.com/intelowlproject"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="ms-3 text-white text-decoration-none"
-                aria-label="IntelOwl on GitHub"
+                aria-label="GreedyBear on GitHub"
               >
                 <FaGithub size={20} />
-              </a>
-              <a
-                href="https://www.linkedin.com/company/intelowl/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="ms-3 text-white text-decoration-none"
-                aria-label="IntelOwl on LinkedIn"
-              >
-                <FaLinkedin size={20} />
               </a>
             </Col>
           </Row>
