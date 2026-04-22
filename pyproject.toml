@@ -37,7 +37,7 @@ dev = [
     "django-watchfiles==1.4.0",
 ]
 lint = [
-    "ruff==0.15.10",
+    "ruff==0.15.11",
 ]
 
 [tool.uv]
