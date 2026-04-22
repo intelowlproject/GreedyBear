@@ -194,15 +194,15 @@ wheels = [
 
 [[package]]
 name = "datasketch"
-version = "1.9.0"
+version = "1.10.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "numpy" },
     { name = "scipy" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/1f/d1/0b64dbc7626be277413daff298b9f026911389e75562952d5b7c662bbea1/datasketch-1.9.0.tar.gz", hash = "sha256:78d4560e415b0de11f595165887a0e4c9983d07b8f15dce9c53289a86bc12e92", size = 89790, upload-time = "2026-01-18T22:46:46.039Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/8d/73/8e9014887f9fca2d785777a0a6186813e4fc7faa24f05fc88c6420624891/datasketch-1.10.0.tar.gz", hash = "sha256:d23aea80ce4c40790ca7a40795659848be92ecc43db80942be26f21e81d24714", size = 91699, upload-time = "2026-04-17T23:06:56.388Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/fb/c8/ef06f4c9a0d7697c14c39475eaccd7d3774c34ecc693691079a21bd0d1f1/datasketch-1.9.0-py3-none-any.whl", hash = "sha256:48c18ae889862793609971c6d6d392d71c86793e838dbddd8aa53af6b1716e8a", size = 96542, upload-time = "2026-01-18T22:46:44.368Z" },
+    { url = "https://files.pythonhosted.org/packages/ed/e7/a94668082e078099eb0161635649510aa887690767b779fffe4bdc479913/datasketch-1.10.0-py3-none-any.whl", hash = "sha256:303dd90cda0948a21abba3aaefc9f8528fa12b8204edc5e1ae8b1d7b750234e7", size = 99914, upload-time = "2026-04-17T23:06:54.39Z" },
 ]
 
 [[package]]
@@ -521,7 +521,7 @@ lint = [
 requires-dist = [
     { name = "certego-saas", specifier = "==0.7.12" },
     { name = "croniter", specifier = "==6.2.2" },
-    { name = "datasketch", specifier = "==1.9.0" },
+    { name = "datasketch", specifier = "==1.10.0" },
     { name = "django", specifier = "==5.2.13" },
     { name = "django-q2", specifier = "==1.9.0" },
     { name = "django-rest-email-auth", specifier = "==5.0.0" },
