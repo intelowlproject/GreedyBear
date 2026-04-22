@@ -41,6 +41,14 @@ ALLOWED_UNAUTHENTICATED_QUERY_PARAMS = [
     "prioritize",
 ]
 
+_TOKEN_LIST_FIELDS = (
+    "token_hash",
+    "reason",
+    "created_at",
+    "revoked",
+    "revoked_at",
+)
+
 
 @api_view([GET])
 @throttle_classes([FeedsThrottle])
@@ -145,13 +153,14 @@ def feeds_advanced(request):
         valid_feed_types,
         tag_key=request.query_params.get("tag_key", "").strip(),
         tag_value=request.query_params.get("tag_value", "").strip(),
+        include_sensors=True,
     )
     if paginate:
         paginator = CustomPageNumberPagination()
         iocs = paginator.paginate_queryset(iocs_queryset, request)
-        resp_data = feeds_response(request, iocs, feed_params, valid_feed_types, dict_only=True, verbose=verbose)
+        resp_data = feeds_response(request, iocs, feed_params, valid_feed_types, dict_only=True, verbose=verbose, include_sensors=True)
         return paginator.get_paginated_response(resp_data)
-    return feeds_response(request, iocs_queryset, feed_params, valid_feed_types, verbose=verbose)
+    return feeds_response(request, iocs_queryset, feed_params, valid_feed_types, verbose=verbose, include_sensors=True)
 
 
 @api_view(["GET"])
@@ -219,20 +228,27 @@ def feeds_share(request):
         port (int): Filter by destination port.
         start_date (str): Filter by start date (YYYY-MM-DD).
         end_date (str): Filter by end date (YYYY-MM-DD).
+        reason (str): Optional human-readable label for this share token (max 256 chars).
 
     Returns:
         Response: A JSON object containing the signed shareable URL.
     """
-    logger.info(f"request /api/feeds/share with params: {request.query_params}")
+    safe_params = {k: v for k, v in request.query_params.items() if k != "reason"}
+    logger.info(f"request /api/feeds/share with params: {safe_params}")
     feed_params = FeedRequestParams(request.query_params)
     data = vars(feed_params)
     # Remove internal or non-serializable objects if any
     data.pop("feed_type_sorting", None)
 
+    reason = request.query_params.get("reason", "").strip()[:256]
+
     # Generate signed token and persist a ShareToken record
     token = signing.dumps(data, salt="greedybear-feeds")
     token_hash = hashlib.sha256(token.encode()).hexdigest()
-    ShareToken.objects.get_or_create(token_hash=token_hash, defaults={"user": request.user})
+    ShareToken.objects.get_or_create(
+        token_hash=token_hash,
+        defaults={"user": request.user, "reason": reason},
+    )
 
     host = request.build_absolute_uri("/")
     share_url = f"{host}api/feeds/consume/{token}"
@@ -323,3 +339,32 @@ def feeds_revoke(request, token):
     share_token.revoked_at = timezone.now()
     share_token.save(update_fields=["revoked", "revoked_at"])
     return Response({"detail": "Token revoked successfully."}, status=status.HTTP_200_OK)
+
+
+@api_view([GET])
+@authentication_classes([CookieTokenAuthentication])
+@permission_classes([IsAuthenticated])
+def feeds_tokens(request):
+    """
+    List the calling user's share tokens with safe metadata.
+
+    Returns only non-sensitive fields: a truncated hash prefix (first 12 hex
+    chars), the reason label, creation timestamp, and revocation status.
+    The raw token is never stored and therefore cannot be returned.
+
+    Returns:
+        Response: A JSON list of token metadata objects.
+    """
+    logger.info("request /api/feeds/tokens/")
+    tokens = ShareToken.objects.filter(user=request.user).order_by("-created_at").values(*_TOKEN_LIST_FIELDS)
+    results = [
+        {
+            "hash_prefix": t["token_hash"][:12],
+            "reason": t["reason"],
+            "created_at": t["created_at"],
+            "revoked": t["revoked"],
+            "revoked_at": t["revoked_at"],
+        }
+        for t in tokens
+    ]
+    return Response(results)

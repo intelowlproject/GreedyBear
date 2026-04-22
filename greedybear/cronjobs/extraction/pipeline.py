@@ -3,6 +3,7 @@ from collections import defaultdict
 
 from django.core.cache import caches
 
+from greedybear.cronjobs.extraction.bucket_updater import BucketUpdater
 from greedybear.cronjobs.extraction.strategies.factory import ExtractionStrategyFactory
 from greedybear.cronjobs.repositories import (
     ElasticRepository,
@@ -52,11 +53,13 @@ class ExtractionPipeline:
         2. For each chunk, group hits by honeypot type and extract sensors
         3. Apply honeypot-specific extraction strategies
         4. Update IOC scores
+        5. Update activity buckets
 
         Returns:
             Number of IOC records processed.
         """
         ioc_record_count = 0
+        bucket_updater = BucketUpdater()
         factory = ExtractionStrategyFactory(self.ioc_repo, self.sensor_repo)
 
         # 1. Search in chunks
@@ -68,30 +71,34 @@ class ExtractionPipeline:
             # 2. Group by honeypot
             self.log.info("Grouping hits by honeypot type")
             for hit in chunk:
+                # convert hit to dict for easier handling
+                hit = hit.to_dict()
                 # skip hits with non-existing or empty sources
                 if "src_ip" not in hit or not hit["src_ip"].strip():
                     continue
                 # skip hits with non-existing or empty types (=honeypots)
                 if "type" not in hit or not hit["type"].strip():
                     continue
-                # extract sensor and include in hit dict
-                hit_dict = hit.to_dict()
 
                 if "t-pot_ip_ext" in hit:
                     sensor = self.sensor_repo.get_or_create_sensor(hit["t-pot_ip_ext"])
-                    hit_dict["_sensor"] = sensor  # include sensor for strategies
+                    hit["_sensor"] = sensor  # include sensor for strategies
 
-                    sensor_country = hit_dict.get("geoip_ext", {}).get("country_name")
+                    sensor_country = hit.get("geoip_ext", {}).get("country_name")
                     if sensor_country is not None:
                         self.sensor_repo.update_country(sensor, sensor_country)
 
-                hits_by_honeypot[hit["type"]].append(hit_dict)
+                hits_by_honeypot[hit["type"]].append(hit)
 
             # 3. Extract using strategies
             for honeypot, hits in sorted(hits_by_honeypot.items()):
                 if not self.ioc_repo.is_ready_for_extraction(honeypot):
                     self.log.info(f"Skipping honeypot {honeypot}")
                     continue
+
+                self.log.info(f"Collect hits for activity buckets from honeypot {honeypot}")
+                bucket_updater.collect_hits(hits)
+
                 self.log.info(f"Extracting hits from honeypot {honeypot}")
                 strategy = factory.get_strategy(honeypot)
                 try:
@@ -106,7 +113,11 @@ class ExtractionPipeline:
                 UpdateScores().score_only(ioc_records)
             ioc_record_count += len(ioc_records)
 
-        # 5. Invalidate API caches only if any IOC records were processed
+            # 5. Update activity buckets
+            self.log.info("Updating activity buckets")
+            bucket_updater.update()
+
+        # 6. Invalidate API caches only if any IOC records were processed
         if ioc_record_count > 0:
             # Use the shared DB-backed cache so the version bump is visible to
             # gunicorn API workers (LocMemCache is per-process).
@@ -116,5 +127,13 @@ class ExtractionPipeline:
                 shared_cache.incr("asn_feeds_version")
             except ValueError:
                 shared_cache.set("asn_feeds_version", 2, timeout=None)
+
+        if bucket_updater.total_update_count > 0:
+            self.log.info("Invalidating feeds trending cache")
+            shared_cache = caches["django-q"]
+            try:
+                shared_cache.incr("trending_feeds_version")
+            except ValueError:
+                shared_cache.set("trending_feeds_version", 2, timeout=None)
 
         return ioc_record_count

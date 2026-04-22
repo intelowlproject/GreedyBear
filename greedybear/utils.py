@@ -27,6 +27,19 @@ def is_ip_address(string: str) -> bool:
     return True
 
 
+def is_non_global_ip(value) -> bool:
+    """
+    Return True when an IP should be treated as non-global/unroutable.
+
+    Args:
+        value: IPv4Address or IPv6Address from ipaddress module.
+
+    Returns:
+        bool: True for loopback/private/multicast/link-local/reserved addresses.
+    """
+    return value.is_loopback or value.is_private or value.is_multicast or value.is_link_local or value.is_reserved
+
+
 def is_valid_domain(string: str) -> bool:
     """
     Validate if a string is a safe domain name for use in STIX patterns.

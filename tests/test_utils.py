@@ -1,9 +1,11 @@
 # This file is a part of GreedyBear https://github.com/honeynet/GreedyBear
 # See the file 'LICENSE' for copying permission.
 
+from ipaddress import ip_address
+
 from django.test import SimpleTestCase
 
-from greedybear.utils import is_ip_address, is_sha256hash, is_valid_domain
+from greedybear.utils import is_ip_address, is_non_global_ip, is_sha256hash, is_valid_domain
 
 
 class UtilsTestCase(SimpleTestCase):
@@ -45,3 +47,15 @@ class UtilsTestCase(SimpleTestCase):
         self.assertFalse(is_sha256hash("e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b8555"))  # 65 chars
         self.assertFalse(is_sha256hash("e3b0c44298fc1c149afbf4c8996fb92427ae41e4g49b934ca495991b7852b855"))  # Invalid char 'g'
         self.assertFalse(is_sha256hash(""))
+
+    def test_is_non_global_ip(self):
+        self.assertTrue(is_non_global_ip(ip_address("127.0.0.1")))
+        self.assertTrue(is_non_global_ip(ip_address("10.0.0.1")))
+        self.assertTrue(is_non_global_ip(ip_address("169.254.1.1")))
+        self.assertTrue(is_non_global_ip(ip_address("224.0.0.1")))
+        self.assertTrue(is_non_global_ip(ip_address("240.0.0.1")))
+        self.assertTrue(is_non_global_ip(ip_address("::1")))
+        self.assertTrue(is_non_global_ip(ip_address("fc00::1")))
+
+        self.assertFalse(is_non_global_ip(ip_address("8.8.8.8")))
+        self.assertFalse(is_non_global_ip(ip_address("2001:4860:4860::8888")))

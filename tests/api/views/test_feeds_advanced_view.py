@@ -8,7 +8,7 @@ from django.core.cache import cache
 from rest_framework.test import APIClient
 
 from api.throttles import SharedFeedRateThrottle
-from greedybear.models import IOC, AutonomousSystem, IocType, ShareToken
+from greedybear.models import IOC, AutonomousSystem, IocType, Sensor, ShareToken
 from tests import CustomTestCase
 
 
@@ -109,14 +109,36 @@ class FeedsAdvancedViewTestCase(CustomTestCase):
         """
         self.ioc.attacker_country_code = "NP"
         self.ioc.save()
-
         response = self.client.get("/api/feeds/advanced/")
-
         iocs = response.json()["iocs"]
         target_ioc = next((i for i in iocs if i["value"] == self.ioc.name), None)
-
         self.assertIsNotNone(target_ioc)
         self.assertEqual(target_ioc["attacker_country_code"], "NP")
+
+    def test_feeds_advanced_includes_sensors(self):
+        """Sensors field appears in feeds_advanced response for authenticated users."""
+        sensor = Sensor.objects.create(address="10.0.0.1", label="test-sensor")
+        self.ioc.sensors.add(sensor)
+        response = self.client.get("/api/feeds/advanced/")
+        self.assertEqual(response.status_code, 200)
+        iocs = response.json()["iocs"]
+        target_ioc = next((i for i in iocs if i["value"] == self.ioc.name), None)
+        self.assertIsNotNone(target_ioc)
+        self.assertIn("sensors", target_ioc)
+        self.assertEqual(len(target_ioc["sensors"]), 1)
+        self.assertEqual(target_ioc["sensors"][0]["address"], "10.0.0.1")
+        self.assertEqual(target_ioc["sensors"][0]["label"], "test-sensor")
+
+    def test_public_feeds_excludes_sensors(self):
+        """Sensors field must NOT appear in public feeds response."""
+        sensor = Sensor.objects.create(address="10.0.0.2", label="secret-sensor")
+        self.ioc.sensors.add(sensor)
+        self.client.logout()
+        response = self.client.get("/api/feeds/cowrie/all/recent.json")
+        self.assertEqual(response.status_code, 200)
+        iocs = response.json()["iocs"]
+        for ioc in iocs:
+            self.assertNotIn("sensors", ioc)
 
 
 class FeedsEnhancementsTestCase(CustomTestCase):
@@ -236,12 +258,12 @@ class FeedsEnhancementsTestCase(CustomTestCase):
 
     def test_filter_by_country_code(self):
         """Filter by country_code returns only matching IOCs."""
-        self.ioc.attacker_country_code = "CN"
+        self.ioc.attacker_country_code = "IT"
         self.ioc.save()
-        self.ioc2.attacker_country_code = "US"
+        self.ioc2.attacker_country_code = "FR"
         self.ioc2.save()
 
-        response = self.client.get("/api/feeds/advanced/?country_code=CN")
+        response = self.client.get("/api/feeds/advanced/?country_code=IT")
         self.assertEqual(response.status_code, 200)
         iocs = response.json()["iocs"]
         self.assertEqual(len(iocs), 1)

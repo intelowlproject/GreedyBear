@@ -29,23 +29,25 @@ vi.mock("recharts", async (importOriginal) => {
 });
 
 const COUNTRIES_DATA = [
-  { country: "China", count: 120 },
-  { country: "United States", count: 80 },
-  { country: "Russia", count: 60 },
-  { country: "Germany", count: 40 },
-  { country: "India", count: 30 },
+  { country: "China", code: "CN", count: 120 },
+  { country: "United States", code: "US", count: 80 },
+  { country: "Russia", code: "RU", count: 60 },
+  { country: "Germany", code: "DE", count: 40 },
+  { country: "India", code: "IN", count: 30 },
 ];
 
-// 16 entries (one more than the 15-entry limit)
+// 16 entries (one more than the 15-entry limit).
+// Each entry needs a code so the store doesn't skip codeless items.
 const SIXTEEN_COUNTRIES = Array.from({ length: 16 }, (_, i) => ({
   country: `Country${i + 1}`,
+  code: `T${String(i + 1).padStart(1, "0")}`.slice(0, 2), // fictional alpha-2
   count: 100 - i,
 }));
 
 describe("AttackOriginCountriesChart", () => {
   beforeEach(() => {
     useAttackerCountriesStore.setState({
-      rawData: [],
+      normalizedData: [],
       countryDataMap: {},
       maxCount: 0,
       loading: false,

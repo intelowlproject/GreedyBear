@@ -9,7 +9,7 @@ from django.conf import settings
 from greedybear.cronjobs.repositories import ASRepository
 from greedybear.enums import IpReputation
 from greedybear.models import IOC, FireHolList, MassScanner
-from greedybear.utils import get_ioc_type, parse_timestamp
+from greedybear.utils import get_ioc_type, is_non_global_ip, parse_timestamp
 
 
 def normalize_credential_field(value: object, max_length: int = 256) -> str:
@@ -135,7 +135,7 @@ def iocs_from_hits(hits: list[dict]) -> list[IOC]:
     as_repository = ASRepository()  # single instance for this batch
     for ip, hits in hits_by_ip.items():
         extracted_ip = ip_address(ip)
-        if extracted_ip.is_loopback or extracted_ip.is_private or extracted_ip.is_multicast or extracted_ip.is_link_local or extracted_ip.is_reserved:
+        if is_non_global_ip(extracted_ip):
             continue
 
         firehol_categories = get_firehol_categories(ip, extracted_ip, firehol_exact_map, cidr_entries)
@@ -161,7 +161,7 @@ def iocs_from_hits(hits: list[dict]) -> list[IOC]:
 
         geoip = next((h.get("geoip") for h in hits if h.get("geoip")), {})
         attacker_country = geoip.get("country_name", "")
-        raw_country_code = geoip.get("country_iso_code", "")
+        raw_country_code = geoip.get("country_code2", "")
         attacker_country_code = raw_country_code if len(raw_country_code) == 2 else ""
 
         asn = geoip.get("asn")

@@ -1,6 +1,7 @@
 from django.test import override_settings
 from rest_framework.test import APIClient
 
+from greedybear.models import CowrieSession
 from tests import CustomTestCase
 
 
@@ -33,6 +34,27 @@ class CowrieSessionViewTestCase(CustomTestCase):
         self.assertNotIn("credentials", response.data)
         self.assertNotIn("sessions", response.data)
         self.assertEqual(len(response.data["sources"]), 2)
+
+    def test_include_similar_excludes_non_positive_duration_sessions(self):
+        """Test that include_similar only returns sessions with duration > 0."""
+        CowrieSession.objects.create(
+            session_id=int("dddddddddddd", 16),
+            start_time=self.current_time,
+            duration=0,
+            login_attempt=True,
+            command_execution=True,
+            interaction_count=1,
+            source=self.ioc_3,
+            commands=self.command_sequence_2,
+        )
+
+        response = self.client.get("/api/cowrie_session?query=140.246.171.141&include_similar=true&include_session_data=true")
+
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("99.99.99.99", response.data["sources"])
+        self.assertNotIn("100.100.100.100", response.data["sources"])
+        self.assertTrue(any(session["duration"] > 0 for session in response.data["sessions"]))
+        self.assertFalse(any(session["source"] == "100.100.100.100" for session in response.data["sessions"]))
 
     def test_ip_address_query_with_credentials(self):
         """Test view with a valid IP address query including credentials."""

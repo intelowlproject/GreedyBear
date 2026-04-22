@@ -86,18 +86,25 @@ class StatisticsViewSet(viewsets.ViewSet):
             request: The incoming request object.
 
         Returns:
-            Response: A JSON list of {country, count} objects ordered by count descending.
+            Response: A JSON list of {country, code, count} objects ordered by count descending.
         """
         delta, _ = self.__parse_range(self.request)
         qs = (
             IOC.objects.filter(last_seen__gte=delta)
             .exclude(attacker_country="")
             .filter(honeypots__active=True)
-            .values("attacker_country")
+            .values("attacker_country", "attacker_country_code")
             .annotate(count=Count("id", distinct=True))
             .order_by("-count")
         )
-        data = [{"country": item["attacker_country"], "count": item["count"]} for item in qs]
+        data = [
+            {
+                "country": item["attacker_country"],
+                "code": item["attacker_country_code"],
+                "count": item["count"],
+            }
+            for item in qs
+        ]
         return Response(data)
 
     @action(detail=False, methods=["get"])
