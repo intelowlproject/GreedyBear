@@ -13,6 +13,32 @@ logger = logging.getLogger(__name__)
 BucketKey = tuple[str, str, datetime]
 
 
+class BucketUpdater:
+    def __init__(self):
+        self.counters: Counter[BucketKey] = Counter()
+        self.total_update_count: int = 0
+
+    def collect_hits(self, hits: Iterable[dict]) -> None:
+        for hit in hits:
+            key = _bucket_key_from_hit(hit)
+            if key is not None:
+                self.counters[key] += 1
+
+    def update(self) -> int:
+        if not self.counters:
+            return 0
+
+        try:
+            update_count = TrendingBucketRepository().upsert_bucket_counts(self.counters)
+            logger.debug(f"Updated {update_count} buckets")
+            self.counters = Counter()
+            self.total_update_count += update_count
+            return update_count
+        except Exception as exc:
+            logger.error("Failed to update activity buckets from hits for current chunk: %s", exc, exc_info=True)
+            return 0
+
+
 def _bucket_start(timestamp: str) -> datetime:
     parsed = parse_timestamp(timestamp)
     return parsed.replace(minute=0, second=0, microsecond=0)
@@ -38,20 +64,3 @@ def _bucket_key_from_hit(hit: dict) -> BucketKey | None:
         return normalized_ip, str(feed_type).lower(), _bucket_start(timestamp)
     except Exception:
         return None
-
-
-def update_activity_buckets_from_hits(hits: Iterable[dict]) -> int:
-    counters: Counter[BucketKey] = Counter()
-    for hit in hits:
-        key = _bucket_key_from_hit(hit)
-        if key is not None:
-            counters[key] += 1
-
-    if not counters:
-        return 0
-
-    try:
-        return TrendingBucketRepository().upsert_bucket_counts(counters)
-    except Exception as exc:
-        logger.error("Failed to update activity buckets from hits for current chunk: %s", exc, exc_info=True)
-        return 0
