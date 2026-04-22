@@ -4,8 +4,6 @@ from collections.abc import Iterable
 from datetime import datetime
 from ipaddress import ip_address
 
-from elasticsearch.dsl.response import Hit
-
 from greedybear.cronjobs.extraction.utils import parse_timestamp
 from greedybear.cronjobs.repositories import TrendingBucketRepository
 from greedybear.utils import is_non_global_ip
@@ -20,11 +18,10 @@ def _bucket_start(timestamp: str) -> datetime:
     return parsed.replace(minute=0, second=0, microsecond=0)
 
 
-def _bucket_key_from_hit(hit: Hit) -> BucketKey | None:
-    hit_dict = hit.to_dict()
-    attacker_ip = hit_dict.get("src_ip")
-    feed_type = hit_dict.get("type")
-    timestamp = hit_dict.get("@timestamp")
+def _bucket_key_from_hit(hit: dict) -> BucketKey | None:
+    attacker_ip = hit.get("src_ip")
+    feed_type = hit.get("type")
+    timestamp = hit.get("@timestamp")
     if not attacker_ip or not feed_type or not timestamp:
         return None
 
@@ -43,7 +40,7 @@ def _bucket_key_from_hit(hit: Hit) -> BucketKey | None:
         return None
 
 
-def update_activity_buckets_from_hits(hits: Iterable[Hit]) -> int:
+def update_activity_buckets_from_hits(hits: Iterable[dict]) -> int:
     counters: Counter[BucketKey] = Counter()
     for hit in hits:
         key = _bucket_key_from_hit(hit)

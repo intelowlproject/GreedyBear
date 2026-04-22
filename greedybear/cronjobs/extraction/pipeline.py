@@ -67,8 +67,6 @@ class ExtractionPipeline:
             ioc_records = []
             hits_by_honeypot = defaultdict(list)
 
-            bucket_update_count += update_activity_buckets_from_hits(chunk)
-
             # 2. Group by honeypot
             self.log.info("Grouping hits by honeypot type")
             for hit in chunk:
@@ -96,6 +94,10 @@ class ExtractionPipeline:
                 if not self.ioc_repo.is_ready_for_extraction(honeypot):
                     self.log.info(f"Skipping honeypot {honeypot}")
                     continue
+
+                self.log.info(f"Updating activity buckets for honeypot {honeypot}")
+                bucket_update_count += update_activity_buckets_from_hits(hits)
+
                 self.log.info(f"Extracting hits from honeypot {honeypot}")
                 strategy = factory.get_strategy(honeypot)
                 try:
