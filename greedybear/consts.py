@@ -15,23 +15,29 @@ REGEX_PASSWORD = r"^(?=.*[a-zA-Z])\S{12,}$"
 DOMAIN = "domain"
 IP = "ip"
 
-REQUIRED_FIELDS = [
+FIELDS_TO_EXTRACT = [
     "@timestamp",
-    "src_ip",
+    "body",
     "dest_port",
-    "ip_rep",
-    "geoip",
-    "url",
-    "message",
-    "eventid",
-    "session",
-    "timestamp",
     "duration",
-    "username",
-    "password",
-    "t-pot_ip_ext",
-    "shasum",
+    "eventid",
+    "geoip",
+    "geoip_ext",
+    "ip_rep",
+    "message",
     "outfile",
+    "password",
+    "path",
+    "post_data",
+    "protocol",
+    "session",
+    "shasum",
+    "src_ip",
+    "t-pot_ip_ext",
+    "timestamp",
+    "type",
+    "url",
+    "username",
 ]
 
 

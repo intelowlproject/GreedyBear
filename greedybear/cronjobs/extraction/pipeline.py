@@ -72,24 +72,24 @@ class ExtractionPipeline:
             # 2. Group by honeypot
             self.log.info("Grouping hits by honeypot type")
             for hit in chunk:
+                # convert hit to dict for easier handling
+                hit = hit.to_dict()
                 # skip hits with non-existing or empty sources
                 if "src_ip" not in hit or not hit["src_ip"].strip():
                     continue
                 # skip hits with non-existing or empty types (=honeypots)
                 if "type" not in hit or not hit["type"].strip():
                     continue
-                # extract sensor and include in hit dict
-                hit_dict = hit.to_dict()
 
                 if "t-pot_ip_ext" in hit:
                     sensor = self.sensor_repo.get_or_create_sensor(hit["t-pot_ip_ext"])
-                    hit_dict["_sensor"] = sensor  # include sensor for strategies
+                    hit["_sensor"] = sensor  # include sensor for strategies
 
-                    sensor_country = hit_dict.get("geoip_ext", {}).get("country_name")
+                    sensor_country = hit.get("geoip_ext", {}).get("country_name")
                     if sensor_country is not None:
                         self.sensor_repo.update_country(sensor, sensor_country)
 
-                hits_by_honeypot[hit["type"]].append(hit_dict)
+                hits_by_honeypot[hit["type"]].append(hit)
 
             # 3. Extract using strategies
             for honeypot, hits in sorted(hits_by_honeypot.items()):
