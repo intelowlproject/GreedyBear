@@ -113,7 +113,7 @@ describe("Feeds component", () => {
     });
     expect(buttonFeedsLicense).toHaveAttribute(
       "href",
-      "https://github.com/intelowlproject/GreedyBear/blob/main/FEEDS_LICENSE.md",
+      "https://github.com/GreedyBear-Project/GreedyBear/blob/main/FEEDS_LICENSE.md",
     );
 
     const feedTypeSelectElement = screen.getByLabelText("Feed type:");

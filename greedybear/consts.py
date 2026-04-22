@@ -54,7 +54,7 @@ MASS_SCANNER_DOMAINS = frozenset(
 
 
 # we used this const to implement news feature
-RSS_FEED_URL = "https://intelowlproject.github.io/feed.xml"
+RSS_FEED_URL = "https://greedybear-project.github.io/feed.xml"
 CACHE_KEY_GREEDYBEAR_NEWS = "greedybear_news"
 CACHE_TIMEOUT_SECONDS = 60 * 60
 
