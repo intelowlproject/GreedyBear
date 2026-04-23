@@ -107,8 +107,8 @@ select = [
     "W",   # pycodestyle warnings
 ]
 ignore = [
-    "SIM108", # do not enforce use of ternary operator instead of if-else-block
     "G004",   # allow use of f-strings for better readability
+    "SIM108", # do not enforce use of ternary operator instead of if-else-block
 ]
 
 [tool.ruff.lint.per-file-ignores]
