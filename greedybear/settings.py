@@ -9,7 +9,7 @@ from pathlib import Path
 from django.core.management.utils import get_random_secret_key
 from elasticsearch import Elasticsearch
 
-BASE_DIR = Path(__file__).parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent
 BASE_STATIC_PATH = BASE_DIR / "static"
 
 # SECURITY WARNING: keep the secret key used in production secret!
