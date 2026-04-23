@@ -92,6 +92,7 @@ select = [
     "FA",  # flake8-future-annotations
     "FLY", # flynt
     "FURB",# refurb
+    "G",   # flake8-logging-format
     "I",   # isort
     "ICN", # flake8-import-conventions
     "ISC", # flake8-implicit-str-concat
@@ -107,6 +108,7 @@ select = [
 ]
 ignore = [
     "SIM108", # do not enforce use of ternary operator instead of if-else-block
+    "G004",   # allow use of f-strings for better readability
 ]
 
 [tool.ruff.lint.per-file-ignores]
