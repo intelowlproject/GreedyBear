@@ -68,7 +68,9 @@ class HeraldingExtractionStrategy(BaseExtractionStrategy):
 
     def _get_scanners(self, hits: list[dict]) -> None:
         """Extract scanner IPs from hits."""
-        for ioc in iocs_from_hits(hits):
+        iocs = iocs_from_hits(hits)
+        self.ioc_processor.prefetch_iocs([ioc.name for ioc in iocs])
+        for ioc in iocs:
             self.log.info(f"found IP {ioc.name} by honeypot {self.honeypot}")
             ioc_record = self.ioc_processor.add_ioc(
                 ioc,

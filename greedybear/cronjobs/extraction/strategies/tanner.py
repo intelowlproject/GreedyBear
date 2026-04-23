@@ -111,7 +111,9 @@ class TannerExtractionStrategy(BaseExtractionStrategy):
 
     def _get_scanners(self, hits: list[dict]) -> None:
         """Extract scanner IPs from hits."""
-        for ioc in iocs_from_hits(hits):
+        iocs = iocs_from_hits(hits)
+        self.ioc_processor.prefetch_iocs([ioc.name for ioc in iocs])
+        for ioc in iocs:
             self.log.info(f"found IP {ioc.name} by honeypot {self.honeypot}")
             ioc_record = self.ioc_processor.add_ioc(ioc, attack_type=SCANNER, honeypot_name=TANNER_HONEYPOT)
             if ioc_record:
@@ -128,9 +130,6 @@ class TannerExtractionStrategy(BaseExtractionStrategy):
         Args:
             hits: List of Elasticsearch hit documents.
         """
-        # Seed cache from IOC records already loaded by _get_scanners to avoid
-        # repeated DB lookups for the same scanner IP across many hits.
-        ioc_cache: dict[str, object] = {ioc.name: ioc for ioc in self.ioc_records}
 
         for hit in hits:
             scanner_ip = hit.get("src_ip")
@@ -147,11 +146,9 @@ class TannerExtractionStrategy(BaseExtractionStrategy):
                 continue
 
             # Find the IOC record for this scanner to attach tags.
-            # Use cache to avoid one DB query per hit; fall back to the repo
-            # for IPs not already loaded by _get_scanners.
-            if scanner_ip not in ioc_cache:
-                ioc_cache[scanner_ip] = self.ioc_repo.get_ioc_by_name(scanner_ip)
-            ioc_record = ioc_cache[scanner_ip]
+            # Use the processor-level cache populated by prefetch_iocs() in _get_scanners;
+            # fall back to the repo for IPs not seen in the current batch.
+            ioc_record = self.ioc_processor._ioc_cache.get(scanner_ip) or self.ioc_repo.get_ioc_by_name(scanner_ip)
             if not ioc_record:
                 continue
 

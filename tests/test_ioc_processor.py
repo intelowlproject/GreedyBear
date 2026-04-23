@@ -6,7 +6,7 @@ from greedybear.cronjobs.extraction.ioc_processor import IocProcessor
 from greedybear.enums import IpReputation
 from greedybear.models import IocType
 
-from . import ExtractionTestCase
+from . import CustomTestCase, ExtractionTestCase
 
 
 class TestAddIoc(ExtractionTestCase):
@@ -186,6 +186,29 @@ class TestAddIoc(ExtractionTestCase):
         result = self.processor.add_ioc(ioc, attack_type=SCANNER)
 
         self.assertIsNotNone(result)
+
+    def test_add_ioc_uses_cache_instead_of_repo(self):
+        """add_ioc() uses _ioc_cache and skips get_ioc_by_name when cache is populated."""
+        self.mock_sensor_repo.cache = {}
+        existing = self._create_mock_ioc(attack_count=5)
+        self.processor._ioc_cache["1.2.3.4"] = existing
+        self.mock_ioc_repo.save.return_value = existing
+
+        self.processor.add_ioc(self._create_mock_ioc(), attack_type=SCANNER)
+
+        self.mock_ioc_repo.get_ioc_by_name.assert_not_called()
+
+    def test_add_ioc_updates_cache_after_save(self):
+        """add_ioc() updates _ioc_cache with saved record."""
+        self.mock_sensor_repo.cache = {}
+        self.mock_ioc_repo.get_ioc_by_name.return_value = None
+        ioc = self._create_mock_ioc()
+        self.mock_ioc_repo.save.return_value = ioc
+
+        self.processor.add_ioc(ioc, attack_type=SCANNER)
+
+        self.assertIn("1.2.3.4", self.processor._ioc_cache)
+        self.assertEqual(self.processor._ioc_cache["1.2.3.4"], ioc)
 
 
 class TestMergeIocs(ExtractionTestCase):
@@ -461,3 +484,27 @@ class TestUpdateDaysSeen(ExtractionTestCase):
 
         self.assertEqual(len(result.days_seen), 1)
         self.assertEqual(result.number_of_days_seen, 1)
+
+class TestPrefetchIocs(CustomTestCase):
+    """Tests for IocProcessor.prefetch_iocs() using real DB objects."""
+
+    def setUp(self):
+        super().setUp()
+        self.mock_sensor_repo = Mock()
+        self.mock_sensor_repo.cache = {}
+        self.mock_ioc_repo = Mock()
+        self.processor = IocProcessor(self.mock_ioc_repo, self.mock_sensor_repo)
+
+    def test_prefetch_populates_cache_with_existing_iocs(self):
+        """prefetch_iocs() loads existing IOCs into cache in one query."""
+        self.processor.prefetch_iocs([self.ioc.name, "nonexistent.ip"])
+
+        self.assertIn(self.ioc.name, self.processor._ioc_cache)
+        self.assertNotIn("nonexistent.ip", self.processor._ioc_cache)
+        self.assertEqual(self.processor._ioc_cache[self.ioc.name].name, self.ioc.name)
+
+    def test_prefetch_empty_list_clears_cache(self):
+        """prefetch_iocs() with empty list results in empty cache."""
+        self.processor._ioc_cache = {"1.2.3.4": Mock()}
+        self.processor.prefetch_iocs([])
+        self.assertEqual(self.processor._ioc_cache, {})

@@ -54,8 +54,9 @@ class BaseExtractionStrategy(metaclass=ABCMeta):
             scanner_ip: Scanner IP address.
             hostname: Hostname to link with scanner.
         """
-        scanner_ip_instance = self.ioc_repo.get_ioc_by_name(scanner_ip)
-        hostname_instance = self.ioc_repo.get_ioc_by_name(hostname)
+        ioc_map = {ioc.name: ioc for ioc in self.ioc_records}
+        scanner_ip_instance = ioc_map.get(scanner_ip) or self.ioc_repo.get_ioc_by_name(scanner_ip)
+        hostname_instance = ioc_map.get(hostname) or self.ioc_repo.get_ioc_by_name(hostname)
 
         if not scanner_ip_instance or not hostname_instance:
             self.log.warning(

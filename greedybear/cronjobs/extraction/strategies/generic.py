@@ -21,7 +21,9 @@ class GenericExtractionStrategy(BaseExtractionStrategy):
         Args:
             hits: List of Elasticsearch hits to process.
         """
-        for ioc in iocs_from_hits(hits):
+        iocs = iocs_from_hits(hits)
+        self.ioc_processor.prefetch_iocs([ioc.name for ioc in iocs])
+        for ioc in iocs:
             self.log.info(f"IoC {ioc.name} found by honeypot {self.honeypot}")
             ioc_record = self.ioc_processor.add_ioc(ioc, attack_type=SCANNER, honeypot_name=self.honeypot)
             if ioc_record:
