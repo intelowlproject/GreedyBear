@@ -4,7 +4,7 @@ import {
   Geographies,
   Geography,
   ZoomableGroup,
-} from "react-simple-maps";
+} from "@vnedyalk0v/react19-simple-maps";
 import { useTimePickerStore } from "@greedybear/gb-ui";
 import countries from "i18n-iso-countries";
 import useAttackerCountriesStore from "../../stores/useAttackerCountriesStore";
@@ -32,9 +32,10 @@ const COLOR_MID = "#fd8d3c";
 const COLOR_HIGH = "#bd0026";
 
 const MapPaths = React.memo(
-  ({ getColor, handleMouseEnter, handleMouseLeave }) => {
+  ({ geoData, getColor, handleMouseEnter, handleMouseLeave }) => {
+    if (!geoData) return null;
     return (
-      <Geographies geography={WORLD_ATLAS_GEO_URL}>
+      <Geographies geography={geoData}>
         {({ geographies }) =>
           geographies.map((geo) => (
             <Geography
@@ -73,6 +74,10 @@ export default function AttackOriginMap() {
     fetchData,
   } = useAttackerCountriesStore();
 
+  // TopoJSON is loaded here (bypassing the library's broken URL validator)
+  // and passed as an object to <Geographies>.
+  const [geoData, setGeoData] = React.useState(null);
+
   // tooltip state
   const [tooltip, setTooltip] = React.useState({
     visible: false,
@@ -85,6 +90,18 @@ export default function AttackOriginMap() {
   React.useEffect(() => {
     fetchData(range);
   }, [range, fetchData]);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    fetch(WORLD_ATLAS_GEO_URL)
+      .then((r) => r.json())
+      .then((json) => {
+        if (!cancelled) setGeoData(json);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const colors = React.useMemo(() => {
     const colorMap = {};
@@ -216,6 +233,7 @@ export default function AttackOriginMap() {
         >
           <ZoomableGroup zoom={1} minZoom={0.6} maxZoom={6}>
             <MapPaths
+              geoData={geoData}
               getColor={getColor}
               handleMouseEnter={handleMouseEnter}
               handleMouseLeave={handleMouseLeave}
