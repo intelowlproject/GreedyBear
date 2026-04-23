@@ -4,7 +4,7 @@ import {
   Geographies,
   Geography,
   ZoomableGroup,
-} from "react-simple-maps";
+} from "@vnedyalk0v/react19-simple-maps";
 import { useTimePickerStore } from "@greedybear/gb-ui";
 import countries from "i18n-iso-countries";
 import useAttackerCountriesStore from "../../stores/useAttackerCountriesStore";
