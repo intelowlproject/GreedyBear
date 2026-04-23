@@ -478,7 +478,6 @@ class TestCowrieExtractionStrategy(ExtractionTestCase):
             {"src_ip": "1.1.1.1", "session": "s1", "eventid": "cowrie.session.connect", "timestamp": "2023-01-01T10:00:00"},
             {"src_ip": "1.1.1.1", "session": "s1", "eventid": "cowrie.session.closed", "timestamp": "2023-01-01T10:00:05"},
             {"src_ip": "2.2.2.2", "session": "s2", "eventid": "cowrie.session.connect", "timestamp": "2023-01-01T10:00:00"},
-            {"eventid": "no.ip.event"},
         ]
 
         mock_ioc_record1 = Mock()
@@ -490,7 +489,7 @@ class TestCowrieExtractionStrategy(ExtractionTestCase):
         with patch.object(self.strategy, "_get_sessions") as mock_get_sessions:
             self.strategy._get_scanners(hits)
 
-            mock_iocs_from_hits.assert_called_once_with([h for h in hits if "src_ip" in h])
+            mock_iocs_from_hits.assert_called_once_with(hits)
             self.assertEqual(mock_get_sessions.call_count, 2)
             # Verify the hits passed to _get_sessions are only those containing the matching src_ip
             calls = mock_get_sessions.call_args_list

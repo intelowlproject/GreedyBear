@@ -92,12 +92,11 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
 
     def _get_scanners(self, hits: list[dict]) -> None:
         """Extract scanner IPs and sessions."""
-        valid_hits = [hit for hit in hits if "src_ip" in hit]
         hits_by_ip = defaultdict(list)
-        for hit in valid_hits:
+        for hit in hits:
             hits_by_ip[hit["src_ip"]].append(hit)
 
-        for ioc in iocs_from_hits(valid_hits):
+        for ioc in iocs_from_hits(hits):
             self.log.info(f"found IP {ioc.name} by honeypot cowrie")
             ioc_record = self.ioc_processor.add_ioc(ioc, attack_type=SCANNER, honeypot_name="Cowrie")
             if ioc_record:
