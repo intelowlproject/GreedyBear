@@ -118,7 +118,7 @@ def ordering_validation(ordering: str) -> str:
     if not ordering:
         raise serializers.ValidationError("Invalid ordering: <empty string>")
     # remove minus sign if present
-    field_name = ordering[1:] if ordering.startswith("-") else ordering
+    field_name = ordering.removeprefix("-")
     try:
         IOC._meta.get_field(field_name)
     except FieldDoesNotExist as exc:
@@ -237,6 +237,7 @@ class FeedsResponseSerializer(serializers.Serializer):
     attacker_country = serializers.CharField(allow_null=True, allow_blank=True, max_length=120)
     attacker_country_code = serializers.CharField(allow_null=True, allow_blank=True, max_length=2)
     tags = TagSerializer(many=True, required=False, default=list)
+    sensors = SensorSerializer(many=True, required=False, default=list)
 
     def validate_feed_type(self, feed_type):
         logger.debug(f"FeedsResponseSerializer - validation feed_type: '{feed_type}'")

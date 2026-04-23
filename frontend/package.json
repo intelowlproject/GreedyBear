@@ -9,8 +9,8 @@
     "prettier": ".github/configurations/node_linters/prettier/.prettierrc.js"
   },
   "dependencies": {
-    "@certego/certego-ui": "0.1.14",
-    "axios": "^1.15.0",
+    "@greedybear/gb-ui": "github:GreedyBear-Project/gb-ui#0.1.1",
+    "axios": "^1.15.2",
     "axios-hooks": "^3.1.5",
     "bootstrap": ">=5.3.8",
     "formik": "^2.4.9",
@@ -51,7 +51,7 @@
     "@testing-library/react": "^12.1.5",
     "@testing-library/user-event": "^14.6.1",
     "@vitejs/plugin-react": "^6.0.1",
-    "@vitest/coverage-v8": "^4.1.4",
+    "@vitest/coverage-v8": "^4.1.5",
     "eslint-config-airbnb": "^19.0.4",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-import": "^2.32.0",
@@ -61,7 +61,7 @@
     "jsdom": "^29.0.2",
     "prettier": "^3.8.3",
     "stylelint": "^17.8.0",
-    "vite": "^8.0.8",
-    "vitest": "^4.1.4"
+    "vite": "^8.0.9",
+    "vitest": "^4.1.5"
   }
 }

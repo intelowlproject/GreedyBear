@@ -1,6 +1,6 @@
 import React from "react";
 
-import { FallBackLoading } from "@certego/certego-ui";
+import { FallBackLoading } from "@greedybear/gb-ui";
 
 import { useAuthStore } from "../../stores";
 import { AUTHENTICATION_STATUSES } from "../../constants";

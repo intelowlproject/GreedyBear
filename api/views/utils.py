@@ -176,7 +176,9 @@ def get_valid_feed_types() -> frozenset[str]:
     return frozenset(feed_types)
 
 
-def get_queryset(request, feed_params, valid_feed_types, is_aggregated=False, serializer_class=FeedsRequestSerializer, tag_key="", tag_value=""):
+def get_queryset(
+    request, feed_params, valid_feed_types, is_aggregated=False, serializer_class=FeedsRequestSerializer, tag_key="", tag_value="", include_sensors=False
+):
     """
     Build a queryset to filter IOC data based on the request parameters.
 
@@ -195,6 +197,8 @@ def get_queryset(request, feed_params, valid_feed_types, is_aggregated=False, se
             - Default: `FeedsRequestSerializer`.
         tag_key (str, optional): Filter IOCs by tag key. Only passed from feeds_advanced.
         tag_value (str, optional): Filter IOCs by tag value (case-insensitive substring). Only passed from feeds_advanced.
+        include_sensors (bool, optional): If True, annotates sensors_json for each IOC.
+            Only passed from authenticated views like feeds_advanced. Default: False.
 
     Returns:
         QuerySet: The filtered queryset of IOC data.
@@ -275,6 +279,15 @@ def get_queryset(request, feed_params, valid_feed_types, is_aggregated=False, se
                     distinct=True,
                 )
             )
+            if include_sensors:
+                iocs = iocs.annotate(
+                    sensors_json=ArrayAgg(
+                        JSONObject(address=F("sensors__address"), label=F("sensors__label")),
+                        filter=Q(sensors__isnull=False),
+                        default=Value([]),
+                        distinct=True,
+                    )
+                )
         iocs = iocs.order_by(feed_params.ordering)
         iocs = iocs[: int(feed_params.feed_size)]
 
@@ -299,7 +312,7 @@ def ioc_as_dict(ioc, fields: set) -> dict:
     return {k: v for k, v in ioc.__dict__.items() if k in fields}
 
 
-def feeds_response(request=None, iocs=None, feed_params=None, valid_feed_types=None, dict_only=False, verbose=False):
+def feeds_response(request=None, iocs=None, feed_params=None, valid_feed_types=None, dict_only=False, verbose=False, include_sensors=False):
     """
     Format the IOC data into the requested format (e.g., JSON, CSV, TXT).
 
@@ -362,13 +375,19 @@ def feeds_response(request=None, iocs=None, feed_params=None, valid_feed_types=N
             required_fields = base_fields + verbose_only_fields if verbose else base_fields
 
             # `tags_json` is annotated in get_queryset (only for JSON format) to avoid conflicting
-            # with the `tags` reverse FK on IOC.  When the queryset comes from a repository method
+            # with the `tags` reverse FK on IOC. When the queryset comes from a repository method
             # that does not annotate `tags_json` (e.g. the ML scoring path), exclude the field.
+            # `sensors_json` follows the same pattern and is only annotated for authenticated views.
             if isinstance(iocs, list):
                 has_tags_annotation = bool(iocs) and hasattr(iocs[0], "tags_json")
+                has_sensors_annotation = include_sensors and bool(iocs) and hasattr(iocs[0], "sensors_json")
             else:
                 has_tags_annotation = "tags_json" in getattr(iocs, "query", type("", (), {"annotations": {}})()).annotations
+                has_sensors_annotation = include_sensors and "sensors_json" in getattr(iocs, "query", type("", (), {"annotations": {}})()).annotations
+
             required_fields = tuple(("tags_json" if f == "tags" else f) for f in required_fields if f != "tags" or has_tags_annotation)
+            if has_sensors_annotation:
+                required_fields = required_fields + ("sensors_json",)
 
             iocs_iter: object
             if isinstance(iocs, list):
@@ -385,6 +404,7 @@ def feeds_response(request=None, iocs=None, feed_params=None, valid_feed_types=N
                     "destination_port_count": len(ioc.get("destination_ports", [])),
                     "asn": ioc.get("autonomous_system", ""),
                     "tags": ioc.pop("tags_json", []),
+                    **({"sensors": ioc.pop("sensors_json", [])} if has_sensors_annotation else {}),
                 }
 
                 if not verbose:
@@ -580,7 +600,7 @@ def get_greedybear_news() -> list[dict]:
         feed = feedparser.parse(response.content)
 
         filtered_entries = sorted(
-            [entry for entry in feed.entries if "greedybear" in entry.get("title", "").lower() and entry.get("published_parsed")],
+            [entry for entry in feed.entries if entry.get("published_parsed")],
             key=lambda e: e.published_parsed,
             reverse=True,
         )

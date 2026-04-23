@@ -27,6 +27,9 @@ logger = logging.getLogger(__name__)
 @permission_classes([IsAuthenticated])
 def command_sequence_view(request):
     """
+    Legacy endpoint — succeeded by the cowrie_session API, which covers the same use cases.
+    Do not extend or modify this view; direct new development to cowrie_session_view instead.
+
     View function that handles command sequence queries based on IP addresses or SHA-256 hashes.
 
     Retrieves and returns command sequences and related IOCs based on the query parameter.
