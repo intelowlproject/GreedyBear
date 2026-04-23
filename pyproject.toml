@@ -105,6 +105,9 @@ select = [
     "UP",  # pyupgrade
     "W",   # pycodestyle warnings
 ]
+ignore = [
+    "SIM108", # do not enforce use of ternary operator instead of if-else-block
+]
 
 [tool.ruff.lint.per-file-ignores]
 # Re-exporting submodules with wildcard imports is intentional in package __init__.py files
