@@ -99,6 +99,7 @@ select = [
     "N",   # pep8-naming
     "NPY", # NumPy-specific rules
     "PD",  # pandas-vet
+    "PERF",# Perflint
     "TC",  # flake8-type-checking
     "UP",  # pyupgrade
     "W",   # pycodestyle warnings
