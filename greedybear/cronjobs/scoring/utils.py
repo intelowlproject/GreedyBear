@@ -98,8 +98,7 @@ def get_features(iocs: list[dict], reference_day: str) -> pd.DataFrame:
                 "days_since_first_seen": date_delta(ioc["first_seen"], reference_day),
             }
         )
-    df = pd.DataFrame(result)
-    return df
+    return pd.DataFrame(result)
 
 
 def multi_label_encode(df: pd.DataFrame, column_name: str) -> pd.DataFrame:

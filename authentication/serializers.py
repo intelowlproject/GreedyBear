@@ -77,8 +77,7 @@ class RegistrationSerializer(rest_email_auth.serializers.RegistrationSerializer)
 
         if re.match(REGEX_PASSWORD, password):
             return password
-        else:
-            raise ValidationError("Invalid password")
+        raise ValidationError("Invalid password")
 
     def create(self, validated_data):
         validated_data.pop("profile", None)

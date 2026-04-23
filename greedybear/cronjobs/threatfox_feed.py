@@ -184,9 +184,9 @@ class ThreatFoxCron(Cronjob):
         """
         if ioc_type == "ip:port":
             return ioc_value.split(":")[0] if ":" in ioc_value else None
-        elif ioc_type in ("ip", "ipv4"):
+        if ioc_type in ("ip", "ipv4"):
             return ioc_value
-        elif ioc_type == "url":
+        if ioc_type == "url":
             ip_pattern = r"\b(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})\b"
             match = re.search(ip_pattern, ioc_value)
             return match.group(1) if match else None

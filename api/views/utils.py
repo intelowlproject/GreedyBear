@@ -439,8 +439,7 @@ def feeds_response(request=None, iocs=None, feed_params=None, valid_feed_types=N
                 resp_data["license"] = settings.FEEDS_LICENSE
             if dict_only:
                 return resp_data
-            else:
-                return Response(resp_data, status=status.HTTP_200_OK)
+            return Response(resp_data, status=status.HTTP_200_OK)
         case "stix21":
             stix_fields = {
                 "value",
