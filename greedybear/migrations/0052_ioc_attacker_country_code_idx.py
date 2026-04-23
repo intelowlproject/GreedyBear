@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ("greedybear", "0050_attackeractivitybucket"),
+        ("greedybear", "0051_alter_statistics_source_length"),
     ]
 
     operations = [
