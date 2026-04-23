@@ -108,6 +108,14 @@ class FeedRequestParams:
         self.start_date = query_params.get("start_date")
         self.end_date = query_params.get("end_date")
         self.country_code = query_params.get("country_code")
+        self.min_credential_count = self._safe_int(query_params.get("min_credential_count"))
+        self.max_credential_count = self._safe_int(query_params.get("max_credential_count"))
+
+    def _safe_int(self, value):
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return None
 
     def apply_default_filters(self, query_params):
         if not query_params:
@@ -232,7 +240,19 @@ def get_queryset(
     if tag_value:
         query_dict["tags__value__icontains"] = tag_value[:256]  # Truncate to Tag.value max_length
 
-    iocs = IOC.objects.filter(**query_dict).exclude(ip_reputation__in=feed_params.exclude_reputation).annotate(value=F("name")).distinct()
+    iocs = (
+        IOC.objects.filter(**query_dict)
+        .annotate(credential_count=Count("credentials", distinct=True))
+        .exclude(ip_reputation__in=feed_params.exclude_reputation)
+        .annotate(value=F("name"))
+        .distinct()
+    )
+
+    if feed_params.min_credential_count is not None:
+        iocs = iocs.filter(credential_count__gte=feed_params.min_credential_count)
+
+    if feed_params.max_credential_count is not None:
+        iocs = iocs.filter(credential_count__lte=feed_params.max_credential_count)
 
     # apply feed type filter as union;
     if "all" not in feed_params.feed_types:
@@ -329,6 +349,7 @@ def feeds_response(request=None, iocs=None, feed_params=None, valid_feed_types=N
                 "first_seen",
                 "last_seen",
                 "attack_count",
+                "credential_count",
                 "interaction_count",
                 "scanner",
                 "payload_request",
@@ -358,11 +379,13 @@ def feeds_response(request=None, iocs=None, feed_params=None, valid_feed_types=N
             if isinstance(iocs, list):
                 has_tags_annotation = bool(iocs) and hasattr(iocs[0], "tags_json")
                 has_sensors_annotation = include_sensors and bool(iocs) and hasattr(iocs[0], "sensors_json")
+                has_credential_count = bool(iocs) and hasattr(iocs[0], "credential_count")
             else:
                 has_tags_annotation = "tags_json" in getattr(iocs, "query", type("", (), {"annotations": {}})()).annotations
                 has_sensors_annotation = include_sensors and "sensors_json" in getattr(iocs, "query", type("", (), {"annotations": {}})()).annotations
-
+                has_credential_count = "credential_count" in getattr(iocs, "query", type("", (), {"annotations": {}})()).annotations
             required_fields = tuple(("tags_json" if f == "tags" else f) for f in required_fields if f != "tags" or has_tags_annotation)
+            required_fields = tuple(f for f in required_fields if f != "credential_count" or has_credential_count)
             if has_sensors_annotation:
                 required_fields = required_fields + ("sensors_json",)
 
