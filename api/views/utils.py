@@ -210,7 +210,7 @@ def get_queryset(
     if feed_params.port:
         query_dict["destination_ports__contains"] = [int(feed_params.port)]
     if feed_params.country_code:
-        query_dict["attacker_country_code__iexact"] = feed_params.country_code
+        query_dict["attacker_country_code"] = feed_params.country_code.upper()
 
     # Date handling
     if feed_params.start_date:
