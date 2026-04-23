@@ -102,6 +102,7 @@ select = [
     "PD",  # pandas-vet
     "PERF",# Perflint
     "PIE", # flake8-pie
+    "PTH", # flake8-use-pathlib
     "SIM", # flake8-simplify
     "TC",  # flake8-type-checking
     "UP",  # pyupgrade
