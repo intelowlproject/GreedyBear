@@ -110,7 +110,7 @@ jobs:
         run: |
 
           if [[ '${{ inputs.use_eslint }}' != 'false' ]]; then
-            npm i -D --package-lock-only eslint@^9
+            npm i -D --package-lock-only eslint@^8
           fi
           if [[ '${{ inputs.use_prettier }}' != 'false' ]]; then
             npm i -D --package-lock-only prettier
