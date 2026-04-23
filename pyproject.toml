@@ -89,8 +89,9 @@ select = [
     "DJ",  # flake8-django
     "E",   # pycodestyle errors
     "F",   # pyflakes
-    "FURB",# refurb
+    "FA",  # flake8-future-annotations
     "FLY", # flynt
+    "FURB",# refurb
     "I",   # isort
     "ICN", # flake8-import-conventions
     "ISC", # flake8-implicit-str-concat
