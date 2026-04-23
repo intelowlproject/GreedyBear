@@ -45,7 +45,7 @@ def command_sequence_view(request):
         Http404: If the requested resource is not found
     """
     observable = request.query_params.get("query")
-    include_similar = request.query_params.get("include_similar") is not None
+    include_similar = request.query_params.get("include_similar", "false").lower() == "true"
     logger.info(f"Command Sequence view requested by {request.user} for {observable}")
 
     if not observable:

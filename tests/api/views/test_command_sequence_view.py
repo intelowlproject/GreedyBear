@@ -54,6 +54,43 @@ class CommandSequenceViewTestCase(CustomTestCase):
             f"include_similar lost base results: {base_executed_by - similar_executed_by}",
         )
 
+    # # # # # Parameter Validation Tests # # # # #
+    def test_include_similar_false_value(self):
+        """Test that include_similar=false behaves like missing include_similar."""
+        base_response = self.client.get("/api/command_sequence?query=140.246.171.141")
+        self.assertEqual(base_response.status_code, 200)
+
+        false_response = self.client.get("/api/command_sequence?query=140.246.171.141&include_similar=false")
+        self.assertEqual(false_response.status_code, 200)
+
+        self.assertEqual(base_response.data["executed_by"], false_response.data["executed_by"])
+
+    def test_include_similar_true_expands_results(self):
+        """Test that include_similar=true returns a superset (or equal set) of base results."""
+        base_response = self.client.get("/api/command_sequence?query=140.246.171.141")
+        self.assertEqual(base_response.status_code, 200)
+        base_executed_by = set(base_response.data["executed_by"])
+
+        true_response = self.client.get("/api/command_sequence?query=140.246.171.141&include_similar=true")
+        self.assertEqual(true_response.status_code, 200)
+        true_executed_by = set(true_response.data["executed_by"])
+
+        self.assertTrue(base_executed_by.issubset(true_executed_by))
+
+    def test_case_insensitive_boolean_parameters(self):
+        """Test that boolean parameters accept various case formats."""
+        lower_true_response = self.client.get("/api/command_sequence?query=140.246.171.141&include_similar=true")
+        self.assertEqual(lower_true_response.status_code, 200)
+
+        upper_true_response = self.client.get("/api/command_sequence?query=140.246.171.141&include_similar=TRUE")
+        self.assertEqual(upper_true_response.status_code, 200)
+
+        title_true_response = self.client.get("/api/command_sequence?query=140.246.171.141&include_similar=True")
+        self.assertEqual(title_true_response.status_code, 200)
+
+        self.assertEqual(lower_true_response.data["executed_by"], upper_true_response.data["executed_by"])
+        self.assertEqual(lower_true_response.data["executed_by"], title_true_response.data["executed_by"])
+
     def test_include_similar_with_unclustered_sequences(self):
         """Test that include_similar still returns results when sequences have no cluster."""
         # Remove cluster from the command sequence
