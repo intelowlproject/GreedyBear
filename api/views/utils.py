@@ -29,6 +29,7 @@ logger = logging.getLogger(__name__)
 
 class UnableToExtractSourceIPError(Exception):
     """Raised when no valid source IP can be extracted from the request."""
+
     pass
 
 
