@@ -1,7 +1,7 @@
 import React, { Suspense } from "react";
 import { useRoutes, Outlet } from "react-router-dom";
 
-import { FallBackLoading } from "@certego/certego-ui";
+import { FallBackLoading } from "@greedybear/gb-ui";
 
 // wrapper
 import withAuth from "../wrappers/withAuth";

@@ -8,7 +8,7 @@ import {
   deleteOtherSessions,
   deleteTokenById,
 } from "../../../../src/components/me/sessions/api";
-import { confirm, useAxiosComponentLoader } from "@certego/certego-ui";
+import { confirm, useAxiosComponentLoader } from "@greedybear/gb-ui";
 
 vi.mock("../../../../src/components/me/sessions/api", () => ({
   deleteOtherSessions: vi.fn(),
@@ -17,8 +17,8 @@ vi.mock("../../../../src/components/me/sessions/api", () => ({
 
 const refetchMock = vi.fn();
 
-vi.mock("@certego/certego-ui", async () => {
-  const actual = await vi.importActual("@certego/certego-ui");
+vi.mock("@greedybear/gb-ui", async () => {
+  const actual = await vi.importActual("@greedybear/gb-ui");
   return {
     ...actual,
     confirm: vi.fn(),
