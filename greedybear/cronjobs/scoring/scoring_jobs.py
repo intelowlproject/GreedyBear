@@ -155,7 +155,7 @@ class UpdateScores(Cronjob):
         self.data = None
         self.ioc_repo = ioc_repo if ioc_repo is not None else IocRepository()
 
-    def update_db(self, df: pd.DataFrame, iocs: set[IOC] = None) -> int:
+    def update_db(self, df: pd.DataFrame, iocs: set[IOC] | None = None) -> int:
         """
         Update IOC scores in the database based on new data from a DataFrame.
 

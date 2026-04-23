@@ -104,6 +104,7 @@ select = [
     "PIE", # flake8-pie
     "PTH", # flake8-use-pathlib
     "RET", # flake8-return
+    "RUF", # Ruff-specific rules
     "S",   # flake8-bandit
     "SIM", # flake8-simplify
     "SLOT",# flake8-slots
@@ -115,6 +116,7 @@ select = [
 ]
 ignore = [
     "G004",   # allow use of f-strings in log messages for better readability
+    "RUF012", # allow mutable-class-defaults (Django convention)
     "SIM108", # do not enforce use of ternary operator instead of if-else-block
 ]
 
