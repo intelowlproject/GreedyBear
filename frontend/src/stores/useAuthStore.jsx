@@ -1,7 +1,7 @@
 import axios from "axios";
 import { create } from "zustand";
 
-import { addToast } from "@certego/certego-ui";
+import { addToast } from "@greedybear/gb-ui";
 
 import {
   USERACCESS_URI,

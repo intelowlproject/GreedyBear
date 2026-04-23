@@ -1,5 +1,5 @@
 import axios from "axios";
-import { addToast } from "@certego/certego-ui";
+import { addToast } from "@greedybear/gb-ui";
 
 import {
   deleteOtherSessions,
@@ -8,7 +8,7 @@ import {
 import { SESSIONS_BASE_URI } from "../../../../src/constants/api";
 
 vi.mock("axios");
-vi.mock("@certego/certego-ui", () => ({
+vi.mock("@greedybear/gb-ui", () => ({
   addToast: vi.fn(),
 }));
 

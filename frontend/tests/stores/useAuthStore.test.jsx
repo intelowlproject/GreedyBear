@@ -9,10 +9,10 @@ import {
   LOGOUT_URI,
   USERACCESS_URI,
 } from "../../src/constants/api";
-import { addToast } from "@certego/certego-ui";
+import { addToast } from "@greedybear/gb-ui";
 
 vi.mock("axios");
-vi.mock("@certego/certego-ui", () => ({
+vi.mock("@greedybear/gb-ui", () => ({
   addToast: vi.fn(),
 }));
 
