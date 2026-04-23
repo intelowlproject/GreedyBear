@@ -172,8 +172,9 @@ describe("useAuthStore", () => {
       expect(addToast).toHaveBeenCalledWith("Logged out!", null, "info");
     });
 
-    test("still clears state and emits info toast on failure", async () => {
-      axios.post.mockRejectedValue(new Error("network"));
+    test("clears local state, emits warning toast, and rejects on failure", async () => {
+      const err = { parsedMsg: "network" };
+      axios.post.mockRejectedValue(err);
 
       useAuthStore.setState({
         isAuthenticated: AUTHENTICATION_STATUSES.TRUE,
@@ -188,13 +189,18 @@ describe("useAuthStore", () => {
 
       const { logoutUser } = useAuthStore.getState().service;
 
-      await expect(logoutUser()).resolves.toBeUndefined();
+      await expect(logoutUser()).rejects.toEqual(err);
 
       const state = useAuthStore.getState();
       expect(state.isAuthenticated).toBe(AUTHENTICATION_STATUSES.FALSE);
       expect(state.isSuperuser).toBe(false);
       expect(state.user).toEqual(INITIAL_USER);
-      expect(addToast).toHaveBeenCalledWith("Logged out!", null, "info");
+      expect(addToast).toHaveBeenCalledWith(
+        "Logout request failed. Local session cleared.",
+        "network",
+        "warning",
+        true,
+      );
     });
   });
 

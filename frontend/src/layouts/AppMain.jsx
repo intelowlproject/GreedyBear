@@ -15,6 +15,7 @@ import {
 import AppHeader from "./AppHeader";
 
 const NotFoundPage = React.lazy(() => import("./NotFoundPage"));
+const AuthLayout = withAuth(Layout);
 
 function Layout() {
   return (
@@ -28,7 +29,6 @@ function Layout() {
 }
 
 function AppMain() {
-  const AuthLayout = withAuth(Layout);
   const routes = useRoutes([
     {
       path: "/",

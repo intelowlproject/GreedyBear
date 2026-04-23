@@ -14,7 +14,7 @@ export default function Logout() {
 
   React.useEffect(() => {
     if (isAuthenticated === AUTHENTICATION_STATUSES.TRUE) {
-      logoutUser();
+      void logoutUser().catch(() => {});
     }
   }, [isAuthenticated, logoutUser]);
 
