@@ -490,6 +490,7 @@ class TestCowrieExtractionStrategy(ExtractionTestCase):
         with patch.object(self.strategy, "_get_sessions") as mock_get_sessions:
             self.strategy._get_scanners(hits)
 
+            mock_iocs_from_hits.assert_called_once_with([h for h in hits if "src_ip" in h])
             self.assertEqual(mock_get_sessions.call_count, 2)
             # Verify the hits passed to _get_sessions are only those containing the matching src_ip
             calls = mock_get_sessions.call_args_list
