@@ -15,6 +15,7 @@ REGEX_PASSWORD = r"^(?=.*[a-zA-Z])\S{12,}$"
 DOMAIN = "domain"
 IP = "ip"
 
+
 FIELDS_TO_EXTRACT = [
     "@timestamp",
     "body",
