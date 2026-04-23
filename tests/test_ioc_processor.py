@@ -485,6 +485,7 @@ class TestUpdateDaysSeen(ExtractionTestCase):
         self.assertEqual(len(result.days_seen), 1)
         self.assertEqual(result.number_of_days_seen, 1)
 
+
 class TestPrefetchIocs(CustomTestCase):
     """Tests for IocProcessor.prefetch_iocs() using real DB objects."""
 

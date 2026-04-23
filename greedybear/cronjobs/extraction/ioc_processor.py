@@ -37,10 +37,7 @@ class IocProcessor:
         Args:
             names: List of IOC names (IPs or domains) to prefetch.
         """
-        self._ioc_cache = {
-            ioc.name: ioc
-            for ioc in IOC.objects.prefetch_related("honeypots").filter(name__in=names)
-        }
+        self._ioc_cache = {ioc.name: ioc for ioc in IOC.objects.prefetch_related("honeypots").filter(name__in=names)}
 
     def add_ioc(
         self,
