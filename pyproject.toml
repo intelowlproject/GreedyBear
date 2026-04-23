@@ -104,6 +104,7 @@ select = [
     "PIE", # flake8-pie
     "PTH", # flake8-use-pathlib
     "RET", # flake8-return
+    "S",   # flake8-bandit
     "SIM", # flake8-simplify
     "TC",  # flake8-type-checking
     "UP",  # pyupgrade
@@ -119,6 +120,14 @@ ignore = [
 "**/__init__.py" = ["F403"]
 # Long parameter documentation lines in API view docstrings
 "api/views/*" = ["E501"]
+# Exclude tests from security checks
+"tests/*" = ["S"]
+# Misinterpreted regex
+"greedybear/consts.py" = ["S105"]
+# Dummy key for certego-saas compatibility
+"greedybear/settings.py" = ["S105"]
+# String-based query (no equvalent ORM call exists)
+"greedybear/cronjobs/repositories/trending_bucket.py" = ["S608"]
 
 [tool.ruff.lint.isort]
 known-first-party = [
