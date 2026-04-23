@@ -1,6 +1,6 @@
 from types import SimpleNamespace
 
-from api.views.utils import get_request_source_ip, UnableToExtractSourceIPError
+from api.views.utils import UnableToExtractSourceIPError, get_request_source_ip
 from greedybear.utils import is_ip_address, is_sha256hash
 from tests import CustomTestCase
 

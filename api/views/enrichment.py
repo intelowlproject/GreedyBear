@@ -13,7 +13,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
 from api.serializers import EnrichmentSerializer
-from api.views.utils import get_request_source_ip, UnableToExtractSourceIPError
+from api.views.utils import UnableToExtractSourceIPError, get_request_source_ip
 from greedybear.consts import GET
 from greedybear.models import Statistics, ViewType
 
