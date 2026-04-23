@@ -46,9 +46,8 @@ def correlated_features(df: pd.DataFrame, threshold: float = 0.7) -> list[tuple]
     high_corr_pairs = []
     features = list(df.columns)
     for idx, f1 in enumerate(features):
-        for f2 in features[idx + 1 :]:
-            if abs(corr_matrix.loc[f1, f2]) > threshold:
-                high_corr_pairs.append((f1, f2, corr_matrix.loc[f1, f2]))
+        pairs = ((f1, f2, corr_matrix.loc[f1, f2]) for f2 in features[idx + 1 :] if abs(corr_matrix.loc[f1, f2]) > threshold)
+        high_corr_pairs.extend(pairs)
     return high_corr_pairs
 
 
