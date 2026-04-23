@@ -168,10 +168,12 @@ class UpdateActivityBucketsFromHitsTestCase(CustomTestCase):
         }
 
         repository = TrendingBucketRepository()
-        with patch.object(TrendingBucketRepository, "UPSERT_BATCH_SIZE", 2):
-            with patch("greedybear.cronjobs.repositories.trending_bucket.connection.cursor") as mock_cursor_factory:
-                mock_cursor = mock_cursor_factory.return_value.__enter__.return_value
-                inserted = repository.upsert_bucket_counts(counters)
+        with (
+            patch.object(TrendingBucketRepository, "UPSERT_BATCH_SIZE", 2),
+            patch("greedybear.cronjobs.repositories.trending_bucket.connection.cursor") as mock_cursor_factory,
+        ):
+            mock_cursor = mock_cursor_factory.return_value.__enter__.return_value
+            inserted = repository.upsert_bucket_counts(counters)
 
         self.assertEqual(inserted, 5)
         self.assertEqual(mock_cursor.execute.call_count, 3)
@@ -222,45 +224,40 @@ class TrendingBucketCleanupCronTestCase(CustomTestCase):
         TRENDING_BUCKET_RETENTION_HOURS=0,
     )
     def test_run_raises_on_invalid_retention_hours(self):
-        with patch("greedybear.cronjobs.bucket_cleanup.timezone.now", return_value=datetime(2026, 3, 20, 10, 30, 0)):
-            with self.assertRaises(ValueError):
-                self.cron.run()
+        with patch("greedybear.cronjobs.bucket_cleanup.timezone.now", return_value=datetime(2026, 3, 20, 10, 30, 0)), self.assertRaises(ValueError):
+            self.cron.run()
 
     @override_settings(
         TRENDING_BUCKET_RETENTION_HOURS=1,
         TRENDING_MAX_WINDOW_MINUTES=60,
     )
     def test_run_raises_when_retention_cannot_cover_two_windows(self):
-        with patch("greedybear.cronjobs.bucket_cleanup.timezone.now", return_value=datetime(2026, 3, 20, 10, 30, 0)):
-            with self.assertRaises(ValueError):
-                self.cron.run()
+        with patch("greedybear.cronjobs.bucket_cleanup.timezone.now", return_value=datetime(2026, 3, 20, 10, 30, 0)), self.assertRaises(ValueError):
+            self.cron.run()
 
     @override_settings(
         TRENDING_BUCKET_RETENTION_HOURS=1,
         TRENDING_MAX_WINDOW_MINUTES=120,
     )
     def test_run_raises_when_max_window_exceeds_retention_horizon(self):
-        with patch("greedybear.cronjobs.bucket_cleanup.timezone.now", return_value=datetime(2026, 3, 20, 10, 30, 0)):
-            with self.assertRaises(ValueError):
-                self.cron.run()
+        with patch("greedybear.cronjobs.bucket_cleanup.timezone.now", return_value=datetime(2026, 3, 20, 10, 30, 0)), self.assertRaises(ValueError):
+            self.cron.run()
 
     @override_settings(
         TRENDING_BUCKET_RETENTION_HOURS=4,
         TRENDING_MAX_WINDOW_MINUTES=59,
     )
     def test_run_raises_when_max_window_below_60(self):
-        with patch("greedybear.cronjobs.bucket_cleanup.timezone.now", return_value=datetime(2026, 3, 20, 10, 30, 0)):
-            with self.assertRaises(ValueError):
-                self.cron.run()
+        with patch("greedybear.cronjobs.bucket_cleanup.timezone.now", return_value=datetime(2026, 3, 20, 10, 30, 0)), self.assertRaises(ValueError):
+            self.cron.run()
 
     @override_settings(
         TRENDING_BUCKET_RETENTION_HOURS=4,
         TRENDING_MAX_WINDOW_MINUTES=130,
     )
     def test_run_raises_when_max_window_not_multiple_of_60(self):
-        with patch("greedybear.cronjobs.bucket_cleanup.timezone.now", return_value=datetime(2026, 3, 20, 10, 30, 0)):
-            with self.assertRaises(ValueError):
-                self.cron.run()
+        with patch("greedybear.cronjobs.bucket_cleanup.timezone.now", return_value=datetime(2026, 3, 20, 10, 30, 0)), self.assertRaises(ValueError):
+            self.cron.run()
 
     def test_positive_int_setting_rejects_non_numeric(self):
         with self.assertRaisesMessage(ValueError, "TRENDING_BUCKET_RETENTION_HOURS must be a positive integer"):

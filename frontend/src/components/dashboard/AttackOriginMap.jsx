@@ -5,7 +5,7 @@ import {
   Geography,
   ZoomableGroup,
 } from "react-simple-maps";
-import { useTimePickerStore } from "@certego/certego-ui";
+import { useTimePickerStore } from "@greedybear/gb-ui";
 import countries from "i18n-iso-countries";
 import useAttackerCountriesStore from "../../stores/useAttackerCountriesStore";
 

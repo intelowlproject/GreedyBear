@@ -84,10 +84,7 @@ if STAGE_PRODUCTION:
 # Falls back to ["*"] for backward compatibility.
 # For security checks, see greedybear/checks.py.
 _allowed_hosts_env = os.environ.get("DJANGO_ALLOWED_HOSTS", "")
-if _allowed_hosts_env:
-    ALLOWED_HOSTS = [h.strip() for h in _allowed_hosts_env.split(",") if h.strip()]
-else:
-    ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = [h.strip() for h in _allowed_hosts_env.split(",") if h.strip()] if _allowed_hosts_env else ["*"]
 
 # certego_saas
 HOST_URI = os.environ.get("HOST_URI", "http://localhost")
@@ -485,6 +482,7 @@ CLUSTER_COWRIE_COMMAND_SEQUENCES = os.environ.get("CLUSTER_COWRIE_COMMAND_SEQUEN
 IOC_RETENTION = int(os.environ.get("IOC_RETENTION", "3650"))
 COWRIE_SESSION_RETENTION = int(os.environ.get("COWRIE_SESSION_RETENTION", "365"))
 COMMAND_SEQUENCE_RETENTION = int(os.environ.get("COMMAND_SEQUENCE_RETENTION", "365"))
+STATISTICS_RETENTION = 730
 
 TRENDING_MAX_WINDOW_MINUTES = int(os.environ.get("TRENDING_MAX_WINDOW_MINUTES", str((24 * 31 * 60) // 2)))
 TRENDING_BUCKET_RETENTION_HOURS = int(os.environ.get("TRENDING_BUCKET_RETENTION_HOURS", str(24 * 31)))

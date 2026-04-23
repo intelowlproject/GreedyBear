@@ -1,6 +1,6 @@
 import { UncontrolledPopover, PopoverBody } from "reactstrap";
 import { FiInfo } from "react-icons/fi";
-import { BooleanIcon, IconButton } from "@certego/certego-ui";
+import { BooleanIcon, IconButton } from "@greedybear/gb-ui";
 import { INTELOWL_URL, PUBLIC_URL } from "../../constants/environment";
 
 const formatInteger = (value) => {

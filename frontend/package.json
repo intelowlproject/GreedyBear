@@ -9,7 +9,7 @@
     "prettier": ".github/configurations/node_linters/prettier/.prettierrc.js"
   },
   "dependencies": {
-    "@certego/certego-ui": "0.1.14",
+    "@greedybear/gb-ui": "github:GreedyBear-Project/gb-ui#0.1.1",
     "axios": "^1.15.2",
     "axios-hooks": "^3.1.5",
     "bootstrap": ">=5.3.8",

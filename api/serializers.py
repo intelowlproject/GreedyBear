@@ -118,7 +118,7 @@ def ordering_validation(ordering: str) -> str:
     if not ordering:
         raise serializers.ValidationError("Invalid ordering: <empty string>")
     # remove minus sign if present
-    field_name = ordering[1:] if ordering.startswith("-") else ordering
+    field_name = ordering.removeprefix("-")
     try:
         IOC._meta.get_field(field_name)
     except FieldDoesNotExist as exc:
