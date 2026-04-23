@@ -4,12 +4,13 @@ import logging
 import os
 import tomllib
 from datetime import timedelta
+from pathlib import Path
 
 from django.core.management.utils import get_random_secret_key
 from elasticsearch import Elasticsearch
 
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-BASE_STATIC_PATH = os.path.join(BASE_DIR, "static/")
+BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_STATIC_PATH = BASE_DIR / "static"
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.environ.get("DJANGO_SECRET", None) or get_random_secret_key()
@@ -18,8 +19,8 @@ SECRET_KEY = os.environ.get("DJANGO_SECRET", None) or get_random_secret_key()
 DEBUG = os.environ.get("DEBUG", "False") == "True"
 
 DJANGO_LOG_DIRECTORY = "/var/log/greedybear/django"
-ML_MODEL_DIRECTORY = os.path.join(BASE_DIR, "mlmodels/")  # "/opt/deploy/greedybear/mlmodels"
-ML_CONFIG_FILE = os.path.join(BASE_DIR, "configuration/ml_config.json")
+ML_MODEL_DIRECTORY = BASE_DIR / "mlmodels"  # "/opt/deploy/greedybear/mlmodels"
+ML_CONFIG_FILE = BASE_DIR / "configuration" / "ml_config.json"
 MOCK_CONNECTIONS = os.environ.get("MOCK_CONNECTIONS", "False") == "True"
 STAGE = os.environ.get("ENVIRONMENT", "production")
 STAGE_PRODUCTION = STAGE == "production"
@@ -53,7 +54,7 @@ SLACK_TOKEN = os.environ.get("SLACK_TOKEN", "")
 DEFAULT_SLACK_CHANNEL = os.environ.get("DEFAULT_SLACK_CHANNEL", "")
 NTFY_URL = os.environ.get("NTFY_URL", "")
 
-with open(os.path.join(BASE_DIR, "pyproject.toml"), "rb") as f:
+with (BASE_DIR / "pyproject.toml").open("rb") as f:
     VERSION = tomllib.load(f)["project"]["version"]
 
 CSRF_COOKIE_SAMESITE = "Strict"
@@ -186,9 +187,7 @@ ROOT_URLCONF = "greedybear.urls"
 TEMPLATES = [
     {
         "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [
-            os.path.join(BASE_STATIC_PATH, "reactapp"),
-        ],
+        "DIRS": [BASE_STATIC_PATH / "reactapp"],
         "APP_DIRS": True,
         "OPTIONS": {
             "context_processors": [
