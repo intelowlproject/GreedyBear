@@ -84,10 +84,7 @@ if STAGE_PRODUCTION:
 # Falls back to ["*"] for backward compatibility.
 # For security checks, see greedybear/checks.py.
 _allowed_hosts_env = os.environ.get("DJANGO_ALLOWED_HOSTS", "")
-if _allowed_hosts_env:
-    ALLOWED_HOSTS = [h.strip() for h in _allowed_hosts_env.split(",") if h.strip()]
-else:
-    ALLOWED_HOSTS = ["*"]
+ALLOWED_HOSTS = [h.strip() for h in _allowed_hosts_env.split(",") if h.strip()] if _allowed_hosts_env else ["*"]
 
 # certego_saas
 HOST_URI = os.environ.get("HOST_URI", "http://localhost")

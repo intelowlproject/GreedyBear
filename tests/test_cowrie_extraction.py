@@ -453,9 +453,8 @@ class TestCowrieExtractionStrategy(ExtractionTestCase):
 
         hits = [{"src_ip": "1.2.3.4", "session": "s1", "eventid": "cowrie.session.connect"}]
 
-        with patch.object(self.strategy, "_get_sessions"):
-            with patch.object(self.strategy, "_extract_possible_payload_in_messages"):
-                self.strategy.extract_from_hits(hits)
+        with patch.object(self.strategy, "_get_sessions"), patch.object(self.strategy, "_extract_possible_payload_in_messages"):
+            self.strategy.extract_from_hits(hits)
 
         # Verify scanner was processed with Cowrie as honeypot
         self.strategy.ioc_processor.add_ioc.assert_called()
