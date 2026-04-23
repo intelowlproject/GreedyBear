@@ -116,6 +116,7 @@ class IOC(models.Model):
         indexes = [
             models.Index(fields=["name"]),
             models.Index(fields=["attacker_country"]),
+            models.Index(fields=["attacker_country_code"]),
         ]
 
     def __str__(self):
