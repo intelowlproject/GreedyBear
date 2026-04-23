@@ -37,10 +37,7 @@ class IocRepository:
         """
         normalized_name = self._normalize_name(honeypot_name)
 
-        if hasattr(ioc, "_seen_honeypots"):
-            honeypot_set = set(ioc._seen_honeypots)
-        else:
-            honeypot_set = {self._normalize_name(hp.name) for hp in ioc.honeypots.all()}
+        honeypot_set = set(ioc._seen_honeypots) if hasattr(ioc, "_seen_honeypots") else {self._normalize_name(hp.name) for hp in ioc.honeypots.all()}
 
         if normalized_name not in honeypot_set:
             self.log.debug(f"adding honeypot {honeypot_name} to IoC {ioc}")
