@@ -106,12 +106,15 @@ select = [
     "RET", # flake8-return
     "S",   # flake8-bandit
     "SIM", # flake8-simplify
+    "SLOT",# flake8-slots
     "TC",  # flake8-type-checking
+    "TD",  # flake8-todos
+    "TID", # flake8-tidy-imports
     "UP",  # pyupgrade
     "W",   # pycodestyle warnings
 ]
 ignore = [
-    "G004",   # allow use of f-strings for better readability
+    "G004",   # allow use of f-strings in log messages for better readability
     "SIM108", # do not enforce use of ternary operator instead of if-else-block
 ]
 
