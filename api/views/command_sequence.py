@@ -14,7 +14,7 @@ from rest_framework.decorators import (
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from api.views.utils import get_request_source_ip
+from api.views.utils import get_request_source_ip, UnableToExtractSourceIPError
 from greedybear.consts import GET
 from greedybear.models import IOC, CommandSequence, CowrieSession, Statistics, ViewType
 from greedybear.utils import is_ip_address, is_sha256hash
@@ -55,9 +55,12 @@ def command_sequence_view(request):
     if not observable:
         return HttpResponseBadRequest("Missing required 'query' parameter")
 
-    source_ip = get_request_source_ip(request)
-    request_source = Statistics(source=source_ip, view=ViewType.COMMAND_SEQUENCE_VIEW.value)
-    request_source.save()
+    try:
+        source_ip = get_request_source_ip(request)
+        request_source = Statistics(source=source_ip, view=ViewType.COMMAND_SEQUENCE_VIEW.value)
+        request_source.save()
+    except UnableToExtractSourceIPError:
+        logger.warning("Skipping statistics recording due to unable to extract source IP")
 
     if is_ip_address(observable):
         sessions = CowrieSession.objects.filter(source__name=observable, start_time__isnull=False, commands__isnull=False)

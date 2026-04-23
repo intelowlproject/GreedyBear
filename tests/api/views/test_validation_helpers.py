@@ -1,6 +1,6 @@
 from types import SimpleNamespace
 
-from api.views.utils import get_request_source_ip
+from api.views.utils import get_request_source_ip, UnableToExtractSourceIPError
 from greedybear.utils import is_ip_address, is_sha256hash
 from tests import CustomTestCase
 
@@ -65,12 +65,13 @@ class ValidationHelpersTestCase(CustomTestCase):
         )
         self.assertEqual(get_request_source_ip(request), "2001:db8::1")
 
-    def test_get_request_source_ip_returns_empty_when_invalid(self):
-        """Return empty string when no valid source IP can be extracted."""
+    def test_get_request_source_ip_raises_exception_when_invalid(self):
+        """Raise UnableToExtractSourceIPError when no valid source IP can be extracted."""
         request = SimpleNamespace(
             META={
                 "HTTP_X_FORWARDED_FOR": "unknown, not-an-ip",
                 "REMOTE_ADDR": "not-an-ip",
             }
         )
-        self.assertEqual(get_request_source_ip(request), "")
+        with self.assertRaises(UnableToExtractSourceIPError):
+            get_request_source_ip(request)

@@ -15,7 +15,7 @@ from rest_framework.decorators import (
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from api.views.utils import get_request_source_ip
+from api.views.utils import get_request_source_ip, UnableToExtractSourceIPError
 from greedybear.consts import GET
 from greedybear.models import CommandSequence, CowrieSession, Statistics, ViewType
 from greedybear.utils import is_ip_address, is_sha256hash
@@ -96,8 +96,11 @@ def cowrie_session_view(request):
         if not sessions.exists():
             raise Http404(f"No information found for password: {observable}")
 
-    source_ip = get_request_source_ip(request)
-    Statistics(source=source_ip, view=ViewType.COWRIE_SESSION_VIEW.value).save()
+    try:
+        source_ip = get_request_source_ip(request)
+        Statistics(source=source_ip, view=ViewType.COWRIE_SESSION_VIEW.value).save()
+    except UnableToExtractSourceIPError:
+        logger.warning("Skipping statistics recording due to unable to extract source IP")
 
     if include_similar:
         commands = {s.commands for s in sessions if s.commands}

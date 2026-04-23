@@ -27,6 +27,11 @@ from greedybear.utils import is_ip_address, is_valid_domain
 logger = logging.getLogger(__name__)
 
 
+class UnableToExtractSourceIPError(Exception):
+    """Raised when no valid source IP can be extracted from the request."""
+    pass
+
+
 class Echo:
     """An object that implements just the write method of the file-like
     interface.
@@ -51,7 +56,9 @@ def get_request_source_ip(request) -> str:
     Preference order:
     1) First valid IP from X-Forwarded-For
     2) Valid REMOTE_ADDR
-    3) Empty string when no valid IP is found
+
+    Raises:
+        UnableToExtractSourceIPError: When no valid IP is found
     """
 
     forwarded_for = str(request.META.get("HTTP_X_FORWARDED_FOR", ""))
@@ -65,7 +72,8 @@ def get_request_source_ip(request) -> str:
         if is_ip_address(candidate):
             return candidate
 
-    return ""
+    logger.error("Unable to extract valid source IP from request. X-Forwarded-For: %s, REMOTE_ADDR: %s", forwarded_for, remote_addr)
+    raise UnableToExtractSourceIPError("No valid source IP found in request metadata")
 
 
 class FeedRequestParams:
@@ -292,9 +300,12 @@ def get_queryset(
         iocs = iocs[: int(feed_params.feed_size)]
 
     # save request source for statistics
-    source_ip = get_request_source_ip(request)
-    request_source = Statistics(source=source_ip)
-    request_source.save()
+    try:
+        source_ip = get_request_source_ip(request)
+        request_source = Statistics(source=source_ip)
+        request_source.save()
+    except UnableToExtractSourceIPError:
+        logger.warning("Skipping statistics recording due to unable to extract source IP")
     return iocs
 
 
