@@ -101,6 +101,7 @@ select = [
     "NPY", # NumPy-specific rules
     "PD",  # pandas-vet
     "PERF",# Perflint
+    "PIE", # flake8-pie
     "SIM", # flake8-simplify
     "TC",  # flake8-type-checking
     "UP",  # pyupgrade
