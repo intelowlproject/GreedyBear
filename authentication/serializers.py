@@ -22,10 +22,10 @@ from .models import UserProfile
 logger = logging.getLogger(__name__)
 
 __all__ = [
-    "UserProfileSerializer",
-    "RegistrationSerializer",
-    "EmailVerificationSerializer",
     "ChangePasswordSerializer",
+    "EmailVerificationSerializer",
+    "RegistrationSerializer",
+    "UserProfileSerializer",
 ]
 
 
@@ -136,7 +136,7 @@ class EmailVerificationSerializer(rest_email_auth.serializers.EmailVerificationS
                     channel=certego_apps_settings.DEFAULT_SLACK_CHANNEL,
                 )
             except SlackApiError as exc:
-                slack.log.error(f"Slack message failed for user(#{user.pk}) with error: {str(exc)}")
+                slack.log.error(f"Slack message failed for user(#{user.pk}) with error: {exc}")
 
 
 class LoginSerializer(AuthTokenSerializer):

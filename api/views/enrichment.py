@@ -35,7 +35,7 @@ def enrichment_view(request):
         and if so, the corresponding IOC.
     """
     observable_name = request.query_params.get("query")
-    logger.info(f"Enrichment view requested for: {str(observable_name)}")
+    logger.info(f"Enrichment view requested for: {observable_name}")
     serializer = EnrichmentSerializer(data=request.query_params, context={"request": request})
     serializer.is_valid(raise_exception=True)
 

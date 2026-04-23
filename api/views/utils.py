@@ -397,7 +397,7 @@ def feeds_response(request=None, iocs=None, feed_params=None, valid_feed_types=N
 
             required_fields = tuple(("tags_json" if f == "tags" else f) for f in required_fields if f != "tags" or has_tags_annotation)
             if has_sensors_annotation:
-                required_fields = required_fields + ("sensors_json",)
+                required_fields = (*required_fields, "sensors_json")
 
             iocs_iter: object
             if isinstance(iocs, list):
