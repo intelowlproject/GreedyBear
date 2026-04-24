@@ -26,6 +26,18 @@ class IocProcessor:
         self.ioc_repo = ioc_repo
         self.sensor_repo = sensor_repo
         self._whatsmyip_domains = set(WhatsMyIPDomain.objects.values_list("domain", flat=True))
+        self._ioc_cache: dict[str, IOC] = {}
+
+    def prefetch_iocs(self, names: list[str]) -> None:
+        """
+        Bulk prefetch existing IOC records into the cache.
+        Eliminates per-IOC SELECT queries in add_ioc() by loading all
+        known IOCs for the current batch in a single query.
+
+        Args:
+            names: List of IOC names (IPs or domains) to prefetch.
+        """
+        self._ioc_cache = {ioc.name: ioc for ioc in IOC.objects.prefetch_related("honeypots").filter(name__in=names)}
 
     def add_ioc(
         self,
@@ -57,7 +69,7 @@ class IocProcessor:
             self.log.debug(f"not saved {ioc} because it is a whats-my-ip domain")
             return None
 
-        ioc_record = self.ioc_repo.get_ioc_by_name(ioc.name)
+        ioc_record = self._ioc_cache.get(ioc.name) or self.ioc_repo.get_ioc_by_name(ioc.name)
         if ioc_record is None:  # Create
             self.log.debug(f"{ioc} was not seen before - creating a new record")
             ioc_record = self.ioc_repo.save(ioc)
@@ -77,6 +89,7 @@ class IocProcessor:
         ioc_record.payload_request = ioc_record.payload_request or (attack_type == PAYLOAD_REQUEST)
 
         self.ioc_repo.save(ioc_record)
+        self._ioc_cache[ioc_record.name] = ioc_record
         return ioc_record
 
     def _merge_iocs(self, existing: IOC, new: IOC) -> IOC:

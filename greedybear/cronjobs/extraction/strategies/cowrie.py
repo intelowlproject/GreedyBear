@@ -95,8 +95,9 @@ class CowrieExtractionStrategy(BaseExtractionStrategy):
         hits_by_ip = defaultdict(list)
         for hit in hits:
             hits_by_ip[hit["src_ip"]].append(hit)
-
-        for ioc in iocs_from_hits(hits):
+        iocs = iocs_from_hits(hits)
+        self.ioc_processor.prefetch_iocs([ioc.name for ioc in iocs])
+        for ioc in iocs:
             self.log.info(f"found IP {ioc.name} by honeypot cowrie")
             ioc_record = self.ioc_processor.add_ioc(ioc, attack_type=SCANNER, honeypot_name="Cowrie")
             if ioc_record:
