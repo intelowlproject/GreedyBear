@@ -8,7 +8,7 @@ from django.core.cache import cache
 from rest_framework.test import APIClient
 
 from api.throttles import SharedFeedRateThrottle
-from greedybear.models import IOC, AutonomousSystem, IocType, Sensor, ShareToken
+from greedybear.models import IOC, AutonomousSystem, Credential, IocType, Sensor, ShareToken
 from tests import CustomTestCase
 
 
@@ -139,6 +139,45 @@ class FeedsAdvancedViewTestCase(CustomTestCase):
         iocs = response.json()["iocs"]
         for ioc in iocs:
             self.assertNotIn("sensors", ioc)
+
+    def test_min_credential_count_filter(self):
+        """IOCs with fewer credentials than min_credential_count are excluded."""
+        cred1 = Credential.objects.create(username="admin", password="admin")
+        cred2 = Credential.objects.create(username="root", password="1234")
+        self.ioc.credentials.add(cred1, cred2)
+
+        response = self.client.get("/api/feeds/advanced/?min_credential_count=2")
+        self.assertEqual(response.status_code, 200)
+        iocs = response.json()["iocs"]
+        target_ioc = next((i for i in iocs if i["value"] == self.ioc.name), None)
+        self.assertIsNotNone(target_ioc)
+        self.assertGreaterEqual(target_ioc["credential_count"], 2)
+
+    def test_max_credential_count_filter(self):
+        """IOCs with more credentials than max_credential_count are excluded."""
+        cred1 = Credential.objects.create(username="admin", password="admin")
+        cred2 = Credential.objects.create(username="root", password="1234")
+        self.ioc.credentials.add(cred1, cred2)
+
+        response = self.client.get("/api/feeds/advanced/?max_credential_count=1")
+        self.assertEqual(response.status_code, 200)
+        iocs = response.json()["iocs"]
+        target_ioc = next((i for i in iocs if i["value"] == self.ioc.name), None)
+        # self.ioc has 2 credentials so it should be excluded
+        self.assertIsNone(target_ioc)
+
+    def test_credential_count_in_response(self):
+        """credential_count field is present in JSON response."""
+        cred1 = Credential.objects.create(username="admin", password="admin")
+        self.ioc.credentials.add(cred1)
+
+        response = self.client.get("/api/feeds/advanced/")
+        self.assertEqual(response.status_code, 200)
+        iocs = response.json()["iocs"]
+        target_ioc = next((i for i in iocs if i["value"] == self.ioc.name), None)
+        self.assertIsNotNone(target_ioc)
+        self.assertIn("credential_count", target_ioc)
+        self.assertEqual(target_ioc["credential_count"], 1)
 
 
 class FeedsEnhancementsTestCase(CustomTestCase):
