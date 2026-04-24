@@ -21,18 +21,19 @@ export default function EmailVerification() {
   // side-effects
   React.useEffect(() => {
     if (key) {
-      setTimeout(
+      const timeoutId = setTimeout(
         () =>
           verifyEmail({ key })
             .then(() => setIsVerified(true))
             .catch(() => setIsKeyValid(false)),
         500,
       );
+
+      return () => clearTimeout(timeoutId);
     } else {
       setIsKeyValid(false);
     }
   }, [key]);
-
   return isVerified ? (
     <Navigate push to="/login" />
   ) : (
