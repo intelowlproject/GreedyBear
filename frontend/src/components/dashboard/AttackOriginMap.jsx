@@ -94,9 +94,17 @@ export default function AttackOriginMap() {
   React.useEffect(() => {
     let cancelled = false;
     fetch(WORLD_ATLAS_GEO_URL)
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) {
+          throw new Error(`Failed to load map data: ${r.status}`);
+        }
+        return r.json();
+      })
       .then((json) => {
         if (!cancelled) setGeoData(json);
+      })
+      .catch((err) => {
+        if (!cancelled) console.error(err);
       });
     return () => {
       cancelled = true;
