@@ -14,7 +14,7 @@ vi.mock("@greedybear/gb-ui", () => ({
 
 // Stub TopoJSON fetch (undici rejects the relative URL used in production).
 globalThis.fetch = vi.fn(() =>
-  Promise.resolve({ json: () => Promise.resolve({}) }),
+  Promise.resolve({ ok: true, json: () => Promise.resolve({}) }),
 );
 
 // Mock the map library. Each mock geography carries a numeric ISO id
