@@ -1,4 +1,5 @@
 import React from "react";
+import { useShallow } from "zustand/shallow";
 import {
   UncontrolledDropdown,
   DropdownToggle,
@@ -16,7 +17,7 @@ import { useAuthStore } from "../../stores";
 function UserMenu(props) {
   // auth store
   const [user, isSuperuser] = useAuthStore(
-    React.useCallback((s) => [s.user, s.isSuperuser], []),
+    useShallow((s) => [s.user, s.isSuperuser]),
   );
 
   return (
