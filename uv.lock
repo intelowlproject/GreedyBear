@@ -278,15 +278,15 @@ wheels = [
 
 [[package]]
 name = "django-q2"
-version = "1.9.0"
+version = "1.10.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "django" },
     { name = "django-picklefield" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/fc/e6/21375bed54a4be1339f6ee31e4173d361d457dbe91db7bff130b52566126/django_q2-1.9.0.tar.gz", hash = "sha256:ef7facca96fae9c11ddf2c5252d3817975c7a9a6d989fa0d65487d8823d57799", size = 77218, upload-time = "2025-12-04T22:11:29.336Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/38/ea/a97c24d04345b20afd3f04711642d7f27921dd8bbaba8ebfdbb77448be0a/django_q2-1.10.0.tar.gz", hash = "sha256:cc805008986c560ed4e0a3ef08776c1b41f403a60477b2726a2545ae64b71504", size = 86438, upload-time = "2026-05-01T17:39:20.925Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/3e/b7/8282f9815fc9df3187d9303a6f54e0388e02742255dee1fed7b4019a03ae/django_q2-1.9.0-py3-none-any.whl", hash = "sha256:4eded27644b0ffb291839c9f9c12fea6c0dec63ebd891fa6881b0b446098a49d", size = 89615, upload-time = "2025-12-04T22:11:28.079Z" },
+    { url = "https://files.pythonhosted.org/packages/ab/72/92b531a3f794f1869a89e480045c82fd1cf27a98a73a83402ff7ad3f3234/django_q2-1.10.0-py3-none-any.whl", hash = "sha256:7746c1cb7178551d81f25f47603ed29b80599e93d82ffd198c493a2b2323f3b5", size = 106170, upload-time = "2026-05-01T17:39:22.184Z" },
 ]
 
 [[package]]
@@ -525,7 +525,7 @@ requires-dist = [
     { name = "croniter", specifier = "~=6.2" },
     { name = "datasketch", specifier = "~=1.10" },
     { name = "django", specifier = "~=5.2.13" },
-    { name = "django-q2", specifier = "~=1.9" },
+    { name = "django-q2", specifier = "~=1.10" },
     { name = "django-rest-email-auth", specifier = "==5.0.0" },
     { name = "django-ses", specifier = "~=4.7" },
     { name = "djangorestframework", specifier = "~=3.17.1" },
