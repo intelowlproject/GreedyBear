@@ -50,28 +50,21 @@ class Echo:
 
 
 def get_request_source_ip(request) -> str:
-    """Extract a normalized client IP from request metadata.
-
-    Preference order:
-    1) First valid IP from X-Forwarded-For
-    2) Valid REMOTE_ADDR
+    """Extract a normalized client IP from request metadata (X-Forwarded-For header)
 
     Raises:
         UnableToExtractSourceIPError: When no valid IP is found
     """
 
     forwarded_for = str(request.META.get("HTTP_X_FORWARDED_FOR", ""))
-    remote_addr = str(request.META.get("REMOTE_ADDR", "")).strip()
 
     candidates = [ip.strip() for ip in forwarded_for.split(",") if ip.strip()]
-    if remote_addr:
-        candidates.append(remote_addr)
 
     for candidate in candidates:
         if is_ip_address(candidate):
             return candidate
 
-    logger.error("Unable to extract valid source IP from request. X-Forwarded-For: %s, REMOTE_ADDR: %s", forwarded_for, remote_addr)
+    logger.error("Unable to extract valid source IP from request. X-Forwarded-For: %s", forwarded_for)
     raise UnableToExtractSourceIPError("No valid source IP found in request metadata")
 
 
