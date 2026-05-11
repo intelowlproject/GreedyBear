@@ -18,13 +18,13 @@ class SecuritySettingsTests(SimpleTestCase):
         self.assertFalse(getattr(settings, "SECURE_SSL_REDIRECT", False))
 
     def test_cookie_security_matches_environment(self):
-        """Cookies should only be marked secure in production."""
-        is_production = getattr(settings, "STAGE_PRODUCTION", False)
+        """Cookies should only be marked secure when HTTPS is enabled."""
+        https_enabled = getattr(settings, "HTTPS_ENABLED", False)
 
         # Test SESSION_COOKIE_SECURE
         session_secure = getattr(settings, "SESSION_COOKIE_SECURE", False)
-        self.assertEqual(session_secure, is_production)
+        self.assertEqual(session_secure, https_enabled)
 
         # Test CSRF_COOKIE_SECURE
         csrf_secure = getattr(settings, "CSRF_COOKIE_SECURE", False)
-        self.assertEqual(csrf_secure, is_production)
+        self.assertEqual(csrf_secure, https_enabled)
