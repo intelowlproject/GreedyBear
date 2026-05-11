@@ -764,6 +764,11 @@ cmd_backup() {
         chmod 700 "$backup_dir"
     fi
     
+    if [ -n "$KEEP_DAYS" ]; then
+        log_info "Pruning backups older than ${KEEP_DAYS} days..."
+        find "$backup_dir" -type f \( -name "greedybear_backup_*.sql.gz" -o -name "greedybear_backup_*_volumes.txt" \) -mtime "+${KEEP_DAYS}" -delete
+    fi
+
     # Source PostgreSQL credentials from env file
     local pg_user="user"
     local pg_db="greedybear_db"
@@ -806,11 +811,6 @@ cmd_backup() {
     log_info "Saving volumes information..."
     ${docker_cmd} volume ls --filter name=${PROJECT_NAME} > "${backup_file}_volumes.txt"
 
-    if [ -n "$KEEP_DAYS" ]; then
-        log_info "Pruning backups older than ${KEEP_DAYS} days..."
-        find "$backup_dir" -type f \( -name "greedybear_backup_*.sql.gz" -o -name "greedybear_backup_*_volumes.txt" \) -mtime "+${KEEP_DAYS}" -delete
-    fi
-    
     log_success "Backup complete: ${backup_file}.sql.gz"
     log_info "To restore: ./gbctl restore ${backup_file}.sql.gz"
 }
@@ -1129,6 +1129,16 @@ parse_args() {
                 PASSED_FLAGS+=("--keep-days")
                 shift 2
                 ;;
+            --keep-days=*)
+                keep_days_value="${1#*=}"
+                if [[ -z "$keep_days_value" || ! "$keep_days_value" =~ ^[1-9][0-9]*$ ]]; then
+                    echo -e "${RED}Error:${NC} --keep-days requires a positive integer" >&2
+                    exit 1
+                fi
+                KEEP_DAYS="$keep_days_value"
+                PASSED_FLAGS+=("--keep-days")
+                shift
+                ;;
             -h|--help)
                 print_help
                 exit 0
@@ -1228,6 +1238,11 @@ main() {
             ;;
         backup)
             validate_flags backup --silent --keep-days
+            if [ "${#EXTRA_ARGS[@]}" -gt 0 ]; then
+                log_error "Unknown argument(s) for backup: ${EXTRA_ARGS[*]}"
+                print_help
+                exit 1
+            fi
             cmd_backup "${EXTRA_ARGS[@]}"
             ;;
         restore)
