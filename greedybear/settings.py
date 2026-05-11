@@ -70,10 +70,11 @@ SECURE_CONTENT_TYPE_NOSNIFF = True
 # because GreedyBear has no legitimate need to be framed.
 X_FRAME_OPTIONS = "DENY"
 
-if STAGE_PRODUCTION:
+HTTPS_ENABLED = os.environ.get("HTTPS_ENABLED", "False") == "True"
+if HTTPS_ENABLED:
     # Mark session and CSRF cookies as Secure so they are only
-    # sent over HTTPS connections. Gated to production because
-    # local/CI environments run plain HTTP.
+    # sent over HTTPS connections if HTTPS is enabled.
+    # Allows local/CI environments to run plain HTTP.
     SESSION_COOKIE_SECURE = True
     CSRF_COOKIE_SECURE = True
     # NOTE: SECURE_SSL_REDIRECT is intentionally omitted. TLS is
