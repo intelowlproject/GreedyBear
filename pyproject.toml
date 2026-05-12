@@ -1,6 +1,6 @@
 [project]
 name = "greedybear"
-version = "3.4.0"
+version = "3.5.0"
 description = "Threat intelligence platform that extracts attack data from a T-Pot or a cluster of them and generates actionable live feeds."
 readme = "README.md"
 license = "MIT"
@@ -12,11 +12,11 @@ dependencies = [
     "djangorestframework~=3.17.1",
     "django-rest-email-auth==5.0.0",
     "django-ses~=4.7",
-    "django-q2~=1.9",
+    "django-q2~=1.10",
     "croniter~=6.2",
     "certego-saas==0.7.12",
     # Server Gateway Interface
-    "gunicorn~=25.3",
+    "gunicorn~=26.0",
     # Data stores
     "elasticsearch==9.3.0",
     "psycopg[c]~=3.3",
@@ -48,7 +48,7 @@ test = [
     "django-test-migrations==1.5.0",
 ]
 lint = [
-    "ruff==0.15.11",
+    "ruff==0.15.12",
 ]
 
 [tool.uv]

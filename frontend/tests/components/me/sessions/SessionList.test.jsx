@@ -40,7 +40,7 @@ vi.mock("@greedybear/gb-ui", async () => {
 describe("SessionsList", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.useFakeTimers();
+    vi.useFakeTimers({ shouldAdvanceTime: true });
 
     const unsortedSessions = [
       {
