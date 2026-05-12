@@ -67,6 +67,14 @@ describe("SessionsList", () => {
         has_expired: false,
         is_current: false,
       },
+      {
+        id: 4,
+        client: "Old Browser",
+        created: 50,
+        expiry: 150,
+        has_expired: true,
+        is_current: false,
+      },
     ];
 
     useAxiosComponentLoader.mockImplementation((_, transformer) => {
@@ -84,11 +92,17 @@ describe("SessionsList", () => {
     render(<SessionsList />);
 
     const deviceLabels = screen
-      .getAllByText(/Current Browser|Firefox|Safari/)
+      .getAllByText(/Current Browser|Firefox|Safari|Old Browser/)
       .map((el) => el.textContent.replace(/^Device\s*/i, "").trim());
-    expect(deviceLabels).toEqual(["Current Browser", "Safari", "Firefox"]);
+    expect(deviceLabels).toEqual([
+      "Current Browser",
+      "Safari",
+      "Firefox",
+      "Old Browser",
+    ]);
 
     expect(screen.getByText("current")).toBeInTheDocument();
+    expect(screen.getByText("expired")).toBeInTheDocument();
     expect(
       screen.queryByTestId("sessionslist-1__revoke-btn"),
     ).not.toBeInTheDocument();
