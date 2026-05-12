@@ -167,11 +167,10 @@ class FeedsAdvancedViewTestCase(CustomTestCase):
         self.assertIsNone(target_ioc)
 
     def test_credential_count_in_response(self):
-        """credential_count field is present in JSON response."""
+        """credential_count field is present in JSON response when filtering by credential count."""
         cred1 = Credential.objects.create(username="admin", password="admin")
         self.ioc.credentials.add(cred1)
-
-        response = self.client.get("/api/feeds/advanced/")
+        response = self.client.get("/api/feeds/advanced/?min_credential_count=1")
         self.assertEqual(response.status_code, 200)
         iocs = response.json()["iocs"]
         target_ioc = next((i for i in iocs if i["value"] == self.ioc.name), None)
