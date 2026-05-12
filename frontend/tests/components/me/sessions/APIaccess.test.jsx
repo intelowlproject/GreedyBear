@@ -1,5 +1,5 @@
 import "@testing-library/jest-dom";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, act, fireEvent } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
 import APIAccess from "../../../../src/components/me/sessions/APIaccess";
@@ -46,6 +46,10 @@ describe("APIAccess", () => {
     vi.clearAllMocks();
   });
 
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   test("renders 'No active API key' when loader returns 404", () => {
     useAxiosComponentLoader.mockImplementation(() => {
       const Loader = ({ renderError }) =>
@@ -63,7 +67,6 @@ describe("APIAccess", () => {
 
   test("calls createNewToken and refetches when 'Create' button is clicked", async () => {
     vi.useFakeTimers();
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     useAxiosComponentLoader.mockImplementation(() => {
       const Loader = ({ renderError }) =>
         renderError({
@@ -75,12 +78,16 @@ describe("APIAccess", () => {
 
     render(<APIAccess />);
 
-    await user.click(screen.getByTestId("create-apikey-btn"));
+    // Use fireEvent instead of userEvent to avoid hanging on async onClick with fake timers
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("create-apikey-btn"));
+    });
 
     expect(createNewToken).toHaveBeenCalledTimes(1);
-    vi.advanceTimersByTime(500);
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
     expect(refetchMock).toHaveBeenCalledTimes(1);
-    vi.useRealTimers();
   });
 
   test("renders token details and handles visibility toggle", async () => {
@@ -134,7 +141,6 @@ describe("APIAccess", () => {
 
   test("calls deleteToken and refetches when confirmed", async () => {
     vi.useFakeTimers();
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const mockData = { token: "token-to-delete" };
     useAxiosComponentLoader.mockImplementation(() => {
       const Loader = ({ render: renderFn }) => renderFn();
@@ -145,18 +151,21 @@ describe("APIAccess", () => {
 
     render(<APIAccess />);
 
-    await user.click(screen.getByTestId("delete-apikey-btn"));
+    // Use fireEvent instead of userEvent to avoid hanging on async onClick with fake timers
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("delete-apikey-btn"));
+    });
 
     expect(confirm).toHaveBeenCalled();
     expect(deleteToken).toHaveBeenCalledTimes(1);
-    vi.advanceTimersByTime(500);
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
     expect(refetchMock).toHaveBeenCalledTimes(1);
-    vi.useRealTimers();
   });
 
   test("does not call deleteToken when cancelled", async () => {
     vi.useFakeTimers();
-    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     const mockData = { token: "token-to-stay" };
     useAxiosComponentLoader.mockImplementation(() => {
       const Loader = ({ render: renderFn }) => renderFn();
@@ -166,13 +175,17 @@ describe("APIAccess", () => {
 
     render(<APIAccess />);
 
-    await user.click(screen.getByTestId("delete-apikey-btn"));
+    // Use fireEvent instead of userEvent to avoid hanging on async onClick with fake timers
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("delete-apikey-btn"));
+    });
 
     expect(confirm).toHaveBeenCalled();
     expect(deleteToken).not.toHaveBeenCalled();
-    vi.advanceTimersByTime(500);
+    act(() => {
+      vi.advanceTimersByTime(500);
+    });
     expect(refetchMock).not.toHaveBeenCalled();
-    vi.useRealTimers();
   });
 
   test("renders ErrorAlert when loader returns a non-404 error", () => {
