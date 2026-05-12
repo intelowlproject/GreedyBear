@@ -176,7 +176,10 @@ describe("APIAccess", () => {
   });
 
   test("renders ErrorAlert when loader returns a non-404 error", () => {
-    const mockError = { message: "Internal Server Error", response: { status: 500 } };
+    const mockError = {
+      message: "Internal Server Error",
+      response: { status: 500 },
+    };
     useAxiosComponentLoader.mockImplementation(() => {
       const Loader = ({ renderError }) => renderError({ error: mockError });
       return [null, Loader, refetchMock];
