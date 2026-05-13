@@ -2,10 +2,13 @@
 # See the file 'LICENSE' for copying permission.
 import hashlib
 import logging
+import urllib.parse
+from datetime import timedelta
 
 from certego_saas.apps.auth.backend import CookieTokenAuthentication
 from certego_saas.ext.pagination import CustomPageNumberPagination
 from django.core import signing
+from django.core.cache import caches
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import (
@@ -17,7 +20,7 @@ from rest_framework.decorators import (
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from api.serializers import ASNFeedsOrderingSerializer
+from api.serializers import ASNFeedsOrderingSerializer, TrendingAttackersRequestSerializer, parse_feed_types
 from api.throttles import FeedsAdvancedThrottle, FeedsThrottle, SharedFeedRateThrottle
 from api.views.utils import (
     FeedRequestParams,
@@ -27,7 +30,9 @@ from api.views.utils import (
     get_valid_feed_types,
 )
 from greedybear.consts import GET
+from greedybear.cronjobs.repositories import TrendingBucketRepository
 from greedybear.models import ShareToken
+from greedybear.cronjobs.trending import build_ranked_attackers
 
 logger = logging.getLogger(__name__)
 
@@ -48,6 +53,40 @@ _TOKEN_LIST_FIELDS = (
     "revoked",
     "revoked_at",
 )
+
+
+def _build_trending_response(
+    window_minutes: int,
+    feed_types: list[str],
+    current_window_start,
+    current_window_end,
+    previous_window_start,
+    previous_window_end,
+    attackers: list[dict],
+    data_source: str,
+):
+    return {
+        "window_minutes": window_minutes,
+        "feed_type": feed_types,
+        "current_window": {
+            "start": current_window_start,
+            "end": current_window_end,
+        },
+        "previous_window": {
+            "start": previous_window_start,
+            "end": previous_window_end,
+        },
+        "count": len(attackers),
+        "data_source": data_source,
+        "attackers": attackers,
+    }
+
+
+def _trending_cache_key(request, version: int, current_window_end) -> str:
+    sorted_params = sorted(request.query_params.lists())
+    params_string = urllib.parse.urlencode(sorted_params, doseq=True)
+    param_hash = hashlib.sha256(params_string.encode("utf-8")).hexdigest()
+    return f"trending_feeds_v{version}_{current_window_end.isoformat()}_{param_hash}"
 
 
 @api_view([GET])
@@ -204,6 +243,62 @@ def feeds_asn(request):
     asn_aggregates = asn_aggregated_queryset(iocs_qs, request, feed_params)
     data = list(asn_aggregates)
     return Response(data)
+
+
+@api_view([GET])
+@authentication_classes([])
+@permission_classes([])
+@throttle_classes([FeedsThrottle])
+def feeds_trending(request):
+    """
+    Retrieve trending attackers by comparing two hour-aligned windows
+    of equal duration: the current completed window and the immediately
+    preceding window.
+
+    Query params:
+        feed_type (str): comma-separated honeypot type names or 'all'. Default: 'all'.
+        window_minutes (int): Size of each comparison window in minutes. Default: 1440.
+        limit (int): Maximum number of attacker entries to return. Default: 10.
+    """
+    logger.info(f"request /api/feeds/trending/ with params: {request.query_params}")
+
+    valid_feed_types = get_valid_feed_types()
+    serializer = TrendingAttackersRequestSerializer(data=request.query_params, context={"valid_feed_types": valid_feed_types})
+    serializer.is_valid(raise_exception=True)
+    validated = serializer.validated_data
+
+    feed_types = parse_feed_types(validated["feed_type"])
+    window_minutes = int(validated["window_minutes"])
+    limit = int(validated["limit"])
+
+    current_window_end = timezone.now().replace(minute=0, second=0, microsecond=0)
+    current_window_start = current_window_end - timedelta(minutes=window_minutes)
+    previous_window_end = current_window_start
+    previous_window_start = previous_window_end - timedelta(minutes=window_minutes)
+
+    shared_cache = caches["django-q"]
+    version = shared_cache.get("trending_feeds_version", 1)
+    cache_key = _trending_cache_key(request, version, current_window_end)
+    cached_result = shared_cache.get(cache_key)
+    if cached_result is not None:
+        return Response(cached_result)
+
+    bucket_repo = TrendingBucketRepository()
+    current_counts = bucket_repo.get_counts_in_window(current_window_start, current_window_end, feed_types)
+    previous_counts = bucket_repo.get_counts_in_window(previous_window_start, previous_window_end, feed_types)
+    attackers = build_ranked_attackers(current_counts, previous_counts, limit)
+    response_payload = _build_trending_response(
+        window_minutes,
+        feed_types,
+        current_window_start,
+        current_window_end,
+        previous_window_start,
+        previous_window_end,
+        attackers,
+        "aggregated",
+    )
+    shared_cache.set(cache_key, response_payload, timeout=3600)
+    return Response(response_payload)
 
 
 @api_view([GET])
