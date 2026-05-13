@@ -4,9 +4,9 @@
   "private": true,
   "type": "module",
   "config": {
-    "eslint": ".github/configurations/node_linters/eslint/eslint.config.mjs",
-    "stylelint": ".github/configurations/node_linters/stylelint/.stylelintrc.json",
-    "prettier": ".github/configurations/node_linters/prettier/.prettierrc.js"
+    "eslint": "../.github/configurations/node_linters/eslint/eslint.config.mjs",
+    "stylelint": "../.github/configurations/node_linters/stylelint/.stylelintrc.json",
+    "prettier": "../.github/configurations/node_linters/prettier/.prettierrc.js"
   },
   "dependencies": {
     "@greedybear/gb-ui": "github:GreedyBear-Project/gb-ui#1.0.0",
