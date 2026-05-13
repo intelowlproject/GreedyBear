@@ -64,7 +64,7 @@ class FireHolCron(Cronjob):
                     # FireHol .ipset and .netset files contain IPs or CIDRs, one per line
                     # Comments (lines starting with #) are filtered out above
 
-                    entry, created = self.firehol_repo.get_or_create(line, source)
+                    _, created = self.firehol_repo.get_or_create(line, source)
                     if created:
                         self.log.debug(f"Added new entry: {line} from {source}")
 

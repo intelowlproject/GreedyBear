@@ -167,8 +167,7 @@ class MLModel(Scorer):
         max_k = len(x) // 4  # look at the first quater of predictions
         k_values = np.linspace(0, max_k, num=SAMPLE_COUNT, dtype=np.int32, endpoint=True)
         recalls = [ranked_data.head(k)["target"].sum() / total_positives for k in k_values]
-        area = np.trapezoid(recalls) / SAMPLE_COUNT
-        return area
+        return np.trapezoid(recalls) / SAMPLE_COUNT
 
     @property
     @abstractmethod

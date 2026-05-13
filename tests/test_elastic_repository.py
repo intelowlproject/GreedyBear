@@ -1,3 +1,4 @@
+import itertools
 from datetime import datetime, timedelta
 from unittest.mock import Mock, call, patch
 
@@ -93,7 +94,7 @@ class TestElasticRepository(CustomTestCase):
 
         chunks = list(self.repo.search(minutes_back_to_lookup=10))
         for chunk in chunks:
-            is_ordered = all(a["@timestamp"] <= b["@timestamp"] for a, b in zip(chunk, chunk[1:], strict=False))
+            is_ordered = all(a["@timestamp"] <= b["@timestamp"] for a, b in itertools.pairwise(chunk))
             self.assertTrue(is_ordered)
 
     @patch("greedybear.cronjobs.repositories.elastic.Search")

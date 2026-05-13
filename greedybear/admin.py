@@ -17,6 +17,7 @@ from greedybear.models import (
     MassScanner,
     Sensor,
     Statistics,
+    Tag,
     TorExitNode,
     WhatsMyIPDomain,
 )
@@ -68,6 +69,14 @@ class FireHolListModelAdmin(admin.ModelAdmin):
     list_filter = ["source"]
     search_fields = ["ip_address"]
     search_help_text = "search for the IP address"
+
+
+class TagInline(admin.TabularInline):
+    model = Tag
+    fields = ["key", "value", "source", "added"]
+    readonly_fields = ["added"]
+    extra = 0
+    ordering = ["source", "key"]
 
 
 class SessionInline(admin.TabularInline):
@@ -158,7 +167,7 @@ class IOCModelAdmin(admin.ModelAdmin):
     search_help_text = "search by IOC name or related IOC name"
     raw_id_fields = ["related_ioc"]
     filter_horizontal = ["honeypots", "sensors"]
-    inlines = [SessionInline]
+    inlines = [TagInline, SessionInline]
 
     def honeypots_list(self, ioc):
         return ", ".join([str(element) for element in ioc.honeypots.all()])

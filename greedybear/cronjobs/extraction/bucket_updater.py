@@ -34,7 +34,7 @@ class BucketUpdater:
             self.total_update_count += update_count
             return update_count
         except Exception as exc:
-            logger.error("Failed to update activity buckets from hits for current chunk: %s", exc, exc_info=True)
+            logger.exception("Failed to update activity buckets from hits for current chunk: %s", exc)
             return 0
         finally:
             self.counters = Counter()

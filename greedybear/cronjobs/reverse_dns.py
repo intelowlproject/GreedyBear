@@ -176,7 +176,4 @@ class ReverseDNSCron(Cronjob):
             True if the hostname matches a mass scanner domain.
         """
         hostname_lower = hostname.lower()
-        for domain in MASS_SCANNER_DOMAINS:
-            if hostname_lower == domain or hostname_lower.endswith("." + domain):
-                return True
-        return False
+        return any(hostname_lower == domain or hostname_lower.endswith("." + domain) for domain in MASS_SCANNER_DOMAINS)

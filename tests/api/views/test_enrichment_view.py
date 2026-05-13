@@ -1,6 +1,6 @@
 from rest_framework.test import APIClient
 
-from greedybear.models import Sensor
+from greedybear.models import Sensor, Statistics, ViewType
 from tests import CustomTestCase
 
 
@@ -100,3 +100,16 @@ class EnrichmentViewTestCase(CustomTestCase):
         self.assertEqual(len(sensors), 1)
         self.assertEqual(sensors[0]["address"], "10.0.0.3")
         self.assertEqual(sensors[0]["label"], "enrichment-sensor")
+
+    def test_statistics_source_prefers_forwarded_ipv6(self):
+        """Statistics source should store the first valid forwarded IPv6 address."""
+        response = self.client.get(
+            "/api/enrichment?query=192.168.0.1",
+            HTTP_X_FORWARDED_FOR="2001:db8::1, 198.51.100.5",
+            REMOTE_ADDR="10.0.0.1",
+        )
+
+        self.assertEqual(response.status_code, 200)
+        latest = Statistics.objects.filter(view=ViewType.ENRICHMENT_VIEW.value).order_by("-id").first()
+        self.assertIsNotNone(latest)
+        self.assertEqual(latest.source, "2001:db8::1")

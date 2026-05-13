@@ -20,8 +20,6 @@ class ElasticRepository:
     class ElasticServerDownError(Exception):
         """Raised when the Elasticsearch server is unreachable."""
 
-        pass
-
     def __init__(self):
         """Initialize the repository with an Elasticsearch client."""
         self.log = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
