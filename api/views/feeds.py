@@ -154,6 +154,7 @@ def feeds_advanced(request):
         tag_key=request.query_params.get("tag_key", "").strip(),
         tag_value=request.query_params.get("tag_value", "").strip(),
         include_sensors=True,
+        include_credential_count=True,
     )
     if paginate:
         paginator = CustomPageNumberPagination()

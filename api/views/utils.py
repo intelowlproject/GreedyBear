@@ -131,6 +131,8 @@ class FeedRequestParams:
         self.start_date = query_params.get("start_date")
         self.end_date = query_params.get("end_date")
         self.country_code = query_params.get("country_code")
+        self.min_credential_count = query_params.get("min_credential_count")
+        self.max_credential_count = query_params.get("max_credential_count")
 
     def apply_default_filters(self, query_params):
         if not query_params:
@@ -177,7 +179,15 @@ def get_valid_feed_types() -> frozenset[str]:
 
 
 def get_queryset(
-    request, feed_params, valid_feed_types, is_aggregated=False, serializer_class=FeedsRequestSerializer, tag_key="", tag_value="", include_sensors=False
+    request,
+    feed_params,
+    valid_feed_types,
+    is_aggregated=False,
+    serializer_class=FeedsRequestSerializer,
+    tag_key="",
+    tag_value="",
+    include_sensors=False,
+    include_credential_count=False,
 ):
     """
     Build a queryset to filter IOC data based on the request parameters.
@@ -199,7 +209,8 @@ def get_queryset(
         tag_value (str, optional): Filter IOCs by tag value (case-insensitive substring). Only passed from feeds_advanced.
         include_sensors (bool, optional): If True, annotates sensors_json for each IOC.
             Only passed from authenticated views like feeds_advanced. Default: False.
-
+        include_credential_count (bool, optional): If True, annotates credential Count for each IOC.
+            Only passed from authenticated views like feeds_advanced. Default: False.
     Returns:
         QuerySet: The filtered queryset of IOC data.
     """
@@ -256,6 +267,17 @@ def get_queryset(
         query_dict["tags__value__icontains"] = tag_value[:256]  # Truncate to Tag.value max_length
 
     iocs = IOC.objects.filter(**query_dict).exclude(ip_reputation__in=feed_params.exclude_reputation).annotate(value=F("name")).distinct()
+
+    # credential count filtering is only available on the advanced feed
+    if include_credential_count:
+        min_credential_count = serializer.validated_data.get("min_credential_count")
+        max_credential_count = serializer.validated_data.get("max_credential_count")
+        if min_credential_count is not None or max_credential_count is not None:
+            iocs = iocs.annotate(credential_count=Count("credentials", distinct=True))
+            if min_credential_count is not None:
+                iocs = iocs.filter(credential_count__gte=min_credential_count)
+            if max_credential_count is not None:
+                iocs = iocs.filter(credential_count__lte=max_credential_count)
 
     # apply feed type filter as union;
     if "all" not in feed_params.feed_types:
@@ -355,6 +377,7 @@ def feeds_response(request=None, iocs=None, feed_params=None, valid_feed_types=N
                 "first_seen",
                 "last_seen",
                 "attack_count",
+                "credential_count",
                 "interaction_count",
                 "scanner",
                 "payload_request",
@@ -384,11 +407,13 @@ def feeds_response(request=None, iocs=None, feed_params=None, valid_feed_types=N
             if isinstance(iocs, list):
                 has_tags_annotation = bool(iocs) and hasattr(iocs[0], "tags_json")
                 has_sensors_annotation = include_sensors and bool(iocs) and hasattr(iocs[0], "sensors_json")
+                has_credential_count = bool(iocs) and hasattr(iocs[0], "credential_count")
             else:
                 has_tags_annotation = "tags_json" in getattr(iocs, "query", type("", (), {"annotations": {}})()).annotations
                 has_sensors_annotation = include_sensors and "sensors_json" in getattr(iocs, "query", type("", (), {"annotations": {}})()).annotations
-
+                has_credential_count = "credential_count" in getattr(iocs, "query", type("", (), {"annotations": {}})()).annotations
             required_fields = tuple(("tags_json" if f == "tags" else f) for f in required_fields if f != "tags" or has_tags_annotation)
+            required_fields = tuple(f for f in required_fields if f != "credential_count" or has_credential_count)
             if has_sensors_annotation:
                 required_fields = (*required_fields, "sensors_json")
 

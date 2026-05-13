@@ -132,6 +132,8 @@ class FeedsRequestSerializer(serializers.Serializer):
     ioc_type = serializers.ChoiceField(choices=["ip", "domain", "all"])
     max_age = serializers.IntegerField(min_value=1)
     min_days_seen = serializers.IntegerField(min_value=1)
+    min_credential_count = serializers.IntegerField(required=False, min_value=0)
+    max_credential_count = serializers.IntegerField(required=False, min_value=0)
     include_reputation = serializers.ListField(child=serializers.CharField(max_length=120))
     exclude_reputation = serializers.ListField(child=serializers.CharField(max_length=120))
     feed_size = serializers.IntegerField(min_value=1)
