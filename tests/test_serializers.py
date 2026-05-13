@@ -1,12 +1,14 @@
 import random
 from itertools import product
 
+from django.test import override_settings
 from rest_framework.serializers import ValidationError
 
 from api.serializers import (
     FeedsRequestSerializer,
     FeedsResponseSerializer,
     IOCSerializer,
+    TrendingAttackersRequestSerializer,
     parse_feed_types,
 )
 from greedybear.consts import PAYLOAD_REQUEST, SCANNER
@@ -33,6 +35,47 @@ class ParseFeedTypesTestCase(CustomTestCase):
 
     def test_all_type(self):
         self.assertEqual(parse_feed_types("all"), ["all"])
+
+
+class TrendingAttackersRequestSerializerTestCase(CustomTestCase):
+    def _serializer(self, data):
+        return TrendingAttackersRequestSerializer(
+            data=data,
+            context={"valid_feed_types": frozenset(["all", "cowrie", "heralding"])},
+        )
+
+    def test_defaults_are_applied(self):
+        serializer = self._serializer({})
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+        self.assertEqual(serializer.validated_data["feed_type"], "all")
+        self.assertEqual(serializer.validated_data["window_minutes"], 24 * 60)
+        self.assertEqual(serializer.validated_data["limit"], 10)
+
+    def test_feed_type_is_normalized_to_lowercase(self):
+        serializer = self._serializer({"feed_type": "Cowrie,Heralding", "window_minutes": 60, "limit": 5})
+        self.assertTrue(serializer.is_valid(), serializer.errors)
+        self.assertEqual(serializer.validated_data["feed_type"], "cowrie,heralding")
+
+    def test_feed_type_all_cannot_be_combined(self):
+        serializer = self._serializer({"feed_type": "all,cowrie", "window_minutes": 60, "limit": 5})
+        self.assertFalse(serializer.is_valid())
+        self.assertIn("feed_type", serializer.errors)
+
+    @override_settings(TRENDING_MAX_WINDOW_MINUTES=120)
+    def test_window_minutes_rejects_values_above_configured_max(self):
+        serializer = self._serializer({"feed_type": "cowrie", "window_minutes": 180, "limit": 5})
+        self.assertFalse(serializer.is_valid())
+        self.assertIn("window_minutes", serializer.errors)
+
+    def test_window_minutes_rejects_non_hour_multiples(self):
+        serializer = self._serializer({"feed_type": "cowrie", "window_minutes": 90, "limit": 5})
+        self.assertFalse(serializer.is_valid())
+        self.assertIn("window_minutes", serializer.errors)
+
+    def test_limit_rejects_values_above_max(self):
+        serializer = self._serializer({"feed_type": "cowrie", "window_minutes": 60, "limit": 1001})
+        self.assertFalse(serializer.is_valid())
+        self.assertIn("limit", serializer.errors)
 
 
 class FeedsRequestSerializersTestCase(CustomTestCase):
