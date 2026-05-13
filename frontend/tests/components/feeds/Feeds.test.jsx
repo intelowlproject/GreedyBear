@@ -83,7 +83,7 @@ vi.mock("@greedybear/gb-ui", async (importOriginal) => {
 
     useDataTable: vi.fn(() => [
       feeds,
-      <MockTableComponent />,
+      <MockTableComponent key="mock-table" />,
       vi.fn(),
       vi.fn(),
     ]),
