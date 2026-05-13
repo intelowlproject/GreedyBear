@@ -31,8 +31,8 @@ from api.views.utils import (
 )
 from greedybear.consts import GET
 from greedybear.cronjobs.repositories import TrendingBucketRepository
-from greedybear.models import ShareToken
 from greedybear.cronjobs.trending import build_ranked_attackers
+from greedybear.models import ShareToken
 
 logger = logging.getLogger(__name__)
 
