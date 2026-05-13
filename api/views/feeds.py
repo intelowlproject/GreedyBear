@@ -82,8 +82,8 @@ def _build_trending_response(
     }
 
 
-def _trending_cache_key(request, version: int, current_window_end) -> str:
-    sorted_params = sorted(request.query_params.lists())
+def _trending_cache_key(validated_data: dict, version: int, current_window_end) -> str:
+    sorted_params = sorted(validated_data.items())
     params_string = urllib.parse.urlencode(sorted_params, doseq=True)
     param_hash = hashlib.sha256(params_string.encode("utf-8")).hexdigest()
     return f"trending_feeds_v{version}_{current_window_end.isoformat()}_{param_hash}"
@@ -278,7 +278,7 @@ def feeds_trending(request):
 
     shared_cache = caches["django-q"]
     version = shared_cache.get("trending_feeds_version", 1)
-    cache_key = _trending_cache_key(request, version, current_window_end)
+    cache_key = _trending_cache_key(validated, version, current_window_end)
     cached_result = shared_cache.get(cache_key)
     if cached_result is not None:
         return Response(cached_result)
