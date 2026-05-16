@@ -113,6 +113,9 @@ class IOC(models.Model):
     expected_interactions = models.FloatField(null=True, default=0)
 
     class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=["name", "type"], name="unique_ioc_identity"),
+        ]
         indexes = [
             models.Index(fields=["name"]),
             models.Index(fields=["attacker_country"]),
